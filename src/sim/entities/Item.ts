@@ -396,6 +396,8 @@ export const ITEMS: Record<string, ItemDef> = {
   iron_adze: { id: 'iron_adze', label: 'Iron adze', nutrition: 0, spoilTicks: 0, baseValue: 30, class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 } },
   iron_sickle: { id: 'iron_sickle', label: 'Iron sickle', nutrition: 0, spoilTicks: 0, baseValue: 26, class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 } },
   iron_spade: { id: 'iron_spade', label: 'Iron spade', nutrition: 0, spoilTicks: 0, baseValue: 34, class: 'long', hand: { perHand: 1, perArms: 1, hands: 1 } },
+  // One person carries and steers the plough; the animal pair is leased from a pen during sowing.
+  iron_plough: { id: 'iron_plough', label: 'Iron plough', nutrition: 0, spoilTicks: 0, baseValue: 48, class: 'long', hand: { perHand: 1, perArms: 1, hands: 2 } },
   // `bronze_arms`. The sword is a weapon like the dagger, further reaching and
   // harder-hitting than anything a flint can be; the helm is the first garment
   // to cover the head, and its worth passes through `armourTech`.

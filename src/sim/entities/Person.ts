@@ -530,6 +530,8 @@ export class Person {
    * over.
    */
   targetItemId: string | null = null;
+  /** Pen whose two draft heads this explicit plough-sowing order reserves. */
+  draftPenId: number | null = null;
   targetItemCount: number | null = null;
   /**
    * Whether this building-use action has already become a social deed.
@@ -1179,6 +1181,7 @@ export class Person {
     this.targetTech = null;
     this.talkMode = null;
     this.targetItemId = null;
+    this.draftPenId = null;
     this.targetItemCount = null;
     this.propertyUseNoted = null;
     this.territoryUseNoted = null;

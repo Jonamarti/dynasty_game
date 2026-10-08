@@ -1,3 +1,33 @@
+## 2026-10-08 — M15 fase 40f: arado, tiro reservado y cosecha
+
+`ploughshare` cierra el último nodo funcional del hierro. El arado físico
+se forja con hierro y palos en el yunque; la nueva opción «Arar y sembrar»
+requiere semilla en un recipiente equipado y una pareja del corral propio.
+Un solo agricultor usa cada equipo; ambas rutas de `take` y `takeItem`
+protegen sus dos cabezas. Cancelación, interrupción, muerte o pérdida del
+corral invalidan la reserva. El trabajo pagado al sembrar queda en el
+cultivo como factor 1,2 hasta cosechar, sin bonificación para siembra manual.
+No se añaden RNG, especies ni pesos al scorer. Costes/factor son supuestos
+de diseño; la representación abstracta del tiro y la economía diferida se
+registran en bugs y M16, sin afirmar excedente económico medido.
+
+Diez pruebas focales pasan: cosechas por órdenes reales comparadas, pérdida
+del corral, checkpoint y continuación, dos agricultores, borde del hash,
+gates físicos y controles sin receta/nodo. `oxen-turn-the-field` falló en
+la implementación anterior aunque hubiera cosecha manual; `ploughmen`
+ahora fabrica 1/1 arados, ara/siembra 1/1 campos y cosecha 26 de grano.
+TypeScript limpio y arte 18/18. Navegador focal 2/2, incluido el clic real
+del menú y el motivo sin yunta; cinco capturas españolas nuevas en
+`artifacts/screenshots/m15-phase40-ploughshare-2026-10-08/`.
+
+`sim:check` conserva los fallos previos de dieta/rendimiento, 2/146.
+Suite global inicial: 202/204 archivos pasan, 1.579 pruebas pasan, 1 omitida;
+falla una clave española (corregida, i18n focal 6/6) y difusión 0,81 frente
+a <0,6. La sensibilidad se registra en `m16_notes.md`; la suite no es verde.
+La suite de navegador global se registra en el cierre siguiente; la sensibilidad de
+difusión de pueblos vuelve a aparecer y no se cambia su umbral. Resta el
+instrumento de extracción `bog_iron` para tener un check por cada nodo.
+
 ## 2026-10-08 — M15 fase 40e: herramientas de hierro
 
 `iron_tools` conecta hacha, azuela, hoz y pala con los lectores compartidos

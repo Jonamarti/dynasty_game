@@ -97,6 +97,7 @@ import { expectationRatio, techAppeal } from './Beliefs.ts';
 import { bondBetween } from './Bond.ts';
 import { support } from '../social/Persuasion.ts';
 import { handsEmptyForSwimming } from '../core/Swimming.ts';
+import { findDraftPen, claimDraftTeam, hasSeedContainer } from '../systems/Draft.ts';
 
 export interface BrainContext {
   world: World;
@@ -4342,6 +4343,11 @@ export class Brain {
           if (action === 'store') {
             person.targetItemId = found.storeItemId;
             person.targetItemCount = found.storeItemCount;
+          }
+          if (action === 'sow' && person.inventory.has('iron_plough') && hasSeedContainer(person) && techPower(person, 'ploughshare') > 0) {
+            person.targetItemId = 'iron_plough';
+            const pen = findDraftPen(person, ctx.buildingHash, ctx.peopleById, ctx.buildingsById);
+            if (!pen || !claimDraftTeam(person, pen, ctx.peopleById, ctx.buildingsById)) person.targetItemId = null;
           }
         }
         break;

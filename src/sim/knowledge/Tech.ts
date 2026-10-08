@@ -193,6 +193,8 @@ export const TECHS = [
   'carburising',
   // M15 phase 40e: common iron tools read the same work paths as bronze.
   'iron_tools',
+  // M15 phase 40f: a plough's crop gain is paid at sowing and stored on the crop.
+  'ploughshare',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -2381,6 +2383,25 @@ export const TECH: Record<Tech, TechDef> = {
     description:
       'Carbon from charcoal hardens wrought iron into steel, which holds the sharpest edge.',
   },
+  // M15 phase 40f: the iron share is drawn by a leased pair from a live nearby pen.
+  ploughshare: {
+    id: 'ploughshare', label: 'Ploughshare', domain: 'plants', web: 'field',
+    age: 'iron', firstKnown: 'about 1200 BC',
+    kind: 'device',
+    requires: ['iron_tools', 'farming', 'herding'], difficulty: 0.72, skill: 'farm',
+    prototype: { wrought_iron: 1, sticks: 2 }, maxRefinement: 1,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'iron_tools' }, { kind: 'knows', tech: 'farming' },
+                { kind: 'knows', tech: 'herding' }, { kind: 'holding', item: 'wrought_iron' },
+                { kind: 'doing', action: 'sow' }],
+        weight: 1.0, story: 'fixed a shaped iron share to timber and drew it through the field with a pair from the pen' },
+      { needs: [{ kind: 'knows', tech: 'iron_tools' }, { kind: 'knows', tech: 'farming' },
+                { kind: 'knows', tech: 'herding' }, { kind: 'holding', item: 'sticks' },
+                { kind: 'doing', action: 'sow' }],
+        weight: 0.6, story: 'saw that the soil opened faster when a team pulled the iron blade' },
+    ],
+    description: 'An iron share, timber handles and a nearby pair from a live pen turn a sowing into a deeper furrow and a larger crop.',
+  },
   // M15 phase 40e (M8.4). A wrought-iron tool for each ordinary trade: axe,
   // adze, sickle and spade. The readers are shared with their bronze peers.
   iron_tools: {
@@ -2809,6 +2830,10 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   iron_tools: {
     summary: 'Wrought-iron tools speed felling, building and reaping; the spade digs six times as fast as a stick.',
     site: 'Tech.axeFactor (AXE_TOOLS), buildFactor, reapFactor and Earth.digTool (DIG_TOOLS); RECIPES.iron_*',
+  },
+  ploughshare: {
+    summary: 'An iron plough pulled by two available heads from a nearby pen improves the harvest from that sowing.',
+    site: 'RECIPES.iron_plough; ActionSystem.doSow leases a live team and Crop.ploughYieldFactor persists through harvest',
   },
   trade: {
     summary: 'A fairer bargain: what changes hands is weighed by what it is worth, not just by feel.',

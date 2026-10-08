@@ -59,7 +59,7 @@ const SIZE_CLASSES: readonly SizeClass[] = ['infant', 'child', 'adolescent', 'ad
 export type HairVariant = 'dark' | 'grey' | 'balding' | 'bald';
 const HAIR_VARIANTS: readonly HairVariant[] = ['dark', 'grey', 'balding', 'bald'];
 
-export type HeldItemKind = 'spear' | 'bow' | 'atlatl' | 'sling' | 'bone_point' | 'copper_dagger' | 'bronze_sword' | 'handaxe' | 'net' | 'basket' | 'antler_pick' | 'spade' | 'bronze_spade' | 'iron_spade' | 'digging_stick';
+export type HeldItemKind = 'spear' | 'bow' | 'atlatl' | 'sling' | 'bone_point' | 'copper_dagger' | 'bronze_sword' | 'handaxe' | 'net' | 'basket' | 'antler_pick' | 'spade' | 'bronze_spade' | 'iron_spade' | 'iron_plough' | 'digging_stick';
 /**
  * What shows in the hand when more than one thing is carried, most
  * conspicuous first. A hunter carrying both a bow and a basket reads as
@@ -165,6 +165,7 @@ export function hasBeardOf(person: Person): boolean {
 export function heldItemFor(person: Person, autoEquipTools = false): HeldItemKind | null {
   // A worker holding both a spear and a spade must show the tool doing the
   // work. Ask the executor's selector so refinements choose the same tool.
+  if (person.action === 'sow' && person.targetItemId === 'iron_plough') return 'iron_plough';
   if (person.action === 'dig' || person.action === 'dig_mud') {
     const tool = digTool(person);
     if (tool?.item === 'sticks') return 'digging_stick';
@@ -344,6 +345,19 @@ function paintHeld(ctx: CanvasRenderingContext2D, kind: HeldItemKind): void {
   ctx.lineCap = 'round';
 
   switch (kind) {
+    case 'iron_plough':
+      ctx.strokeStyle = '#7d898d';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(cx - 8, cy - 19); ctx.lineTo(cx + 1, cy + 9);
+      ctx.lineTo(cx + 13, cy + 12);
+      ctx.stroke();
+      ctx.fillStyle = '#7d898d';
+      ctx.beginPath();
+      ctx.moveTo(cx + 8, cy + 9); ctx.lineTo(cx + 18, cy + 12);
+      ctx.lineTo(cx + 13, cy + 22); ctx.lineTo(cx + 4, cy + 16);
+      ctx.closePath(); ctx.fill();
+      break;
     case 'antler_pick':
     case 'bronze_spade':
     case 'iron_spade':
@@ -369,8 +383,7 @@ function paintHeld(ctx: CanvasRenderingContext2D, kind: HeldItemKind): void {
       }
       ctx.closePath();
       ctx.fill();
-      break;
-    case 'digging_stick':
+      break;    case 'digging_stick':
       ctx.strokeStyle = '#86633c';
       ctx.lineWidth = 2.4;
       ctx.beginPath();

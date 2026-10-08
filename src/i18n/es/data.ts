@@ -310,5 +310,6 @@ export const ES_DATA: Record<string, string> = {
   "Iron adze": "Azuela de hierro",
   "Iron sickle": "Hoz de hierro",
   "Iron spade": "Pala de hierro",
+  "Iron plough": "Arado de hierro",
 
 };

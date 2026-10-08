@@ -42,6 +42,7 @@ import { setupIronBloom } from './ironFixture.ts';
 import { setupIronForging } from './ironForgingFixture.ts';
 import { setupIronCarburising } from './ironCarburisingFixture.ts';
 import { setupIronTools } from './ironToolsFixture.ts';
+import { setupIronPlough } from './ironPloughFixture.ts';
 import { createFrontier, setupFrontier, observeFrontier, createFrontierCohort, observeFrontierCohort } from './frontierFixture.ts';
 
 /**
@@ -285,6 +286,16 @@ export const SCENARIOS: Record<string, Scenario> = {
     steps: 300,
     setup: setupIronTools,
     checks: ['iron-tools-cut-the-day'],
+  },
+  ploughmen: {
+    name: 'ploughmen',
+    description: 'One supplied iron-plough recipe and explicit draft-team sowing through harvest; tests the mechanism, not farm economics.',
+    config: { seed: 'ploughmen', world: { width: 48, height: 48 },
+      population: { bands: 1, peoplePerBand: 6,
+        startingTech: withPrerequisites(['iron_tools', 'farming', 'herding']) } },
+    steps: 8000,
+    setup: setupIronPlough,
+    checks: ['oxen-turn-the-field'],
   },
   smiths: {
     name: 'smiths',
@@ -3678,6 +3689,24 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
     add('iron-tools-cut-the-day', allIronTools,
       ironToolResults.map(result => result.id + ': ' + result.made + '/' + result.opportunity + ' crafted, reader ' + result.works).join('; ') +
       '; iron_spade: ' + spades + '/' + spadeOpportunity + ' crafted, dig power ' + (ironSpade?.power ?? 0) + ' (need 6)');
+  }
+  // A charged recipe and an explicitly ploughed harvest keep ordinary farming
+  // from passing by silently ignoring the requested tool.
+  const ploughRecipeOpportunity = tel.iron_plough_fixture_recipe_charges ?? 0;
+  const ploughRecipeMade = tel.crafted_iron_plough ?? 0;
+  const ploughSowOpportunity = tel.iron_plough_fixture_sow_orders ?? 0;
+  const ploughSown = tel.field_ploughed ?? 0;
+  const ploughReaped = tel.plough_grain_harvested ?? 0;
+  const ploughNodePresent = Object.prototype.hasOwnProperty.call(TECH, 'ploughshare');
+  const ploughRecipePresent = RECIPES.iron_plough !== undefined;
+  if (ploughRecipeOpportunity === 0 && ploughRecipeMade === 0 && ploughSowOpportunity === 0 && ploughSown === 0) {
+    skip('oxen-turn-the-field', 'no supplied iron-plough recipe or sow order in this run');
+  } else {
+    add('oxen-turn-the-field', ploughNodePresent && ploughRecipePresent && ploughRecipeMade > 0 &&
+      ploughSowOpportunity > 0 && ploughSown > 0 && ploughReaped > 0,
+      'node ' + ploughNodePresent + ', recipe ' + ploughRecipePresent + ', ' +
+      ploughRecipeMade + '/' + ploughRecipeOpportunity + ' iron ploughs made; ' + ploughSown + '/' +
+      ploughSowOpportunity + ' explicit plough sowings, ' + ploughReaped + ' grain harvested by the plough');
   }
   // M15 phase 37. The metal tier is a chain of six steps done by whoever holds
   // the ingredients (seam, deadwood, pit, charcoal, furnace, mould), and the

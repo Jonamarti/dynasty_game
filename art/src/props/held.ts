@@ -13,7 +13,7 @@ import { CORD, STONE, STONE_D, WOOD, WOOD_D } from './items.ts';
 export const HAND: readonly [number, number] = [48, 48];
 
 /** What the sim can put in a hand today, plus the torch phase 12 adds. */
-export const HELD_KINDS = ['spear', 'bow', 'atlatl', 'sling', 'bone_point', 'copper_dagger', 'bronze_sword', 'handaxe', 'net', 'basket', 'torch', 'antler_pick', 'spade', 'bronze_spade', 'iron_spade', 'digging_stick'] as const;
+export const HELD_KINDS = ['spear', 'bow', 'atlatl', 'sling', 'bone_point', 'copper_dagger', 'bronze_sword', 'handaxe', 'net', 'basket', 'torch', 'antler_pick', 'spade', 'bronze_spade', 'iron_spade', 'iron_plough', 'digging_stick'] as const;
 export type HeldKind = (typeof HELD_KINDS)[number];
 
 /** `side` is true when seen from the east or west. */
@@ -33,6 +33,11 @@ export function heldSvg(kind: HeldKind, side: boolean): string {
       return limb([[x, y - 22], [x, y + 6]], 2.2, WOOD, WOOD_D)
         + shape(`M${x - 5},${y + 3}L${x + 5},${y + 3}L${x + 6},${y + 14}Q${x},${y + 23} ${x - 6},${y + 14}Z`, '#b08a3e', '#5a4216')
         + stroke(`M${x - 3},${y + 6}L${x + 3},${y + 6}`, '#dcc072', 0.9);
+    case 'iron_plough':
+      return limb([[x - 7, y - 20], [x + 1, y + 12]], 2.7, WOOD, WOOD_D)
+        + limb([[x + 1, y + 12], [x + 13, y + 15]], 2.7, WOOD, WOOD_D)
+        + shape(poly([[x + 7, y + 10], [x + 17, y + 12], [x + 12, y + 22], [x + 4, y + 17]]), '#7d898d', '#293237')
+        + stroke(`M${x + 6},${y + 16}L${x + 14},${y + 18}`, '#dce5e7', 0.9);
     case 'iron_spade':
       return limb([[x, y - 22], [x, y + 6]], 2.2, WOOD, WOOD_D)
         + shape(`M${x - 5},${y + 3}L${x + 5},${y + 3}L${x + 6},${y + 14}Q${x},${y + 23} ${x - 6},${y + 14}Z`, '#7d898d', '#293237')
@@ -147,4 +152,3 @@ export function babyLyingLayers(bed: BabyBed, awake: boolean): { bed: string; bl
   }
   return { bed: under, blanket, skin, bedFront };
 }
-

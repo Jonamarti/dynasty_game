@@ -677,6 +677,19 @@ same crafting executor at `anvil`, a station containing a stone work surface
 and stone-headed hammer, to turn one supplied bloom into `wrought_iron`.
 The station definition participates in the ordinary band construction planner;
 craft progress remains banked on the crafter through urgent interruptions.
-No new RNG stream or LOD integration is introduced. Iron tools and steel
-remain later nodes; the short `forgers` gate measures an ordered charge only.
+No new RNG stream or LOD integration is introduced. The short `forgers` gate measures an ordered charge only.
 See [m15_phase40_iron.md](m15_phase40_iron.md).
+`carburising` converts wrought iron and charcoal into steel at the anvil;
+its sword reaches the same weapon reader used by hunting and combat.
+`iron_tools` provides axe, adze, sickle and spade through the existing
+felling, construction, reaping and earthwork readers. These readers require
+both the physical tool and knowledge and choose the best tool without stacking.
+
+`ploughshare` belongs to the Field web. An iron plough and a nearby same-band
+pen with two unleased live heads enable an explicit plough-and-sow mode of
+`sow`. Draft leases use reciprocal person/pen IDs and are derived from the
+active action; cancelled or dead owners cannot strand a team. Culling through
+the action and the direct store API preserves the leased pair. The paid
+ploughing factor belongs to the crop until harvest, rather than to the farmer
+or a pen that might disappear after sowing. Work still honours the existing
+sowing interruption path. No additional RNG forks or animal species are used.

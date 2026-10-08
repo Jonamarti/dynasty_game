@@ -122,6 +122,11 @@ export const ITEMS: ItemArt[] = [
     limb([[32, 6], [32, 39]], 3.4, WOOD, WOOD_D)
     + shape('M24,36L40,36L42,53Q32,66 22,53Z', '#7d898d', '#293237')
     + stroke('M30,39L28,53M34,39L36,53', '#dce5e7', 1), 20)],
+  ['iron_plough', 'Arado de hierro', 'ploughshare', () => rot(
+    limb([[18, 10], [32, 48], [50, 52]], 3.2, WOOD, WOOD_D)
+    + shape(poly([[44, 44], [56, 48], [50, 58], [40, 52]]), '#7d898d', '#293237')
+    + stroke('M42,49L52,53', '#dce5e7', 1.2)
+    + stroke('M20,14L14,8M30,46L24,54', CORD, 1.5), 18)],
   ['bronze_sword', 'Espada de bronce', 'bronze_arms', () => rot(
     shape(poly([[32, 2], [37.5, 40], [26.5, 40]]), '#b08a3e', '#5a4216')
     + stroke('M32,8L32,36', '#dcc072', 1.2)

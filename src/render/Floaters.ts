@@ -414,6 +414,12 @@ export const STOP_REASONS: Record<string, string> = {
   // refusal-without-a-reason defect the owner has already reported once.
   no_field: 'the field was gone',
   no_seed: 'they had no seed to sow',
+  no_draft_team: 'there was no available pair of draft animals nearby',
+  no_iron_plough: 'they had no iron plough',
+  no_plough_knowledge: 'they did not know how to use an iron plough',
+  no_seed_container: 'they had no food container for seed',
+  draft_team_busy: 'the nearby draft team was already working',
+  draft_team_lost: 'the draft team was no longer available',
   already_sown: 'it was sown already',
   wrong_season: 'nothing would come up in this cold',
   ground_spent: 'the ground there is tired',

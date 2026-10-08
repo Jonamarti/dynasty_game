@@ -1779,6 +1779,7 @@ function openRadial(actor: Person, target: ActionTarget, screenX: number, screen
     stationFor: stationId => nearestStation(subject, stationId),
     builtOn: (x, y) => sim.buildingAt(x, y) !== null,
     plantRefusal: (x, y) => sim.plantOrderRefusal(subject, x, y),
+    ploughRefusal: (person, field) => sim.ploughOrderRefusal(person, field),
     feastVenue: sim.feastVenueFor(subject),
     propertyUse: building => sim.mayUseBuilding(subject, building),
     explainProperty: use => explainPropertyUse(actor, use, sim.relationships),
@@ -1900,6 +1901,7 @@ function issue(
     animalId: target.animal?.id,
     corpseId: target.corpse?.id,
     recipeId: option.recipeId,
+    itemId: option.itemId,
     inscriptionId: target.inscription?.id,
     // Which idea a `ponder` or `discuss` is about. Carried on the option
     // rather than worked out again by the action, which is what made the

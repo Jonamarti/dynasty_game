@@ -1,3 +1,5 @@
+**2026-10-08: fase 40f (`ploughshare`) entregada.** Arado físico, equipo de tiro reservado y rendimiento guardado en el cultivo; siembra manual conservada. Falta registrar la puerta corta de extracción `bog_iron` para cerrar la cobertura de los seis nodos. Calibración/cohortes diferidas a M16. [Detalle](m15_phase40_iron.md).
+
 **2026-10-08: fase 40e (`iron_tools`) entregada.** Cuatro herramientas conectadas a los trabajos existentes; pala de hierro a 6×. Sigue el arado de reja `ploughshare` (40f). Cohortes diferidas y regresión de difusión documentada para M16. [Detalle](m15_phase40_iron.md).
 
 **2026-10-08: fase 40d (`carburising`) entregada.** Acero y espada con filo real en combate y caza. Siguen `iron_tools` (40e) y el arado `ploughshare` (40f); las cohortes económicas continúan diferidas. [Detalle](m15_phase40_iron.md).

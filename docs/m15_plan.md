@@ -3779,6 +3779,8 @@ alcanzable. **Checks:** uno por nodo, cada uno contra el build sin el nodo.
 
 **Avance del 2026-10-08 (40e, `iron_tools`).** El nodo requiere `forging`; hacha, azuela, hoz y pala de hierro se fabrican en el yunque y trabajan por los lectores compartidos de tala, construcción, cosecha y excavación. La pala da 6× frente al palo 1× con dominio completo; saber el nodo sin herramienta no da beneficio. Checks con cargas y órdenes reales, controles sin receta y capturas en `artifacts/screenshots/m15-phase40-iron-tools-2026-10-08/`. Coeficientes de diseño; cohortes diferidas, sin afirmar mejora económica. Sigue `ploughshare`. [Detalle](m15_phase40_iron.md).
 
+**Avance del 2026-10-08 (40f, `ploughshare`).** El nodo de Campo habilita un arado físico, forjado en el yunque. Arar y sembrar necesita técnica, herramienta, cuatro semillas con espacio para llevarlas y una pareja disponible del corral propio a un máximo de 12 tiles. Un equipo solo trabaja para un agricultor; las retiradas de ganado respetan sus dos cabezas reservadas. El cultivo guarda factor 1,2 al sembrar con arado y lo cobra en la cosecha, incluso si después desaparece el corral. La siembra manual no recibe ese factor. Tiro representado por el ganado abstracto ya existente del corral, sin nueva especie ni RNG. Costes y factor son supuestos, con cohortes diferidas y sin afirmar excedente económico medido. Capturas en `artifacts/screenshots/m15-phase40-ploughshare-2026-10-08/`. [Detalle](m15_phase40_iron.md).
+
 ## Fase 41 — Calibración final y cierre de M15
 
 - La segunda pasada completa del protocolo de la fase 10 en `generations`,

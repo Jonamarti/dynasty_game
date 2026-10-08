@@ -676,6 +676,11 @@ export const RECIPES: Record<string, RecipeDef> = {
     id: 'iron_spade', label: 'Iron spade', icon: '\u{2660}', tech: 'iron_tools', skill: 'smith',
     workTicks: 130, ingredients: { wrought_iron: 2 }, output: { iron_spade: 1 }, station: 'anvil', keep: 1,
   },
+  // A heavy share and timber handles: a physical plough, but its draft team comes from a nearby live pen.
+  iron_plough: {
+    id: 'iron_plough', label: 'Iron plough', icon: '\u{1F6E0}', tech: 'ploughshare', skill: 'smith',
+    workTicks: 120, ingredients: { wrought_iron: 1, sticks: 2 }, output: { iron_plough: 1 }, station: 'anvil', keep: 1,
+  },
   // `bronze_arms`, at the furnace. Three of bronze for the sword and two for the
   // helm; `keep: 1`, and not more, for the reason the tools give.
   bronze_sword: {

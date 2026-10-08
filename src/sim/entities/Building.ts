@@ -804,6 +804,8 @@ export class Building {
   haulTrips = 0;
   /** Goods kept here once finished. */
   readonly store = new Inventory();
+  /** Person holding the live draft-team lease; validity is derived, not trusted. */
+  draftUserId: number | null = null;
 
   /** Ticks of work done. Complete when it reaches `def.workTicks`. */
   progress = 0;

@@ -1,3 +1,14 @@
+## M15 fase 40f: alcance del arado (2026-10-08)
+
+El tiro usa las cabezas abstractas del corral existente, no una nueva especie
+individual de buey: todavía no hay domesticación/sexo/edad ni animación propia
+de una pareja animal vinculada al arado. La pareja se reserva y se libera sin
+consumir ganado; el arado físico sí debe fabricarse y la siembra paga trabajo
+y semilla. El factor de cosecha 1,2, radio de 12 tiles y costes son supuestos
+de diseño, sin medición de excedente ni de adopción autónoma a largo plazo.
+Las cargas cortas prueban las operaciones suministradas; la calibración y las
+cohortes siguen diferidas a M16 por instrucción del propietario.
+
 ## M15 fase 40d: difusión entre pueblos vuelve a fallar (2026-10-08)
 
 La base 40c (`b39aecf`) pasaba la suite completa; al añadir `carburising`,
@@ -10,6 +21,8 @@ unitarios de acero y la puerta ordenada `carburisers` pasan.
 
 En 40e la misma aserción vuelve a pasar al ampliar el catálogo con herramientas;
 la sensibilidad queda registrada para M16, sin cambio de tasas ni umbral.
+En 40f vuelve a fallar al ampliar el catálogo con `ploughshare`; el resultado
+global mide 0,81 frente a <0,6. No se cambia el umbral; queda en M16.
 
 ## M15 fase 40c: alcance de la forja (2026-10-08)
 

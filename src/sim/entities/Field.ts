@@ -122,6 +122,8 @@ export class Crop {
   /** Harvests taken, and harvests lost standing. Both are worth showing. */
   harvests = 0;
   lost = 0;
+  /** Paid once at sowing, so killing the draft pen cannot erase crop work. */
+  ploughYieldFactor = 1;
 
   get isFallow(): boolean {
     return this.stage === 'fallow';
@@ -131,11 +133,12 @@ export class Crop {
     return this.stage === 'ripe';
   }
 
-  sow(day: number): void {
+  sow(day: number, yieldFactor = 1): void {
     this.stage = 'growing';
     this.growth = 0;
     this.sownDay = day;
     this.ripeDay = -1;
+    this.ploughYieldFactor = yieldFactor;
   }
 
   /**
@@ -161,6 +164,7 @@ export class Crop {
       this.stage = 'fallow';
       this.growth = 0;
       this.lost++;
+      this.ploughYieldFactor = 1;
       return true;
     }
     return false;
@@ -180,6 +184,7 @@ export class Crop {
     this.growth = 0;
     this.sownDay = -1;
     this.ripeDay = -1;
+    this.ploughYieldFactor = 1;
   }
 
   /** Taken off. The plot goes back to bare ground. */
@@ -190,6 +195,7 @@ export class Crop {
     this.harvests++;
     this.sownDay = -1;
     this.ripeDay = -1;
+    this.ploughYieldFactor = 1;
   }
 
   /** How close to the harvest, 0 to 1, for the bar on the map. */

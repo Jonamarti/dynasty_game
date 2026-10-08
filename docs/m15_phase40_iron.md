@@ -1,6 +1,8 @@
-# M15 fase 40a — `bog_iron`
+# M15 fase 40 — El hierro
 
-Primera entrega de la fase 40 (M8.4); la fase sigue abierta. Añade `iron_ore`, su
+## 40a — `bog_iron` (entrega inicial)
+
+Primera entrega de la fase 40 (M8.4), descrita aquí en su alcance original. Añade `iron_ore`, su
 recolección y la tecnología que la habilita. No incluye `bloomery`, `forging`,
 `carburising`, `iron_tools`, `ploughshare`, herramientas ni recetas posteriores.
 
@@ -146,3 +148,32 @@ Los negativos detectan las recetas ausentes. La UI española se captura en
 `artifacts/screenshots/m15-phase40-iron-tools-2026-10-08/`, incluyendo una
 excavación real. No se afirma mejora de la economía; las cohortes continúan
 diferidas. Solo resta `ploughshare` para implementar los seis nodos de fase 40.
+
+## 40f — `ploughshare`, arado y equipo de tiro
+
+El arado es un objeto físico de dos manos (`iron_plough`) fabricado en el
+yunque con un hierro forjado y dos palos, 120 ticks base de `smith` y stock
+objetivo 1. `ploughshare` pertenece a Campo y
+requiere `iron_tools`, `farming` y `herding`. La siembra manual sigue siendo
+posible; la orden de arar y sembrar exige herramienta, técnica, semilla y
+una pareja disponible en un corral terminado, sin ruina, de la misma banda.
+
+El ganado del juego continúa usando la abstracción existente del corral:
+las cabezas vivas son su stock `meat`. Dos cabezas forman un equipo de tiro,
+reservado durante la siembra. No se añade una especie salvaje ni un stream
+de RNG. La búsqueda pasa por el hash de edificios, con radio de 12 tiles.
+Cada corral sirve a un solo agricultor a la vez; tomar ganado, tanto por
+acción como por la API del panel, respeta esa reserva. Una orden cancelada,
+interrumpida o terminada libera el equipo; un dueño muerto deja de reservarlo.
+Las reservas se identifican por IDs, sin referencias cruzadas al serializar.
+
+El trabajo pagado queda en el cultivo: sembrar con arado guarda factor 1,2
+para la cosecha, aunque el corral se pierda después. Una nueva siembra manual,
+cosecha, pérdida o pisoteo vuelve al factor 1. Saber el nodo sin arado y tiro
+no cambia el rendimiento. El tiempo, coste, radio, dos cabezas y factor 1,2
+son supuestos de diseño; no se afirma excedente económico medido. La adopción
+por AI usa la misma siembra existente, sin ajustar pesos de acciones.
+
+Las negativas se traducen y aparecen en la orden y el menú contextual.
+Capturas españolas del nuevo nodo y de la orden en
+`artifacts/screenshots/m15-phase40-ploughshare-2026-10-08/`.
