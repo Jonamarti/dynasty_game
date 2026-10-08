@@ -952,7 +952,20 @@ export class Brain {
     // and the technologies that turn what is underfoot into food depend on it
     // being so.
     const desperateForFood = pressedByNeed(person, ctx.needs.workLimits, 'hunger');
-    const isFoodNode = (n: ResourceNode) => !n.depleted && this.nodeWorth(person, n, ctx) > 0;
+    // `nodeWorth` depends on this thinker and the harvest item, not the node.
+    // A camp can have dozens of berry bushes, and each of the food/protein
+    // searches used to repeat the same craving and belief work for every one.
+    // This map lives only for this score call: neither a later need change nor
+    // another person can reuse a stale appetite.
+    const worthByItem = new Map<string, number>();
+    const foodWorth = (node: ResourceNode): number => {
+      const itemId = node.itemId;
+      if (worthByItem.has(itemId)) return worthByItem.get(itemId)!;
+      const worth = this.nodeWorth(person, node, ctx);
+      worthByItem.set(itemId, worth);
+      return worth;
+    };
+    const isFoodNode = (n: ResourceNode) => !n.depleted && foodWorth(n) > 0;
     const inReachFood = this.findNode(person, ctx, isFoodNode, !desperateForFood, anchor, reach);
     // If the home-distance filter leaves somebody with no edible destination,
     // let them make the longer food walk before starvation is imminent. The
@@ -963,7 +976,7 @@ export class Brain {
       ? this.findNode(person, ctx, isFoodNode, false, anchor, reach) : null);
     const strongProteinCraving = cravings(person, ctx.motivation.cravings).protein > 0.5;
     const proteinFood = (n: ResourceNode) =>
-      !n.depleted && this.nodeWorth(person, n, ctx) > 0 && this.nodeProteinFraction(person, n) >= 0.3;
+      !n.depleted && foodWorth(n) > 0 && this.nodeProteinFraction(person, n) >= 0.3;
     const reachableProtein = strongProteinCraving
       ? this.findNode(person, ctx, proteinFood, true, anchor, reach) : null;
     const proteinInSearch = strongProteinCraving && !reachableProtein

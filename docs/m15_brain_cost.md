@@ -153,3 +153,18 @@ y control negativo detectado. Evaluaciones de `nodeWorth` por paso: 179,8 →
 (30) y 14,747 → 15,243 ms (300); la suite simultánea contamina el tiempo, por
 lo que no se afirma mejora global con esta muestra. Evidencia en
 `artifacts/verification/m15-brain-cost-20261008/{baseline,a1}*`.
+
+### A2: valor de alimento por pensamiento
+
+`score` comparte un `Map<itemId, number>` local entre comida ordinaria y
+proteína; memoriza también cero. Desaparece al terminar la llamada, de modo
+que no añade estado ni puede contaminar a otra persona o al siguiente turno.
+Prueba focal y TypeScript pasan; el control sin caché falla con tres cálculos
+en lugar de uno. También se comprueban otra persona, ceros y un pensamiento
+posterior tras cambiar antojo/creencia. Hash completo sin exclusiones idéntico
+a referencia a 30 y 300; instrumentación igual al control y negativo detectado.
+`nodeWorth` por paso: 55,0 → 14,4 (30), 482,3 → 168,1 (300). Mínimos de tres
+controles: 0,937 → 0,930 y 15,243 → 14,538 ms/paso, con suite simultánea;
+no bastan para concluir el tiempo global. Evidencia `a2*` en el directorio
+anterior. Suite completa de referencia: 216 archivos, 1.641 pasan, una omisión
+y un fallo heredado de `people-knowledge` (0,81 frente a <0,6); no está verde.

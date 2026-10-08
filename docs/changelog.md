@@ -13694,3 +13694,18 @@ El tiempo global bajo una suite concurrente no permite afirmar una mejora.
 Perfil: `artifacts/verification/m15-brain-cost-20261008/`; avance en
 `docs/m15_brain_cost.md`. No cambia la UI. La comprobación inicial conserva los
 fallos heredados de dieta y rendimiento; cohortes diferidas por M15.
+
+## 2026-10-08 — M15 cerebro A2: una valoración por alimento y pensamiento
+
+El filtro de comida y el de proteína comparten el valor de cada `itemId` en
+un caché local a `Brain.score`: las creencias y los antojos de una persona
+no cambian entre sus búsquedas. Se conserva el cero y nunca se reutiliza al
+pensar de nuevo ni entre personas. El test focal prueba esas cuatro condiciones
+y falla sin el arreglo; TypeScript pasa. Hash completo, sin excluir campos,
+idéntico al original con 30/300 y negativo detectado. `nodeWorth` pasa de
+55,0/482,3 a 14,4/168,1 llamadas por paso. Tiempos y hashes en
+`artifacts/verification/m15-brain-cost-20261008/a2*`; el tiempo global coincide
+con carga de la suite y se trata como observación. La suite completa de
+referencia ejecutó 216 archivos: 1.641 pasan, uno omitido y el fallo heredado
+de difusión de `people-knowledge` (0,81, límite <0,6). No cambia la UI;
+cohortes diferidas por M15.
