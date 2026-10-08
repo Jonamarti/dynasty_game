@@ -29,7 +29,7 @@ import { fightsBack, HEAVY_ACTIONS, trimesterOf } from '../src/sim/entities/Preg
 import { isTrap, isHeap, isHerd, isWell } from '../src/sim/entities/Building.ts';
 import { Building, BUILDINGS } from '../src/sim/entities/Building.ts';
 import { RECIPES } from '../src/sim/entities/Recipe.ts';
-import { isFoodKind, ResourceNode, type ResourceKind } from '../src/sim/entities/ResourceNode.ts';
+import { isFoodKind, ResourceNode, RESOURCE_DEFS, type ResourceKind } from '../src/sim/entities/ResourceNode.ts';
 import { PathStatus } from '../src/sim/core/Pathfinder.ts';
 import { TERRITORY_RADIUS } from '../src/sim/systems/BandSystem.ts';
 import { isHeld, isBound } from '../src/sim/social/Defence.ts';
@@ -39,6 +39,7 @@ import { FIRE_AVOID } from '../src/sim/systems/WildlifeSystem.ts';
 import { auditRegions, auditSwimRegions } from './regions.ts';
 import { setupFoodNews, setupConflicts } from './checkFixtures.ts';
 import { setupIronBloom } from './ironFixture.ts';
+import { setupIronMining } from './ironMiningFixture.ts';
 import { setupIronForging } from './ironForgingFixture.ts';
 import { setupIronCarburising } from './ironCarburisingFixture.ts';
 import { setupIronTools } from './ironToolsFixture.ts';
@@ -267,6 +268,15 @@ export const SCENARIOS: Record<string, Scenario> = {
     steps: 300,
     setup: setupIronForging,
     checks: ['iron-bloom-becomes-wrought-iron'],
+  },
+  ironminers: {
+    name: 'ironminers',
+    description: 'One supplied mining order against a local iron ore node; tests extraction, not autonomous supply.',
+    config: { seed: 'ironminers', world: { width: 48, height: 48 },
+      population: { bands: 1, peoplePerBand: 6, startingTech: withPrerequisites(['mining']) } },
+    steps: 200,
+    setup: setupIronMining,
+    checks: ['iron-ore-is-mined'],
   },
   carburisers: {
     name: 'carburisers',
@@ -3630,6 +3640,26 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
       ironOpportunity + ' supplied charges, ' + ironBlooms + ' completed iron smelts');
   }
 
+  // M15 phase 40a: supplied mining keeps the iron-ore node observable,
+  // and this fixture counter makes a missing node or resource row fail instead
+  // of disappearing into an inapplicable scenario.
+  const bogIronOpportunity = tel.bog_iron_fixture_mining_opportunities ?? 0;
+  const bogIronOrders = tel.bog_iron_fixture_mining_orders ?? 0;
+  const bogIronHarvested = tel.harvest_iron_ore ?? 0;
+  const bogIronFixtureId = tel.bog_iron_fixture_node_id ?? 0;
+  const bogIronFixtureNode = bogIronFixtureId > 0 ? sim.nodesById.get(bogIronFixtureId) : undefined;
+  const bogIronNodeWorked = bogIronFixtureNode?.kind === 'iron_ore' && bogIronFixtureNode.amount < 12;
+  const bogIronTechPresent = Object.prototype.hasOwnProperty.call(TECH, 'bog_iron');
+  const bogIronResourcePresent = RESOURCE_DEFS.iron_ore !== undefined;
+  if (bogIronOpportunity === 0) {
+    skip('iron-ore-is-mined', 'no supplied iron mining opportunity in this run');
+  } else {
+    add('iron-ore-is-mined', bogIronNodeWorked && bogIronTechPresent &&
+      bogIronResourcePresent && bogIronOrders > 0 && bogIronHarvested > 0,
+      'fixture node worked ' + !!bogIronNodeWorked + ', bog_iron tech ' + bogIronTechPresent +
+      ', iron_ore resource ' + bogIronResourcePresent + ', ' + bogIronOrders + '/' +
+      bogIronOpportunity + ' supplied mining orders, ' + bogIronHarvested + ' iron ore harvested');
+  }
   // A supplied bloom and real order expose a missing forging recipe on the old build.
   const forgingOpportunity = tel.iron_forging_fixture_charges ?? 0;
   const wroughtIron = tel.crafted_forge_iron ?? 0;

@@ -1,3 +1,5 @@
+**2026-10-08: fase 40 cerrada funcionalmente.** Seis nodos, recetas/herramientas/arado y un check corto por nodo. Sigue la calibración final de M15; cohortes y matriz diferidas según instrucciones del propietario. Difusión de pueblos y deuda económica en [M16](m16_notes.md), sin cambiar umbrales. [Resultados y límites](m15_phase40_iron.md).
+
 **2026-10-08: fase 40f (`ploughshare`) entregada.** Arado físico, equipo de tiro reservado y rendimiento guardado en el cultivo; siembra manual conservada. Falta registrar la puerta corta de extracción `bog_iron` para cerrar la cobertura de los seis nodos. Calibración/cohortes diferidas a M16. [Detalle](m15_phase40_iron.md).
 
 **2026-10-08: fase 40e (`iron_tools`) entregada.** Cuatro herramientas conectadas a los trabajos existentes; pala de hierro a 6×. Sigue el arado de reja `ploughshare` (40f). Cohortes diferidas y regresión de difusión documentada para M16. [Detalle](m15_phase40_iron.md).

@@ -1,5 +1,10 @@
 # M15 fase 40 — El hierro
 
+**Estado del 2026-10-08:** seis nodos y sus mecanismos implementados; seis
+checks cortos con oportunidades suministradas. Los apartados siguientes
+conservan el alcance y resultados de cada entrega. Calibración económica y
+sensibilidad de difusión pendientes en [M16](m16_notes.md).
+
 ## 40a — `bog_iron` (entrega inicial)
 
 Primera entrega de la fase 40 (M8.4), descrita aquí en su alcance original. Añade `iron_ore`, su
@@ -177,3 +182,43 @@ por AI usa la misma siembra existente, sin ajustar pesos de acciones.
 Las negativas se traducen y aparecen en la orden y el menú contextual.
 Capturas españolas del nuevo nodo y de la orden en
 `artifacts/screenshots/m15-phase40-ploughshare-2026-10-08/`.
+
+## Cierre de la fase 40 — cobertura de los seis nodos
+
+El check de extracción que faltaba en 40a es `iron-ore-is-mined`:
+`ironminers` suministra un nodo local de mineral y una orden real de recoger,
+con RNG propio del fixture, sin tocar generación ni streams del juego.
+Se observa el desgaste de ese nodo y el mineral cosechado. La oportunidad
+sigue siendo aplicable al quitar el nodo suministrado, la definición del
+recurso o `TECH.bog_iron`: los tres controles dan FAIL. El fixture no mide
+emplazamiento húmedo; la playa y el proxy geográfico siguen cubiertos por
+las pruebas originales de `metal.test.ts`, con sus limitaciones de datos.
+
+| Nodo | Escenario corto | Check |
+|---|---|---|
+| `bog_iron` | `ironminers` | `iron-ore-is-mined` |
+| `bloomery` | `ironsmiths` | `iron-ore-becomes-bloom` |
+| `forging` | `forgers` | `iron-bloom-becomes-wrought-iron` |
+| `carburising` | `carburisers` | `iron-is-carburised` |
+| `iron_tools` | `ironworkers` | `iron-tools-cut-the-day` |
+| `ploughshare` | `ploughmen` | `oxen-turn-the-field` |
+
+Seis puertas con una comprobación aplicable cada una; no demuestran la cadena
+autónoma desde mineral ni mejora económica. Las cohortes y matriz larga
+continúan diferidas por la instrucción de M15. No se cierra la calibración
+final de M15 ni se altera la fase 32 que trabaja otro agente.
+
+Verificación de cierre: TypeScript limpio; 10/10 pruebas focales del arado,
+4/4 controles de minería y 6/6 de traducciones. La suite global de 40f
+registró 202/204 archivos y 1.579 pruebas pasando, 1 omitida, con dos fallos:
+la clave española ausente se corrigió y su suite focal pasa; la difusión
+sigue en 0,81 frente a <0,6 y queda en M16 sin retocar tasas ni aserciones.
+El control de check del arado se añadió tras iniciar esa suite y está incluido
+en el 10/10 focal. No se presenta la suite global como verde.
+
+Navegador: la suite completa dio 114/115; la forja produjo hierro antes de
+perder el fixture por un reinicio del mundo, coincidiendo con cambios de
+comentarios/formato bajo Vite. Repetida con fuentes congeladas, forja pasa
+2/2. Las pruebas de acero, herramientas y arado pasan en la suite global.
+Se preservaron los sets históricos y se guardaron nuevos hitos por función.
+`sim:check` de un seed conserva dos fallos previos, dieta/rendimiento, 2/147.

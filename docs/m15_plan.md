@@ -3781,6 +3781,8 @@ alcanzable. **Checks:** uno por nodo, cada uno contra el build sin el nodo.
 
 **Avance del 2026-10-08 (40f, `ploughshare`).** El nodo de Campo habilita un arado físico, forjado en el yunque. Arar y sembrar necesita técnica, herramienta, cuatro semillas con espacio para llevarlas y una pareja disponible del corral propio a un máximo de 12 tiles. Un equipo solo trabaja para un agricultor; las retiradas de ganado respetan sus dos cabezas reservadas. El cultivo guarda factor 1,2 al sembrar con arado y lo cobra en la cosecha, incluso si después desaparece el corral. La siembra manual no recibe ese factor. Tiro representado por el ganado abstracto ya existente del corral, sin nueva especie ni RNG. Costes y factor son supuestos, con cohortes diferidas y sin afirmar excedente económico medido. Capturas en `artifacts/screenshots/m15-phase40-ploughshare-2026-10-08/`. [Detalle](m15_phase40_iron.md).
 
+**Cierre funcional del 2026-10-08 (fase 40).** Los seis nodos y sus lectores están entregados. `ironminers` añade la puerta corta que faltaba para `bog_iron`: extracción real de un nodo suministrado, con tres controles ausentes que fallan sin n/a. La tabla completa de checks está en [m15_phase40_iron.md](m15_phase40_iron.md). La suite no es globalmente verde: difusión 0,81 frente a <0,6, y los fallos de dieta/rendimiento previos del simcheck; quedan registrados en [M16](m16_notes.md), sin aflojar aserciones ni ejecutar cohortes/matriz larga. La calibración final de M15 continúa pendiente.
+
 ## Fase 41 — Calibración final y cierre de M15
 
 - La segunda pasada completa del protocolo de la fase 10 en `generations`,

@@ -1,3 +1,30 @@
+## 2026-10-08 — M15 fase 40: puerta de extracción y cierre funcional
+
+La extracción de hierro tenía pruebas de generación pero le faltaba una
+puerta de salud ejercitada con trabajo real. `ironminers` suministra un nodo
+local y ordena recoger: `iron-ore-is-mined` observa su desgaste y dos unidades
+de mineral. No afirma medir el emplazamiento húmedo. Cuatro pruebas pasan;
+quitar el nodo, la definición del recurso o `bog_iron` da FAIL aplicable.
+
+Quedan cerrados los seis nodos funcionales de la fase 40, con documentación,
+pruebas y commits por función. Los seis escenarios cortos de extracción,
+bloomery, forja, acero, herramientas y arado pasan su comprobación aplicable.
+TypeScript limpio. La suite global inicial de 40f registró 1.579 pruebas
+pasando, dos fallos y una omitida: la traducción ausente se corrigió y pasa
+6/6 focal; la difusión de conocimiento queda en 0,81 frente a <0,6 y se
+registra para M16. Las pruebas focales del arado pasan 10/10. No se declara
+verde la suite global.
+
+Navegador global: 114/115. La prueba de forja perdió su mundo tras fabricar,
+coincidiendo con cambios de fuentes bajo Vite; repetida sin cambios de fuentes
+pasa 2/2. Acero, herramientas y arado pasan en la suite global. Las capturas
+nuevas del último cambio de UI están en
+`artifacts/screenshots/m15-phase40-ploughshare-2026-10-08/`; se conservaron
+los hitos anteriores. El último `sim:check` conserva los dos fallos previos
+de dieta y rendimiento, 2/147. Cohortes y matriz pesada diferidas por la
+instrucción de M15: no se afirma mejora económica ni calibración final.
+
+
 ## 2026-10-08 — M15 fase 40f: arado, tiro reservado y cosecha
 
 `ploughshare` cierra el último nodo funcional del hierro. El arado físico

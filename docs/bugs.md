@@ -34,7 +34,8 @@ cohortes, diferidas hasta terminar M15. El yunque integra un martillo de piedra
 como conjunto fijo: no existe todavía un martillo equipable/no consumible.
 La receta no modela temperatura del metal ni recalentados; sigue el nivel de
 abstracción de las recetas metalúrgicas existentes. Herramientas de hierro,
-acero y arado continúan en los nodos pendientes de fase 40.
+acero y arado eran los nodos pendientes al entregar 40c; están implementados
+en 40d/40e/40f. La medición económica autónoma continúa pendiente para M16.
 
 ## M15 navegación fluvial: alcance de la balsa inicial (2026-10-08)
 
