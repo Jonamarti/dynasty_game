@@ -249,6 +249,13 @@ claves nuevas (`--ignore=headlessFocusBand,config.otherBandThinkInterval`):
 `6661381c4a577ce0` (30) y `f036d847fd4d6d1b` (300), **los mismos que antes de
 tocar nada**: en un mundo de una banda, B1, B2 y C son bit-idénticos al original.
 
+El instrumento de navegador (`npm run profile:systems`, Chromium, una banda) con
+el código final: 30 humanos 1,34 ms/paso y 300 humanos 19,6 (la tabla de 2026-10-03
+decía 1,09 y 28,72; son corridas de máquina y navegador distintos, una muestra,
+no un resultado comparable al décimo), con los hashes de estado de los tres modos
+iguales al inicio y a los 480 pasos. Datos:
+`artifacts/verification/m15-systems-2026-10-08T12-06-54-954Z/report.json`.
+
 `observePlaces` a 300 pasa de 15,6 a 10,3 ms/paso y sigue siendo cuadrático
 (18.000 `remember` por paso, casi todos expulsando); `brain` a 300, de 15,7 a
 11,7. El 300 sigue costando 24 ms/paso frente a 1 de los 30: **no se ha
