@@ -168,3 +168,25 @@ controles: 0,937 → 0,930 y 15,243 → 14,538 ms/paso, con suite simultánea;
 no bastan para concluir el tiempo global. Evidencia `a2*` en el directorio
 anterior. Suite completa de referencia: 216 archivos, 1.641 pasan, una omisión
 y un fallo heredado de `people-knowledge` (0,81 frente a <0,6); no está verde.
+
+### A3: cuatro categorías, un recorrido local
+
+Comida ordinaria dentro/fuera de alcance y proteína dentro/fuera comparten
+`findNearestMany`. Cada categoría conserva distancia, orden y empate estricto;
+los fallbacks a recuerdos siguen siendo condicionales y se ejecutan en el orden
+original, con sus mismos efectos en los conjuntos de objetivos y la telemetría.
+Se extrae `findRememberedNode` para compartir ese fallback. Las consultas simples
+conservan su camino sin asignar los arrays de categorías: la variante que hacía
+pasar también las simples por `many` dio 14,366 ms/paso a 300, frente a 13,237
+con el camino simple independiente; a 30 la diferencia es ruido (0,923/1,063).
+Se conserva una prueba comparativa con consultas simples y búsqueda exhaustiva,
+800 posiciones con RNG, 120 consultas y bordes de celda/radio. Espacial+caché:
+10 pruebas pasan, TypeScript limpio. Hash íntegro a 30/300 igual al original,
+sin exclusiones, e instrumentación/control iguales con negativo detectado.
+La muestra final (tres repeticiones) da 1,063/13,237 ms/paso, medianas
+1,302/13,522; original 0,937/14,747 (referencia bajo suite concurrente), así
+que se observa ahorro a 300 sin afirmar una mejora estable a 30. Evidencia:
+`artifacts/verification/m15-brain-cost-20261008/{a3,exact-final}*`.
+
+Hito visual de A1+A2, antes de A3: gira `tour` 1/1 pasando, trece capturas en
+`artifacts/screenshots/m15-brain-exact-2026-10-08T-01/`. No cambió la UI.

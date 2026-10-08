@@ -122,12 +122,9 @@ export class SpatialHash<T extends HasPosition> {
       for (let cy = cy0 - ring; cy <= cy0 + ring; cy++) {
         for (let cx = cx0 - ring; cx <= cx0 + ring; cx++) {
           // Only the ring's perimeter is new; the interior was covered already.
-          const onPerimeter =
-            ring === 0 ||
-            cx === cx0 - ring || cx === cx0 + ring ||
+          const onPerimeter = ring === 0 || cx === cx0 - ring || cx === cx0 + ring ||
             cy === cy0 - ring || cy === cy0 + ring;
           if (!onPerimeter) continue;
-
           const bucket = this.cells.get(this.key(cx, cy));
           if (!bucket) continue;
           for (const item of bucket) {
@@ -146,7 +143,50 @@ export class SpatialHash<T extends HasPosition> {
     }
     return best;
   }
+  /**
+   * Nearest matches for several pure predicates in one spatial traversal.
+   * Each result keeps `findNearest`'s ring order and strict-distance tie rule.
+   */
+  findNearestMany(
+    x: number,
+    y: number,
+    radius: number,
+    filters: readonly ((item: T) => boolean)[]
+  ): (T | null)[] {
+    const best = filters.map(() => null as T | null);
+    const bestDist2 = filters.map(() => radius * radius);
+    if (filters.length === 0) return best;
+    const maxRing = Math.ceil(radius * this.invCellSize);
+    const cx0 = Math.floor(x * this.invCellSize);
+    const cy0 = Math.floor(y * this.invCellSize);
 
+    for (let ring = 0; ring <= maxRing; ring++) {
+      if (best.every((item, i) => item !== null &&
+        (ring - 1) * this.cellSize > 0 &&
+        ((ring - 1) * this.cellSize) ** 2 > bestDist2[i]!)) break;
+      for (let cy = cy0 - ring; cy <= cy0 + ring; cy++) {
+        for (let cx = cx0 - ring; cx <= cx0 + ring; cx++) {
+          const onPerimeter = ring === 0 || cx === cx0 - ring || cx === cx0 + ring ||
+            cy === cy0 - ring || cy === cy0 + ring;
+          if (!onPerimeter) continue;
+          const bucket = this.cells.get(this.key(cx, cy));
+          if (!bucket) continue;
+          for (const item of bucket) {
+            const dx = item.x - x;
+            const dy = item.y - y;
+            const d2 = dx * dx + dy * dy;
+            for (let i = 0; i < filters.length; i++) {
+              if (d2 >= bestDist2[i]!) continue;
+              if (!filters[i]!(item)) continue;
+              bestDist2[i] = d2;
+              best[i] = item;
+            }
+          }
+        }
+      }
+    }
+    return best;
+  }
   /** Diagnostics for the health report: how well the grid is spreading load. */
   stats(): { cells: number; items: number; maxBucket: number } {
     let items = 0;

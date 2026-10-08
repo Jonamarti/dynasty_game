@@ -134,6 +134,41 @@ describe('SpatialHash', () => {
     expect(checked).toEqual([rejected.id, accepted.id]);
   });
 
+  it('matches independent nearest searches when predicates share a traversal', () => {
+    const rng = new RNG('nearest-many');
+    const points = makePoints(800, 160, rng);
+    // Pin candidates on cell edges and at the origin so ring/cutoff boundaries
+    // are exercised alongside seeded ordinary positions.
+    points.push({ id: 800, x: 8, y: 0 }, { id: 801, x: 16, y: 0 },
+      { id: 802, x: -8, y: 0 }, { id: 803, x: 0, y: 0 });
+    const hash = new SpatialHash<Point>(8);
+    hash.rebuild(points);
+    const filters = [
+      (point: Point) => point.id % 2 === 0,
+      (point: Point) => point.id % 3 === 1,
+      (point: Point) => point.x < 0,
+      () => false,
+    ];
+
+    for (let trial = 0; trial < 120; trial++) {
+      const x = trial < 4 ? 0 : rng.range(-10, 170);
+      const y = trial < 4 ? 0 : rng.range(-10, 170);
+      const radius = trial < 4 ? [8, 16, 24, 32][trial]! : rng.range(1, 50);
+      const grouped = hash.findNearestMany(x, y, radius, filters);
+      for (let i = 0; i < filters.length; i++) {
+        const single = hash.findNearest(x, y, radius, filters[i]);
+        const exhaustive = bruteNearest(points.filter(filters[i]!), x, y, radius);
+        expect(grouped[i]?.id ?? null).toBe(single?.id ?? null);
+        if (exhaustive === null) expect(grouped[i]).toBeNull();
+        else {
+          expect(grouped[i]).not.toBeNull();
+          const actual = (grouped[i]!.x - x) ** 2 + (grouped[i]!.y - y) ** 2;
+          const expected = (exhaustive.x - x) ** 2 + (exhaustive.y - y) ** 2;
+          expect(actual).toBeCloseTo(expected, 10);
+        }
+      }
+    }
+  });
   it('handles negative coordinates without key collisions', () => {
     const hash = new SpatialHash<Point>(8);
     const points: Point[] = [

@@ -13709,3 +13709,20 @@ con carga de la suite y se trata como observación. La suite completa de
 referencia ejecutó 216 archivos: 1.641 pasan, uno omitido y el fallo heredado
 de difusión de `people-knowledge` (0,81, límite <0,6). No cambia la UI;
 cohortes diferidas por M15.
+
+## 2026-10-08 — M15 cerebro A3: compartir las búsquedas locales de comida
+
+Las cuatro categorías de comida usan un recorrido espacial con ganadores
+independientes. La búsqueda recordada sigue en su orden condicional original;
+el helper compartido mantiene sus conjuntos y contadores. `findNearest`
+conserva su camino simple para no asignar arrays de categorías en cada consulta.
+Prueba comparativa: consultas agrupadas/simple/exhaustiva, posiciones seeded y
+bordes de radio/celda; espacial+caché 10/10 y TypeScript pasan. Hash completo
+igual al original con 30 y 300, sin exclusiones y con negativo detectado.
+Mínimo/mediana de tres controles finales: 1,063/1,302 y 13,237/13,522 ms/paso.
+La referencia original fue 0,937 y 14,747; se observa ahorro a 300, no a 30,
+y la carga simultánea de la suite en referencia impide afirmar un porcentaje
+estable. Evidencia: `artifacts/verification/m15-brain-cost-20261008/`.
+Hito visual A1+A2 antes de A3: `tour` 1/1 y trece capturas en
+`artifacts/screenshots/m15-brain-exact-2026-10-08T-01/`. No cambia UI;
+cohortes diferidas y ninguna afirmación de mejora económica.

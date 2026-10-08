@@ -966,21 +966,42 @@ export class Brain {
       return worth;
     };
     const isFoodNode = (n: ResourceNode) => !n.depleted && foodWorth(n) > 0;
-    const inReachFood = this.findNode(person, ctx, isFoodNode, !desperateForFood, anchor, reach);
+    const strongProteinCraving = cravings(person, ctx.motivation.cravings).protein > 0.5;
+    const proteinFood = (n: ResourceNode) =>
+      !n.depleted && foodWorth(n) > 0 && this.nodeProteinFraction(person, n) >= 0.3;
+    // The four searches share one local spatial walk. Keep each result's own
+    // nearest-distance winner, then run remembered-place fallbacks in their
+    // historical order below; those fallbacks update target telemetry/sets.
+    const requests: { filter: (node: ResourceNode) => boolean; enforceReach: boolean }[] = [
+      { filter: isFoodNode, enforceReach: !desperateForFood },
+    ];
+    const ordinaryFoodIndex = !desperateForFood ? requests.push({ filter: isFoodNode, enforceReach: false }) - 1 : -1;
+    const reachableProteinIndex = strongProteinCraving
+      ? requests.push({ filter: proteinFood, enforceReach: true }) - 1 : -1;
+    const proteinSearchIndex = strongProteinCraving
+      ? requests.push({ filter: proteinFood, enforceReach: false }) - 1 : -1;
+    const localFood = this.findNodeLocals(person, ctx, requests, anchor, reach);
+    const rememberedFood = (index: number): ResourceNode | null => {
+      const local = localFood[index] ?? null;
+      if (local || person.isChild) return local;
+      const request = requests[index]!;
+      return this.findRememberedNode(person, ctx, node =>
+        request.filter(node) && this.canTravelTo(person, node.x, node.y, ctx) &&
+        !(node.def.groundLevel && ctx.snowBuries && isBuried(node.x, node.y, ctx.snowDepth, ctx.treeHash)) &&
+        (!request.enforceReach || withinReach(anchor, reach, node.x, node.y)), anchor, reach);
+    };
+    const inReachFood = rememberedFood(0);
     // If the home-distance filter leaves somebody with no edible destination,
     // let them make the longer food walk before starvation is imminent. The
     // old behaviour made them wait until `desperateForFood` disabled the filter
     // entirely, which coupled home pressure and reach into a food-access dead
     // zone measured by the M15 1c cohort.
-    const ordinaryFoodNode = inReachFood ?? (!desperateForFood
-      ? this.findNode(person, ctx, isFoodNode, false, anchor, reach) : null);
-    const strongProteinCraving = cravings(person, ctx.motivation.cravings).protein > 0.5;
-    const proteinFood = (n: ResourceNode) =>
-      !n.depleted && foodWorth(n) > 0 && this.nodeProteinFraction(person, n) >= 0.3;
-    const reachableProtein = strongProteinCraving
-      ? this.findNode(person, ctx, proteinFood, true, anchor, reach) : null;
+    const ordinaryFoodNode = inReachFood ?? (ordinaryFoodIndex >= 0
+      ? rememberedFood(ordinaryFoodIndex) : null);
+    const reachableProtein = reachableProteinIndex >= 0
+      ? rememberedFood(reachableProteinIndex) : null;
     const proteinInSearch = strongProteinCraving && !reachableProtein
-      ? this.findNode(person, ctx, proteinFood, false, anchor, reach) : null;
+      ? rememberedFood(proteinSearchIndex) : null;
     const foodNode = chooseCravingFood(ordinaryFoodNode, proteinInSearch, !!reachableProtein,
       strongProteinCraving, n => this.nodeProteinFraction(person, n));
     if (telemetry.isEnabled()) {
@@ -4164,24 +4185,39 @@ export class Brain {
       householdsById: ctx.householdsById, homes: ctx.homes ?? new Map(), motivation: ctx.motivation } : null;
     const anchor = knownAnchor === undefined ? anchorOf(person, anchorCtx!) : knownAnchor;
     const reach = knownReach ?? (anchorCtx ? reachOf(person, anchorCtx) : 0);
-    // Age changes roaming and map-sharing, not eyesight. The doubled radius
-    // let children forage beyond sight without ever knowing the food existed.
-    if (person.isChild) {
-      return ctx.nodeHash.findNearest(person.x, person.y, ctx.sightRadius,
-        n => filter(n) && this.canTravelTo(person, n.x, n.y, ctx) &&
-          !(n.def.groundLevel && ctx.snowBuries && isBuried(n.x, n.y, ctx.snowDepth, ctx.treeHash)) &&
-          (!enforceReach || withinReach(anchor, reach, n.x, n.y)));
-    }
     const eligible = (n: ResourceNode) =>
       filter(n) && this.canTravelTo(person, n.x, n.y, ctx) &&
       !(n.def.groundLevel && ctx.snowBuries && isBuried(n.x, n.y, ctx.snowDepth, ctx.treeHash)) &&
       (!enforceReach || withinReach(anchor, reach, n.x, n.y));
-    // Preserve the established local choice, including SpatialHash's stable
-    // ring ordering. Personal memory extends the search only when no local
-    // target exists; this keeps the home and family routes from M13 intact.
-    const local = ctx.nodeHash.findNearest(person.x, person.y, ctx.sightRadius,
-      n => eligible(n));
-    if (local) return local;
+    // Children use only local sources; adults get the remembered-place fallback.
+    const local = ctx.nodeHash.findNearest(person.x, person.y, ctx.sightRadius, eligible);
+    if (local || person.isChild) return local;
+    return this.findRememberedNode(person, ctx, eligible, anchor, reach);
+  }
+
+  /** Local results for compatible searches, preserving each predicate's winner. */
+  private findNodeLocals(
+    person: Person,
+    ctx: BrainContext,
+    requests: readonly { filter: (node: ResourceNode) => boolean; enforceReach: boolean }[],
+    anchor: Anchor | null,
+    reach: number
+  ): (ResourceNode | null)[] {
+    const eligible = requests.map(request => (node: ResourceNode) =>
+      request.filter(node) && this.canTravelTo(person, node.x, node.y, ctx) &&
+      !(node.def.groundLevel && ctx.snowBuries && isBuried(node.x, node.y, ctx.snowDepth, ctx.treeHash)) &&
+      (!request.enforceReach || withinReach(anchor, reach, node.x, node.y)));
+    return ctx.nodeHash.findNearestMany(person.x, person.y, ctx.sightRadius, eligible);
+  }
+
+  /** The original remembered fallback, run only for local searches that failed. */
+  private findRememberedNode(
+    person: Person,
+    ctx: BrainContext,
+    eligible: (node: ResourceNode) => boolean,
+    anchor: Anchor | null,
+    reach: number
+  ): ResourceNode | null {
     if (this.knownNodeCandidatesFor !== person.id) {
       this.collectKnownNodes(person, ctx, anchor, reach);
       this.knownNodeCandidatesFor = person.id;
@@ -4208,7 +4244,6 @@ export class Brain {
     if (best) this.rememberedNodeTargets.add(best.id);
     return best;
   }
-
   /**
    * Build the remembered candidate set once, only after local sources fail.
    *

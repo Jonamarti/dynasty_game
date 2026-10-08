@@ -30,22 +30,26 @@ describe('Brain node worth cache', () => {
     sim.step();
     expect(context).not.toBeNull();
 
-    // Force the same food predicate to inspect several equal harvest items.
-    // The real spatial hash also prunes by distance, which would hide these
+    // Force every category's food predicate to inspect several equal harvest
+    // items. The real spatial hash prunes by distance, which would hide these
     // repeated calls and make this test depend on cell traversal details.
     let exerciseFor: typeof person | typeof otherPerson = person;
     let exercised = false;
-    const findNode = (brain as unknown as { findNode: (...args: any[]) => ResourceNode | null }).findNode.bind(brain);
-    vi.spyOn(brain as unknown as { findNode: (...args: any[]) => ResourceNode | null }, 'findNode')
-      .mockImplementation((who: unknown, brainContext: unknown, filter: (node: ResourceNode) => boolean, ...rest: unknown[]) => {
-        if (who === exerciseFor && !exercised) {
-          exercised = true;
-          for (const node of candidates) filter(node);
-          return null;
-        }
-        return findNode(who, brainContext, filter, ...rest);
-      });
-    const worth = vi.spyOn(brain as unknown as {
+    const findNodeLocals = (brain as unknown as {
+      findNodeLocals: (...args: any[]) => (ResourceNode | null)[];
+    }).findNodeLocals.bind(brain);
+    vi.spyOn(brain as unknown as {
+      findNodeLocals: (...args: any[]) => (ResourceNode | null)[];
+    }, 'findNodeLocals').mockImplementation((who: unknown, ctx: unknown, requests: {
+      filter: (node: ResourceNode) => boolean;
+    }[], ...rest: unknown[]) => {
+      if (who === exerciseFor && !exercised) {
+        exercised = true;
+        for (const request of requests) for (const node of candidates) request.filter(node);
+        return requests.map(() => null);
+      }
+      return findNodeLocals(who, ctx, requests, ...rest);
+    });    const worth = vi.spyOn(brain as unknown as {
       nodeWorth: (who: unknown, node: ResourceNode, ctx: unknown) => number;
     }, 'nodeWorth');
     const evaluate = (who: typeof person | typeof otherPerson) => {
