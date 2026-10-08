@@ -415,6 +415,9 @@ export const ITEMS: Record<string, ItemDef> = {
   // M15 phase 40b: the spongy, slag-bearing iron from the bloomery; forging
   // will turn it into wrought iron in the next node.
   iron_bloom: { id: 'iron_bloom', label: 'Iron bloom', nutrition: 0, spoilTicks: 0, baseValue: 12, class: 'bulky', hand: { perHand: 1, perArms: 3, hands: 1 } },
+  // The smith has beaten most of the slag out at a stone anvil. Later iron
+  // tools use this clean, workable stock rather than the raw bloom.
+  wrought_iron: { id: 'wrought_iron', label: 'Wrought iron', nutrition: 0, spoilTicks: 0, baseValue: 18, class: 'bulky', hand: { perHand: 1, perArms: 3, hands: 1 } },
 };
 
 export class Inventory {

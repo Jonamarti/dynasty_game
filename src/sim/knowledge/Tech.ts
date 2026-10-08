@@ -187,6 +187,8 @@ export const TECHS = [
   // M15 phase 36 (M14 fase 18b): the oldest open node in `m8_plan_the_ages.md`
   // that `next-steps.md` had not reclaimed yet — see `ActionSystem.doTrade`.
   'trade',
+  // M15 phase 40c: the stone anvil and hammer that work slag out of the bloom.
+  'forging',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -2336,6 +2338,25 @@ export const TECH: Record<Tech, TechDef> = {
     description:
       'Air forced through bog iron and charcoal leaves a spongy bloom for the smith to work.',
   },
+  // M15 phase 40c (M8.4). Stone tools do the first hot-forging, so wrought
+  // iron is not required to make its own tools.
+  forging: {
+    id: 'forging', label: 'Forging', domain: 'metal', web: 'metal',
+    age: 'iron', firstKnown: 'about 1200 BC',
+    kind: 'device',
+    requires: ['bloomery'], difficulty: 0.7, skill: 'smith',
+    prototype: { iron_bloom: 1 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'bloomery' }, { kind: 'holding', item: 'iron_bloom' },
+                { kind: 'doing', action: 'craft' }],
+        weight: 1.0, story: 'set the iron bloom on a stone and beat it with a hammer until the slag fell away' },
+      { needs: [{ kind: 'knows', tech: 'bloomery' }, { kind: 'holding', item: 'iron_bloom' },
+                { kind: 'place', biome: 'beach' }],
+        weight: 0.6, story: 'found that a hard stone could draw the bloom into a clean bar of iron' },
+    ],
+    description:
+      'A stone hammer and anvil beat slag from the bloom, leaving wrought iron the smith can shape.',
+  },
   // M15 phase 36 (M14 fase 18b). `next-steps.md` had carried this since M8.2
   // as "the node that never reached TECHS": `ActionSystem.doTrade` existed,
   // `EVENT_TYPES` declared it, `DEED_WEIGHT` scored it, and nobody gated the
@@ -2734,6 +2755,10 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   bloomery: {
     summary: 'Air driven through iron ore and charcoal turns the furnace charge into a bloom the smith can work.',
     site: 'RECIPES.smelt_iron at BUILDINGS.furnace; Ore.wantedOreKinds follows iron ore and charcoal to their sources',
+  },
+  forging: {
+    summary: 'A stone anvil and hammer work the slag out of the bloom, leaving wrought iron.',
+    site: 'BUILDINGS.anvil and RECIPES.forge_iron',
   },
   trade: {
     summary: 'A fairer bargain: what changes hands is weighed by what it is worth, not just by feel.',

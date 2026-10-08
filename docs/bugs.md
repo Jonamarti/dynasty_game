@@ -1,3 +1,15 @@
+## M15 fase 40c: alcance de la forja (2026-10-08)
+
+El check corto `forgers` demuestra una orden suministrada en un yunque terminado,
+no la cadena autónoma de extracción, fundición, construcción de estación y forja.
+La relación lupia/hierro forjado 1:1, 140 ticks de receta y los materiales/coste
+del yunque son supuestos de diseño; no se ha medido su coste económico por
+cohortes, diferidas hasta terminar M15. El yunque integra un martillo de piedra
+como conjunto fijo: no existe todavía un martillo equipable/no consumible.
+La receta no modela temperatura del metal ni recalentados; sigue el nivel de
+abstracción de las recetas metalúrgicas existentes. Herramientas de hierro,
+acero y arado continúan en los nodos pendientes de fase 40.
+
 ## M15 navegación fluvial: alcance de la balsa inicial (2026-10-08)
 
 La balsa de juncos es un transporte personal de agua dulce; no implementa tripulaciones, cargas de varios NPC, embarcaciones grandes ni navegación marítima. Se fabrica para una orden de viaje (`keep: 0`), por lo que el AI no adopta todavía un plan de explorar/fabricar una embarcación para colonizar otra orilla. Los cruces ordenados y los movimientos con una balsa ya disponible funcionan; esa planificación queda para navegación/fase 35. Cavar barro de la orilla es una orden disponible al jugador, no una nueva fuente elegida automáticamente por el abastecimiento de obras cuando faltan depósitos.

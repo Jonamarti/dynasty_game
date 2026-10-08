@@ -3773,6 +3773,8 @@ alcanzable. **Checks:** uno por nodo, cada uno contra el build sin el nodo.
 
 **Avance del 2026-10-07 (40b, `bloomery`).** El nodo requiere `bog_iron` y `bellows` y habilita `smelt_iron` en el horno existente: 2 de mineral y 1 de carbón → 1 lupia (`iron_bloom`). Receta con `smith`, progreso e interrupciones del ejecutor común, búsqueda recursiva de materias primas e icono generado. Cantidades y tiempo son supuestos de diseño. `iron-ore-becomes-bloom`, en el fixture corto con orden `ironsmiths`, falla en el build previo sin receta; no demuestra producción autónoma ni mejora económica. Capturas en `artifacts/screenshots/m15-phase40-bloomery-2026-10-07/`. Cohortes diferidas; siguen `forging`, `carburising`, `iron_tools` y `ploughshare`. [Detalle](m15_phase40_iron.md).
 
+**Avance del 2026-10-08 (40c, `forging`).** El nodo requiere `bloomery` y habilita `forge_iron`: una lupia se convierte en una unidad de `wrought_iron` en el nuevo `anvil`, con la habilidad `smith` y el ejecutor compartido. El conjunto de estación incluye yunque y martillo de piedra para evitar exigir hierro forjado antes de poder producirlo; no es un martillo equipable separado. La relación uno a uno y el tiempo son supuestos de diseño. Herramientas, acero y arado siguen pendientes en `iron_tools`, `carburising` y `ploughshare`. Cohortes y matriz diferidas; no se afirma mejora económica. [Detalle](m15_phase40_iron.md).
+
 ## Fase 41 — Calibración final y cierre de M15
 
 - La segunda pasada completa del protocolo de la fase 10 en `generations`,

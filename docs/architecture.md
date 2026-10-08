@@ -670,5 +670,13 @@ Iron's `bloomery` node uses the existing furnace and shared crafting executor:
 `smelt_iron` consumes ore/charcoal and produces `iron_bloom`. Recursive recipe
 sourcing asks for missing ore or the sticks for charcoal without new AI biases,
 streams or spawning. The short `ironsmiths` gate exercises an ordered supplied
-charge; autonomous iron supply and forging remain unmeasured/future work.
+charge; autonomous iron supply remains unmeasured; forging is described below.
+See [m15_phase40_iron.md](m15_phase40_iron.md).
+`forging` now follows `bloomery` in the Metal web. `forge_iron` uses the
+same crafting executor at `anvil`, a station containing a stone work surface
+and stone-headed hammer, to turn one supplied bloom into `wrought_iron`.
+The station definition participates in the ordinary band construction planner;
+craft progress remains banked on the crafter through urgent interruptions.
+No new RNG stream or LOD integration is introduced. Iron tools and steel
+remain later nodes; the short `forgers` gate measures an ordered charge only.
 See [m15_phase40_iron.md](m15_phase40_iron.md).

@@ -488,6 +488,12 @@ export const ES_TECH: Record<string, string> = {
   "set iron-rich earth and charcoal together under the bellows and saw the furnace could make a bloom": "puso tierra ferruginosa y carbón juntos bajo el fuelle y vio que el horno podía producir una lupia",
   "Air driven through iron ore and charcoal turns the furnace charge into a bloom the smith can work.": "El aire forzado a través del mineral de hierro y el carbón convierte la carga del horno en una masa que puede trabajar el herrero.",
   "RECIPES.smelt_iron at BUILDINGS.furnace; Ore.wantedOreKinds follows iron ore and charcoal to their sources": "RECIPES.smelt_iron en BUILDINGS.furnace; Ore.wantedOreKinds sigue el mineral de hierro y el carbón hasta sus fuentes",
+  "Forging": "Forja",
+  "set the iron bloom on a stone and beat it with a hammer until the slag fell away": "apoyó la lupia sobre una piedra y la golpeó con un martillo hasta desprender la escoria",
+  "found that a hard stone could draw the bloom into a clean bar of iron": "descubrió que una piedra dura podía estirar la lupia hasta formar una barra limpia de hierro",
+  "A stone hammer and anvil beat slag from the bloom, leaving wrought iron the smith can shape.": "Un martillo y un yunque de piedra desprenden la escoria de la lupia y dejan hierro forjado que el herrero puede moldear.",
+  "A stone anvil and hammer work the slag out of the bloom, leaving wrought iron.": "Un yunque y un martillo de piedra desprenden la escoria de la lupia y dejan hierro forjado.",
+  "BUILDINGS.anvil and RECIPES.forge_iron": "BUILDINGS.anvil y RECIPES.forge_iron",
   "Trade": "Comercio",
   "about 13,000 years ago": "hace unos 13.000 años",
   "Counting what a trade is worth on both sides, instead of by feel. A band that knows it strikes a fairer bargain, and is the one that can send out a caravan.":

@@ -1,3 +1,50 @@
+## 2026-10-08 — M15 fase 40c: forjar la lupia en hierro
+
+Por qué: la cadena de hierro terminaba en la lupia de `bloomery`; no existía
+una operación para separar la escoria y producir el material de las siguientes
+herramientas. `forging` requiere `bloomery` en la sub-red Metal, y
+`forge_iron` convierte una lupia en una unidad de `wrought_iron` en `anvil`,
+con `smith`, 140 ticks base y el ejecutor común. El yunque ocupa 2×2, cuesta
+ocho sílex y cuatro palos y necesita 160 ticks base de construcción. Integra
+un martillo de piedra para que la primera forja no dependa del hierro que
+pretende obtener. Cantidades, tiempos y rendimiento son supuestos de diseño.
+
+La estación usa el planificador de obras existente; la receta conserva trabajo
+y materiales durante las interrupciones urgentes y comunica las negativas de
+conocimiento, estación o ingredientes. Arte y traducciones entregados desde sus
+fuentes, con atlas regenerados. No se tocan forks, spawning ni integración de
+la fase 32, que está trabajando otro agente. `forging` se anexa al final de
+`TECHS` para conservar el orden de los nodos anteriores.
+
+Pruebas: cuatro regresiones fallaron sobre la base sin el nodo. Siete pruebas
+nuevas cubren la receta y estación, orden real, gates y sed urgente con progreso
+guardado y reanudación. `forgers` aporta una carga con orden real;
+`iron-bloom-becomes-wrought-iron` pasa y retirar la receta hace fallar el check
+sin n/a. La prueba de navegador muestra el nodo en español y el producto en el
+equipo junto a la estación. Capturas nuevas:
+`artifacts/screenshots/m15-phase40-forging-2026-10-08/`.
+
+Quedan `carburising`, `iron_tools` y `ploughshare`. Las cohortes económicas y
+la matriz completa se difieren por la instrucción vigente de M15; no se afirma
+mejora económica ni producción autónoma sostenida. El taller integra el martillo
+como estación fija y no representa temperatura ni recalentados; estos límites
+se recogen en `bugs.md` para M16.
+
+Verificación final: TypeScript limpio; suite completa con
+`npm.cmd test -- --maxWorkers=3 --pool=threads --testTimeout=60000`, 199/199
+archivos y 1.557 pruebas pasan, 1 omitida. La primera corrida global había
+leído las definiciones nuevas antes de terminar sus traducciones (1 fallo de
+i18n); la corrida completa final pasa. Los workers por procesos no arrancaron
+correctamente en este entorno; se usó `threads` sin cambiar la configuración.
+Playwright completo: 108 pasan y 1 fallo en una escena intermedia que no
+hallaba sitio para el yunque; restaurada la escena, las 2/2 pruebas de forja
+pasan y las capturas se revisan. No se describe aquella corrida global como
+verde ni se repite completa después del ajuste del fixture.
+`sim:check` de una semilla mantiene los dos fallos previos, antojos de dieta
+y presupuesto de rendimiento (2/142 antes, 2/143 después); `forgers` pasa 1/1.
+Las capturas históricas regeneradas por la suite se restauran: solo se guarda
+el nuevo directorio de este hito.
+
 ## 2026-10-08 — M15 balsa de juncos para cruzar cauces profundos
 
 Una balsa pequeña fabricable con 6 haces de paja/juncos (`thatch`, el material que producen los juncos), 2 palos y 1 cuerda, usando cordelería. `keep: 0`: se construye para el viaje, no se impone una nueva fabricación a todos los NPC. La orden «Viajar en balsa de juncos», las órdenes normales de desplazamiento y las teclas comparten la capacidad real de la embarcación. La balsa sirve en agua dulce; no habilita viajes por mar.

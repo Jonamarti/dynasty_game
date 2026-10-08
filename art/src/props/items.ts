@@ -138,6 +138,11 @@ export const ITEMS: ItemArt[] = [
     + shape(smooth([[28, 41], [34, 37], [41, 41], [39, 47], [31, 48]]), '#403a36', '#292523')
     + ell(22, 44, 2.2, 1.6, '#262321') + ell(47, 42, 2.1, 1.5, '#262321')
     + stroke('M17,30L23,27M36,26L42,25M15,45L20,50M43,49L49,45', '#8a7460', 1.2)],
+  // The wrought bar is dense and smooth where the bloom was porous and slaggy.
+  ['wrought_iron', 'Hierro forjado', 'forging', () =>
+    shape(smooth([[10, 40], [14, 31], [23, 29], [28, 34], [40, 34], [47, 29], [55, 34], [53, 43], [46, 47], [26, 47], [18, 51], [11, 47]]), '#747a7b', '#343839')
+    + shape(smooth([[17, 35], [25, 33], [29, 37], [24, 40], [16, 40]]), '#c3c5c2')
+    + stroke('M29,36L43,36M27,43L47,43', '#a4a9a8', 1.2)],
   ['sling', 'Honda', 'sling', () =>
     stroke('M10,34Q16,10 30,26', CORD, 2.4)
     + stroke('M10,34Q16,52 30,40', CORD, 2.4)

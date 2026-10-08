@@ -218,6 +218,16 @@ export const BUILDINGS: BuildingArt[] = [
     + shape(poly([[104, 76], [126, 80], [126, 86], [104, 84]]), '#7d5a36', B.L)
     + smoke(72, 26)
     + shape(smooth([[24, 96], [34, 90], [44, 96], [38, 102], [26, 102]]), '#2b2622', B.L)],
+  // M15 phase 40c: the work surface and stone-headed hammer are both visible;
+  // this station is a fixed kit, not an iron tool somebody carries away.
+  ['anvil', 'Yunque de piedra', 'forging', 144, () =>
+    gShadow(74, 102, 42, 9)
+    + shape(poly([[34, 80], [112, 80], [108, 100], [38, 100]]), '#6f6b66', B.L)
+    + shape(poly([[24, 62], [46, 54], [98, 54], [120, 62], [108, 76], [38, 76]]), B.stoneL, B.L)
+    + stroke('M34,64L108,64M42,72L104,72', B.stoneD, 1.2)
+    + limb([[83, 52], [102, 24]], 5, '#86633c', B.L)
+    + shape(poly([[90, 19], [112, 25], [108, 38], [87, 32]]), B.stone, B.L)
+    + stroke('M96,25L106,28', B.stoneL, 1.2)],
   // M15 phase 37: a heap of deadwood sealed under turf, a vent smoking at the top.
   ['charcoal_pit', 'Carbonera', 'charcoal', 144, () =>
     gShadow(74, 102, 56, 10)

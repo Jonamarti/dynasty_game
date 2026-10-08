@@ -38,6 +38,7 @@ import { FIRE_AVOID } from '../src/sim/systems/WildlifeSystem.ts';
 import { auditRegions, auditSwimRegions } from './regions.ts';
 import { setupFoodNews, setupConflicts } from './checkFixtures.ts';
 import { setupIronBloom } from './ironFixture.ts';
+import { setupIronForging } from './ironForgingFixture.ts';
 import { createFrontier, setupFrontier, observeFrontier, createFrontierCohort, observeFrontierCohort } from './frontierFixture.ts';
 
 /**
@@ -253,6 +254,15 @@ export const SCENARIOS: Record<string, Scenario> = {
     steps: 300,
     setup: setupIronBloom,
     checks: ['iron-ore-becomes-bloom'],
+  },
+  forgers: {
+    name: 'forgers',
+    description: 'One ordered iron bloom forged at a finished stone anvil; tests forging, not autonomous economics.',
+    config: { seed: 'forgers', world: { width: 48, height: 48 },
+      population: { bands: 1, peoplePerBand: 6, startingTech: withPrerequisites(['forging']) } },
+    steps: 300,
+    setup: setupIronForging,
+    checks: ['iron-bloom-becomes-wrought-iron'],
   },
   smiths: {
     name: 'smiths',
@@ -3587,6 +3597,15 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
       ironOpportunity + ' supplied charges, ' + ironBlooms + ' completed iron smelts');
   }
 
+  // A supplied bloom and real order expose a missing forging recipe on the old build.
+  const forgingOpportunity = tel.iron_forging_fixture_charges ?? 0;
+  const wroughtIron = tel.crafted_forge_iron ?? 0;
+  if (forgingOpportunity === 0 && wroughtIron === 0) {
+    skip('iron-bloom-becomes-wrought-iron', 'no supplied bloom-forging charge in this run');
+  } else {
+    add('iron-bloom-becomes-wrought-iron', wroughtIron > 0,
+      forgingOpportunity + ' supplied blooms, ' + wroughtIron + ' forged into wrought iron');
+  }
   // M15 phase 37. The metal tier is a chain of six steps done by whoever holds
   // the ingredients (seam, deadwood, pit, charcoal, furnace, mould), and the
   // failure worth a check is the chain that breaks in the middle. Measured on

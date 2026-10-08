@@ -711,6 +711,13 @@ export const RECIPES: Record<string, RecipeDef> = {
     workTicks: 120, ingredients: { iron_ore: 2, charcoal: 1 }, output: { iron_bloom: 1 },
     station: 'furnace', keep: 2,
   },
+  // M15 phase 40c (M8.4): the stone hammer and anvil work slag out of the bloom.
+  // The 1:1 yield is a design assumption, not a claim about historic mass.
+  forge_iron: {
+    id: 'forge_iron', label: 'Wrought iron', icon: '\u{1F528}', tech: 'forging', skill: 'smith',
+    workTicks: 140, ingredients: { iron_bloom: 1 }, output: { wrought_iron: 1 },
+    station: 'anvil', keep: 2,
+  },
 };
 
 /** Every item any recipe can produce. Used by the "is this reachable?" tests. */
