@@ -119,6 +119,7 @@ import { ParkedSimulation, assertExecutionOwner, parkExecutionOwner, registerExe
 import { createLocalGeography, type LocalGeographySource } from '../world/LocalGeography.ts';
 import type { WorldGeography } from '../world/WorldGeography.ts';
 import { geographicResourceAvailable } from '../world/GeographicResources.ts';
+import { stepMark } from './StepProbe.ts';
 
 const RESTORE_CONSTRUCTION = Symbol('Simulation restore construction');
 interface RestoreConstruction {
@@ -5159,9 +5160,11 @@ export class Simulation {
 
   step(): void {
     this.assertExecutionAuthority();
+    stepMark?.('(start)');
     if (!this.playerIntent) this.playerMovementRefusal = null;
     this.time.advance();
     this.rebuildHashes();
+    stepMark?.('advance+rebuildHashes');
 
     // Regrowth is coarse-grained: once every 20 steps at 20x the rate costs a
     // twentieth as much and is indistinguishable at the timescales that matter.
@@ -5171,6 +5174,7 @@ export class Simulation {
       const season = this.time.season;
       for (const node of this.nodes) node.regrow(20, growth, regrowth, season);
     }
+    stepMark?.('regrow');
 
     // Work done side by side, and the talk that goes with it. On a cadence
     // rather than every tick for the reason the regrowth pass above is: the
@@ -5182,7 +5186,9 @@ export class Simulation {
 
     // M11 phase 14a: who is on whose ground, seen by whom. After
     // `rebuildHashes` for the same reason as the pass above.
+    stepMark?.('workingAlongside');
     if (this.time.tick % SIGHTING_EVERY === 0) this.lookForIntruders();
+    stepMark?.('lookForIntruders');
 
     this.wildlifeSystem.update(this.animals, {
       ids: this.ids,
@@ -5200,6 +5206,7 @@ export class Simulation {
       onPredated: (prey: Animal) => this.removeAnimal(prey, 'animal_predated'),
       onBite: (animal: Animal, person: Person) => this.animalBites(animal, person),
     });
+    stepMark?.('wildlife.update');
 
     const nurslingFactor = nurslingHungerFactor(this.config.childhood.feedsPerDay,
       this.config.time.ticksPerDay, this.config.needs.hungerRate);
@@ -5214,6 +5221,7 @@ export class Simulation {
         : isNursling(person, this.config.childhood) ? nurslingFactor : 1,
       babyInArms: (person: Person) => isBabyInArms(person, this.config.childhood),
     });
+    stepMark?.('needs.update');
 
     // M15 phase 27d: fatigue and cold can overwhelm somebody swimming. This
     // runs after needs rise and before anyone acts, so crossing the threshold
@@ -5227,6 +5235,7 @@ export class Simulation {
       if (this.world.isShallow(person.x, person.y)) telemetry.count('drowned_shallows');
     }
 
+    stepMark?.('drowning');
     // Memories and relationships age once a day, not every tick. Decaying
     // sixty people's worth of both every step would be the most expensive
     // thing in the loop, and nothing in the design could tell the difference.
@@ -5422,6 +5431,7 @@ export class Simulation {
         },
       });
     }
+    stepMark?.('daily (all blocks)');
 
     const brainCtx = {
       world: this.world,
@@ -5596,6 +5606,7 @@ export class Simulation {
         this.noteInsight(person, text, kind),
     };
 
+    stepMark?.('build contexts');
     const interval = this.config.thinkInterval;
     for (const person of this.people) {
       if (!person.alive) continue;
@@ -5611,6 +5622,7 @@ export class Simulation {
           person.chronic[drive] = before + (pressure[drive] - before) * this.config.motivation.chronicRate;
         }
       }
+      stepMark?.('loop: chronic drives');
 
       // The first year is before walking: the baby rests where born until a
       // carrier system exists. Letting its own needs choose `forage` or `drink`
@@ -5704,9 +5716,11 @@ export class Simulation {
         continue;
       }
 
+      stepMark?.('loop: nursing/carry prep');
       // Anything set aside for a drink is picked back up once they are
       // comfortable again, before the brain gets a chance to plan something else.
       this.resumeOrders(person);
+      stepMark?.('loop: resumeOrders');
 
       // M15 phase 25c: what this person sees from where they stand. Mutated
       // on the shared context rather than rebuilt: it is the one field of it
@@ -5719,7 +5733,9 @@ export class Simulation {
       // An NPC under a committed order cannot think and does not observe on
       // schedule. The player's score still runs with an order, so their view
       // advances alongside that HUD update.
+      stepMark?.('loop: sightOf');
       if (scheduledThink && (!committed || person.isPlayer)) this.observePlaces(person);
+      stepMark?.('loop: observePlaces');
       const needsThink =
         !committed &&
         (scheduledThink || person.action === 'idle');
@@ -5733,8 +5749,10 @@ export class Simulation {
         // branch is the one that runs while an order is live.
         this.brain.score(person, brainCtx);
       }
+      stepMark?.('loop: brain');
 
       this.actionSystem.execute(person, actionCtx);
+      stepMark?.('loop: execute');
       const site = person.targetBuildingId === null
         ? undefined : this.buildingsById.get(person.targetBuildingId);
       if (site && this.time.tick - site.plannedTick < 200 &&
@@ -5742,6 +5760,7 @@ export class Simulation {
         site.first200Workers.add(person.id);
       }
     }
+    stepMark?.('loop: (skipped iterations + tail)');
 
     // Children are iterated like everyone else but take no turn. Sync after all
     // adult actions so iteration order cannot leave a carried infant behind.
@@ -5768,6 +5787,7 @@ export class Simulation {
         baby.carriedBy = null;
       }
     }
+    stepMark?.('carry sync');
     for (const person of this.people) {
       // M15 phase 19: the last third of a pregnancy takes half an arm's worth
       // of room too (`Carry.freeArms`), and it begins on a day boundary with
@@ -5793,7 +5813,9 @@ export class Simulation {
       }
     }
 
+    stepMark?.('reconcileCarry');
     this.cleanupDead();
+    stepMark?.('cleanupDead');
   }
 
   /** Record only what is currently visible; phase 2f will be the first reader. */

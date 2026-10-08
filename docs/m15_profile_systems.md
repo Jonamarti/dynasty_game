@@ -155,3 +155,76 @@ compactos y pueblos agregados** frente al detalle actual (aún no hay modelos
 implementados). Sin cubrir: reparto en un mundo con varias bandas, más semillas,
 otras partes del paso sin wrapper, transiciones, velocidades altas y controles del
 bucle real. El LOD aprobado aún no está activo.
+
+## Paso 0 (2026-10-08): la mitad del paso que faltaba, por bloque
+
+`npm run profile:step -- --humans=30,300` (`tools/profile-step.ts`). El
+instrumento de navegador de arriba envuelve métodos, y más de la mitad de
+`Simulation.step()` no es un método: es el bucle por persona, la
+reconciliación de carga, el contexto que se construye cada tick. Ahora
+`step()` llama a `stepMark('etiqueta')` entre bloques (`src/sim/core/StepProbe.ts`,
+un módulo aparte y no un campo de `Simulation`: el hash de estado distinguiría
+`null` de una función) y la herramienta, en Node y sobre el mismo mundo
+(`profile-4`, una banda de N fundadores concentrados, dificultad normal), carga
+el tiempo desde la marca anterior a cada etiqueta. Todo el paso queda atribuido.
+
+**Es bit-idéntico por construcción y por prueba.** Cada población se ejecuta dos
+veces desde un mundo nuevo, control sin gancho y marcada, y el SHA-256 de todo
+el estado (todos los campos, todos los RNG; mismo codificador que
+`profile-systems`) debe coincidir al empezar y a los 480 pasos, o la
+herramienta termina con error. Control negativo: perturbar un hambre en una
+millonésima cambia el hash. `step-probe.test.ts` repite la comparación en el
+conjunto de pruebas (estado completo, con la memoria de lugares de cada persona,
+tras 400 pasos con y sin gancho, y un control negativo con otra semilla).
+`--methods=brain` envuelve además cada método de un subsistema (tiempos
+inclusivos, solapados) para bajar un nivel; `--json=` guarda los datos.
+
+### Dónde va el tiempo (ms por paso, 480 pasos, esta máquina, una muestra)
+
+| Bloque | 30 | 100 | 200 | 300 | ×(300/30) |
+|---|---:|---:|---:|---:|---:|
+| `loop: brain` (`think` + `score`) | 0,710 | 2,764 | 7,276 | 15,736 | 22 |
+| `loop: observePlaces` | 0,113 | 1,480 | 6,037 | 15,614 | **138** |
+| `loop: execute` | 0,108 | 0,342 | 0,706 | 1,367 | 13 |
+| `needs.update` | 0,052 | 0,176 | 0,376 | 0,666 | 13 |
+| `loop: chronic drives` | 0,027 | | | 0,307 | 11 |
+| el resto (hashes, fauna, diarios, carga...) | ~0,2 | | | ~1,0 | ~5 |
+| **paso con marcas** | **1,21** | **5,2** | **15,2** | **34,7** | 29 |
+
+El bloque que la tabla de métodos no veía es **`observePlaces`**: 45 % del paso
+a 300 personas (9 % a 30), casi todo lo que el paso no atribuía. `needs.update`,
+como dice §0.1 del LOD, es un 2 %: lo caro es pensar, y pensar es `brain` más
+`observePlaces`.
+
+### Qué crece de forma superlineal, y por qué
+
+1. **`observePlaces`: cuadrático (138 veces el coste con 10 veces la gente;
+   de 100 a 200 cuesta 4,1 veces, de 200 a 300 cuesta 2,6 veces por 1,5 veces la
+   gente).** Cada vez que alguien piensa (cada 5 ticks, escalonado) consulta el
+   hash de personas dentro de su radio de visión (13 casillas) y, por cada persona
+   vista, llama a `PlaceMemory.remember('person', ...)`. En un campamento de 300
+   todos ven a los otros 299: N personas × N vistas. Y no es solo recorrer: la
+   memoria guarda como máximo 48 registros por tipo (`capPerKind`), así que con 299
+   vistas cada `remember` de una persona que no está ya guardada **expulsa** a la
+   más débil (`weakestKey`: un recorrido completo de los 48, más dos
+   `SpatialHash.remove`, dos `insert`, varias asignaciones de objetos) y la
+   siguiente vista expulsa a la que acaba de entrar. La memoria de personas es una
+   cola FIFO que gira entera en cada observación. Perfil de CPU a 300
+   (autotiempo): `weakestKey` 9,8 %, `remember` 6,3 %, `SpatialHash.remove` 5,2 %,
+   `setRecord`/`deleteRecord`/`indexAvailability` 8 %, recolector de basura 9 %:
+   más de un tercio de todo el proceso. A 30 personas no hay expulsión (29 < 48).
+2. **`Brain.think/score`: entre lineal y cuadrático (22 veces con 10 veces la
+   gente).** Las llamadas por paso son lineales (4,5 a 45). El coste por `score`
+   pasa de 197 µs (30) a 232 (100) y 373 (300), un factor 1,9 que viene de (a) los
+   recorridos de `neighbours` (toda la vista, 299 personas, con `filter`/`find`
+   dentro de varios puntuadores) y (b) `findExplorePoint`, de 275 a 560 µs por
+   llamada, que se llama más cuanto más agotada está la comida cercana: recorre
+   anillos de casillas de 4x4 por todo el mapa asignando cinco arrays por paso del
+   anillo. (b) es coste fijo del mapa por llamada, no de N; que se llame más es
+   consecuencia emergente de que 300 personas agotan la comida de su radio.
+3. **Lineal**: `execute`, `needs.update`, `chronic drives`, `reconcileCarry`, los
+   hashes (13 veces con 10 veces la gente, o menos).
+
+**Decisión de diseño que no se toca:** que cada persona recuerde como máximo 48
+personas (`capPerKind`) y que en un campamento todos vean a todos. Los arreglos
+de las secciones siguientes conservan esa semántica al bit.

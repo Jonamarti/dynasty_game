@@ -22,6 +22,7 @@
     "shots": "playwright test e2e/screenshots.spec.ts",
     "why": "vite-node tools/why.ts --",
     "profile:systems": "vite-node tools/profile-systems.ts",
+    "profile:step": "vite-node tools/profile-step.ts --",
     "infants": "vite-node tools/infants.ts --",
     "violence": "vite-node tools/violence.ts --",
     "i18n:soak": "vite-node tools/i18n-soak.ts --",
