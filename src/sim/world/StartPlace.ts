@@ -19,7 +19,7 @@ import type { WorldConfig } from '../core/Config.ts';
 import { DEFAULT_CONFIG } from '../core/Config.ts';
 
 /**
- * Fresh water tiles a local map must hold to be a start. A comarca is 32 by 32 tiles at the default size, so this is a stretch of
+ * Fresh water tiles a local map must hold to be a start. The window was four comarcas wide (a comarca was 32 by 32 tiles) when this was chosen; it is one comarca now, 128 by 128 tiles, so this is a stretch of
  * river a few comarcas long or a pond, not a puddle: a design assumption, chosen so that every band starts within reach of a drink.
  */
 export const MIN_FRESH_TILES = 120;
@@ -170,8 +170,10 @@ function findWateredWithin(geography: WorldGeography, rx: number, ry: number, gr
   }
   if (fresh.length === 0) return null;
   const candidates: { x: number; y: number; water: number; d: number }[] = [];
-  for (let cy = Math.ceil(half); cy <= per - Math.ceil(half); cy += 1) {
-    for (let cx = Math.ceil(half); cx <= per - Math.ceil(half); cx += 1) {
+  // Windows sit on the comarca grid: the origin is a whole comarca and the centre is `half` past it (a whole comarca for an
+  // even span, the middle of one for span 1, which is the game's map since 2026-10-08).
+  for (let cy = half; cy <= per - half; cy += 1) {
+    for (let cx = half; cx <= per - half; cx += 1) {
       const x = rx * per + cx, y = ry * per + cy;
       // The window must fit inside the globe and clear of the poles.
       if (y - half < 0 || y + half > grid.height) continue;
@@ -194,8 +196,8 @@ function findDryWithin(geography: WorldGeography, rx: number, ry: number, grid: 
   config: LocalWorldConfig): StartPlace | null {
   const per = grid.perRegion;
   const candidates: { x: number; y: number; d: number }[] = [];
-  for (let cy = Math.ceil(half); cy <= per - Math.ceil(half); cy += 1) {
-    for (let cx = Math.ceil(half); cx <= per - Math.ceil(half); cx += 1) {
+  for (let cy = half; cy <= per - half; cy += 1) {
+    for (let cx = half; cx <= per - half; cx += 1) {
       const x = rx * per + cx, y = ry * per + cy;
       if (y - half < 0 || y + half > grid.height) continue;
       candidates.push({ x, y, d: (cx - per / 2) ** 2 + (cy - per / 2) ** 2 });

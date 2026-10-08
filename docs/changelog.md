@@ -1,3 +1,13 @@
+## 2026-10-08 — M15: una comarca por mapa (A)
+
+Decisión del propietario: cada casilla del mapa del mundo es un mapa jugable, como la isla clásica. `GLOBE_SPAN` pasa de 4 a 1 (`src/main.ts`): el 128×128 de una partida abierta desde el globo es **una** comarca (unos 40 km de lado, 312 m por casilla), no dieciséis apretadas bajo las cuotas de una. Era provisional desde la fase 31.
+
+**Qué dependía del 4×4 y cómo quedó.** (1) `WorldFrame`/`comarcaAtTile`/`observeWorld`/`WorldKnowledge`/`ComarcaNeighbour` ya eran genéricos en `comarcasWide/High`: con 1 todas las casillas caen en la misma comarca y el borde del mapa es el borde de la comarca (que es lo que `neighbourComarca`/`edgeOfTile` suponían para la fase 34); no hubo que tocarlos y una prueba nueva lo fija. (2) La colocación del inicio (`StartPlace`) buscaba centros en comarcas enteras, lo cual da ventanas que cruzan cuatro comarcas cuando el tramo es impar: ahora los candidatos se alinean con la cuadrícula (origen entero, centro a `half` de él), idéntico para tramo 4 (las pruebas fijadas no se mueven) y la comarca exacta para tramo 1. Con `MIN_FRESH_TILES` = 120 casillas dulces de 16.384 se conserva. (3) Ríos: medido con 496 comarcas por mapa (`tools/_scratch`, no se conserva), la parte de una comarca que es agua dulce es 0 en el 84 % de las comarcas de la Tierra, 4,7 % en el percentil 95, 23 % en el 99 y 39 % como máximo (un río caudaloso a 312 m por casilla), y en un mundo aleatorio 1,3 % en el 99 y 9 % como máximo. Los anchos salen de `canonicalHalfWidth` en unidades de comarca y no se tocan; con 1 comarca por mapa un arroyo mide 3-6 casillas de ancho y un río grande hasta 40: es la escala que da el dato, ver `bugs.md`. Ningún mapa queda cubierto por un río, así que no hay nada que decidir. (4) Relieve (`LOCAL_RELIEF_NOISE_SCALE`, `metresPerUnit` 400): el ruido está en coordenadas globales, así que a esta escala el terreno es más suave por casilla; sigue habiendo costa, colinas y roca donde la geografía los da.
+
+La isla clásica no se toca. Sin cambios en ningún flujo de RNG. Un guardado anterior de una ventana 4×4 sigue cargando: el marco se guarda con su tamaño.
+
+Pruebas: `start-place.test.ts` (inicio de una comarca alineado y medido; el mapa construido es esa comarca), `e2e/one-comarca.spec.ts` (generado y Tierra por el selector; entra en `npm run e2e`). Capturas en `artifacts/screenshots/m15-one-comarca-per-map-2026-10-08/`.
+
 ## 2026-10-08 — Integración de fase 40 y capturas repetibles
 
 La fase 40 se integra en master (`78cc2d4`) conservando las entradas de

@@ -167,3 +167,31 @@ describe('M15 "begin anywhere" (2026-10-07): a coastal region is selectable, and
     expect(dry.report.land).toBeGreaterThanOrEqual(MIN_LAND_SHARE);
   });
 });
+
+describe('one comarca per map (owner, 2026-10-08)', () => {
+  it('a start for a one-comarca map is the middle of a whole comarca, measured, with fresh water in it', () => {
+    for (const seed of SEEDS.slice(0, 4)) {
+      const geography = randomWorldGeography(seed);
+      const start = findWateredGlobeStart(geography, 1, config, seed);
+      expect(start, seed).not.toBeNull();
+      // The map IS a comarca of the globe: its origin is a whole comarca, not a window straddling four of them.
+      expect(start!.x - 0.5, seed).toBe(Math.round(start!.x - 0.5));
+      expect(start!.y - 0.5, seed).toBe(Math.round(start!.y - 0.5));
+      expect(isStart(measureWindow(geography, start!.x, start!.y, 1, config)), seed).toBe(true);
+    }
+  });
+
+  it('the simulation built there is that one comarca: every tile is in it', () => {
+    const seed = SEEDS[0]!;
+    const geography = randomWorldGeography(seed);
+    const start = findWateredGlobeStart(geography, 1, config, seed)!;
+    const state = new WorldState({ seed, population: { bands: 1, peoplePerBand: 6 } },
+      { geography, start: { x: start.x, y: start.y }, comarcasWide: 1, comarcasHigh: 1, peoples: false });
+    const sim = state.current;
+    const here = { cx: Math.floor(start.x), cy: Math.floor(start.y) };
+    for (const [x, y] of [[0, 0], [127.9, 0], [0, 127.9], [64, 64], [127.9, 127.9]] as const) {
+      expect(sim.comarcaAtTile(x, y)).toEqual(here);
+    }
+    expect(sim.livingPeople().length).toBeGreaterThan(0);
+  });
+});
