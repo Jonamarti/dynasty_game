@@ -19,7 +19,8 @@ import { anchorOf, carerOf, childRadius } from '../src/sim/ai/Anchor.ts';
 import { telemetry } from '../src/sim/core/Telemetry.ts';
 import { RNG } from '../src/sim/core/RNG.ts';
 import type { DeepPartial, SimConfig } from '../src/sim/core/Config.ts';
-import { TECH, techPower, type Tech } from '../src/sim/knowledge/Tech.ts';
+import { TECH, techPower, type Tech, axeFactor, buildFactor, reapFactor } from '../src/sim/knowledge/Tech.ts';
+import { digTool } from '../src/sim/core/Earth.ts';
 
 /** Whether somebody holds a technology at any strength — for the civilisation check. */
 const TECH_KNOWN = (person: import('../src/sim/entities/Person.ts').Person, tech: Tech) => techPower(person, tech) > 0;
@@ -40,6 +41,7 @@ import { setupFoodNews, setupConflicts } from './checkFixtures.ts';
 import { setupIronBloom } from './ironFixture.ts';
 import { setupIronForging } from './ironForgingFixture.ts';
 import { setupIronCarburising } from './ironCarburisingFixture.ts';
+import { setupIronTools } from './ironToolsFixture.ts';
 import { createFrontier, setupFrontier, observeFrontier, createFrontierCohort, observeFrontierCohort } from './frontierFixture.ts';
 
 /**
@@ -273,6 +275,16 @@ export const SCENARIOS: Record<string, Scenario> = {
     steps: 300,
     setup: setupIronCarburising,
     checks: ['iron-is-carburised'],
+  },
+  ironworkers: {
+    name: 'ironworkers',
+    description: 'Four supplied iron-tool orders at one finished anvil; checks each tool reader, not autonomous economics.',
+    config: { seed: 'ironworkers', world: { width: 48, height: 48 },
+      population: { bands: 1, peoplePerBand: 6,
+        startingTech: withPrerequisites(['forging', 'ground_stone', 'bronze_tools', 'carpentry', 'sickle']) } },
+    steps: 300,
+    setup: setupIronTools,
+    checks: ['iron-tools-cut-the-day'],
   },
   smiths: {
     name: 'smiths',
@@ -3624,6 +3636,48 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
   } else {
     add('iron-is-carburised', steelMade > 0,
       carburisingOpportunity + ' supplied wrought iron and charcoal charges, ' + steelMade + ' steel made');
+  }
+  // One supplied charge per tool keeps a missing recipe visible and verifies
+  // that all four outputs reach the existing felling/building/reaping/digging readers.
+  const ironToolSpecs = [
+    { id: 'iron_axe', reader: axeFactor, better: (withTool: number, bare: number) => withTool < bare },
+    { id: 'iron_adze', reader: buildFactor, better: (withTool: number, bare: number) => withTool > bare },
+    { id: 'iron_sickle', reader: reapFactor, better: (withTool: number, bare: number) => withTool < bare },
+  ] as const;
+  const ironToolResults = ironToolSpecs.map(({ id, reader, better }) => {
+    const opportunity = tel['iron_tools_fixture_' + id + '_charges'] ?? 0;
+    const made = tel['crafted_' + id] ?? 0;
+    const holder = sim.livingPeople().find(person => person.inventory.count(id) > 0 && techPower(person, 'iron_tools') > 0);
+    let works = false;
+    if (holder) {
+      const count = holder.inventory.remove(id, 1);
+      const bare = reader(holder);
+      holder.inventory.add(id, count);
+      works = better(reader(holder), bare);
+    }
+    return { id, opportunity, made, works };
+  });
+  const spadeOpportunity = tel.iron_tools_fixture_iron_spade_charges ?? 0;
+  const spades = tel.crafted_iron_spade ?? 0;
+  const digger = sim.livingPeople().find(person => person.inventory.count('iron_spade') > 0 && techPower(person, 'iron_tools') > 0);
+  let ironSpade = digger ? digTool(digger) : null;
+  let spadeWorks = false;
+  if (digger) {
+    const count = digger.inventory.remove('iron_spade', 1);
+    const bare = digTool(digger);
+    digger.inventory.add('iron_spade', count);
+    ironSpade = digTool(digger);
+    spadeWorks = ironSpade?.item === 'iron_spade' && ironSpade.power >= 6 && (bare?.power ?? 0) < ironSpade.power;
+  }
+  const allIronTools = ironToolResults.every(result => result.opportunity > 0 && result.made > 0 && result.works) &&
+    spadeOpportunity > 0 && spades > 0 && spadeWorks;
+  if (ironToolResults.every(result => result.opportunity === 0) && spadeOpportunity === 0 &&
+      ironToolResults.every(result => result.made === 0) && spades === 0) {
+    skip('iron-tools-cut-the-day', 'no supplied iron-tool charges in this run');
+  } else {
+    add('iron-tools-cut-the-day', allIronTools,
+      ironToolResults.map(result => result.id + ': ' + result.made + '/' + result.opportunity + ' crafted, reader ' + result.works).join('; ') +
+      '; iron_spade: ' + spades + '/' + spadeOpportunity + ' crafted, dig power ' + (ironSpade?.power ?? 0) + ' (need 6)');
   }
   // M15 phase 37. The metal tier is a chain of six steps done by whoever holds
   // the ingredients (seam, deadwood, pit, charcoal, furnace, mould), and the

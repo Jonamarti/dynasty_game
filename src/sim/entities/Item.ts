@@ -391,6 +391,11 @@ export const ITEMS: Record<string, ItemDef> = {
   bronze_adze: { id: 'bronze_adze', label: 'Bronze adze', nutrition: 0, spoilTicks: 0, baseValue: 26, class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 } },
   bronze_sickle: { id: 'bronze_sickle', label: 'Bronze sickle', nutrition: 0, spoilTicks: 0, baseValue: 22, class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 } },
   bronze_spade: { id: 'bronze_spade', label: 'Bronze spade', nutrition: 0, spoilTicks: 0, baseValue: 30, class: 'long', hand: { perHand: 1, perArms: 1, hands: 1 } },
+  // M15 phase 40e: each iron tool is read by its existing economic work path.
+  iron_axe: { id: 'iron_axe', label: 'Iron axe', nutrition: 0, spoilTicks: 0, baseValue: 32, class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 } },
+  iron_adze: { id: 'iron_adze', label: 'Iron adze', nutrition: 0, spoilTicks: 0, baseValue: 30, class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 } },
+  iron_sickle: { id: 'iron_sickle', label: 'Iron sickle', nutrition: 0, spoilTicks: 0, baseValue: 26, class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 } },
+  iron_spade: { id: 'iron_spade', label: 'Iron spade', nutrition: 0, spoilTicks: 0, baseValue: 34, class: 'long', hand: { perHand: 1, perArms: 1, hands: 1 } },
   // `bronze_arms`. The sword is a weapon like the dagger, further reaching and
   // harder-hitting than anything a flint can be; the helm is the first garment
   // to cover the head, and its worth passes through `armourTech`.

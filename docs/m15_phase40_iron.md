@@ -125,3 +125,24 @@ Las herramientas de hierro y el arado continúan en 40e y 40f. Las cohortes
 siguen diferidas; no se afirma mejora económica.
 
 Verificación 40d: TypeScript limpio, seis unitarios de acero y navegador 2/2, carburisers 1/1. Suite completa: 1.562 pasan y un fallo nuevo de difusión (0,65 frente a <0,6), documentado para M16 sin ajustar tasas/aserción; 1 omitida. Simcheck conserva dos fallos previos de dieta/rendimiento (2/144).
+
+## 40e — `iron_tools`, herramientas para los trabajos existentes
+
+`iron_tools` requiere `forging` y pertenece a Metal. Hacha, azuela y hoz
+consumen un hierro forjado cada una; la pala consume dos. Se fabrican con
+`smith` en el yunque, en 120, 120, 100 y 130 ticks base respectivamente,
+con stock objetivo 1. Estos costes y coeficientes son supuestos de diseño.
+
+El hacha entra en `AXE_TOOLS` (trabajo restante 0,24 a dominio 1), la azuela
+en `buildFactor` (1,5), la hoz en `reapFactor` (0,4) y la pala en
+`Earth.digTool` (6× frente al palo 1×). Los lectores exigen herramienta y
+conocimiento y escogen la mejor alternativa sin apilar bonificaciones.
+Los factores de trabajo se comprueban también en los refinamientos admitidos.
+No se sustituye la lógica de tala, obra, cosecha o excavación.
+
+`ironworkers` suministra cuatro cargas y órdenes reales; el check
+`iron-tools-cut-the-day` exige los cuatro resultados y sus lectores.
+Los negativos detectan las recetas ausentes. La UI española se captura en
+`artifacts/screenshots/m15-phase40-iron-tools-2026-10-08/`, incluyendo una
+excavación real. No se afirma mejora de la economía; las cohortes continúan
+diferidas. Solo resta `ploughshare` para implementar los seis nodos de fase 40.

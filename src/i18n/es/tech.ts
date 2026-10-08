@@ -510,5 +510,11 @@ export const ES_TECH: Record<string, string> = {
   "Carbon from charcoal hardens wrought iron into steel, which holds the sharpest edge.": "El carbono del carbón vegetal endurece el hierro forjado y lo convierte en acero, que conserva el filo más afilado.",
   "Charcoal hardens wrought iron into steel; its sword has the best edge in the game.": "El carbón vegetal endurece el hierro forjado y lo convierte en acero; su espada tiene el mejor filo del juego.",
   "RECIPES.carburise_steel and RECIPES.steel_sword; ITEMS.steel_sword.weapon via weaponOf in ActionSystem.doHunt and doAttack": "RECIPES.carburise_steel y RECIPES.steel_sword; ITEMS.steel_sword.weapon mediante weaponOf en ActionSystem.doHunt y doAttack",
+  "Iron tools": "Herramientas de hierro",
+  "looked at the clean bar of iron and saw an axe, an adze, a sickle and a spade": "miró la barra limpia de hierro y vio un hacha, una azuela, una hoz y una pala",
+  "felled a tree with an iron edge and saw the work finish before the stone one": "taló un árbol con un filo de hierro y terminó antes que con uno de piedra",
+  "A wrought-iron axe, adze, sickle and spade: common tools that fell, build, reap and dig faster.": "Un hacha, una azuela, una hoz y una pala de hierro forjado: herramientas comunes para talar, construir, cosechar y cavar más deprisa.",
+  "Wrought-iron tools speed felling, building and reaping; the spade digs six times as fast as a stick.": "Las herramientas de hierro forjado aceleran la tala, la construcción y la cosecha; la pala cava seis veces más deprisa que un palo.",
+  "Tech.axeFactor (AXE_TOOLS), buildFactor, reapFactor and Earth.digTool (DIG_TOOLS); RECIPES.iron_*": "Tech.axeFactor (AXE_TOOLS), buildFactor, reapFactor y Earth.digTool (DIG_TOOLS); RECIPES.iron_*",
 
 };

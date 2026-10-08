@@ -8,6 +8,9 @@ no se ha aislado aquí una causa adicional. No se ajustan tasas ni aserciones.
 Se difiere a M16 por la instrucción de terminar funcionalidades M15. Los seis
 unitarios de acero y la puerta ordenada `carburisers` pasan.
 
+En 40e la misma aserción vuelve a pasar al ampliar el catálogo con herramientas;
+la sensibilidad queda registrada para M16, sin cambio de tasas ni umbral.
+
 ## M15 fase 40c: alcance de la forja (2026-10-08)
 
 El check corto `forgers` demuestra una orden suministrada en un yunque terminado,

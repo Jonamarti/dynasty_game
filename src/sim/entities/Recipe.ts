@@ -658,6 +658,24 @@ export const RECIPES: Record<string, RecipeDef> = {
     id: 'bronze_spade', label: 'Bronze spade', icon: '\u{2660}', tech: 'bronze_tools', skill: 'smith',
     workTicks: 130, ingredients: { bronze: 3 }, output: { bronze_spade: 1 }, station: 'furnace', keep: 1,
   },
+  // M15 phase 40e: wrought iron is common enough for the whole tool set;
+  // handles are implicit, as they are for bronze. The iron spade costs two bars.
+  iron_axe: {
+    id: 'iron_axe', label: 'Iron axe', icon: '\u{1FA93}', tech: 'iron_tools', skill: 'smith',
+    workTicks: 120, ingredients: { wrought_iron: 1 }, output: { iron_axe: 1 }, station: 'anvil', keep: 1,
+  },
+  iron_adze: {
+    id: 'iron_adze', label: 'Iron adze', icon: '\u{1FA93}', tech: 'iron_tools', skill: 'smith',
+    workTicks: 120, ingredients: { wrought_iron: 1 }, output: { iron_adze: 1 }, station: 'anvil', keep: 1,
+  },
+  iron_sickle: {
+    id: 'iron_sickle', label: 'Iron sickle', icon: '\u{1F5E1}', tech: 'iron_tools', skill: 'smith',
+    workTicks: 100, ingredients: { wrought_iron: 1 }, output: { iron_sickle: 1 }, station: 'anvil', keep: 1,
+  },
+  iron_spade: {
+    id: 'iron_spade', label: 'Iron spade', icon: '\u{2660}', tech: 'iron_tools', skill: 'smith',
+    workTicks: 130, ingredients: { wrought_iron: 2 }, output: { iron_spade: 1 }, station: 'anvil', keep: 1,
+  },
   // `bronze_arms`, at the furnace. Three of bronze for the sword and two for the
   // helm; `keep: 1`, and not more, for the reason the tools give.
   bronze_sword: {

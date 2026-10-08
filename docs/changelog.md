@@ -1,3 +1,24 @@
+## 2026-10-08 — M15 fase 40e: herramientas de hierro
+
+`iron_tools` conecta hacha, azuela, hoz y pala con los lectores compartidos
+para talar, construir, cosechar y cavar. Todas se forjan en el yunque; la
+pala cava a 6× frente al palo 1× a dominio base. Saber la técnica sin llevar
+la herramienta no concede el factor. Costes y coeficientes son supuestos
+de diseño, sin afirmar mejora económica; cohortes diferidas hasta M16.
+
+Nueve pruebas y `ironworkers` cubren las órdenes reales, lectores y cuatro
+controles que eliminan una receta y dan FAIL aplicable. Iconos y pala en mano
+generados desde fuentes; traducciones y capturas españolas en
+`artifacts/screenshots/m15-phase40-iron-tools-2026-10-08/`.
+
+Verificación: TypeScript limpio; suite completa inicial 202/203 archivos,
+1.571 pruebas pasan, 1 omitida, falla cobertura del dibujo de pala en mano.
+Se añadió ese dibujo y se regeneró el atlas: arte focal 18/18. La prueba de
+difusión que falló en 40d vuelve a pasar con el catálogo de herramientas;
+se conserva su registro de sensibilidad, sin ajustar tasas ni aserciones.
+`ironworkers` 1/1; `sim:check` mantiene los dos fallos previos de dieta y
+rendimiento (2/145). Sigue el arado de reja para cerrar los seis nodos.
+
 ## 2026-10-08 — M15 fase 40d: acero y espada
 
 La cadena gana `carburising`, después de `forging` y `charcoal`: un hierro

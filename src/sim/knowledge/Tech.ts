@@ -191,6 +191,8 @@ export const TECHS = [
   'forging',
   // M15 phase 40d: carbon hardens forged iron into steel for the best edge.
   'carburising',
+  // M15 phase 40e: common iron tools read the same work paths as bronze.
+  'iron_tools',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -2379,6 +2381,24 @@ export const TECH: Record<Tech, TechDef> = {
     description:
       'Carbon from charcoal hardens wrought iron into steel, which holds the sharpest edge.',
   },
+  // M15 phase 40e (M8.4). A wrought-iron tool for each ordinary trade: axe,
+  // adze, sickle and spade. The readers are shared with their bronze peers.
+  iron_tools: {
+    id: 'iron_tools', label: 'Iron tools', domain: 'metal', web: 'metal',
+    age: 'iron', firstKnown: 'about 1200 BC',
+    kind: 'device',
+    requires: ['forging'], difficulty: 0.6, skill: 'smith',
+    prototype: { wrought_iron: 1 }, maxRefinement: 1,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'forging' }, { kind: 'holding', item: 'wrought_iron' },
+                { kind: 'doing', action: 'craft' }],
+        weight: 1.0, story: 'looked at the clean bar of iron and saw an axe, an adze, a sickle and a spade' },
+      { needs: [{ kind: 'knows', tech: 'forging' }, { kind: 'doing', action: 'chop' }],
+        weight: 0.6, story: 'felled a tree with an iron edge and saw the work finish before the stone one' },
+    ],
+    description:
+      'A wrought-iron axe, adze, sickle and spade: common tools that fell, build, reap and dig faster.',
+  },
   // M15 phase 36 (M14 fase 18b). `next-steps.md` had carried this since M8.2
   // as "the node that never reached TECHS": `ActionSystem.doTrade` existed,
   // `EVENT_TYPES` declared it, `DEED_WEIGHT` scored it, and nobody gated the
@@ -2786,6 +2806,10 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
     summary: 'Charcoal hardens wrought iron into steel; its sword has the best edge in the game.',
     site: 'RECIPES.carburise_steel and RECIPES.steel_sword; ITEMS.steel_sword.weapon via weaponOf in ActionSystem.doHunt and doAttack',
   },
+  iron_tools: {
+    summary: 'Wrought-iron tools speed felling, building and reaping; the spade digs six times as fast as a stick.',
+    site: 'Tech.axeFactor (AXE_TOOLS), buildFactor, reapFactor and Earth.digTool (DIG_TOOLS); RECIPES.iron_*',
+  },
   trade: {
     summary: 'A fairer bargain: what changes hands is weighed by what it is worth, not just by feel.',
     site: 'ActionSystem.doTrade, via ItemDef.baseValue',
@@ -3024,7 +3048,9 @@ export function buildFactor(person: Person): number {
   // M15 phase 37: a bronze adze, on the same double gate. One adze swings at a
   // time, so the better of the two counts and the two do not stack.
   const bronze = person.inventory.has('bronze_adze') ? scaled(person, 'bronze_tools', 1.45) : 1;
-  return scaled(person, 'carpentry', 1.3) * Math.max(adze, bronze);
+  // A wrought-iron adze is the next shared-tool tier; one held adze does the work.
+  const iron = person.inventory.has('iron_adze') ? scaled(person, 'iron_tools', 1.5) : 1;
+  return scaled(person, 'carpentry', 1.3) * Math.max(adze, bronze, iron);
 }
 
 /**
@@ -3062,6 +3088,8 @@ export const AXE_TOOLS: readonly { item: string; tech: Tech; full: number }[] = 
   { item: 'stone_axe', tech: 'ground_stone', full: 0.35 },
   { item: 'copper_axe', tech: 'casting', full: 0.3 },
   { item: 'bronze_axe', tech: 'bronze_tools', full: 0.25 },
+  // M15 phase 40e: refined iron edges leave less work than even the bronze axe.
+  { item: 'iron_axe', tech: 'iron_tools', full: 0.24 },
 ];
 
 /** The strongest axe present, optionally limited to what is actually in hand. */
@@ -3090,7 +3118,9 @@ export function reapFactor(person: Person): number {
   // M15 phase 37: the bronze sickle, the better of the two (a smaller number is
   // less work). `full` 0.45 stays positive at `bronze_tools`' one refinement step.
   const bronze = person.inventory.has('bronze_sickle') ? scaled(person, 'bronze_tools', 0.45) : 1;
-  return Math.min(flint, bronze);
+  // The iron edge takes still less work than bronze; whichever sickle is best wins.
+  const iron = person.inventory.has('iron_sickle') ? scaled(person, 'iron_tools', 0.4) : 1;
+  return Math.min(flint, bronze, iron);
 }
 
 /**
@@ -3334,7 +3364,7 @@ const ERA_LADDER: Omit<EraDef, 'label'>[] = [
     needs: [
       'firemaking', 'cooking', 'hafting', 'clothing', 'fishing', 'netting', 'bow',
       'farming', 'herding', 'pottery', 'masonry',
-      'native_copper', 'smelting', 'casting', 'alloying', 'bronze_tools', 'bog_iron', 'bloomery', 'carburising',
+      'native_copper', 'smelting', 'casting', 'alloying', 'bronze_tools', 'bog_iron', 'bloomery', 'carburising', 'iron_tools',
     ],
     heldBy: 0.15,
     description: 'Iron-bearing earth, the first step toward a bloomery.',

@@ -105,6 +105,23 @@ export const ITEMS: ItemArt[] = [
     limb([[32, 6], [32, 39]], 3.4, WOOD, WOOD_D)
     + shape('M24,36L40,36L42,53Q32,66 22,53Z', '#b08a3e', '#5a4216')
     + stroke('M30,39L28,53M34,39L36,53', '#dcc072', 1), 20)],
+  ['iron_axe', 'Hacha de hierro', 'iron_tools', () => rot(
+    limb([[32, 60], [32, 10]], 3.6, WOOD, WOOD_D)
+    + shape(poly([[32, 6], [50, 3], [55, 22], [32, 24]]), '#7d898d', '#293237')
+    + stroke('M30,14L35,14M30,18L35,18M30,22L35,22', CORD, 1.6)
+    + stroke('M48,7L52,20', '#dce5e7', 1.2), 30)],
+  ['iron_adze', 'Azuela de hierro', 'iron_tools', () => rot(
+    limb([[30, 60], [30, 14]], 3.4, WOOD, WOOD_D)
+    + shape(poly([[26, 14], [48, 9], [50, 15], [30, 20]]), '#7d898d', '#293237')
+    + stroke('M30,17L34,15.6M30,21L34,19.6', CORD, 1.6), 24)],
+  ['iron_sickle', 'Hoz de hierro', 'iron_tools', () =>
+    stroke('M16,56Q10,24 40,14Q52,12 56,22Q40,20 30,34Q26,46 22,56', '#7d898d', 4)
+    + stroke('M14,56L22,56', WOOD, 5)
+    + stroke('M20,26Q30,18 44,16', '#dce5e7', 1.2)],
+  ['iron_spade', 'Pala de hierro', 'iron_tools', () => rot(
+    limb([[32, 6], [32, 39]], 3.4, WOOD, WOOD_D)
+    + shape('M24,36L40,36L42,53Q32,66 22,53Z', '#7d898d', '#293237')
+    + stroke('M30,39L28,53M34,39L36,53', '#dce5e7', 1), 20)],
   ['bronze_sword', 'Espada de bronce', 'bronze_arms', () => rot(
     shape(poly([[32, 2], [37.5, 40], [26.5, 40]]), '#b08a3e', '#5a4216')
     + stroke('M32,8L32,36', '#dcc072', 1.2)

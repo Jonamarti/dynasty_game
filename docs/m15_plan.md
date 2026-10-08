@@ -3777,6 +3777,8 @@ alcanzable. **Checks:** uno por nodo, cada uno contra el build sin el nodo.
 
 **Avance del 2026-10-08 (40d, `carburising`).** El nodo requiere `forging` y `charcoal`; hierro forjado y carbón producen acero en el yunque. El acero se convierte en espada y su filo lo leen la caza y el combate con el dominio de la técnica. El check `iron-is-carburised` mide una orden suministrada, con control sin receta. Cantidades y coeficientes son supuestos de diseño; no se afirma mejora económica y las cohortes quedan diferidas. Capturas: `artifacts/screenshots/m15-phase40-carburising-2026-10-08/`. Siguen `iron_tools` y `ploughshare`. [Detalle](m15_phase40_iron.md).
 
+**Avance del 2026-10-08 (40e, `iron_tools`).** El nodo requiere `forging`; hacha, azuela, hoz y pala de hierro se fabrican en el yunque y trabajan por los lectores compartidos de tala, construcción, cosecha y excavación. La pala da 6× frente al palo 1× con dominio completo; saber el nodo sin herramienta no da beneficio. Checks con cargas y órdenes reales, controles sin receta y capturas en `artifacts/screenshots/m15-phase40-iron-tools-2026-10-08/`. Coeficientes de diseño; cohortes diferidas, sin afirmar mejora económica. Sigue `ploughshare`. [Detalle](m15_phase40_iron.md).
+
 ## Fase 41 — Calibración final y cierre de M15
 
 - La segunda pasada completa del protocolo de la fase 10 en `generations`,

@@ -306,5 +306,9 @@ export const ES_DATA: Record<string, string> = {
   "Steel": "Acero",
   "Carburise steel": "Carburizar hierro",
   "Steel sword": "Espada de acero",
+  "Iron axe": "Hacha de hierro",
+  "Iron adze": "Azuela de hierro",
+  "Iron sickle": "Hoz de hierro",
+  "Iron spade": "Pala de hierro",
 
 };

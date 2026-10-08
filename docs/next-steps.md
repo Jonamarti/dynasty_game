@@ -1,3 +1,5 @@
+**2026-10-08: fase 40e (`iron_tools`) entregada.** Cuatro herramientas conectadas a los trabajos existentes; pala de hierro a 6×. Sigue el arado de reja `ploughshare` (40f). Cohortes diferidas y regresión de difusión documentada para M16. [Detalle](m15_phase40_iron.md).
+
 **2026-10-08: fase 40d (`carburising`) entregada.** Acero y espada con filo real en combate y caza. Siguen `iron_tools` (40e) y el arado `ploughshare` (40f); las cohortes económicas continúan diferidas. [Detalle](m15_phase40_iron.md).
 
 **2026-10-08: fase 40c (`forging`) entregada.** La lupia se trabaja en el conjunto de yunque y martillo de piedra para producir `wrought_iron`, con orden real y la ejecución compartida. Quedan `carburising`, `iron_tools` y `ploughshare`; no se cierra la fase 40 ni se afirma mejora económica. Cohortes diferidas. [Detalle](m15_phase40_iron.md).
