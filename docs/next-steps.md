@@ -1553,7 +1553,7 @@ El LOD necesita sus registros y el perfil por sistemas antes de recortar el loop
 
 Ver [m15_phase37_metal.md](m15_phase37_metal.md). En orden de lo que desbloquea:
 
-1. **Comercio (fase 36) y `bronze-needs-a-trader`.** La puerta del plan necesita caravanas y una cohorte con mapa; sin ellas, el estaño de una isla es el que haya y nadie lo trae de fuera.
+1. **Comercio (fase 36) y `bronze-needs-a-trader`.** El nodo `trade` ya está en `TECHS` (2026-10-08, 18b) y el trueque ya lee `baseValue` cuando se conoce — ver [m15_plan.md](m15_plan.md), avance de fase 36. Sigue sin desbloquear el check: hacen falta caravanas (18c) y el mapa entre comarcas para que el estaño de una isla salga de ella, que es lo que `bronze-needs-a-trader` mide.
 2. **Sub-redes Fuego y Ropa (fases 14 y 16)**: `charcoal` y `tallow` a Fuego, la fíbula a Ropa.
 3. **La sal gema** (fase 15) como tercera fuente de sal.
 4. **El yelmo puesto**: el arte de personas solo dibuja las prendas de `Wear`; el yelmo de bronce protege pero no se ve en la cabeza.

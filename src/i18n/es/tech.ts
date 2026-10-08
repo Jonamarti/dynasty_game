@@ -488,4 +488,14 @@ export const ES_TECH: Record<string, string> = {
   "set iron-rich earth and charcoal together under the bellows and saw the furnace could make a bloom": "puso tierra ferruginosa y carbón juntos bajo el fuelle y vio que el horno podía producir una lupia",
   "Air driven through iron ore and charcoal turns the furnace charge into a bloom the smith can work.": "El aire forzado a través del mineral de hierro y el carbón convierte la carga del horno en una masa que puede trabajar el herrero.",
   "RECIPES.smelt_iron at BUILDINGS.furnace; Ore.wantedOreKinds follows iron ore and charcoal to their sources": "RECIPES.smelt_iron en BUILDINGS.furnace; Ore.wantedOreKinds sigue el mineral de hierro y el carbón hasta sus fuentes",
+  "Trade": "Comercio",
+  "about 13,000 years ago": "hace unos 13.000 años",
+  "Counting what a trade is worth on both sides, instead of by feel. A band that knows it strikes a fairer bargain, and is the one that can send out a caravan.":
+    "Contar lo que vale un trueque en los dos lados, en vez de fiarse del ojo. Una banda que lo sabe cierra tratos más justos, y es la que puede mandar una caravana.",
+  "tallied what went each way in a trade and noticed the two heaps were never equal":
+    "contó lo que iba de cada lado en un trueque y notó que los dos montones nunca eran iguales",
+  "wanted something from a stranger badly enough to work out what would make the swap fair":
+    "quiso algo de un desconocido con tantas ganas que calculó qué haría justo el cambio",
+  "A fairer bargain: what changes hands is weighed by what it is worth, not just by feel.":
+    "Un trato más justo: lo que cambia de manos se pesa por lo que vale, no solo al ojo.",
 };

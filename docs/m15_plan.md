@@ -4142,3 +4142,9 @@ Cohortes de economía y matriz completa diferidas por la instrucción de M15; es
 ## 2026-10-08 — Autonomía al reconstruir el mundo
 
 Corregida la pérdida silenciosa del modo autónomo al elegir región o cambiar los ajustes de generación. Prueba del flujo completo de navegador y captura en artifacts/screenshots/m15-autonomy-rebuild-2026-10-08/.
+
+## 2026-10-08 — M15 fase 36 (18b): `trade` entra en `TECHS`
+
+Primera pieza de la fase 36 (`next-steps.md` lo llevaba desde M8.2 como el nodo que nunca llegó a la lista). `trade` es ahora una práctica que requiere `marking`: se descubre haciendo el propio trueque o hablando con un desconocido con algo que ofrecer, y `ActionSystem.doTrade` reparte por `ItemDef.baseValue` en vez de por cuenta ciega cuando quien inicia lo conoce — el efecto exacto que pedía 18b. Lo que falta de la fase (18a noticias, 18c caravanas, 18d incursiones entre comarcas, 18e casa rival) sigue sin construir; `bronze-needs-a-trader` (fase 37) sigue sin poder medirse porque necesita caravanas moviendo estaño entre comarcas, no solo el trueque sabiendo lo que vale.
+
+`people-knowledge.test.ts` («sustained full contact does homogenise») subió de 0,33 a 0,58: medido y no concentrado en el nodo nuevo (excluirlo del recuento no cambia la cifra), sino repartido por una tabla de tecnologías más larga que diluye el contacto por temporada entre más técnicas. Límite subido a 0,6 con la misma nota de la fase 37 sobre este mismo test. `trade.test.ts` cubre el reparto con y sin la tecnología conocida.
