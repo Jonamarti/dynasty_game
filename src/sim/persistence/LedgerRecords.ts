@@ -177,9 +177,14 @@ export function fromLedgerRecord(input: unknown, peopleById?: ReadonlyMap<number
       !Array.isArray(input.territoryPermissions) || !Array.isArray(input.feudEvents) || !Array.isArray(input.pendingVerdicts) ||
       !Array.isArray(input.sightings) || !Array.isArray(input.socialRecent) || !object(input.bandSystem)) invalid('invalid ledger collections');
   const interruptions = input.interruptions.map(raw => {
-    if (!object(raw)) invalid('invalid interruption'); exact(raw, ['personId', 'action', 'reason', 'recipe']);
+    if (!object(raw)) invalid('invalid interruption');
+    const hasCommitmentSource = Object.hasOwn(raw, 'autonomousCommitment');
+    if (Object.keys(raw).length !== (hasCommitmentSource ? 5 : 4) ||
+        !['personId', 'action', 'reason', 'recipe'].every(key => Object.hasOwn(raw, key)) ||
+        (hasCommitmentSource && typeof raw.autonomousCommitment !== 'boolean')) invalid('unknown or missing interruption fields');
     if (!id(raw.personId) || typeof raw.action !== 'string' || typeof raw.reason !== 'string' || !(raw.recipe === null || typeof raw.recipe === 'string')) invalid('invalid interruption fields');
-    person(raw.personId); return { personId: raw.personId, action: raw.action, reason: raw.reason, recipe: raw.recipe };
+    person(raw.personId); return { personId: raw.personId, action: raw.action, reason: raw.reason, recipe: raw.recipe,
+      ...(hasCommitmentSource ? { autonomousCommitment: raw.autonomousCommitment as boolean } : {}) };
   });
   if (interruptions.length > 32) invalid('too many interruption notices');
   const watchedUses: WatchedNotice[] = input.watchedUses.map(raw => {

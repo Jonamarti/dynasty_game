@@ -693,3 +693,34 @@ the action and the direct store API preserves the leased pair. The paid
 ploughing factor belongs to the crop until harvest, rather than to the farmer
 or a pen that might disappear after sowing. Work still honours the existing
 sowing interruption path. No additional RNG forks or animal species are used.
+
+## Autonomous travel commitment — M15 brain cost, 2026-10-08
+
+`Brain.think` can select a dominant viable need, then store the chosen trip on
+`Person.commitment`. This is travel intent, identified by action and destination
+entity (coordinates only for point goals); `clearTarget`/`forgetPlans` clear it.
+While travelling with no work timer, `Simulation.step` retains the intent and
+compares seven current pressures on the existing thinking cadence instead of
+re-running the spatial scorer. Ordinary switches require a pressure margin;
+danger, injury, family emergencies and competing critical hunger/thirst can
+wake earlier. Timed work uses the existing ActionSystem interruption checks.
+Place observation retains its original cadence. Player orders and filtered
+player autonomy retain their existing selection path.
+
+Commitments use the existing seeded `choiceRng` for close drive ties; no fork or
+spawn sequence changes. The person checkpoint persists the intent, and live
+continuation compares full records including RNG on each tick. Legacy persons
+without intent load with null; a wholly legacy AI policy gets explicit current
+defaults. This policy intentionally changes future behavior of legacy saves.
+Autonomous abandonment queues an optional source flag on the existing stop
+notice and never creates a resumable order. The UI reveals the reason only for
+a selected/commanded NPC whose Knowledge level is known or close.
+
+Care trips can retain a visible/remembered recipient's hunger as baseline
+pressure with a null self-need driver, so the caregiver's own low hunger does
+not cause a turn back. Edible dropped food is also a valid hunger answer.
+A crying-baby exception verifies that carried food and the selected recipient
+match the cry; non-food gifts still interrupt. Timed work discards travel intent
+before Simulation reads the stateful cry signal, leaving that read to the
+ActionSystem interruption path. The scorer and interruption policy share the
+edible-inventory helper.

@@ -42,6 +42,7 @@ import { thinkIntervalOf, wakesNow } from '../ai/ThinkCadence.ts';
 import { Brain, type BrainContext } from '../ai/Brain.ts';
 import { carerOf, childRadius } from '../ai/Anchor.ts';
 import { drivePressures, DRIVES } from '../ai/Drives.ts';
+import { carriesEdibleFood, commitmentGoal, shouldBreakCommitment } from '../ai/Commitment.ts';
 import { babyToCarry, infantNeedingNursing, infantOutsideHome, mayNurse, nurslingHungerFactor } from '../ai/Nursing.ts';
 import { starvingInCare } from '../ai/Feeding.ts';
 import { canCrawl, canWalk, isBabyInArms, isLactating, isNursling } from '../entities/LifeStage.ts';
@@ -225,6 +226,8 @@ export interface StopNotice {
    * exactly the shrug this whole channel exists to replace.
    */
   recipe: string | null;
+  /** Set only when an autonomous route was released by the M15 need policy. */
+  autonomousCommitment?: boolean;
 }
 
 /**
@@ -1902,22 +1905,27 @@ export class Simulation {
    * she drinks, and the baby, still crying, reaches her again a little later.
    */
   cryReaches(person: Person): boolean {
+    return this.cryingBabyReaches(person) !== null;
+  }
+
+  /** Returns the same baby as the cry check, so a care route can prove its target once. */
+  private cryingBabyReaches(person: Person): Person | null {
     this.assertExecutionAuthority();
     this.assertCanonical(this.peopleById, person, 'person');
     if (!this.config.motivation.urgentNursing || person.captiveOf !== null ||
-      this.time.tick - person.cryHeardTick < CRY_NAG_TICKS) return false;
+      this.time.tick - person.cryHeardTick < CRY_NAG_TICKS) return null;
     // An order to pick a baby up or put one down is finished before any feed
     // (M15 phase 20): a feed that interrupted it dropped the order, and the
     // player's "pick him up" silently did not happen. Both are short.
     if ((person.action === 'carry_baby' || person.action === 'put_down_baby') && person.order !== null) {
-      return false;
+      return null;
     }
     const baby = infantNeedingNursing(person, this.peopleById, this.world, this.config.childhood,
       this.peopleHash, this.config.sightRadius);
-    if (!baby) return false;
+    if (!baby) return null;
     person.cryHeardTick = this.time.tick;
     telemetry.count('cry_interrupted');
-    return true;
+    return baby;
   }
 
   standing(leader: Person, subordinate: Person, action: string, foreign = false) {
@@ -3532,12 +3540,17 @@ export class Simulation {
     // standing idle, when there was no order to stop — because from then on
     // their keys do nothing, and a character that will not move needs a
     // reason on screen.
-    if (person.order === null &&
+    if (person.order === null && person.commitment === null &&
       !(person.isPlayer && (reason === 'restrained' || reason === 'bound' || reason === 'taken_captive'))) return;
+    const autonomousCommitment = person.order === null && !person.isPlayer && person.commitment !== null;
     this.interruptions.push({
       personId: person.id, action, reason, recipe: person.targetRecipe,
+      ...(autonomousCommitment ? { autonomousCommitment: true } : {}),
     });
     if (this.interruptions.length > this.interruptionCap) this.interruptions.shift();
+    // An autonomous route has no player order to resume; retaining one here
+    // would resurrect an errand the need policy just abandoned.
+    if (autonomousCommitment) return;
 
     // An order broken off for a need is set aside, not thrown away. Called
     // before `finish` clears the targets, which is the only moment the order is
@@ -5526,6 +5539,9 @@ export class Simulation {
       rng: this.aiRng,
       choiceRng: this.choiceRng,
       choiceSpread: this.config.ai.choiceSpread,
+      commitmentEntryPressure: this.config.ai.commitmentEntryPressure,
+      commitmentBreakMargin: this.config.ai.commitmentBreakMargin,
+      commitmentTieMargin: this.config.ai.commitmentTieMargin,
       nodeHash: this.nodeHash,
       peopleHash: this.peopleHash,
       shoreHash: this.shoreHash,
@@ -5600,6 +5616,24 @@ export class Simulation {
       peopleById: this.peopleById,
       childhood: this.config.childhood,
       babyCrying: (person: Person) => this.cryReaches(person),
+      cryingBaby: (person: Person) => this.cryingBabyReaches(person),
+      feedsCryingBaby: (person: Person, baby: Person) => {
+        if (!baby) return false;
+        const carriesEdible = (itemId: string) => person.inventory.count(itemId) > 0 &&
+          (ITEMS[itemId]?.nutrition ?? 0) > 0;
+        if (person.action === 'give') {
+          // An explicit gift must itself be food; otherwise a stone gift to a
+          // baby would accidentally exempt unrelated work from the cry check.
+          const itemId = person.targetItemId;
+          const carriesFood = itemId === null
+            ? carriesEdibleFood(person)
+            : carriesEdible(itemId);
+          return carriesFood && person.targetPersonId === baby.id;
+        }
+        const carriesFood = carriesEdibleFood(person);
+        return person.action === 'bring_food' && carriesFood && person.starvingSeen?.id === baby.id &&
+          person.targetX === person.starvingSeen.x && person.targetY === person.starvingSeen.y;
+      },
       householdsById: this.householdsById,
       childAwayFromCarer: (person: Person) => {
         if (!person.isChild || person.action === 'go_home') return false;
@@ -5815,30 +5849,101 @@ export class Simulation {
       // that depends on who is asking.
       brainCtx.sightRadius = this.sightOf(person);
 
-      // A player order holds until the action system completes or abandons it.
-      const committed = person.actionTimer > 0 || person.order !== null;
-      // M15 step 0 (C): every band but the player's takes its turn to re-plan
-      // less often. The turn is still the id's phase of the cycle, so the slow
-      // band is spread evenly over the ticks and not bunched on one. Somebody
-      // with nothing to do still thinks at once (below), which is how an
-      // interruption reaches them; and being attacked or hurt does not wait for
-      // a turn either. See `ai/ThinkCadence.ts` for why it is the polling that
-      // is slowed and not the reaction.
+      // M15 step 0 (C): retain the existing slow cadence, but wake a route
+      // before its early return for danger, lethal needs, or a family emergency.
       const ownInterval = thinkIntervalOf(person, focusBand, this.config);
       let scheduledThink = (this.time.tick + person.thinkOffset) % ownInterval === 0;
-      if (ownInterval !== interval && !scheduledThink && wakesNow(person, this.time.tick, underAttack)) {
+      const recentHarm = this.time.tick - person.lastHarmedTick <= 1;
+      const criticalHunger = person.needs.hunger >= this.config.needs.criticalThreshold;
+      const criticalThirst = person.needs.thirst >= this.config.needs.criticalThreshold;
+      const criticalDrives = [criticalHunger ? 'hunger' : null, criticalThirst ? 'thirst' : null]
+        .filter((drive): drive is 'hunger' | 'thirst' => drive !== null);
+      const bothCritical = criticalDrives.length === 2;
+      // Timed work owns interruption checks in ActionSystem; do not consume a
+      // stateful baby cry here before its executor gets the same tick.
+      if (person.actionTimer > 0) person.commitment = null;
+      const commitment = person.actionTimer === 0 ? person.commitment : null;
+      const cryingBaby = commitment !== null && person.action !== 'nurse' ? actionCtx.cryingBaby(person) : null;
+      const cryingEmergency = commitment !== null && person.action !== 'nurse' && cryingBaby !== null &&
+        !actionCtx.feedsCryingBaby(person, cryingBaby);
+      const childEmergency = commitment !== null && commitment.drive !== 'hunger' && commitment.drive !== 'thirst' &&
+        actionCtx.childAwayFromCarer(person);
+      const commitmentEmergency = commitment !== null && (underAttack || recentHarm || cryingEmergency || childEmergency);
+      const competingCriticalNeed = commitment !== null && criticalDrives.length > 0 &&
+        (commitment.drive !== 'hunger' && commitment.drive !== 'thirst' ||
+          criticalDrives.some(drive => drive !== commitment.drive &&
+            ((drive === 'hunger' ? person.needs.hunger : person.needs.thirst) / 100) ** 2 -
+            ((commitment.drive === 'hunger' ? person.needs.hunger : person.needs.thirst) / 100) ** 2 >=
+              this.config.ai.commitmentBreakMargin));
+      if (!scheduledThink && commitment &&
+          (wakesNow(person, this.time.tick, underAttack) || competingCriticalNeed || commitmentEmergency)) {
+        scheduledThink = true;
+        telemetry.count('think_woken_early');
+      } else if (ownInterval !== interval && !scheduledThink && wakesNow(person, this.time.tick, underAttack)) {
         scheduledThink = true;
         telemetry.count('think_woken_early');
       }
+
+      let commitmentHeld = false;
+      const activeCommitment = person.actionTimer === 0 ? person.commitment : null;
+      if (activeCommitment) {
+        const commitment = activeCommitment;
+        const valid = person.order === null && !person.isPlayer && person.action === commitment.action &&
+          commitment.goal === commitmentGoal(person.action, person);
+        if (!valid) {
+          person.commitment = null;
+          scheduledThink = true;
+        } else {
+          const crying = cryingEmergency;
+          const awayFromCarer = childEmergency;
+          const dangerEmergency = underAttack || recentHarm;
+          const currentNeedIsCritical = commitment.drive !== null && criticalDrives.includes(commitment.drive as 'hunger' | 'thirst');
+          let pressure: ReturnType<typeof drivePressures> | null = null;
+          let abandonForNeed = dangerEmergency || crying || awayFromCarer;
+          if (!abandonForNeed && criticalDrives.length > 0) {
+            if (!currentNeedIsCritical) abandonForNeed = true;
+            else if (bothCritical && scheduledThink) {
+              const current = commitment.drive === 'hunger' ? person.needs.hunger : person.needs.thirst;
+              const other = commitment.drive === 'hunger' ? person.needs.thirst : person.needs.hunger;
+              abandonForNeed = (other / 100) ** 2 - (current / 100) ** 2 >= this.config.ai.commitmentBreakMargin;
+            }
+          }
+          if (!abandonForNeed && scheduledThink && !currentNeedIsCritical) {
+            pressure = drivePressures(person, brainCtx);
+            abandonForNeed = shouldBreakCommitment(commitment, pressure,
+              this.config.ai.commitmentEntryPressure, this.config.ai.commitmentBreakMargin);
+          }
+          if (abandonForNeed) {
+            pressure ??= drivePressures(person, brainCtx);
+            const competitors = Object.keys(DRIVES).filter(id => id !== 'variety' && id !== commitment.drive);
+            let strongest = competitors[0] as keyof typeof pressure | undefined;
+            for (const id of competitors as (keyof typeof pressure)[]) {
+              if (strongest === undefined || pressure[id] > pressure[strongest]) strongest = id;
+            }
+            const reason = underAttack ? 'under_attack' : recentHarm ? 'injured'
+              : crying ? 'baby_crying' : awayFromCarer ? 'away_from_family'
+              : criticalHunger && criticalThirst ? (person.needs.hunger >= person.needs.thirst ? 'hungry' : 'thirsty')
+              : criticalHunger ? 'hungry' : criticalThirst ? 'thirsty'
+              : strongest === 'thirst' ? 'thirsty' : strongest === 'hunger' ? 'hungry'
+              : strongest === 'warmth' ? 'cold' : 'abandoned_by_new_need';
+            actionCtx.onStopped(person, person.action, reason);
+            person.commitment = null;
+            scheduledThink = true;
+          } else {
+            commitmentHeld = true;
+          }
+        }
+      }
+      // A player's explicit order remains the strongest form of commitment.
+      const actionCommitted = person.actionTimer > 0 || person.order !== null;
+      const committed = actionCommitted || commitmentHeld;
       // An NPC under a committed order cannot think and does not observe on
       // schedule. The player's score still runs with an order, so their view
       // advances alongside that HUD update.
       stepMark?.('loop: sightOf');
-      if (scheduledThink && (!committed || person.isPlayer)) this.observePlaces(person);
+      if (scheduledThink && (!actionCommitted || person.isPlayer)) this.observePlaces(person);
       stepMark?.('loop: observePlaces');
-      const needsThink =
-        !committed &&
-        (scheduledThink || person.action === 'idle');
+      const needsThink = !committed && (scheduledThink || person.action === 'idle');
       if (needsThink) {
         if (person.isPlayer) this.steerPlayer(person, brainCtx);
         else this.brain.think(person, brainCtx);

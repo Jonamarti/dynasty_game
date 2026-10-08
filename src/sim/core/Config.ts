@@ -327,6 +327,12 @@ export interface AiConfig {
    * and the mood channels both use.
    */
   choiceSpread: number;
+  /** Drive pressure (0-1) at which a need may guide the action choice. */
+  commitmentEntryPressure: number;
+  /** O(1) pressure gap needed to leave the need currently being served. */
+  commitmentBreakMargin: number;
+  /** Drive pressures this close are treated as a seeded tie. */
+  commitmentTieMargin: number;
 }
 
 /** Tuning for the pull toward family, home and camp. */
@@ -623,6 +629,9 @@ export const DEFAULT_CONFIG: SimConfig = {
     // shape is: a band of about an eighth is where the tail of the table starts
     // getting a turn without the head losing one.
     choiceSpread: 0.12,
+    commitmentEntryPressure: 0.16,
+    commitmentBreakMargin: 0.08,
+    commitmentTieMargin: 0.02,
   },
   motivation: {
     reachFilter: true, homePressure: true, nightSleep: true, infantsStill: true,

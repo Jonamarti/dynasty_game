@@ -5,6 +5,7 @@ import { IdSpace } from '../core/IdSpace.ts';
 import { World } from '../core/World.ts';
 import { Building, BUILDINGS } from '../entities/Building.ts';
 import { toCheckpointRecord } from '../persistence/CheckpointRecords.ts';
+import { commitmentGoal } from '../ai/Commitment.ts';
 
 const wire = <T>(value: T): T => JSON.parse(JSON.stringify(value));
 
@@ -93,6 +94,50 @@ describe('live checkpoint continuation', () => {
     const loaded = loadWithoutTouchingSource(source);
     expectSameContinuation(source, loaded, untilNextDay + 8, [untilNextDay]);
     expect(mother.childIds.length).toBe(childrenBefore.length + 1);
+  });
+
+  it('continues an autonomous forage route with its need commitment and RNG after JSON restore', () => {
+    const source = evolved('live-checkpoint-autonomous-commitment');
+    const person = source.people.find(candidate => !candidate.isPlayer && candidate.alive)!;
+    person.clearTarget();
+    const node = source.nodes.filter(candidate => candidate.kind === 'berries' && candidate.amount >= 1 &&
+      source.world.sameRegion(person.x, person.y, candidate.x, candidate.y))
+      .sort((a, b) => person.distanceTo(b) - person.distanceTo(a))[0];
+    expect(node).toBeDefined();
+    expect(person.distanceTo(node!)).toBeGreaterThan(12);
+
+    person.action = 'forage';
+    person.actionTimer = 0;
+    person.order = null;
+    person.needs.hunger = 40;
+    person.needs.thirst = 0;
+    person.needs.fatigue = 0;
+    person.needs.cold = 0;
+    person.needs.company = 0;
+    person.targetNodeId = node!.id;
+    person.targetX = node!.x;
+    person.targetY = node!.y;
+    person.commitment = { action: 'forage', drive: 'hunger', baselinePressure: 0.16,
+      goal: commitmentGoal('forage', person) };
+
+    const loaded = loadWithoutTouchingSource(source);
+    const sourceActor = source.peopleById.get(person.id)!;
+    const loadedActor = loaded.peopleById.get(person.id)!;
+    expect(loadedActor.commitment).toEqual(sourceActor.commitment);
+    expect(loadedActor.targetNodeId).toBe(node!.id);
+
+    // Four full think intervals of travel. Compare the persisted world every
+    // tick so both the decision and every RNG stream stay aligned after load.
+    const steps = source.config.thinkInterval * 4;
+    for (let i = 0; i < steps; i++) {
+      source.step();
+      loaded.step();
+      expect(sourceActor.action).toBe('forage');
+      expect(sourceActor.targetNodeId).toBe(node!.id);
+      expect(sourceActor.commitment?.drive).toBe('hunger');
+      expect(firstDifference(wire(toCheckpointRecord(loaded)), wire(toCheckpointRecord(source))),
+        'autonomous route checkpoint differs after tick ' + source.time.tick).toBeNull();
+    }
   });
 
   it('rebinds belief callbacks per loaded owner and keeps separate loads independent', () => {

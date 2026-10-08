@@ -74,6 +74,8 @@ export const ES_ACTIONS: Record<string, string> = {
   "they stopped for a drink": "paró a beber",
   "they stopped to eat": "paró a comer",
   "they were too cold to carry on": "tenía demasiado frío para seguir",
+  "they turned to a more pressing need": "atendió una necesidad más urgente",
+  "they were hurt": "resultó herido",
   "somebody attacked them": "alguien le atacó",
   "they had worked long enough": "ya había trabajado bastante",
   "nobody sleeps through the day": "nadie duerme de día",

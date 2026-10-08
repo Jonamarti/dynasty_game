@@ -13740,3 +13740,54 @@ Referencia a 300: 21.631 score calls, 1.856 cambios, 398 retargets en 480 pasos;
 597,967 NPC-días, 3,104/0,666 cambios/retargets por NPC-día. Solo observa think,
 no las terminaciones dentro de execute. Evidencia `exact-final*` en
 `artifacts/verification/m15-brain-cost-20261008/`; sin UI ni cohortes.
+
+## 2026-10-08 — M15 cerebro B: conservar la necesidad y el destino elegidos
+
+Los NPCs autónomos eligen una necesidad viable dominante y conservan el viaje
+hasta llegar o hasta que otra presión la supere por un margen configurable.
+La comparación barata sustituye al scorer durante la ruta; daño, peligro,
+urgencias familiares y necesidades críticas pueden interrumpir antes del turno.
+No cambia la cadencia de observación ni las órdenes del jugador. Los empates
+usan choiceRng existente, sin alterar forks/spawns. ClearTarget/forgetPlans
+limpian intención; guardados conservan destino, motivo y RNG, y los antiguos
+migran explícitamente a la política nueva. Los abandonos autónomos se explican
+para el NPC conocido seleccionado/comandado y no crean una orden reanudable;
+los desconocidos mantienen sus necesidades privadas.
+
+Con 300 humanos/480 pasos: score calls 21.631 → 14.526 (−32,8%); cambios
+1.856 → 1.039; retargets 398 → 7. Por NPC-día autónomo: 3,104/0,666 →
+1,738/0,012. Mínimo/mediana de tres controles: 13,237/13,522 →
+11,290/11,536 ms/paso; a 30, 1,063/1,302 → 0,830/1,071. Instrumento/control
+iguales y negativo detectado; B cambia el hash de A por diseño. Pruebas reales
+cubren retención sin score, observación, daño, necesidades críticas, comida
+hidratante y continuación de checkpoint tick a tick; pruebas de codec cubren
+migración y rechazo de estado malformado. Las dos pruebas nuevas de UI pasan.
+Capturas EN/ES finales revisadas: `artifacts/screenshots/m15-brain-commitment-2026-10-08T-02/`.
+
+La semilla band conserva 30 vivos y 31 acciones (antes 29); fruit/cold/store
+al día 17: 661/0,2/108 → 674/0,0/92. Ninguna mejora económica se deduce de
+esta muestra. Siguen dieta y presupuesto de rendimiento. La primera versión B falló
+moods-move-choices (3,8% talk pertenencia baja vs 4,4% alta); la final pasa
+(7,2%/3,8%) sin cambios de check ni pesos. Cinco ideas
+antes/cero después dejan descubrimiento n/a. El score de pertenencia no cambió;
+no se atribuye causa sin medición ni se relajan checks. Registrado en bugs
+para M16; cohortes y matriz larga diferidas por la prioridad M15.
+Evidencia y detalle en `docs/m15_brain_cost.md` y
+`artifacts/verification/m15-brain-cost-20261008/commitment*`.
+
+La primera suite completa encontró recogida/cuidado y una lectura fallida.
+Se corrigieron recogida y presión de cuidado visible/recordada; la lectura
+pasó 14/14 al repetir el archivo sin modificarlo. La revisión añadió el
+control del aviso de llanto consumido al pasar de viaje a trabajo con timer,
+y casos de comida al mismo bebé, regalo de piedra y otro destinatario.
+Esos doce casos de nursing pasan. Typecheck final limpio; e2e completa 121/121
+antes de los ajustes internos y e2e de los avisos final 2/2, con hito T-02.
+La gira anterior y las capturas históricas se conservan: regeneraciones de
+specs bajo `m15-brain-commitment-2026-10-08T-01/regenerated/`, sin sobrescribir
+los hitos previos. Métricas finales: `commitment-final*`.
+Verificación de unidad final: 219 archivos, 1.666 pasan, uno omitido y dos
+fallos. `people-knowledge` conserva el fallo heredado (0,81, exige <0,6).
+Nuevo: `compact-correspondence craft/delta`, diferencia de hambre 23,401,
+límite declarado ≤15. No se ha relajado el límite ni recalibrado su tabla;
+queda pendiente para M16. Recogida, alimentación y lectura pasan en esta
+repetición. La suite no está verde. Resultado: `commitment-final-tests.txt`.

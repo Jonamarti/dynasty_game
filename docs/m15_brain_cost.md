@@ -206,3 +206,84 @@ pasan y el perfil final de A3 demuestra hash igual y negativo detectado.
 Referencia B (480 pasos): 30, 2.169 score calls, 137 cambios y 5 retargets,
 58 NPC-días; 300, 21.631 calls, 1.856 cambios y 398 retargets, 597,967 NPC-días.
 A 300 son 3,104 cambios + 0,666 retargets por NPC-día autónomo.
+
+### B: elegir una necesidad y conservar el viaje
+
+Entregada la retención de rutas autónomas. Una necesidad con presión ≥0,16
+elige entre sus respuestas con objetivo válido; empates a ≤0,02 usan
+`choiceRng`, sin añadir ni reordenar forks. La variedad sigue cambiando la
+comida apetecible, no el motivo del viaje. Sin necesidad dominante queda el
+scorer habitual, incluyendo trabajo; cuidado y peligro conservan sus opciones.
+El compromiso guarda acción normalizada, motivo, presión inicial y destino
+por identidad. En marcha, una comparación de siete presiones sustituye al
+scorer: otra necesidad debe aventajar en 0,08. Daño, ataque, urgencia familiar
+y hambre/sed críticas despiertan antes de la cadencia; dos necesidades críticas
+casi iguales no provocan alternancia. El trabajo con timer conserva sus
+interrupciones existentes. `observePlaces` mantiene su cadencia y las órdenes
+del jugador conservan su prioridad.
+
+Los abandonos de una ruta autónoma pasan por `onStopped`; no generan órdenes
+reanudables. La UI los muestra para el NPC conocido seleccionado o comandado,
+con traducción completa y sin revelar necesidades privadas de desconocidos.
+El checkpoint conserva compromiso y RNG; registros antiguos sin compromiso
+migran a null, y un AI config íntegramente antiguo adopta 0,16/0,08/0,02.
+Un config parcialmente incompleto o compromiso malformado se rechaza. B cambia
+intencionalmente las decisiones futuras también al cargar un guardado antiguo;
+la identidad bit a bit de A no se reclama para B.
+
+Perfil sin suite concurrente, 480 pasos, tres controles:
+
+| Humanos | score calls A → B | Cambios A → B | Retargets A → B | Mínimo/mediana ms A → B |
+|---|---|---|---|---|
+| 30 | 2.169 → 1.601 | 137 → 110 | 5 → 0 | 1,063/1,302 → 0,830/1,071 |
+| 300 | 21.631 → 14.526 | 1.856 → 1.039 | 398 → 7 | 13,237/13,522 → 11,290/11,536 |
+
+A 300: score calls −32,8%; cambios/retargets por NPC-día autónomo
+3,104/0,666 → 1,738/0,012 (597,967 NPC-días en ambos). A 30 son
+2,362/0,086 → 1,897/0 (58 NPC-días). Instrumentación/control coinciden y
+el negativo se detecta; los hashes nuevos son distintos a A por diseño.
+Las cifras miden reorientaciones en think, no finales de execute ni FPS.
+Evidencia: `artifacts/verification/m15-brain-cost-20261008/commitment*`.
+
+La semilla band de 3.000 pasos conserva 30 vivos y 31 acciones, antes 29.
+Forage 15.532 → 14.546; talk 3.629 → 5.744; hunt 132 → 272; build
+912 → 985; ponder 631 → 771, pickup/discuss aparecen y prototype no. Al día 17,
+fruit 661 → 674, cold 0,2 → 0,0, store 108 → 92. Son observaciones de
+un mundo divergente, no mejoras económicas. Siguen dieta y presupuesto de
+rendimiento (848 pasos/s frente a suelo 1.724). La primera versión B tuvo un fallo de
+`moods-move-choices`, 3,8% talk en pertenencia baja vs 4,4% alta, antes
+4,0%/2,4%. El incentivo de pertenencia en score no cambia; el check observa
+acciones longitudinales tras selección y no establece la causa. Cinco ideas
+antes y cero después dejan checks de descubrimiento n/a en esta muestra.
+Tras los arreglos de recogida/cuidado, el informe final pasa moods-move-choices
+(7,2%/3,8%); no se ha establecido la causa del fallo inicial. Se registra el
+contraste y los n/a para M16; no se relaja ningún check ni se retocan pesos.
+Cohortes, century/generations y matriz completa diferidos por la prioridad M15.
+
+La revisión de la primera suite detectó dos regresiones corregidas antes de
+cerrar B: la selección por hambre debe admitir comida caída (`pickup`), y un
+viaje de cuidado debe conservar la presión del hambre visible/recordada de su
+destinatario. Guarda motivo null con esa presión de referencia, sin consultar
+el estado privado de alguien fuera de vista. La recogida se prueba de forma
+autónoma, sin forzar después el executor con un compromiso obsoleto.
+La excepción de llanto comprueba alimento y destinatario: un regalo de piedra
+no cuenta como alimentar. Al empezar trabajo con timer se borra el compromiso
+antes de consultar el llanto, para que Simulation no consuma la señal que
+ActionSystem debe recibir ese mismo tick. La observación del llanto conserva
+su límite de avisos y las interrupciones existentes de los trabajos.
+
+Verificación visual final: e2e completa 121/121 antes de los ajustes internos;
+los avisos pasan de nuevo 2/2 con el runtime final. Capturas EN/ES revisadas:
+`artifacts/screenshots/m15-brain-commitment-2026-10-08T-02/` (T-01 se conserva).
+Typecheck final limpio. Focales pickup/feeding/transmission/nursing 35/35 antes
+de reforzar el control de llanto; nursing final 12/12 con un nodo real y un
+control negativo de señal ya consumida. No se relajó la prueba de alimentación;
+la de pickup ahora observa una recogida autónoma real. La lectura fallida en
+la primera suite completa se mantiene como hallazgo sin causa confirmada;
+su archivo pasa 14/14 sin modificarlo. Perfil/informe definitivos en
+`commitment-final*`; suite completa final: 219 archivos, 1.666 pasan, uno omitido y dos fallos.
+El de people-knowledge es heredado (0,81 frente a <0,6); el nuevo es
+compact-correspondence craft/delta, diferencia de hambre 23,401 frente a ≤15.
+Recogida, alimentación y lectura pasan en esta repetición. Se registra el
+desajuste con el modelo compacto para M16 sin modificar tabla ni tolerancias.
+La suite no está verde; las cohortes para recalibrar siguen diferidas.

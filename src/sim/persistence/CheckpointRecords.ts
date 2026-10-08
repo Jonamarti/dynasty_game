@@ -75,6 +75,14 @@ function copyConfig(input: unknown): SimConfig {
   if (object(input) && !Object.hasOwn(input, 'otherBandThinkInterval') && Object.hasOwn(input, 'thinkInterval')) {
     input = { ...input, otherBandThinkInterval: input.thinkInterval };
   }
+  // M15 B adds three AI settings. Only the exact earlier AI shape is migrated;
+  // a partially missing or otherwise malformed config still fails the exact-key check.
+  if (object(input) && object(input.ai) && Object.hasOwn(input.ai, 'choiceSpread') &&
+      !Object.hasOwn(input.ai, 'commitmentEntryPressure') && !Object.hasOwn(input.ai, 'commitmentBreakMargin') &&
+      !Object.hasOwn(input.ai, 'commitmentTieMargin')) {
+    input = { ...input, ai: { ...input.ai, commitmentEntryPressure: DEFAULT_CONFIG.ai.commitmentEntryPressure,
+      commitmentBreakMargin: DEFAULT_CONFIG.ai.commitmentBreakMargin, commitmentTieMargin: DEFAULT_CONFIG.ai.commitmentTieMargin } };
+  }
   const config = visit(input, DEFAULT_CONFIG, 'config') as SimConfig;
   for (const value of [config.thinkInterval, config.otherBandThinkInterval, config.time.ticksPerDay, config.time.daysPerSeason,
     config.time.maxTicksPerFrame, config.world.width, config.world.height, config.world.chunkSize]) {

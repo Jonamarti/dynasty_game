@@ -275,6 +275,8 @@ export const STOP_REASONS: Record<string, string> = {
   thirsty: 'they stopped for a drink',
   hungry: 'they stopped to eat',
   cold: 'they were too cold to carry on',
+  abandoned_by_new_need: 'they turned to a more pressing need',
+  injured: 'they were hurt',
   under_attack: 'somebody attacked them',
   baby_crying: 'a baby was crying for the breast',
   long_enough: 'they had worked long enough',

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { Simulation } from '../core/Simulation.ts';
 import { makeConfig } from '../core/Config.ts';
 import { ItemPile } from '../entities/ItemPile.ts';
@@ -7,6 +7,7 @@ import { lastScores } from '../ai/Brain.ts';
 import { mayTakeFromPile } from '../social/Property.ts';
 
 describe('NPC pickup', () => {
+  afterEach(() => telemetry.disable());
   it('scores dropped food for a hungry NPC and executes the pickup action', () => {
     telemetry.reset();
     telemetry.enable();
@@ -34,25 +35,18 @@ describe('NPC pickup', () => {
     sim.pilesById.set(pile.id, pile);
     sim.pileHash.rebuild(sim.piles);
 
-    for (let i = 0; i < 10; i++) sim.step();
+    let sawPickupScore = false;
+    for (let i = 0; i < 10; i++) {
+      sim.step();
+      sawPickupScore ||= lastScores.get(person.id)?.some(row => row.id === 'pickup' && row.score > 0) ?? false;
+    }
 
-    expect(lastScores.get(person.id)?.some(row => row.id === 'pickup' && row.score > 0)).toBe(true);
-    // A chief's current order can outrank the newly scored route, so exercise
-    // the ordinary action executor directly after proving the scorer offers it.
-    person.x = pile.x;
-    person.y = pile.y;
-    person.order = null;
-    person.action = 'pickup';
-    person.targetPileId = pile.id;
-    person.targetItemId = 'meat';
-    person.targetItemCount = 1;
-    person.targetX = pile.x;
-    person.targetY = pile.y;
-    sim.step();
-
+    // The route can finish and become eating before the final think in the
+    // window; retain the score observation across ticks and verify the haul.
+    expect(sawPickupScore).toBe(true);
     expect(person.inventory.count('meat')).toBeGreaterThan(0);
     expect(telemetry.snapshot().npc_pickup).toBeGreaterThan(0);
-    telemetry.disable();
+
   });
 
   it("plans on a stranger's heap only while nobody of their band is watching it", () => {

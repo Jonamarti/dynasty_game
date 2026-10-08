@@ -16,6 +16,7 @@ import type { LifeEvent } from '../social/SocialSystem.ts';
 import { TECH } from '../knowledge/Tech.ts';
 import type { Idea } from '../knowledge/Synthesis.ts';
 import type { DriveId } from '../ai/Drives.ts';
+import type { ActionCommitment } from '../ai/Commitment.ts';
 import { PROTOTYPE_AT } from '../knowledge/Synthesis.ts';
 import type { JobId } from './Job.ts';
 import { Mood, MOOD_CHANNELS, moodBaseline } from '../core/Mood.ts';
@@ -760,6 +761,9 @@ export class Person {
    */
   resume: ResumedOrder | null = null;
 
+  /** NPC utility choice retained while travelling; player orders have their own state. */
+  commitment: ActionCommitment | null = null;
+
   /**
    * A player-issued order overrides the utility scorer until it completes or
    * becomes impossible. This is how the radial menu reaches the world, and it
@@ -1160,6 +1164,7 @@ export class Person {
   }
 
   clearTarget(): void {
+    this.commitment = null;
     this.targetX = null;
     this.targetY = null;
     delete this.saltDrinkTarget;
@@ -1228,6 +1233,7 @@ export class Person {
 
   /** Drops the current order *and* anything set aside to come back to. */
   forgetPlans(): void {
+    this.commitment = null;
     this.order = null;
     this.resume = null;
     this.clearWorkBank();

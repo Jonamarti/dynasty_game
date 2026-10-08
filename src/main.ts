@@ -2205,10 +2205,10 @@ const EVENT_COLORS: Record<string, string> = {
 const CRIMES = new Set(['theft', 'assault', 'murder', 'threaten']);
 
 /**
- * Says why an order stopped.
+ * Says why an order or a familiar selected NPC's autonomous trip stopped.
  *
  * The simulation queues these; the decision about *whose* are worth reporting
- * belongs here, because "worth reporting" means "the player asked for it" and
+ * belongs here: it depends on commands, selection and social knowledge, and
  * the simulation has no idea who the player is commanding. A chief ordering his
  * band about all day is not news.
  */
@@ -2217,7 +2217,17 @@ function reportInterruptions(): void {
   for (const notice of notices) {
     const person = sim.peopleById.get(notice.personId);
     if (!person) continue;
-    const mine = person.isPlayer || person.id === commanding?.id;
+    const observer = sim.player;
+    const knowledge = observer ? knowledgeOfPerson(observer, person, sim.relationships) : null;
+    const familiar = knowledge?.level === 'close' || knowledge?.level === 'known';
+    // An autonomous commitment is a visible choice, but only for someone the
+    // player already knows well enough to read. Selection alone must not turn
+    // a stranger's private needs into a public notification.
+    const selectedCommitment = notice.autonomousCommitment === true && familiar &&
+      selected?.kind === 'person' && selected.person.id === person.id;
+    const commanded = person.id === commanding?.id &&
+      (!notice.autonomousCommitment || familiar);
+    const mine = person.isPlayer || commanded || selectedCommitment;
     if (!mine) continue;
 
     // M11 phase 15b: being held down names whoever is doing it — as the

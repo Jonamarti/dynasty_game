@@ -1,9 +1,39 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { Simulation } from '../core/Simulation.ts';
 import { NURSING_HUNGER, NURSING_THIRST } from '../ai/Nursing.ts';
 import { Building, BUILDINGS } from '../entities/Building.ts';
 import { Household } from '../entities/Household.ts';
 import { itemCapacityFor } from '../core/Carry.ts';
+import { RNG } from '../core/RNG.ts';
+import { telemetry } from '../core/Telemetry.ts';
+import { ResourceNode } from '../entities/ResourceNode.ts';
+import { commitmentGoal } from '../ai/Commitment.ts';
+
+afterEach(() => telemetry.disable());
+
+function interruptionFixture(seed: string, motherOnlyFeeds = true) {
+  const sim = new Simulation({ seed, world: { width: 48, height: 48 },
+    population: { bands: 1, peoplePerBand: 4 }, childhood: { carryBaby: false },
+    motivation: { motherOnlyFeeds } });
+  const mother = sim.people[0]!;
+  const baby = sim.people[1]!;
+  const other = sim.people[2]!;
+  mother.sex = 'female';
+  mother.age = 30 * mother.daysPerYear;
+  mother.childIds = [baby.id];
+  mother.order = null;
+  mother.needs.hunger = mother.needs.thirst = mother.needs.fatigue = mother.needs.cold = 0;
+  mother.cryHeardTick = sim.time.tick - 100;
+  baby.age = 0;
+  baby.bandId = mother.bandId;
+  baby.motherId = mother.id;
+  baby.x = mother.x;
+  baby.y = mother.y;
+  baby.needs.hunger = baby.needs.thirst = 100;
+  other.x = mother.x; other.y = mother.y;
+  sim.peopleHash.rebuild(sim.people);
+  return { sim, mother, baby, other };
+}
 
 describe('urgent maternal nursing', () => {
   it('does not interrupt work when urgent nursing is ablated', () => {
@@ -26,6 +56,90 @@ describe('urgent maternal nursing', () => {
     expect(mother.action).not.toBe('nurse');
   });
 
+  it('lets timed work receive a baby cry after its valid route commitment expires', () => {
+    const { sim, mother } = interruptionFixture('nursing-commitment-transition');
+    const node = new ResourceNode('sticks', mother.x, mother.y, new RNG('nursing-real-node'), sim.ids);
+    node.amount = node.def.maxAmount;
+    sim.nodes.push(node);
+    sim.nodesById.set(node.id, node);
+    sim.nodeHash.rebuild(sim.nodes);
+    mother.action = 'gather';
+    mother.actionTimer = 1;
+    mother.targetNodeId = node.id;
+    mother.targetX = node.x;
+    mother.targetY = node.y;
+    mother.commitment = { action: 'gather', drive: null, baselinePressure: 0, goal: commitmentGoal('gather', mother) };
+    telemetry.reset(); telemetry.enable();
+
+    sim.step();
+
+    expect(telemetry.get('work_ended_baby_crying')).toBe(1);
+    expect(mother.commitment).toBeNull();
+  });
+
+  it('continues the same valid gather if the cry was already consumed this tick', () => {
+    const { sim, mother } = interruptionFixture('nursing-cry-consumed-control');
+    const node = new ResourceNode('sticks', mother.x, mother.y, new RNG('nursing-real-node-control'), sim.ids);
+    node.amount = node.def.maxAmount;
+    sim.nodes.push(node);
+    sim.nodesById.set(node.id, node);
+    sim.nodeHash.rebuild(sim.nodes);
+    mother.action = 'gather';
+    mother.actionTimer = 1;
+    mother.targetNodeId = node.id;
+    mother.targetX = node.x;
+    mother.targetY = node.y;
+    mother.commitment = { action: 'gather', drive: null, baselinePressure: 0, goal: commitmentGoal('gather', mother) };
+    expect(sim.cryReaches(mother)).toBe(true);
+    telemetry.reset(); telemetry.enable();
+
+    sim.step();
+
+    expect(telemetry.get('work_ended_baby_crying')).toBe(0);
+    expect(mother.action).toBe('gather');
+    expect(node.amount).toBeLessThan(node.def.maxAmount);
+  });
+
+  it('keeps a food give aimed at the baby who cried, while rejecting a stone gift', () => {
+    const { sim, mother, baby } = interruptionFixture('nursing-targeted-give', false);
+    mother.inventory.add('berries', 3);
+    mother.action = 'give';
+    mother.actionTimer = 2;
+    mother.targetPersonId = baby.id;
+    telemetry.reset(); telemetry.enable();
+
+    sim.step();
+
+    expect(mother.action).toBe('give');
+    expect(mother.actionTimer).toBe(1);
+    expect(telemetry.get('interrupted_give_baby_crying')).toBe(0);
+
+    const stoneCase = interruptionFixture('nursing-stone-gift', false);
+    stoneCase.mother.inventory.add('berries', 3);
+    stoneCase.mother.inventory.add('stone', 1);
+    stoneCase.mother.action = 'give';
+    stoneCase.mother.actionTimer = 2;
+    stoneCase.mother.targetPersonId = stoneCase.baby.id;
+    stoneCase.mother.targetItemId = 'stone';
+    telemetry.reset();
+
+    stoneCase.sim.step();
+
+    expect(telemetry.get('interrupted_give_baby_crying')).toBe(1);
+  });
+
+  it('interrupts a food give aimed at someone other than the crying baby', () => {
+    const { sim, mother, other } = interruptionFixture('nursing-other-target', false);
+    mother.inventory.add('berries', 3);
+    mother.action = 'give';
+    mother.actionTimer = 2;
+    mother.targetPersonId = other.id;
+    telemetry.reset(); telemetry.enable();
+
+    sim.step();
+
+    expect(telemetry.get('interrupted_give_baby_crying')).toBe(1);
+  });
   it('interrupts the mother and relieves a hungry, thirsty infant', () => {
     // The M13 arrangement: the baby lies where it is and the mother goes to
     // it. Kept as the `carryBaby: false` ablation since M15 phase 20.

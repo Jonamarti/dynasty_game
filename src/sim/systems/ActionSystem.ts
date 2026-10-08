@@ -121,6 +121,10 @@ export interface ActionContext {
    * actions by hand hears nothing; see `Simulation.cryReaches`.
    */
   babyCrying?: (person: Person) => boolean;
+  /** One target lookup shared by travel checks and the executor. */
+  cryingBaby?: (person: Person) => Person | null;
+  /** Whether the current food action is already answering the baby that cried. */
+  feedsCryingBaby?: (person: Person, baby: Person) => boolean;
   householdsById: Map<number, Household>;
   /** Whether a walking child has fallen outside their carer's close-family radius. */
   childAwayFromCarer: (person: Person) => boolean;
@@ -1341,7 +1345,11 @@ export class ActionSystem {
     // needs (owner, 2026-10-01: "she can stop what she is doing, she weighs it
     // against the rest of her needs"). It used to seize her outright, every
     // tick, whatever she was doing.
-    if (person.action !== 'nurse' && ctx.babyCrying?.(person)) return 'baby_crying';
+    if (person.action !== 'nurse') {
+      const cryingBaby = ctx.cryingBaby ? ctx.cryingBaby(person) : null;
+      const crying = cryingBaby ?? (ctx.babyCrying?.(person) ? true : false);
+      if (crying && (crying === true || !ctx.feedsCryingBaby?.(person, crying))) return 'baby_crying';
+    }
 
     // The thresholds here are the whole difficulty of letting work continue.
     //

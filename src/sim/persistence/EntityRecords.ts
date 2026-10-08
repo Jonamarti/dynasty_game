@@ -13,6 +13,7 @@ import { MacroBalance } from '../core/Macros.ts';
 import { SeasonLore } from '../knowledge/SeasonLore.ts';
 import { WorldKnowledge } from '../social/WorldKnowledge.ts';
 import { fromObjectGraph, registerGraphPrototype, toObjectGraph, type ObjectGraph } from './GraphRecords.ts';
+import { COMMITMENT_DRIVES } from '../ai/Commitment.ts';
 
 export const ENTITY_RECORD_VERSION = 1 as const;
 
@@ -87,6 +88,19 @@ function decodeGraph(record: unknown, expectedType: string, expectedRoot: string
 
 export function fromPersonRecord(record: unknown): Person {
   const person = decodeGraph(record, 'PersonRecord', 'Person') as Person;
+  // Person records predate this optional state. Only a genuinely absent field
+  // migrates to empty; malformed present values are rejected rather than hidden.
+  const personState = person as unknown as Record<string, unknown>;
+  if (!Object.hasOwn(personState, 'commitment')) person.commitment = null;
+  else if (person.commitment !== null) {
+    const commitment = person.commitment as unknown;
+    if (!isObject(commitment) || Object.keys(commitment).length !== 4 ||
+        !['action', 'drive', 'baselinePressure', 'goal'].every(key => Object.hasOwn(commitment, key)) ||
+        typeof commitment.action !== 'string' || commitment.action.length === 0 ||
+        !(commitment.drive === null || COMMITMENT_DRIVES.includes(commitment.drive as any)) ||
+        typeof commitment.baselinePressure !== 'number' || !Number.isFinite(commitment.baselinePressure) || commitment.baselinePressure < 0 ||
+        typeof commitment.goal !== 'string' || commitment.goal.length === 0) fail('Person commitment is malformed');
+  }
   // The belief hook is executable behaviour, so it is rebound deliberately instead of serialized.
   Object.defineProperty((person.beliefs as any), 'onNewBelief', {
     value: () => person.noteDiscovery(), enumerable: true, writable: true, configurable: true,

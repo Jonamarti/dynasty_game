@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Simulation } from '../core/Simulation.ts';
 import { toCheckpointRecord, fromCheckpointRecord } from '../persistence/CheckpointRecords.ts';
 import { toExecutionRecord } from '../persistence/ExecutionRecords.ts';
-import { toPersonRecord } from '../persistence/EntityRecords.ts';
+import { fromPersonRecord, toPersonRecord } from '../persistence/EntityRecords.ts';
 
 function fixture(): Simulation {
   const sim = new Simulation({ seed: 'checkpoint-composition', world: { width: 48, height: 48, treeDensity: 0.1 },
@@ -56,6 +56,43 @@ describe('coordinated detached checkpoints', () => {
     delete saved.config.otherBandThinkInterval;
     const restored = fromCheckpointRecord(saved);
     expect(restored.config.otherBandThinkInterval).toBe(restored.config.thinkInterval);
+  });
+
+  it('round trips an explicit false commitment-source bit in an old-compatible ledger', () => {
+    const sim = fixture();
+    sim.interruptions.push({ personId: sim.people[0]!.id, action: 'forage', reason: 'injured', recipe: null, autonomousCommitment: false });
+    const restored = fromCheckpointRecord(wire(toCheckpointRecord(sim)));
+    expect(restored.ledgers.interruptions[0]?.autonomousCommitment).toBe(false);
+  });
+
+  it('migrates only a wholly legacy AI config and rejects a partial commitment policy', () => {
+    const saved = wire(toCheckpointRecord(fixture())) as any;
+    delete saved.config.ai.commitmentEntryPressure;
+    delete saved.config.ai.commitmentBreakMargin;
+    delete saved.config.ai.commitmentTieMargin;
+    const restored = fromCheckpointRecord(saved);
+    expect(restored.config.ai.commitmentEntryPressure).toBe(0.16);
+    expect(restored.config.ai.commitmentBreakMargin).toBe(0.08);
+    expect(restored.config.ai.commitmentTieMargin).toBe(0.02);
+    const partial = wire(toCheckpointRecord(fixture())) as any;
+    delete partial.config.ai.commitmentTieMargin;
+    expect(() => fromCheckpointRecord(partial)).toThrow();
+  });
+
+  it('round trips commitments, migrates an absent legacy field, and rejects malformed present state', () => {
+    const sim = fixture();
+    const person = sim.people.find(candidate => !candidate.isPlayer)!;
+    person.commitment = { action: 'forage', drive: 'hunger', baselinePressure: 0.22, goal: '[\"forage\"]' };
+    const record = wire(toPersonRecord(person, sim.time.tick)) as any;
+    expect(fromPersonRecord(record).commitment).toEqual(person.commitment);
+    const legacy = wire(record);
+    const root = legacy.graph.nodes[legacy.graph.root.ref];
+    root.fields = root.fields.filter(([key]: [string, unknown]) => key !== 'commitment');
+    expect(fromPersonRecord(legacy).commitment).toBeNull();
+    const malformed = wire(record);
+    const commitmentRef = malformed.graph.nodes[malformed.graph.root.ref].fields.find(([key]: [string, unknown]) => key === 'commitment')[1].ref;
+    malformed.graph.nodes[commitmentRef].fields.find(([key]: [string, unknown]) => key === 'baselinePressure')[1] = -1;
+    expect(() => fromPersonRecord(malformed)).toThrow(/commitment is malformed/);
   });
 
   it('rejects mixed ticks, changed rules, unknown fields and allocators that would reissue identities', () => {

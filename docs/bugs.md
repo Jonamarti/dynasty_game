@@ -4495,3 +4495,51 @@ observada por Playwright (98/99 pasan). Con archivos estables, la misma prueba
 pasa aislada (1/1, 17,5 s). No se ha confirmado la causa ni se ha cambiado el
 juego o la aserción para ocultar el fallo. Las dos pruebas de 40b pasan y las
 capturas finales 05/06 muestran ambas rutas y «haciendo una lupia de hierro».
+
+### M15 cerebro B — distribución pendiente de contraste en M16, 2026-10-08
+
+La primera versión B de retención falló un check adicional en la semilla `band`:
+`moods-move-choices`, talk 3,8% en el tercil de pertenencia baja vs 4,4% alta
+(900 muestras cada), antes 4,0%/2,4%. El diff no cambia `belongingNeed` ni el
+score de talk; sí cambia el pool de selección y consume elecciones sembradas
+para empates, por lo que cambia la trayectoria. No se ha confirmado una causa
+funcional ni calibrado pesos para forzar el check. Talk total aumenta
+3.629 → 4.279. Cinco ideas concebidas antes y ninguna después dejan checks de
+descubrimiento n/a; no se cuenta como aprobación ni como comportamiento
+eliminado confirmado. El scorer habitual sigue disponible con necesidades
+calmadas. Contraste de distribución y descubrimiento queda para M16; no se
+lanzan cohortes ni escenarios largos. Los dos fallos de dieta/rendimiento y
+el test de difusión de people-knowledge ya estaban en la referencia inicial.
+Evidencia: `artifacts/verification/m15-brain-cost-20261008/{exact-final,commitment}-health.txt`.
+
+Con los arreglos finales de recogida/cuidado, el mismo check vuelve a pasar:
+7,2% talk en baja pertenencia vs 3,8% alta; talk total 5.744. No se atribuye
+la reversión a un mecanismo concreto sin una comparación controlada. El
+informe final conserva solo los dos fallos iniciales, dieta y rendimiento;
+concepción/descubrimiento sigue n/a por cero ideas en esta muestra.
+El primer full unit también falló una lectura ordenada de inscripción;
+el archivo completo después pasó 14/14 sin tocarlo. Se conserva ese fallo
+observado sin afirmar una causa; la repetición final se registra en el plan.
+Evidencia definitiva: `commitment-final-health.txt` en el mismo directorio.
+### M15 cerebro B — correspondencia compacta desalineada, 2026-10-08
+
+La suite completa final de B falla `compact-correspondence` en `craft/delta`:
+la diferencia entre hambre media compacta oracle y detallada es 23,401 puntos,
+frente a la tolerancia previamente declarada de ≤15. No fallaba en la
+referencia inicial ni en la primera versión de B. `lean/delta` pasa; el caso
+de nacimientos continúa omitido por su premisa anterior. El modelo compacto
+conserva la tabla medida antes de esta política de viajes y el oracle recibe
+la capacidad de banda observada, pero no se ha identificado qué mecanismo
+explica la divergencia final. Se registra para M16: contrastar ingesta,
+selección/retención y supuestos de capacidad antes de recalibrar. No se cambian
+coeficientes ni límites para hacer verde el test, ni se lanzan cohortes por la
+restricción M15. La lectura, recogida y alimentación que fallaron en la primera
+suite pasan en la repetición final sin cambiar la aserción de lectura.
+Evidencia: `artifacts/verification/m15-brain-cost-20261008/commitment-final-tests.txt`.
+
+El brazo oracle solo actualiza la proporción de días sin alivio de hambre;
+conserva los cuantiles de ración `qf` de `MEASURED_RATES` (alpha/beta/gamma,
+10.130 persona-días, anteriores a B). Por eso ni una capacidad conocida hace
+exacta la nueva distribución de ingesta. Esto es un supuesto identificado,
+no una causa demostrada del diferencial de 23,401; la medición posterior a B
+corresponde a M16 y queda diferida.

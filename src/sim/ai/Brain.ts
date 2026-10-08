@@ -54,6 +54,7 @@ import {
 import { INSCRIPTIONS, type Inscription } from '../entities/Inscription.ts';
 import { pressedByNeed, EARSHOT } from '../systems/ActionSystem.ts';
 import type { NeedsConfig } from '../core/Config.ts';
+import { DEFAULT_CONFIG } from '../core/Config.ts';
 import { MAX_IDEAS, PROTOTYPE_AT, type Idea } from '../knowledge/Synthesis.ts';
 import { JOBS, WORK_ACTIONS } from '../entities/Job.ts';
 import { chooseAmongBest } from '../core/Choice.ts';
@@ -84,6 +85,7 @@ import {
   ownPeopleLicence, tailLicence, conscienceBrake, strangerBrake, mischiefChild, CORRECT,
 } from '../social/Restraint.ts';
 import { drivePressures, urgencyCurve, type DrivePressures } from './Drives.ts';
+import { actionsForDrive, carriesEdibleFood, chooseCommitmentDrive, commitmentGoal, COMMITMENT_DRIVES, type CommitmentDrive } from './Commitment.ts';
 import { purposeAppetite, sensitivity } from './Temperament.ts';
 import { appealOf, cravings, hydrationOf, VARIETY_WEIGHT } from '../core/Macros.ts';
 import type { ChildhoodConfig, MotivationConfig } from '../core/Config.ts';
@@ -116,6 +118,9 @@ export interface BrainContext {
   choiceRng: RNG;
   /** `Config.ai.choiceSpread`. See `core/Choice.ts`. */
   choiceSpread: number;
+  commitmentEntryPressure?: number;
+  commitmentBreakMargin?: number;
+  commitmentTieMargin?: number;
   nodeHash: SpatialHash<ResourceNode>;
   peopleHash: SpatialHash<Person>;
   shoreHash: SpatialHash<{ x: number; y: number }>;
@@ -234,6 +239,7 @@ interface FoundTargets {
   foodToEat: string | null;
   waterQuestionPeer: Person | null;
   explorePoint: { x: number; y: number } | null;
+  waterExplorePoint: { x: number; y: number } | null;
   bringFoodPoint: { x: number; y: number } | null;
   foodNode: ResourceNode | null;
   pickupPile: ItemPile | null;
@@ -355,6 +361,60 @@ interface FoundTargets {
   praiseSubjectId: number | null;
   proposalListener: Person | null;
   proposalSite: Building | null;
+}
+
+/** A drive may retain only an action whose chosen target actually answers it. */
+
+
+
+function actionAnswersDrive(drive: CommitmentDrive, action: string, found: FoundTargets, ctx: BrainContext, person: Person): boolean {
+  switch (drive) {
+    case 'hunger':
+      if (action === 'eat') return found.foodToEat !== null && (ITEMS[found.foodToEat]?.nutrition ?? 0) > 0;
+      if (action === 'forage') return found.foodNode !== null;
+      if (action === 'pick') return found.fruitTree !== null;
+      if (action === 'hunt') return found.quarry !== null;
+      if (action === 'reap') return found.fieldTarget !== null;
+      if (action === 'take') return found.larderTarget !== null;
+      if (action === 'pickup') return found.pickupPile !== null && found.pickupItem !== null &&
+        (ITEMS[found.pickupItem]?.nutrition ?? 0) > 0;
+      if (action === 'bring_food') return found.bringFoodPoint !== null && carriesEdibleFood(person);
+      if (action === 'feed' || action === 'give') return found.beneficiary !== null && carriesEdibleFood(person);
+      return false;
+    case 'thirst':
+      if (action === 'drink') return found.water !== null;
+      if (action === 'ask_water') return found.waterQuestionPeer !== null;
+      if (action === 'explore') return found.waterExplorePoint !== null;
+      return action === 'eat' && found.foodToEat !== null &&
+        hydrationOf(found.foodToEat, ctx.world.waterKind !== undefined) > 0;
+    case 'rest': return action === 'sleep' || action === 'rest';
+    case 'warmth': return action === 'shelter' && found.shelter !== null;
+    case 'company':
+      if (action === 'talk') return found.companion !== null;
+      if (action === 'court') return found.suitor !== null;
+      if (action === 'propose') return found.proposalListener !== null;
+      if (action === 'romp') return found.playmate !== null;
+      if (action === 'attend') return found.feastHost !== null;
+      return false;
+    case 'home': return action === 'go_home' || action === 'wander';
+    case 'safety': return action === 'flee' && found.fleePoint !== null;
+  }
+}
+
+function protectedNeedAction(action: string, found: FoundTargets, person: Person): boolean {
+  return (action === 'nurse' && found.nursingChild !== null) ||
+    ((action === 'feed' || action === 'give') && found.beneficiary !== null && carriesEdibleFood(person)) ||
+    (action === 'bring_food' && found.bringFoodPoint !== null && carriesEdibleFood(person)) ||
+    (action === 'answer_call' && found.helpCallerTarget !== null) ||
+    (action === 'flee' && found.fleePoint !== null) ||
+    (action === 'attack' && found.foe !== null);
+}
+
+function effectiveDriversForAction(action: string, found: FoundTargets, ctx: BrainContext, person: Person): CommitmentDrive[] {
+  return COMMITMENT_DRIVES.filter(drive => actionAnswersDrive(drive, action, found, ctx, person));
+}
+function commitmentGoalOf(person: Person): string {
+  return commitmentGoal(person.action, person);
 }
 
 /**
@@ -796,6 +856,58 @@ export class Brain {
     // The filter allocates, so it only runs when there is one: an unrestricted
     // think is by far the common case and walks the original array.
     const pool = allowed ? scores.filter(s => allowed.has(s.id)) : scores;
+    const entryPressure = ctx.commitmentEntryPressure ?? DEFAULT_CONFIG.ai.commitmentEntryPressure;
+    const tieMargin = ctx.commitmentTieMargin ?? DEFAULT_CONFIG.ai.commitmentTieMargin;
+    const pressures = lastDrives.get(person.id);
+    let decisionPool = pool;
+    let preferredDrive: CommitmentDrive | null = null;
+    const saveCommitment = (action: string) => {
+      if (person.isPlayer || allowed || person.order !== null || person.targetX === null || person.targetY === null) {
+        person.commitment = null;
+        return;
+      }
+      const effective = effectiveDriversForAction(action, found, ctx, person);
+      let drive: CommitmentDrive | null = effective[0] ?? null;
+      for (const candidate of effective) {
+        if (drive === null || pressures![candidate] > pressures![drive]) drive = candidate;
+        else if (pressures![candidate] === pressures![drive] && ctx.choiceRng.next() < 0.5) drive = candidate;
+      }
+      if (preferredDrive !== null && effective.includes(preferredDrive)) drive = preferredDrive;
+      let baselinePressure = pressures
+        ? Math.max(...COMMITMENT_DRIVES.map(id => pressures[id])) : 0;
+      // Care routes answer a hunger somebody else is carrying. Anchor them to
+      // that visible or remembered need, rather than the traveller's own low
+      // hunger, so ordinary company pressure cannot turn them back mid-trip.
+      const careHunger = action === 'bring_food' ? ctx.starvingSeen?.(person)?.hunger ?? null
+        : (action === 'feed' || action === 'give') ? found.beneficiary?.needs.hunger ?? null : null;
+      if (careHunger !== null && carriesEdibleFood(person)) {
+        drive = null;
+        baselinePressure = Math.max(baselinePressure, urgencyCurve(careHunger));
+      }
+      person.commitment = { action: person.action, drive, baselinePressure, goal: commitmentGoalOf(person) };
+    };
+    // Reader lists are an outer filter only. Confirm that the selected target
+    // actually serves the drive, so meat can never be a thirst commitment.
+    if (!allowed && !person.isPlayer && pressures) {
+      const remaining = COMMITMENT_DRIVES.filter(drive => pressures[drive] >= entryPressure);
+      // Only needs with a real, scored answer can steer the trip; if the
+      // strongest need has no known candidate, try the next eligible one.
+      while (remaining.length) {
+        const viable = remaining.filter(drive => pool.some(row =>
+          actionsForDrive(drive).includes(row.id) && actionAnswersDrive(drive, row.id, found, ctx, person)));
+        const drive = chooseCommitmentDrive(pressures, entryPressure, tieMargin, ctx.choiceRng, viable);
+        if (!drive) break;
+        const candidates = pool.filter(row =>
+          (actionsForDrive(drive).includes(row.id) && actionAnswersDrive(drive, row.id, found, ctx, person)) ||
+          protectedNeedAction(row.id, found, person));
+        if (candidates.length) {
+          decisionPool = candidates;
+          preferredDrive = drive;
+          break;
+        }
+        remaining.splice(remaining.indexOf(drive), 1);
+      }
+    }
     // A route has already paid its travel cost. Keep it while its action is
     // still a valid option, or the next think can send the person back the
     // way they came before they reach either destination. Severe thirst is
@@ -807,16 +919,17 @@ export class Brain {
     // under it (owner, 2026-10-01): a mother at thirst 45 whose baby has
     // cried itself to hunger 60 feeds it first, because that is what the two
     // scores say. It used to be moot, since the cry seized her outright.
-    const drinkRow = pool.find(row => row.id === 'drink');
-    const nurseRow = pool.find(row => row.id === 'nurse');
+    const drinkRow = decisionPool.find(row => row.id === 'drink');
+    const nurseRow = decisionPool.find(row => row.id === 'nurse');
     const urgentDrink = person.needs.thirst >= ctx.needs.workLimits.thirst &&
       found.water !== null && drinkRow !== undefined && !(nurseRow && nurseRow.score > drinkRow.score);
     const continuingRoute = ROUTE_COMMIT_ACTIONS.has(person.action) &&
       person.targetX !== null && person.targetY !== null &&
-      pool.some(row => row.id === person.action);
+      decisionPool.some(row => row.id === person.action);
     if (urgentDrink || continuingRoute) {
       const chosen = urgentDrink ? 'drink' : person.action;
       this.setup(person, chosen, ctx, found);
+      saveCommitment(chosen);
       return chosen;
     }
     // At `choiceSpread: 0` this is `pool[0]` and takes no draw, which is why
@@ -824,10 +937,11 @@ export class Brain {
     // the options within a band of the best — see `core/Choice.ts` for why a
     // band and not a temperature, and for why the draw is here in `think`
     // rather than in `score`.
-    const chosen = chooseAmongBest(pool, ctx.choiceRng, ctx.choiceSpread)?.id
+    const chosen = chooseAmongBest(decisionPool, ctx.choiceRng, ctx.choiceSpread)?.id
       ?? (allowed ? null : 'wander');
     if (chosen === null) return null;
     this.setup(person, chosen, ctx, found);
+    saveCommitment(chosen);
     return chosen;
   }
 
@@ -3716,7 +3830,7 @@ export class Brain {
     return {
       scores,
       found: {
-        water, foodToEat, waterQuestionPeer, explorePoint, bringFoodPoint, foodNode, pickupPile, pickupItem, matNode, grassSpot, plantSpot, companion, suitor, sparPartner, student, childPupil, mentor, colleague,
+        water, foodToEat, waterQuestionPeer, explorePoint, waterExplorePoint, bringFoodPoint, foodNode, pickupPile, pickupItem, matNode, grassSpot, plantSpot, companion, suitor, sparPartner, student, childPupil, mentor, colleague,
         victim, foe, attackRoute, intruder, restrainee, kinDefence, correctee, amendsTo, complainTo, parleyWith, peaceWith, helpCallerTarget, bindTarget, patrolPoint, investigatePoint, concealCorpse, giftee, giftItem, feastStore, feastHost, beneficiary, nursingChild, playmate, tradePartner, fleeFrom, fleePoint,
         quarry,
         site, shelter, restShelter, storeTarget, storeItemId, storeItemCount, larderTarget, sabotageTarget, fruitTree, fellTree,
