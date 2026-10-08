@@ -1,3 +1,19 @@
+## 2026-10-08 — Integración de fase 40 y capturas repetibles
+
+La fase 40 se integra en master (`78cc2d4`) conservando las entradas de
+ambas ramas en changelog y bugs. La verificación integrada da TypeScript
+limpio, 1.626 unitarios pasando, una omisión y el fallo conocido de difusión
+(0,81 frente a <0,6). Las seis puertas cortas del hierro pasan. La simulación
+de una semilla conserva los dos fallos previos de dieta y rendimiento.
+
+Los cuatro specs nuevos de UI admiten `DYNASTY_CAPTURE_DIR`, como la gira,
+para guardar cada repetición en un hito nuevo sin sobrescribir las capturas
+históricas. Verificación del soporte y los flujos de forja, acero, herramientas
+y arado: 8/8 e2e pasando. Doce capturas nuevas en
+`artifacts/screenshots/m15-phase40-merge-2026-10-08T-safe/`.
+No hay cambio de UI del producto ni se ejecutan cohortes o matriz pesada.
+
+
 ## 2026-10-08 — M15 paso 0: los guardados anteriores vuelven a cargar
 
 Revisión antes de mergear el paso 0. `otherBandThinkInterval` hizo que `copyConfig` rechazara todo guardado anterior, porque exige la configuración completa para no cambiar las reglas de una partida antigua. Ahora un checkpoint sin la clave carga con `otherBandThinkInterval = thinkInterval`: exactamente la regla con la que se guardó, sin ralentizar a nadie. Prueba nueva en `checkpoint-records.test.ts`, que falla contra el código sin el arreglo. Verificación: `typecheck` limpio, suite completa y `sim:check` de una semilla en el commit de merge.

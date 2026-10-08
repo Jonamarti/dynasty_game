@@ -3806,6 +3806,8 @@ alcanzable. **Checks:** uno por nodo, cada uno contra el build sin el nodo.
 
 **Cierre funcional del 2026-10-08 (fase 40).** Los seis nodos y sus lectores están entregados. `ironminers` añade la puerta corta que faltaba para `bog_iron`: extracción real de un nodo suministrado, con tres controles ausentes que fallan sin n/a. La tabla completa de checks está en [m15_phase40_iron.md](m15_phase40_iron.md). La suite no es globalmente verde: difusión 0,81 frente a <0,6, y los fallos de dieta/rendimiento previos del simcheck; quedan registrados en [M16](m16_notes.md), sin aflojar aserciones ni ejecutar cohortes/matriz larga. La calibración final de M15 continúa pendiente.
 
+**Avance del 2026-10-08 (integración en master).** Merge `78cc2d4`; seis checks cortos pasan, TypeScript limpio y 8/8 e2e focales. Unitarios: 1.626 pasan, una omisión y el fallo de difusión ya registrado. Los specs de fase 40 admiten `DYNASTY_CAPTURE_DIR`; doce capturas nuevas en `artifacts/screenshots/m15-phase40-merge-2026-10-08T-safe/`, sin sobrescribir hitos anteriores. La simulación conserva los dos fallos previos de dieta/rendimiento; cohortes y matriz diferidas.
+
 ## Fase 41 — Calibración final y cierre de M15
 
 - La segunda pasada completa del protocolo de la fase 10 en `generations`,
