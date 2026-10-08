@@ -13726,3 +13726,17 @@ estable. Evidencia: `artifacts/verification/m15-brain-cost-20261008/`.
 Hito visual A1+A2 antes de A3: `tour` 1/1 y trece capturas en
 `artifacts/screenshots/m15-brain-exact-2026-10-08T-01/`. No cambia UI;
 cohortes diferidas y ninguna afirmación de mejora económica.
+
+## 2026-10-08 — M15 cerebro: observar cambios de intención sin tocar el mundo
+
+`profile:step --decisions=true --methods=brain` guarda por persona/día real los
+cambios y retargets dentro de `Brain.think`, arranques y opciones nulas aparte.
+Reporta exposición fraccionaria total y de NPCs autónomos; una entidad que se
+mueve no cuenta como nuevo destino. JSON conserva methodRows con llamadas y
+coste inclusivo. Se fuerza comparación de hash incluso si se pide hash=false;
+seis pruebas cubren cambios, negativos, órdenes/jugador, coordenadas y tasas.
+El perfil final confirma igualdad completa control/instrumento y negativo.
+Referencia a 300: 21.631 score calls, 1.856 cambios, 398 retargets en 480 pasos;
+597,967 NPC-días, 3,104/0,666 cambios/retargets por NPC-día. Solo observa think,
+no las terminaciones dentro de execute. Evidencia `exact-final*` en
+`artifacts/verification/m15-brain-cost-20261008/`; sin UI ni cohortes.

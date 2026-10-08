@@ -190,3 +190,19 @@ que se observa ahorro a 300 sin afirmar una mejora estable a 30. Evidencia:
 
 Hito visual de A1+A2, antes de A3: gira `tour` 1/1 pasando, trece capturas en
 `artifacts/screenshots/m15-brain-exact-2026-10-08T-01/`. No cambió la UI.
+
+### Instrumento de B: reorientaciones y llamadas reales
+
+`profile:step --decisions=true --methods=brain` observa `Brain.think` sin
+escribir en la simulación y obliga a verificar hashes incluso con `--hash=false`.
+El JSON incluye llamadas/tiempo de cada método, cambios de acción y retargets
+por persona/día real, arranques desde idle y elecciones nulas por separado.
+Las posiciones de un objetivo con identidad no cuentan como retarget al moverse.
+Las tasas incluyen denominador explícito: todos los vivos y NPCs autónomos,
+con días fraccionarios de exposición, excluyendo órdenes del segundo.
+No mide terminaciones/arranques dentro de execute; es una medida directa de
+reorientaciones del planificador, no de toda actividad. Seis controles focales
+pasan y el perfil final de A3 demuestra hash igual y negativo detectado.
+Referencia B (480 pasos): 30, 2.169 score calls, 137 cambios y 5 retargets,
+58 NPC-días; 300, 21.631 calls, 1.856 cambios y 398 retargets, 597,967 NPC-días.
+A 300 son 3,104 cambios + 0,666 retargets por NPC-día autónomo.

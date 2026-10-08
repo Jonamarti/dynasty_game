@@ -15,6 +15,7 @@
  *
  *   npm run profile:step -- --humans=30,300 --steps=480
  *   npm run profile:step -- --humans=300 --hash=false   (faster, no equality check)
+ *   npm run profile:step -- --humans=30,300 --steps=480 --decisions=true
  *
  * `--json=<path>` also writes the numbers. Timings are observations of this
  * host, never pass/fail gates.
@@ -25,6 +26,7 @@ import { WorldState } from '../src/sim/world/WorldState.ts';
 import { configFor } from '../src/sim/core/Difficulty.ts';
 import { setStepMark } from '../src/sim/core/StepProbe.ts';
 import type { Simulation } from '../src/sim/core/Simulation.ts';
+import { DecisionObserver, snapshotDecision } from './profile-decisions.ts';
 
 const args = new Map<string, string>();
 for (let i = 2; i < process.argv.length; i++) {
@@ -35,7 +37,8 @@ for (let i = 2; i < process.argv.length; i++) {
 }
 const humansList = (args.get('humans') ?? '30,300').split(',').map(Number);
 const steps = Number(args.get('steps') ?? 480);
-const wantHash = args.get('hash') !== 'false';
+const wantDecisions = args.get('decisions') === 'true';
+const wantHash = args.get('hash') !== 'false' || wantDecisions;
 const seed = args.get('seed') ?? 'profile-4';
 /** `--bands=N`: split the founders into N bands (default 1, the camp of the original measurement). */
 const bands = Math.max(1, Number(args.get('bands') ?? 1));
@@ -109,23 +112,42 @@ function run(humans: number, marked: boolean) {
     });
   }
   const methodRows = new Map<string, Row>();
+  const decisions = marked && wantDecisions ? new DecisionObserver(sim.config.time.ticksPerDay) : null;
+  const addMethodTime = (label: string, elapsed: number) => {
+    const row = methodRows.get(label) ?? { label, totalMs: 0, calls: 0 };
+    row.totalMs += elapsed; row.calls++;
+    methodRows.set(label, row);
+  };
   if (marked) {
     for (const owner of methodOwners) {
       const target = (sim as any)[owner];
       const proto = Object.getPrototypeOf(target);
       for (const name of Object.getOwnPropertyNames(proto)) {
         if (name === 'constructor' || typeof target[name] !== 'function') continue;
+        if (decisions && owner === 'brain' && name === 'think') continue;
         const original = target[name];
         const label = `${owner}.${name}`;
         target[name] = function(this: any, ...a: any[]) {
           const s0 = performance.now();
           try { return original.apply(this, a); } finally {
-            const row = methodRows.get(label) ?? { label, totalMs: 0, calls: 0 };
-            row.totalMs += performance.now() - s0; row.calls++;
-            methodRows.set(label, row);
+            addMethodTime(label, performance.now() - s0);
           }
         };
       }
+    }
+    if (decisions) {
+      const brain = (sim as any).brain;
+      if (!brain || typeof brain.think !== 'function') throw new Error('Brain.think profile target is missing');
+      const original = brain.think;
+      brain.think = function(this: any, person: any, ...a: any[]) {
+        const before = snapshotDecision(person);
+        const s0 = performance.now();
+        let chosen: unknown;
+        try { chosen = original.call(this, person, ...a); }
+        finally { addMethodTime('brain.think', performance.now() - s0); }
+        decisions.observe(before, snapshotDecision(person), sim.time.day, chosen);
+        return chosen;
+      };
     }
   }
   const stepMs: number[] = [];
@@ -133,6 +155,7 @@ function run(humans: number, marked: boolean) {
   for (let i = 0; i < steps; i++) {
     const s = performance.now();
     last = s;
+    decisions?.observeExposure(sim.people);
     sim.step();
     stepMs.push(performance.now() - s);
   }
@@ -140,7 +163,7 @@ function run(humans: number, marked: boolean) {
   setStepMark(null);
   const after = wantHash ? fingerprint(sim) : '';
   const living = sim.people.filter(p => p.alive).length;
-  return { humans, marked, meanStepMs: elapsed / steps, before, after, rows: [...totals.values()], methodRows: [...methodRows.values()], living, tick: sim.time.tick, stepMs, sim };
+  return { humans, marked, meanStepMs: elapsed / steps, before, after, rows: [...totals.values()], methodRows: [...methodRows.values()], decisions: decisions?.report() ?? null, living, tick: sim.time.tick, stepMs, sim };
 }
 
 const out: any[] = [];
@@ -172,13 +195,20 @@ for (const humans of humansList) {
     console.log(row.label.padEnd(40) + (row.totalMs / steps).toFixed(3).padStart(10) +
       (100 * row.totalMs / totalMarked).toFixed(1).padStart(11));
   }
-  if (methodOwners.length) {
+  if (methodOwners.length || wantDecisions) {
     console.log('\nmethod (inclusive; nested calls overlap, do not sum)'.padEnd(40) + 'ms/step'.padStart(10) + 'calls/step'.padStart(12));
     for (const row of marked.methodRows.sort((a, b) => b.totalMs - a.totalMs).slice(0, 40)) {
       console.log(row.label.padEnd(40) + (row.totalMs / steps).toFixed(3).padStart(10) + (row.calls / steps).toFixed(1).padStart(12));
     }
   }
+  if (marked.decisions) {
+    const d = marked.decisions;
+    console.log(`decisions in Brain.think: ${d.thinkCalls} calls (${d.nullChoices} null choices), ${d.personDays.toFixed(3)} all person-days and ${d.autonomousPersonDays.toFixed(3)} autonomous NPC person-days`);
+    console.log(`  starts ${d.starts} (${d.startsPerPersonDay.toFixed(3)}/all person-days); action changes ${d.actionChanges} (${d.actionChangesPerAutonomousPersonDay.toFixed(3)}/autonomous NPC person-days); retargets ${d.retargets} (${d.retargetsPerAutonomousPersonDay.toFixed(3)}/autonomous NPC person-days)`);
+  }
   out.push({ humans, steps, control: sortedMs[0], controlMedian: sortedMs[Math.floor(sortedMs.length / 2)], marked: marked.meanStepMs, hash: control.after,
-    rows: marked.rows.map(r => ({ ...r, msPerStep: r.totalMs / steps })) });
+    rows: marked.rows.map(r => ({ ...r, msPerStep: r.totalMs / steps })),
+    methodRows: marked.methodRows.map(r => ({ ...r, msPerStep: r.totalMs / steps, callsPerStep: r.calls / steps })),
+    decisions: marked.decisions });
 }
 if (jsonOut) writeFileSync(jsonOut, JSON.stringify(out, null, 2));
