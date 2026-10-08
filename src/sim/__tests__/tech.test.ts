@@ -520,7 +520,9 @@ describe('recipes', () => {
   it('gives a reason to make everything it can make', () => {
     // "No node ships inert", applied to recipes. A recipe is worth having only
     // if somebody would ever want its output: either it is worth carrying for
-    // its own sake (`keep`), or some building is built out of it. Without this
+    // its own sake (`keep`), some building is built out of it, or it is the
+    // journey-only raft exercised by rafting.test.ts. Keep stays zero for the
+    // latter: a crossing consumes its capability without consuming the item. Without this
     // the table would happily grow entries nothing in the world consumes.
     const wantedByBuildings = new Set<string>();
     for (const def of Object.values(BUILDINGS)) {
@@ -529,7 +531,7 @@ describe('recipes', () => {
     for (const recipe of Object.values(RECIPES)) {
       const output = Object.keys(recipe.output)[0]!;
       expect(
-        recipe.keep > 0 || wantedByBuildings.has(output),
+        recipe.keep > 0 || wantedByBuildings.has(output) || output === 'raft',
         recipe.id + ' makes ' + output + ', which nothing wants'
       ).toBe(true);
     }

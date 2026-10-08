@@ -63,7 +63,7 @@ describe('shallows mechanism checks', () => {
     expect(isOnValidGround(sim, person)).toBe(false); // Negative control: a loose load cannot cross water.
   });
 
-  it('keeps a threshold-fatigued person safe in the shallows and catches a broken swim-depth guard', () => {
+  it('keeps a threshold-fatigued person safe in the shallows and catches a broken wading-depth guard', () => {
     const shoal = (sim: Simulation) => {
       for (let y = 0; y < sim.world.height; y++) {
         for (let x = 0; x < sim.world.width; x++) if (sim.world.isShallow(x, y)) return { x: x + 0.5, y: y + 0.5 };
@@ -96,9 +96,10 @@ describe('shallows mechanism checks', () => {
       setup: sim => {
         scenario.setup?.(sim);
         brokenPerson.current = locateThresholdPerson(sim);
-        const original = sim.world.isSwimTile.bind(sim.world);
-        // Negative control: the old erroneous guard treated any water as swim-depth water.
-        sim.world.isSwimTile = (x: number, y: number) => original(x, y) || sim.world.isShallow(x, y);
+        // Drowning now includes deep water after losing a raft. Its safety
+        // gate is wading depth, so the negative control must remove that gate,
+        // rather than override an isSwimTile predicate it no longer reads.
+        sim.world.isWadeTile = () => false;
       },
     }, 1);
     expect(brokenPerson.current?.alive).toBe(false);

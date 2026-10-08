@@ -341,16 +341,17 @@ export class Pathfinder {
     const tx = toX | 0;
     const ty = toY | 0;
     if (this.canPass(tx, ty, mode)) return { x: tx, y: ty };
-    if (mode === 'swim') return null;
+    if (mode !== 'walk') return null;
     return this.world.findWalkableNear(tx, ty, 8);
   }
 
   private canPass(x: number, y: number, mode: PassMode): boolean {
     if (this.world.isWalkable(x, y)) return true;
-    return mode === 'swim' && this.world.isSwimTile(x, y);
+    return mode === 'boat' ? this.world.isBoatTile(x, y) : mode === 'swim' && this.world.isSwimTile(x, y);
   }
 
   private samePassRegion(ax: number, ay: number, bx: number, by: number, mode: PassMode): boolean {
+    if (mode === 'boat') return this.world.sameBoatRegion(ax, ay, bx, by);
     return mode === 'swim'
       ? this.world.sameSwimRegion(ax, ay, bx, by)
       : this.world.sameRegion(ax, ay, bx, by);

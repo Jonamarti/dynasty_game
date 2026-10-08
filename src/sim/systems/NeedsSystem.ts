@@ -1,3 +1,4 @@
+import { canUseRaft } from '../core/Raft.ts';
 /**
  * Needs drift upward every tick; critical needs cost health; a body with no
  * health dies. This is the clock that everything else races against — without
@@ -50,6 +51,7 @@ const EXERTION: Record<string, number> = {
   // Being somewhere, or thinking about something.
   walk: 1.05,
   goto: 1.05,
+  boat: 1.15,
   go_home: 1.05,
   bring_food: 1.05,
   wander: 1.0,
@@ -150,7 +152,10 @@ export class NeedsSystem {
       // when they entered it. Key this from position so a routed forage or a
       // stationary swimmer cannot bypass the drowning clock by keeping a
       // different action label.
-      const swimming = this.world?.isSwimTile(person.x, person.y) ?? false;
+      if (this.world?.isBoatTile(person.x, person.y) && canUseRaft(person)) person.aboardRaft = true;
+      else delete person.aboardRaft;
+      const swimming = !!this.world?.isWater(person.x, person.y) && !this.world.isWadeTile(person.x, person.y) &&
+        !(this.world.isBoatTile(person.x, person.y) && canUseRaft(person));
 
       // Thirst is the one need that answers to what you are *doing*.
       //

@@ -1,3 +1,4 @@
+import { canUseRaft } from '../core/Raft.ts';
 /**
  * Movement toward a target tile.
  *
@@ -214,7 +215,7 @@ export function moveToward(
   // Shallow water is walkable, but slower than dry ground. Apply this before
   // blocked-step/progress checks so a wading step still counts as movement.
   const wadingFactor = world.isWadeTile(proposedX, proposedY) ? 0.4 : 1;
-  speed *= factor * wadingFactor;
+  speed *= mode === 'boat' && world.isBoatTile(proposedX, proposedY) ? 0.65 : factor * wadingFactor;
 
   const startX = entity.x;
   const startY = entity.y;
@@ -223,7 +224,7 @@ export function moveToward(
   // movement primitive must honour that same medium or every route stalls at
   // its first wet tile.
   const passable = (x: number, y: number): boolean => world.isWalkable(x, y) ||
-    (mode === 'swim' && world.isSwimTile(x, y));
+    (mode === 'swim' && world.isSwimTile(x, y)) || (mode === 'boat' && world.isBoatTile(x, y));
 
   const nx = entity.x + (dx / dist) * speed;
   const ny = entity.y + (dy / dist) * speed;
@@ -384,17 +385,18 @@ export class MovementSystem {
     const requestedSpeed = this.speedOf(person);
     const fullX = person.x + (dx / length) * requestedSpeed;
     const fullY = person.y + (dy / length) * requestedSpeed;
-    const wantsSwim = this.world.isSwimTile(fullX, fullY);
-    if (this.world.isWater(fullX, fullY) && !this.world.isWalkable(fullX, fullY) && !wantsSwim) {
+    const wantsBoat = canUseRaft(person) && this.world.isBoatTile(fullX, fullY);
+    const wantsSwim = !wantsBoat && this.world.isSwimTile(fullX, fullY);
+    if (this.world.isWater(fullX, fullY) && !this.world.isWalkable(fullX, fullY) && !wantsSwim && !wantsBoat) {
       return 'too_deep';
     }
     const refusal = wantsSwim ? swimRefusal(person, this.world, fullX, fullY, this.world.drownAt) : null;
     if (refusal) return refusal;
-    const speed = requestedSpeed * (wantsSwim ? 1 / 6 : this.world.isWadeTile(fullX, fullY) ? 0.4 : 1);
+    const speed = requestedSpeed * (wantsBoat ? 0.65 : wantsSwim ? 1 / 6 : this.world.isWadeTile(fullX, fullY) ? 0.4 : 1);
     const nx = person.x + (dx / length) * speed;
     const ny = person.y + (dy / length) * speed;
     const canEnter = (x: number, y: number) => this.world.isWalkable(x, y) ||
-      (wantsSwim && this.world.isSwimTile(x, y));
+      (wantsSwim && this.world.isSwimTile(x, y)) || (wantsBoat && this.world.isBoatTile(x, y));
     if (canEnter(nx, ny)) {
       person.x = nx;
       person.y = ny;
@@ -403,7 +405,9 @@ export class MovementSystem {
     } else if (canEnter(person.x, ny)) {
       person.y = ny;
     }
-    if (this.world.isWadeTile(person.x, person.y)) person.wet = Math.max(person.wet, this.world.wetTicks);
+    if (canUseRaft(person) && this.world.isBoatTile(person.x, person.y)) person.aboardRaft = true;
+    else delete person.aboardRaft;
+    if (!person.aboardRaft && this.world.isWadeTile(person.x, person.y)) person.wet = Math.max(person.wet, this.world.wetTicks);
     if (wantsSwim && this.world.isSwimTile(person.x, person.y)) {
       person.wet = Math.max(person.wet, this.world.wetTicks);
       person.practice('swim', 0.05);
@@ -438,11 +442,12 @@ export class MovementSystem {
     const dy = person.targetY - person.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
 
+    if (person.action === 'boat' && !canUseRaft(person)) return Arrival.Blocked;
     const mode = this.passMode(person);
-    const startsInSwim = this.world.isSwimTile(person.x, person.y);
-    const targetsSwim = this.world.isSwimTile(person.targetX, person.targetY);
-    const mustEnterWater = mode === 'swim' && targetsSwim && !startsInSwim;
-    const mustReachLand = mode === 'swim' && startsInSwim && !targetsSwim;
+    const startsInSwim = mode === 'boat' ? this.world.isBoatTile(person.x, person.y) : this.world.isSwimTile(person.x, person.y);
+    const targetsSwim = mode === 'boat' ? this.world.isBoatTile(person.targetX, person.targetY) : this.world.isSwimTile(person.targetX, person.targetY);
+    const mustEnterWater = mode !== 'walk' && targetsSwim && !startsInSwim;
+    const mustReachLand = mode !== 'walk' && startsInSwim && !targetsSwim;
     if (dist < ARRIVAL_RADIUS && !mustEnterWater && !mustReachLand) {
       person.stuckSteps = 0;
       telemetry.count('walk_arrived');
@@ -510,7 +515,9 @@ export class MovementSystem {
     // The honest test: did we actually get anywhere?
     this.refused.x = -1;
     const progress = moveToward(person, aimX, aimY, speed, this.world, this.rng, this.refused, mode);
-    if (this.world.isWadeTile(person.x, person.y)) person.wet = Math.max(person.wet, this.world.wetTicks);
+    if (mode === 'boat' && this.world.isBoatTile(person.x, person.y)) person.aboardRaft = true;
+    else if (!this.world.isBoatTile(person.x, person.y)) delete person.aboardRaft;
+    if (mode !== 'boat' && this.world.isWadeTile(person.x, person.y)) person.wet = Math.max(person.wet, this.world.wetTicks);
     if (mode === 'swim' && this.world.isSwimTile(person.x, person.y)) {
       person.wet = Math.max(person.wet, this.world.wetTicks);
       if (progress > 0) {
@@ -637,7 +644,7 @@ export class MovementSystem {
       // until the day it does not.
       const nx = person.path![person.pathAt * 2]!;
       const ny = person.path![person.pathAt * 2 + 1]!;
-      if (!this.world.isWalkable(nx, ny) && !(mode === 'swim' && this.world.isSwimTile(nx, ny))) return true;
+      if (!this.world.isWalkable(nx, ny) && !(mode === 'swim' && this.world.isSwimTile(nx, ny)) && !(mode === 'boat' && this.world.isBoatTile(nx, ny))) return true;
     }
     return false;
   }
@@ -684,9 +691,13 @@ export class MovementSystem {
 
   /** Appetitive scoring picks the destination; this gate only picks its medium. */
   private passMode(person: Person): PassMode {
+    if (person.action === 'boat' && canUseRaft(person)) return 'boat';
     if (person.action === 'swim') return 'swim';
+    if (person.targetX !== null && person.targetY !== null && canUseRaft(person) &&
+        (this.world.isBoatTile(person.x, person.y) || this.world.isBoatTile(person.targetX, person.targetY))) return 'boat';
     if (person.targetX === null || person.targetY === null ||
         this.world.sameRegion(person.x, person.y, person.targetX, person.targetY)) return 'walk';
+    if (canUseRaft(person) && this.world.sameBoatRegion(person.x, person.y, person.targetX, person.targetY)) return 'boat';
     if (handsEmptyForSwimming(person) && person.needs.cold < this.world.drownAt &&
         person.needs.fatigue < this.world.drownAt &&
         this.world.sameSwimRegion(person.x, person.y, person.targetX, person.targetY)) return 'swim';

@@ -1,3 +1,7 @@
+## M15 navegación fluvial: alcance de la balsa inicial (2026-10-08)
+
+La balsa de juncos es un transporte personal de agua dulce; no implementa tripulaciones, cargas de varios NPC, embarcaciones grandes ni navegación marítima. Se fabrica para una orden de viaje (`keep: 0`), por lo que el AI no adopta todavía un plan de explorar/fabricar una embarcación para colonizar otra orilla. Los cruces ordenados y los movimientos con una balsa ya disponible funcionan; esa planificación queda para navegación/fase 35. Cavar barro de la orilla es una orden disponible al jugador, no una nueva fuente elegida automáticamente por el abastecimiento de obras cuando faltan depósitos.
+
 ## M15 ríos: límites cartográficos pendientes de hidrología detallada (2026-10-08)
 
 Natural Earth aporta geometría y `scalerank`, no anchuras ni profundidades medidas, ni una dirección garantizada de digitalización. Los anchos y fondos son clases legibles de juego; la superficie se apoya en el relieve local del DEM grueso y no constituye un modelo hidráulico. El atlas de hace 12.000 años conserva cursos modernos aproximados, igual que conserva clima moderno. No se ha reconstruido paleohidrografía. Documentación y reproducción: `earth_rivers.md`.

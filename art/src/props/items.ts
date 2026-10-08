@@ -6,6 +6,10 @@ export type ItemArt = [id: string, label: string, tech: string, draw: () => stri
 export const WOOD = '#86633c', WOOD_D = '#3a2716', STONE = '#a9adb0', STONE_D = '#3d4244', BONE = '#e6dcc0', BONE_D = '#7a6d4e', CORD = '#c9b27f';
 const rot = (inner: string, deg: number, cx = 32, cy = 32): string => `<g transform="rotate(${deg} ${cx} ${cy})">${inner}</g>`;
 export const ITEMS: ItemArt[] = [
+  ['raft', 'Balsa de juncos', 'cordage', () =>
+    [16, 24, 32, 40, 48].map(x => limb([[x, 12], [x, 52]], 7, '#b89d5c', '#685332')).join('')
+    + stroke('M12,23L52,23M12,41L52,41', CORD, 2.6)
+    + limb([[10, 56], [52, 8]], 2.2, WOOD, WOOD_D)],
   ['antler_pick', 'Pico de asta', 'bone_working', () => rot(
     limb([[28, 58], [32, 14]], 5, BONE, BONE_D)
     + shape('M30,16Q40,4 54,12Q44,14 35,23Z', BONE, BONE_D)

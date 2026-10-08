@@ -12,6 +12,7 @@
  * Side-effect free so tests and the CLIs can import it. The CLIs are
  * `tools/headless.ts` (one scenario) and `tools/scenarios.ts` (all of them).
  */
+import { canUseRaft } from '../src/sim/core/Raft.ts';
 import { Simulation } from '../src/sim/core/Simulation.ts';
 import { capacityFor, equipContainer } from '../src/sim/core/Carry.ts';
 import { anchorOf, carerOf, childRadius } from '../src/sim/ai/Anchor.ts';
@@ -1363,7 +1364,8 @@ function sample(sim: Simulation): Sample {
 /** Rock and deep water are invalid positions; a swimmer needs both a swim tile and empty hands. */
 export function isOnValidGround(sim: Simulation, person: import('../src/sim/entities/Person.ts').Person): boolean {
   return sim.world.isWalkable(person.x, person.y) ||
-    (sim.world.isSwimTile(person.x, person.y) && handsEmptyForSwimming(person));
+    (sim.world.isSwimTile(person.x, person.y) && handsEmptyForSwimming(person)) ||
+    (sim.world.isBoatTile(person.x, person.y) && canUseRaft(person));
 }
 
 // ---------------------------------------------------------------------------

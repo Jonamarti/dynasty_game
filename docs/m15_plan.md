@@ -4150,3 +4150,9 @@ Completada la sustitución del atlas fluvial grueso por trazas Natural Earth 1:1
 ## 2026-10-08 — Barro extraído de la orilla
 
 Completada la opción de cavar sedimento de una orilla dulce sin depósito de arcilla. Comparte excavación/herramientas, límite y progreso del agujero, con razones visibles, traducción y animación. Tres tests y el flujo del Ebro cubren producción, refusales, interrupción y guardado. Capturas `artifacts/screenshots/m15-river-tools-2026-10-08/Ebro-*.png`.
+
+## 2026-10-08 — Cruces de agua dulce en balsa de juncos
+
+Completado el cruce en balsa pequeña: receta con paja/juncos, palos y cuerda; cordelería como requisito; órdenes y teclas; núcleo profundo que no admite natación; desembarco, interrupciones visibles y continuidad de guardado. Arte y capturas `artifacts/screenshots/m15-river-tools-2026-10-08/Danube-*.png`. Es un transporte local de agua dulce, no completa los barcos grandes ni la navegación marítima previstos en la fase 35.
+
+Verificación conjunta: typecheck limpio; 1.547 unitarios pasan, 1 omitido, solo el fallo heredado de difusión tecnológica. 107/107 e2e de la lista general, 2/2 comienzos adicionales, 67/67 controles focalizados finales. Sim de una semilla con los mismos fallos heredados de antojos y rendimiento; cohortes y matriz pesada diferidas. Capturas de verificación nuevas en `artifacts/screenshots/m15-river-tools-verification-2026-10-08/`, conservando las históricas.

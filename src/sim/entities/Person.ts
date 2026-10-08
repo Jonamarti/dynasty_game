@@ -214,6 +214,8 @@ export class Person {
 
   bandId: number;
   isPlayer = false;
+  /** Observed raft deployment, for drawing only; routing checks the actual craft. */
+  declare aboardRaft?: boolean;
   /**
    * A standing occupation, or none. Leans `Brain`'s scorer toward the job's
    * own verbs and damps the rest of `WORK_ACTIONS` a little — see `Job.ts`.

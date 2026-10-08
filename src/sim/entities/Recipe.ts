@@ -81,6 +81,9 @@ export interface RecipeDef {
 }
 
 export const RECIPES: Record<string, RecipeDef> = {
+  // Kept at zero: a raft is made for a journey, not a new universal AI tax.
+  raft: { id: 'raft', label: 'Reed raft', icon: '🛶', tech: 'cordage', skill: 'build',
+    workTicks: 120, ingredients: { thatch: 6, sticks: 2, rope: 1 }, output: { raft: 1 }, keep: 0 },
   handaxe: {
     id: 'handaxe',
     label: 'Hand axe',

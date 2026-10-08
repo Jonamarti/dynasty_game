@@ -406,4 +406,11 @@ export const ES_ACTIONS: Record<string, string> = {
   "digging mud": "cavando barro",
   "mud can only be dug on a freshwater bank": "solo se puede cavar barro en una orilla de agua dulce",
   "there is no freshwater mud bank there": "no hay una orilla de barro de agua dulce allí",
+  "Reed raft": "Balsa de juncos",
+  "Travel by reed raft": "Viajar en balsa de juncos",
+  "rafting": "navegando en balsa",
+  "a reed raft and cordage knowledge are needed": "hacen falta una balsa de juncos y conocimientos de cordelería",
+  "A reed raft and cordage knowledge are needed": "Hacen falta una balsa de juncos y conocimientos de cordelería",
+  "the raft cannot reach that place": "la balsa no puede llegar a ese lugar",
+  "they need a reed raft and cordage knowledge": "necesitan una balsa de juncos y conocimientos de cordelería",
 };

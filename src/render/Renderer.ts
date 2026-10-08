@@ -2020,6 +2020,11 @@ export class Renderer {
     ctx.ellipse(px, y0 + 88.6 * k, 17 * k, 4.4 * k, 0, 0, Math.PI * 2);
     ctx.stroke();
     ctx.restore();
+    // Afloat is observed action/position, never a read of a stranger's pack.
+    if (person.aboardRaft && this.sim.world.isBoatTile(person.x, person.y)) {
+      art.drawAsset(ctx, 'props', 'item/raft', px - 32 * k, y0 + 57 * k, k);
+      aspect.held = null;
+    }
     art.drawPerson(ctx, aspect, x0, y0, k);
   }
 

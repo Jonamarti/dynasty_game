@@ -1,3 +1,4 @@
+import { canUseRaft } from '../core/Raft.ts';
 /**
  * Every verb in the game, and when it applies.
  *
@@ -1097,7 +1098,8 @@ function groundActions(
   const walkable = ctx.world.isWalkable(target.x, target.y);
   const sameLand = walkable && ctx.world.sameRegion(actor.x, actor.y, target.x, target.y);
   const swimLink = walkable && !sameLand && ctx.world.sameSwimRegion(actor.x, actor.y, target.x, target.y);
-  const swimProblem = swimLink
+  const raftLink = canUseRaft(actor) && ctx.world.sameBoatRegion(actor.x, actor.y, target.x, target.y);
+  const swimProblem = swimLink && !raftLink
     ? swimRouteRefusal(actor, ctx.drownAt ?? 85) : null;
   const options: ActionOption[] = [
     ...(walkable ? putDownOptions(ctx, 'here') : []),
@@ -1105,10 +1107,10 @@ function groundActions(
       id: 'goto',
       label: t('Walk here'),
       icon: '\u{1F45F}',
-      enabled: walkable && (sameLand || (swimLink && swimProblem === null)),
+      enabled: walkable && (sameLand || raftLink || (swimLink && swimProblem === null)),
       reason: !walkable ? t('You cannot walk there')
         : swimProblem ? swimRefusalText(swimProblem)
-          : swimLink ? undefined : t('There is no way across'),
+          : sameLand || raftLink || swimLink ? undefined : t('There is no way across'),
     },
     // M11 phase 15d: the way out, for a captive — and the road home, for one
     // who has already slipped away. Offered without asking who is watching:
@@ -1150,6 +1152,12 @@ function groundActions(
       enabled: refusal === null,
       reason: refusal ? swimRefusalText(refusal) : undefined,
     });
+  }
+  if ((walkable || ctx.world.isBoatTile(target.x, target.y)) &&
+      ctx.world.sameBoatRegion(actor.x, actor.y, target.x, target.y) && !sameLand) {
+    options.push({ id: 'boat', label: t('Travel by reed raft'), icon: '🛶',
+      enabled: canUseRaft(actor),
+      reason: canUseRaft(actor) ? undefined : t('A reed raft and cordage knowledge are needed') });
   }
   // M15 phase 23b: thatch from the standing grass. Offered on the ground it
   // stands on, because the grass is a layer and not a thing with a menu of its

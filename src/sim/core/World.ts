@@ -398,6 +398,7 @@ export class World {
     if (this.walkable[i] === now) return;
     this.walkable[i] = now;
     this.swimRegionsDirty = true;
+    this.boatVersion = -1;
     if (walkable) this.joinRegions(i); else this.splitRegions(i);
   }
 
@@ -713,6 +714,41 @@ export class World {
       };
     }
     return null;
+  }
+
+  /** Derived boat connectivity is rebuilt after terrain changes, never saved.
+   * Lazy allocation also supports worlds restored without a constructor. */
+  private boatRegions?: Int32Array;
+  private boatVersion = -1;
+  isBoatTile(x: number, y: number): boolean {
+    return this.inBounds(x, y) && this.isFreshWater(x, y);
+  }
+  sameBoatRegion(ax: number, ay: number, bx: number, by: number): boolean {
+    if (!this.inBounds(ax, ay) || !this.inBounds(bx, by)) return false;
+    if (!this.boatRegions || this.boatVersion !== this.earthVersion) {
+      const region = this.boatRegions = new Int32Array(this.width * this.height).fill(-1);
+      const queue: number[] = [];
+      let id = 0;
+      for (let start = 0; start < region.length; start++) {
+        const sx = start % this.width, sy = Math.floor(start / this.width);
+        if (region[start] !== -1 || !(this.isWalkable(sx, sy) || this.isBoatTile(sx, sy))) continue;
+        queue.length = 0; queue.push(start); region[start] = id;
+        for (let head = 0; head < queue.length; head++) {
+          const tile = queue[head]!, x = tile % this.width, y = Math.floor(tile / this.width);
+          for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+            const nx = x + dx!, ny = y + dy!;
+            if (!this.inBounds(nx, ny)) continue;
+            const next = this.index(nx, ny);
+            if (region[next] !== -1 || !(this.isWalkable(nx, ny) || this.isBoatTile(nx, ny))) continue;
+            region[next] = id; queue.push(next);
+          }
+        }
+        id++;
+      }
+      this.boatVersion = this.earthVersion;
+    }
+    const a = this.boatRegions[this.index(ax, ay)]!;
+    return a !== -1 && a === this.boatRegions[this.index(bx, by)];
   }
 
   /** Swim-capable component id, or -1 for water too deep to swim or off-map. */

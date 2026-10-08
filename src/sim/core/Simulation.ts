@@ -1,3 +1,4 @@
+import { canUseRaft } from './Raft.ts';
 /**
  * The simulation: owns the world, the people, the clock and the systems, and
  * runs them in a fixed order every step.
@@ -4100,6 +4101,12 @@ export class Simulation {
       return true;
     }
     if (target.x !== undefined && target.y !== undefined) {
+      if (action === 'boat') {
+        if (!canUseRaft(person)) return this.cancelOrder(person, t('a reed raft and cordage knowledge are needed'));
+        if (!this.world.sameBoatRegion(person.x, person.y, target.x, target.y))
+          return this.cancelOrder(person, t('the raft cannot reach that place'));
+        person.targetX = target.x; person.targetY = target.y; return true;
+      }
       if (action === 'swim') {
         const reason = swimRefusal(person, this.world, target.x, target.y, this.config.world.drownAt);
         if (reason) return this.cancelOrder(person, swimRefusalText(reason));
@@ -4174,7 +4181,8 @@ export class Simulation {
       if (!this.world.isWalkable(target.x, target.y)) {
         return this.cancelOrder(person, t('they cannot walk there'));
       }
-      if (!this.world.sameRegion(person.x, person.y, target.x, target.y)) {
+      if (!this.world.sameRegion(person.x, person.y, target.x, target.y) &&
+          !(canUseRaft(person) && this.world.sameBoatRegion(person.x, person.y, target.x, target.y))) {
         if (!this.world.sameSwimRegion(person.x, person.y, target.x, target.y)) {
           return this.cancelOrder(person, t('there is no way across'));
         }
@@ -5211,7 +5219,8 @@ export class Simulation {
     // runs after needs rise and before anyone acts, so crossing the threshold
     // has one deterministic outcome and cannot be undone by iteration order.
     for (const person of this.people) {
-      if (!person.alive || !this.world.isSwimTile(person.x, person.y) ||
+      if (!person.alive || (this.world.isBoatTile(person.x, person.y) && canUseRaft(person)) ||
+          !this.world.isWater(person.x, person.y) || this.world.isWadeTile(person.x, person.y) ||
           (person.needs.cold <= this.config.world.drownAt && person.needs.fatigue <= this.config.world.drownAt)) continue;
       person.die('drowned');
       telemetry.count('death_drowned');
@@ -5567,6 +5576,9 @@ export class Simulation {
       removeCorpse: (corpse: Corpse) => this.removeCorpse(corpse),
       nearestShore: (x: number, y: number) => this.shoreHash.findNearest(x, y, 60,
         tile => this.world.sameRegion(x, y, tile.x, tile.y)),
+      nearestBoatShore: (x: number, y: number) => this.freshShoreHash.findNearest(x, y,
+        Math.hypot(this.world.width, this.world.height), tile => !this.world.isWater(tile.x, tile.y) &&
+          this.world.sameBoatRegion(x, y, tile.x, tile.y)),
       nearestSwimShore: (x: number, y: number) => this.shoreHash.findNearest(x, y,
         Math.hypot(this.world.width, this.world.height),
         tile => this.world.isWalkable(tile.x, tile.y) && !this.world.isWater(tile.x, tile.y) &&
@@ -5678,6 +5690,7 @@ export class Simulation {
         person.action = 'walk';
         person.clearTarget();
         const movementRefusal = this.movementSystem.nudge(person, this.playerIntent.dx, this.playerIntent.dy);
+        if (person.aboardRaft) person.action = 'boat';
         if (movementRefusal) {
           this.lastRefusal = swimRefusalText(movementRefusal);
           if (this.playerMovementRefusal !== movementRefusal) {
@@ -6018,6 +6031,7 @@ export class Simulation {
     const flooded = (x: number, y: number): boolean => world.inBounds(x, y) && world.isWater(x, y);
     const lostPerson = (person: Person): boolean => {
       if (!world.inBounds(person.x, person.y) || world.isWalkable(person.x, person.y)) return false;
+      if (world.isBoatTile(person.x, person.y) && canUseRaft(person)) return false;
       if (!world.isSwimTile(person.x, person.y)) return true;
       return !handsEmptyForSwimming(person) || person.needs.cold >= world.drownAt ||
         person.needs.fatigue >= world.drownAt;

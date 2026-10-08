@@ -36,7 +36,7 @@ const byteKeys: ByteArrayKey[] = ['biome', 'walkable'];
 const soilKeys: SoilArrayKey[] = ['texture', 'organic', 'nutrient'];
 const worldOwnKeys = ['config', 'width', 'height', 'chunkSize', 'chunksX', 'chunksY', 'elevation', 'offset', 'earthVersion',
   'prominence', 'moisture', 'fertility', 'biome', 'walkable', 'grass', 'grassCap', 'region', 'regionSizes', 'nextRegionId', 'shoreTiles',
-  'swimRegion', 'swimRegionSizes', 'swimRegionsDirty', 'swimRegionEarthVersion', 'soil'];
+  'boatRegions', 'boatVersion', 'swimRegion', 'swimRegionSizes', 'swimRegionsDirty', 'swimRegionEarthVersion', 'soil'];
 const soilOwnKeys = ['width', 'fertility', 'texture', 'organic', 'nutrient', 'active'];
 const configKeys = Object.keys(DEFAULT_CONFIG.world) as (keyof WorldConfig)[];
 const integerConfigKeys = ['width', 'height', 'chunkSize', 'berryBushes', 'flintOutcrops', 'deadwood', 'gameHerds', 'predators',
@@ -299,6 +299,7 @@ export function fromWorldTerrainRecord(record: unknown): World {
     // Swimming components are a derived cache. Rebuild lazily after restore:
     // water thresholds are in the validated config, and no random draw or
     // terrain ownership changes during this rebuild.
+    boatRegions: undefined, boatVersion: -1,
     swimRegion: new Int32Array(n).fill(-1), swimRegionSizes: new Map<number, number>(),
     swimRegionsDirty: true, swimRegionEarthVersion: -1,
   })) Object.defineProperty(mutableWorld, key, { value, enumerable: true, writable: true, configurable: true });
