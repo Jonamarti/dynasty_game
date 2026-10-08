@@ -1,4 +1,13 @@
-import { SpatialHash } from '../core/SpatialHash.ts';
+/**
+ * FROZEN COPY of `PlaceMemory` as it was before the M15 step 0 speed-ups
+ * (2026-10-08). Not used by the game. `place-memory-exact.test.ts` runs this and
+ * the real class through the same random operations and requires every private
+ * field, including the order of the spatial-hash cells, to be identical after
+ * each one: the speed-ups promise to change how fast the memory works and not a
+ * single thing it remembers. Do not edit it to follow `PlaceMemory`; if the real
+ * class is meant to change behaviour, retire this file in the same commit.
+ */
+import { SpatialHash } from '../../core/SpatialHash.ts';
 
 /**
  * What one person has seen of the places around them.
@@ -30,9 +39,9 @@ export interface PlaceRecord {
   visual?: PlaceVisual;
 }
 
-export const PLACE_CELL_SIZE = 4;
+const PLACE_CELL_SIZE = 4;
 
-export class PlaceMemory {
+export class PlaceMemoryReference {
   private width: number;
   private height: number;
   private capPerKind: number;
@@ -110,8 +119,7 @@ export class PlaceMemory {
     kind: string, x: number, y: number, day: number, amount: RememberedAmount,
     source: PlaceSource = 'seen', visual?: PlaceVisual,
   ): void {
-    const existing = this.places.get(kind);
-    const records = existing ?? new Map<number, PlaceRecord>();
+    const records = this.places.get(kind) ?? new Map<number, PlaceRecord>();
     const cellX = Math.floor(x / PLACE_CELL_SIZE);
     const cellY = Math.floor(y / PLACE_CELL_SIZE);
     // A person is remembered once, where they were last seen, not once per
@@ -141,11 +149,7 @@ export class PlaceMemory {
       this.setRecord(records, cellKey, record);
     }
     this.indexAvailability(kind, cellKey, record);
-    // `Map.set` on a key already present neither moves it nor changes anything
-    // else, so only the first record of a kind needs to say so. (Saying it every
-    // time was a Map write per sighting, and a sighting happens a hundred
-    // thousand times a step in a camp of three hundred.)
-    if (!existing) this.places.set(kind, records);
+    this.places.set(kind, records);
     this.revisionValue++;
   }
 
@@ -244,77 +248,48 @@ export class PlaceMemory {
     return Math.max(1, Math.min(65535, Math.floor(day)));
   }
 
-  /**
-   * The key to forget first: the earliest-inserted record among those with the
-   * lowest (day, amount). The answer is what a scan of every record gives, and
-   * that scan was the largest single cost in a camp of three hundred, where the
-   * 48 places a person holds for "people" are evicted and refilled on every
-   * look around. So it is not scanned any more: `weakness` counts the records
-   * by `day * 3 + amount` (the same order, because an amount is 0 to 2), which
-   * names the lowest code at once, and the scan only runs from the front of the
-   * map until it meets a record with that code. In the common case, a queue of
-   * people seen today, that is the first record.
-   */
   private weakestKey(records: Map<number, PlaceRecord>): number {
-    if (records.size === 0) return 0;
-    const target = weaknessOf(records).min;
+    let weakestKey = 0;
+    let weakest: PlaceRecord | undefined;
     for (const [key, candidate] of records) {
-      if (candidate.day * 3 + candidate.amount === target) return key;
+      if (!weakest || candidate.day < weakest.day ||
+          (candidate.day === weakest.day && candidate.amount < weakest.amount)) {
+        weakest = candidate;
+        weakestKey = key;
+      }
     }
-    return 0;
+    return weakestKey;
   }
 
   private setRecord(records: Map<number, PlaceRecord>, key: number, record: PlaceRecord): void {
     const previous = records.get(key);
-    const weakness = WEAKNESS.get(records);
     if (previous) {
       this.rememberedDayTotal -= previous.day;
       this.allPlacesHash.remove(previous);
-      if (weakness) dropWeakness(weakness, previous);
     }
     else this.rememberedCount++;
-    if (weakness) addWeakness(weakness, record);
     records.set(key, record);
     this.allPlacesHash.insert(record);
     this.rememberedDayTotal += record.day;
   }
 
   private indexAvailability(kind: string, key: number, record: PlaceRecord): void {
-    if (record.amount === 0) {
-      this.unindexAvailability(kind, key);
-      return;
-    }
-    const existing = this.available.get(kind);
-    const records = existing ?? new Map<number, PlaceRecord>();
+    const records = this.available.get(kind) ?? new Map<number, PlaceRecord>();
     const previous = records.get(key);
-    const existingHash = this.availableHashes.get(kind);
-    if (previous) existingHash?.remove(previous);
-    records.set(key, record);
-    const hash = existingHash ?? new SpatialHash<PlaceRecord>(8);
-    hash.insert(record);
-    // Both `set`s below are no-ops when the kind is already indexed (a present
-    // key keeps its place in a Map), so they are made only the first time.
-    if (!existingHash) this.availableHashes.set(kind, hash);
-    if (!existing) this.available.set(kind, records);
-  }
-
-  /**
-   * `indexAvailability` for a spent place (amount 0), written out: the eviction
-   * path used to build a `{ ...previous, amount: 0 }` copy of the record only so
-   * that this branch could read the zero off it.
-   */
-  private unindexAvailability(kind: string, key: number): void {
-    const records = this.available.get(kind);
-    if (records) {
-      const previous = records.get(key);
-      if (previous) this.availableHashes.get(kind)?.remove(previous);
-      records.delete(key);
-      if (records.size !== 0) return;
+    if (previous) this.availableHashes.get(kind)?.remove(previous);
+    if (record.amount === 0) records.delete(key);
+    else {
+      records.set(key, record);
+      const hash = this.availableHashes.get(kind) ?? new SpatialHash<PlaceRecord>(8);
+      hash.insert(record);
+      this.availableHashes.set(kind, hash);
     }
-    this.available.delete(kind);
-    if ((this.availableHashes.get(kind)?.stats().items ?? 0) === 0) {
-      this.availableHashes.delete(kind);
-    }
+    if (records.size === 0) {
+      this.available.delete(kind);
+      if ((this.availableHashes.get(kind)?.stats().items ?? 0) === 0) {
+        this.availableHashes.delete(kind);
+      }
+    } else this.available.set(kind, records);
   }
 
   private deleteRecord(kind: string, records: Map<number, PlaceRecord>, key: number): void {
@@ -323,50 +298,8 @@ export class PlaceMemory {
     this.rememberedDayTotal -= previous.day;
     this.rememberedCount--;
     records.delete(key);
-    const weakness = WEAKNESS.get(records);
-    if (weakness) dropWeakness(weakness, previous);
     this.allPlacesHash.remove(previous);
-    this.unindexAvailability(kind, key);
-  }
-}
-
-/**
- * How many records of one kind sit at each (day, amount), for `weakestKey`.
- * Kept beside the class and not in it, keyed by the kind's own record map: it is
- * derived data, so it must not be saved, must not change what a saved game
- * contains, and must be rebuilt (below) for a map that was loaded without it.
- */
-interface Weakness { counts: Map<number, number>; min: number }
-const WEAKNESS = new WeakMap<Map<number, PlaceRecord>, Weakness>();
-
-function weaknessOf(records: Map<number, PlaceRecord>): Weakness {
-  let weakness = WEAKNESS.get(records);
-  if (!weakness) {
-    weakness = { counts: new Map(), min: Infinity };
-    for (const record of records.values()) addWeakness(weakness, record);
-    WEAKNESS.set(records, weakness);
-  }
-  return weakness;
-}
-
-function addWeakness(weakness: Weakness, record: PlaceRecord): void {
-  const code = record.day * 3 + record.amount;
-  weakness.counts.set(code, (weakness.counts.get(code) ?? 0) + 1);
-  if (code < weakness.min) weakness.min = code;
-}
-
-function dropWeakness(weakness: Weakness, record: PlaceRecord): void {
-  const code = record.day * 3 + record.amount;
-  const left = (weakness.counts.get(code) ?? 1) - 1;
-  if (left > 0) {
-    weakness.counts.set(code, left);
-    return;
-  }
-  weakness.counts.delete(code);
-  if (code === weakness.min) {
-    let min = Infinity;
-    for (const other of weakness.counts.keys()) if (other < min) min = other;
-    weakness.min = min;
+    this.indexAvailability(kind, key, { ...previous, amount: 0 });
   }
 }
 

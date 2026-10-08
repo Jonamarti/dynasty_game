@@ -38,6 +38,8 @@ const steps = Number(args.get('steps') ?? 480);
 const wantHash = args.get('hash') !== 'false';
 const seed = args.get('seed') ?? 'profile-4';
 const jsonOut = args.get('json');
+/** `--reps=N`: repeat the unmarked control N times and report the minimum and median (the host is noisy; a single run is not a measurement). */
+const reps = Math.max(1, Number(args.get('reps') ?? 1));
 /** Extra config applied on top (JSON), so a variant can be measured without a code edit. */
 /** `--methods=brain,social`: also wrap every method of those `Simulation` members (inclusive times, calls). */
 const methodOwners = (args.get('methods') ?? '').split(',').filter(Boolean);
@@ -137,7 +139,9 @@ const out: any[] = [];
 for (const humans of humansList) {
   // Warm the JIT on a throwaway world so the first population is not penalised.
   if (humans === humansList[0]) run(Math.min(humans, 30), false);
-  const control = run(humans, false);
+  const controls = Array.from({ length: reps }, () => run(humans, false));
+  const control = controls[0]!;
+  const sortedMs = controls.map(c => c.meanStepMs).sort((a, b) => a - b);
   const marked = run(humans, true);
   let negative = 'skipped';
   if (wantHash) {
@@ -152,7 +156,7 @@ for (const humans of humansList) {
   }
   const totalMarked = marked.rows.reduce((s, r) => s + r.totalMs, 0);
   console.log(`\n=== ${humans} humans, ${steps} steps (living at end: ${control.living}; tick ${control.tick}) ===`);
-  console.log(`control ${control.meanStepMs.toFixed(3)} ms/step   marked ${marked.meanStepMs.toFixed(3)} ms/step   ` +
+  console.log(`control min ${sortedMs[0]!.toFixed(3)} median ${sortedMs[Math.floor(sortedMs.length / 2)]!.toFixed(3)} ms/step (${reps} runs)   marked ${marked.meanStepMs.toFixed(3)} ms/step   ` +
     `hash equal: ${wantHash ? 'yes' : 'not checked'}   negative control: ${negative}`);
   console.log(`state hash ${control.after.slice(0, 16)}`);
   console.log('block'.padEnd(40) + 'ms/step'.padStart(10) + '% of step'.padStart(11));
@@ -166,7 +170,7 @@ for (const humans of humansList) {
       console.log(row.label.padEnd(40) + (row.totalMs / steps).toFixed(3).padStart(10) + (row.calls / steps).toFixed(1).padStart(12));
     }
   }
-  out.push({ humans, steps, control: control.meanStepMs, marked: marked.meanStepMs, hash: control.after,
+  out.push({ humans, steps, control: sortedMs[0], controlMedian: sortedMs[Math.floor(sortedMs.length / 2)], marked: marked.meanStepMs, hash: control.after,
     rows: marked.rows.map(r => ({ ...r, msPerStep: r.totalMs / steps })) });
 }
 if (jsonOut) writeFileSync(jsonOut, JSON.stringify(out, null, 2));
