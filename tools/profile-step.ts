@@ -49,6 +49,8 @@ const extra = args.get('config') ? JSON.parse(args.get('config')!) : {};
 
 /** `--ignore=a,config.b`: paths (from the `Simulation`) left out of the hash. Lets a change that only *adds* a field or a config key be shown not to change anything else. */
 const ignored = new Set((args.get('ignore') ?? '').split(',').filter(Boolean).map(p => '$.' + p));
+/** `--ignoreKeys=placeMemory`: field names left out wherever they occur (M15 step 0 D: shows that a change touching only each person's mental map changed nothing else). */
+const ignoredKeys = new Set((args.get('ignoreKeys') ?? '').split(',').filter(Boolean));
 const encode = (value: any, seen = new WeakMap<object, string>(), path = '$'): any => {
   if (value === null || ['string', 'number', 'boolean'].includes(typeof value)) return value;
   if (typeof value === 'undefined') return null;
@@ -63,7 +65,7 @@ const encode = (value: any, seen = new WeakMap<object, string>(), path = '$'): a
   if (value instanceof Set) return Array.from(value.values(), (entry, index) => encode(entry, seen, `${path}.s${index}`));
   const result: Record<string, unknown> = {};
   for (const key of Object.keys(value).sort()) {
-    if (ignored.has(`${path}.${key}`)) continue;
+    if (ignored.has(`${path}.${key}`) || ignoredKeys.has(key)) continue;
     const encoded = encode(value[key], seen, `${path}.${key}`);
     if (encoded !== undefined) result[key] = encoded;
   }

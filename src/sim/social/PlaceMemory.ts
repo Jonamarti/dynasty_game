@@ -149,6 +149,19 @@ export class PlaceMemory {
     this.revisionValue++;
   }
 
+  /**
+   * Drop every remembered person. Only the player's character keeps them (the
+   * fog of war is their only reader), so a character who stops being the
+   * player's is cleared and no NPC is left holding stale sightings.
+   */
+  forgetPeople(): void {
+    const records = this.places.get('person');
+    if (!records) return;
+    for (const key of [...records.keys()]) this.deleteRecord('person', records, key);
+    this.places.delete('person');
+    this.revisionValue++;
+  }
+
   records(kind: string): readonly PlaceRecord[] {
     const records = this.places.get(kind);
     return records ? [...records.values()] : [];

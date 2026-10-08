@@ -1,3 +1,15 @@
+## 2026-10-08 — M15 paso 0 (D): solo el jugador apunta dónde vio a la gente
+
+Decisión del propietario (`m15_simulation_lod.md` §0): lo único que seguía creciendo con el cuadrado era `observePlaces`, que en cada mirada de cada persona llamaba a `PlaceMemory.remember('person', …)` por cada una de las 299 que ve y, con el tope de 48 por tipo, expulsaba y reinsertaba sin parar (41 % del paso a 300). Esos registros `'person'` solo los lee el renderer (`drawRememberedPerson`, la niebla de guerra) y `fogDescriptionAt`: se comprobó con grep que ni `ai/`, ni `social/`, ni `systems/` los piden (`Brain` filtra `herd:`, `SocialSystem` cuenta lugares por tipo y `person` no está en su lista). Ahora solo el personaje del jugador los escribe.
+
+Lo que **no** cambia: `Memory` (hechos), `RelationshipGraph`, los registros de recursos, agua, árboles, edificios, manadas y montones y la rejilla `seenDayAt`, para todos. `noticeStarving` y `meetOnGlobe` siguen en el mismo bucle y para todos, exactos (el bucle se recorre igual; solo se evita el `remember`, que era lo caro). Cuando `possess` cambia de personaje, el saliente borra sus avistamientos (`PlaceMemory.forgetPeople`): nadie más los leería.
+
+Medido con `npm run profile:step -- --humans=30,300 --steps=480 --reps=3` (mínimo de 3, ms/paso): 30 personas 0,98 → 0,99 (ruido; `observePlaces` 0,101 → 0,078); 300 personas 24,5 → 14,5 (`observePlaces` 9,74 → 1,65 ms). Estado: el hash completo cambia solo por los registros `'person'`; excluyendo cada `placeMemory` (`--ignoreKeys=placeMemory`, opción nueva de la herramienta) el hash es idéntico antes y después, a 30 (`c9bab523bfd4ddf6`) y a 300 (`b7acbd6453853f65`), así que decisiones, necesidades, relaciones y RNG no se movieron. `sim:check` de una semilla: 2/147 fallos, los heredados `cravings-steer-the-diet` y `perf-budget`. No se tocó nada que se serialice (los guardados viejos con registros `'person'` en NPCs cargan igual y esos registros son inertes).
+
+Pruebas: `person-sightings.test.ts` (ningún NPC apunta personas tras 300 pasos, el jugador sí; al cambiar de personaje el saliente se vacía y el entrante empieza a apuntar).
+Cohortes de semillas no ejecutadas (instrucción de M15); no se afirma ninguna mejora de la economía.
+
+
 ## 2026-10-08 — Integración de fase 40 y capturas repetibles
 
 La fase 40 se integra en master (`78cc2d4`) conservando las entradas de

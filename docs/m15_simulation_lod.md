@@ -208,6 +208,8 @@ un campamento todos ven a todos y cada uno guarda como mucho 48 personas, así q
 cada mirada de cada persona expulsa y reinserta decenas de registros. Opciones
 para el propietario en `bugs.md` («paso 0»); ninguna se ha aplicado.
 
+**Avance (D, 2026-10-08).** Por decisión del propietario solo el personaje del jugador apunta dónde vio a la gente (el único lector es la niebla de guerra); los NPC conservan `Memory` y `RelationshipGraph`, y `noticeStarving`/`meetOnGlobe` siguen para todos. 300 personas, 24,5 → 14,5 ms/paso (`observePlaces` 9,7 → 1,7); 30, sin cambio (~1,0). El hash de estado, excluyendo `placeMemory`, es idéntico al anterior. Queda: `Brain.score` (72 % del paso a 300).
+
 ## 1. Qué determina el detalle (sustituido por §0.1 el 2026-10-08)
 
 El centro es el **NPC seleccionado vivo**. Si la selección es un edificio,
