@@ -3951,18 +3951,32 @@ export class Brain {
     const baseCellY = Math.floor(person.y / 4);
     const allowed = (x: number, y: number): boolean => options.urgentWater === true ||
       withinReach(options.anchor ?? null, options.reach ?? Number.POSITIVE_INFINITY, x, y);
+    // The four cells of a ring at one offset, in the order the old array
+    // literal listed them: top, bottom, left, right. Written as a function that
+    // allocates only when it finds something. The search used to build five
+    // arrays per step of every ring, over rings out to the far corner of the
+    // map, and at 300 people in one camp (where the food in reach runs out and
+    // this is asked ten times as often) that was 8 % of a tick.
+    //
+    // And the cheapest test first: every condition here is a pure read, so the
+    // order cannot change the answer, and "has this cell been seen" is one
+    // array lookup that rules out nearly every cell of an explored map before
+    // `allowed` has to take a square root.
+    const unseen = (dx: number, dy: number): { x: number; y: number } | null => {
+      const x = (baseCellX + dx) * 4 + 2;
+      const y = (baseCellY + dy) * 4 + 2;
+      if (person.placeMemory.seenDayAt(x, y) !== 0 || !ctx.world.isWalkable(x, y) ||
+          !allowed(x, y) || !ctx.world.sameRegion(person.x, person.y, x, y)) return null;
+      return { x, y };
+    };
     for (let ring = firstRing; ring <= maxCellRing; ring++) {
       // Walk the whole square edge at one map-cell spacing. Sixteen spokes
       // missed pockets behind the coastline and returned no route even while
       // most of the landmass remained unexplored.
       for (let offset = -ring; offset <= ring; offset++) {
-        for (const [dx, dy] of [[offset, -ring], [offset, ring], [-ring, offset], [ring, offset]]) {
-          const x = (baseCellX + dx) * 4 + 2;
-          const y = (baseCellY + dy) * 4 + 2;
-          if (!allowed(x, y) || !ctx.world.isWalkable(x, y) || !ctx.world.sameRegion(person.x, person.y, x, y) ||
-              person.placeMemory.seenDayAt(x, y) !== 0) continue;
-          return { x, y };
-        }
+        const found = unseen(offset, -ring) ?? unseen(offset, ring) ??
+          unseen(-ring, offset) ?? unseen(ring, offset);
+        if (found) return found;
       }
     }
     // A person's explored land can cover their whole small landmass without
@@ -3970,16 +3984,19 @@ export class Brain {
     // cells to make a fresh sight pass; seeing water there records the source.
     const staleBefore = ctx.time.day - 2;
     if (staleBefore > 0) {
+      const stale = (dx: number, dy: number): { x: number; y: number } | null => {
+        const x = (baseCellX + dx) * 4 + 2;
+        const y = (baseCellY + dy) * 4 + 2;
+        const seen = person.placeMemory.seenDayAt(x, y);
+        if (seen === 0 || seen > staleBefore || !allowed(x, y) || !ctx.world.isWalkable(x, y) ||
+            !ctx.world.sameRegion(person.x, person.y, x, y)) return null;
+        return { x, y };
+      };
       for (let ring = firstRing; ring <= maxCellRing; ring++) {
         for (let offset = -ring; offset <= ring; offset++) {
-          for (const [dx, dy] of [[offset, -ring], [offset, ring], [-ring, offset], [ring, offset]]) {
-            const x = (baseCellX + dx) * 4 + 2;
-            const y = (baseCellY + dy) * 4 + 2;
-            const seen = person.placeMemory.seenDayAt(x, y);
-            if (seen === 0 || seen > staleBefore || !allowed(x, y) || !ctx.world.isWalkable(x, y) ||
-                !ctx.world.sameRegion(person.x, person.y, x, y)) continue;
-            return { x, y };
-          }
+          const found = stale(offset, -ring) ?? stale(offset, ring) ??
+            stale(-ring, offset) ?? stale(ring, offset);
+          if (found) return found;
         }
       }
     }
