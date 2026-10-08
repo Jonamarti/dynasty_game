@@ -3423,6 +3423,29 @@ deja atrás se queda en el libro.
 **Puerta:** escenario `drought`; `the-thirsty-leave`; `fission-happens` en la
 cohorte con mapa.
 
+**Avance del 2026-10-08 (34a, la aritmética de vecindad).** Antes de tocar
+`ActionSystem` o `BandSystem`, la pregunta que toda la fase necesita
+responder primero: dada la comarca donde vive la `Simulation` detallada,
+¿cuál es la comarca al norte/sur/este/oeste, y en qué borde del mapa local
+está hoy una persona? `src/sim/world/ComarcaNeighbour.ts` responde ambas sin
+instanciar nada: `neighbourComarca` reutiliza el mismo envoltorio de
+longitud que `Simulation.comarcaAtTile` (el globo no tiene un este más
+oriental) pero **no envuelve la latitud** — `null` al norte de la fila 0 o al
+sur de la última, porque no hay comarca pasado el polo; `edgeOfTile` dice si
+una tesela del `World` local toca un borde físico y cuál, sin que nadie
+necesite aún saber qué hay al otro lado. Nueve pruebas en
+`comarca-neighbour.test.ts`, incluida un control negativo explícito contra
+envolver la latitud por error.
+
+**Todavía no construido** (queda para las siguientes entregas de 34):
+`leave_comarca` como acción real de personaje, la decisión de banda que
+replica el patrón de `BandSystem.considerRelocation` (fase 9) para el salto
+entre comarcas, `follow_me`, `scout`, la migración de IA por la jerarquía de
+motivos del plan de origen, y qué le pasa de verdad a la comarca vecina al
+cruzar (hoy solo existe una `Simulation` detallada a la vez; materializarla
+de verdad es un salto de complejidad mayor que esta pieza, ver
+`docs/bugs.md`). Sin cambios de UI en esta entrega: no hace falta captura.
+
 ## Fase 35 — Llegar más lejos: transporte (M14 fase 17)
 
 **Detalle en `m14_plan.md` fase 17**, con su tabla (`logboat`, `sledge`,

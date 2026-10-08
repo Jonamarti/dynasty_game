@@ -1,3 +1,13 @@
+## M15 fase 34: riesgos arquitectónicos para "salir de la comarca" (2026-10-08)
+
+Antes de construir `leave_comarca` de verdad (más allá de la aritmética de vecindad de 34a), tres decisiones que la pieza mínima deja explícitamente sin resolver:
+
+- **Solo existe una `Simulation` detallada a la vez.** Cruzar un borde de verdad implica comprimir la comarca actual a nivel 1/2 (la autoridad de `src/sim/compact/` y `src/sim/runtime/authority.ts`, fases 28/32b) y construir una `Simulation` nueva desde el perfil de la comarca vecina (`ComarcaProfile`, fase 29a). Es un salto de complejidad mucho mayor que calcular la coordenada vecina, y no se debe intentar en la misma entrega que esa aritmética.
+- **`PeopleWorld.adjacent` solo conoce adyacencia a nivel de región** (4-conectado), no de comarca dentro de una región. El plan dice "casi siempre la comarca vecina es de la misma región", pero una comarca en el borde de su región tiene una vecina en otra región, y hoy no hay puente entre la granularidad fina de `comarcaAtTile`/`neighbourComarca` y la gruesa de `PeopleWorld`. Hace falta decidir ese puente antes de materializar nada.
+- **"Lo que se deja atrás se queda en el libro" (16e) necesita que el libro de comarca pueda representar un campamento abandonado que se deteriora.** No comprobado todavía si `TileLedger` ya cubre ese caso; verificarlo antes de construir `leave_comarca`, o es una pieza previa en sí misma.
+
+Relacionado con el hallazgo de la fase 31 más abajo: `WorldKnowledge.tellAllTo` (el canal "llega alguien de otra comarca") sigue sin llamador real hasta que una de estas piezas aterrice.
+
 ## M15 navegación fluvial: alcance de la balsa inicial (2026-10-08)
 
 La balsa de juncos es un transporte personal de agua dulce; no implementa tripulaciones, cargas de varios NPC, embarcaciones grandes ni navegación marítima. Se fabrica para una orden de viaje (`keep: 0`), por lo que el AI no adopta todavía un plan de explorar/fabricar una embarcación para colonizar otra orilla. Los cruces ordenados y los movimientos con una balsa ya disponible funcionan; esa planificación queda para navegación/fase 35. Cavar barro de la orilla es una orden disponible al jugador, no una nueva fuente elegida automáticamente por el abastecimiento de obras cuando faltan depósitos.

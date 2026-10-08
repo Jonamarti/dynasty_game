@@ -1,3 +1,11 @@
+## 2026-10-08 — M15 fase 34 (34a): la aritmética de comarca vecina
+
+Primera pieza de la fase 34 ("Salir de la comarca", M14 fase 16): nadie estaba trabajándola a pesar de la nota de la fase 37 que decía lo contrario (comprobado: sin rama, worktree ni commit). Antes de tocar `ActionSystem`/`BandSystem`, hace falta responder dos preguntas puras: dada la comarca donde vive hoy la `Simulation` detallada, ¿cuál es la vecina al norte/sur/este/oeste?, y ¿en qué borde del mapa local está una tesela? `src/sim/world/ComarcaNeighbour.ts` responde ambas: `neighbourComarca` envuelve la longitud igual que `Simulation.comarcaAtTile` (el globo no tiene un este más oriental) pero no envuelve la latitud (`null` pasado el polo); `edgeOfTile` dice si una tesela toca un borde físico del `World` local y cuál.
+
+Nueve pruebas en `comarca-neighbour.test.ts`, incluido un control negativo contra envolver la latitud por error (un bug plausible: copiar el envoltorio del este al norte/sur). No se construye todavía `leave_comarca`, `follow_me`, `scout` ni la materialización real de la comarca vecina (ver `docs/bugs.md`); esto es solo la aritmética que esas piezas van a necesitar.
+
+Verificación: `typecheck` limpio; `comarca-neighbour.test.ts` 9/9. Sin cambios de UI: no hace falta captura.
+
 ## 2026-10-08 — M15 balsa de juncos para cruzar cauces profundos
 
 Una balsa pequeña fabricable con 6 haces de paja/juncos (`thatch`, el material que producen los juncos), 2 palos y 1 cuerda, usando cordelería. `keep: 0`: se construye para el viaje, no se impone una nueva fabricación a todos los NPC. La orden «Viajar en balsa de juncos», las órdenes normales de desplazamiento y las teclas comparten la capacidad real de la embarcación. La balsa sirve en agua dulce; no habilita viajes por mar.
