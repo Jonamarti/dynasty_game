@@ -291,7 +291,7 @@ function talkModeOf(person: Person, rel: Relationship | null, tick: number): Con
 const GIVE_TICKS = 15;
 
 /** Ticks to haggle out a trade. Longer than a plain gift; both sides bargain. */
-const TRADE_TICKS = 25;
+export const TRADE_TICKS = 25;
 
 /** Ticks a courtship visit takes. Longer than a conversation; it is one. */
 const COURT_TICKS = 60;
@@ -5347,7 +5347,21 @@ export class ActionSystem {
       return;
     }
     const myUnits = Math.max(1, Math.min(2, Math.floor(person.inventory.count(myFood) / 3)));
-    const theirUnits = Math.max(1, Math.min(2, Math.floor(other.inventory.count(theirFood) / 3)));
+    // M15 phase 36 (fase 18b): without `trade`, nobody is weighing the two
+    // sides against each other — the old behaviour, two counts picked
+    // independently of what either heap is worth. Knowing it balances the
+    // swap by `ItemDef.baseValue` instead, which is the whole effect the
+    // node declares.
+    let theirUnits: number;
+    if (techPower(person, 'trade') > 0) {
+      const theirCap = Math.max(1, Math.floor(other.inventory.count(theirFood) / 3));
+      const myValue = myUnits * (ITEMS[myFood]?.baseValue ?? 1);
+      const theirValuePerUnit = ITEMS[theirFood]?.baseValue ?? 1;
+      const fairUnits = Math.max(1, Math.round(myValue / theirValuePerUnit));
+      theirUnits = Math.min(theirCap, fairUnits);
+    } else {
+      theirUnits = Math.max(1, Math.min(2, Math.floor(other.inventory.count(theirFood) / 3)));
+    }
     const givenByMe = person.inventory.remove(myFood, myUnits);
     const givenByThem = other.inventory.remove(theirFood, theirUnits);
     if (givenByMe === 0 || givenByThem === 0) {

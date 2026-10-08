@@ -184,6 +184,9 @@ export const TECHS = [
   'bog_iron',
   // M15 phase 40b: force air through bog iron to leave a workable bloom.
   'bloomery',
+  // M15 phase 36 (M14 fase 18b): the oldest open node in `m8_plan_the_ages.md`
+  // that `next-steps.md` had not reclaimed yet — see `ActionSystem.doTrade`.
+  'trade',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -2333,6 +2336,31 @@ export const TECH: Record<Tech, TechDef> = {
     description:
       'Air forced through bog iron and charcoal leaves a spongy bloom for the smith to work.',
   },
+  // M15 phase 36 (M14 fase 18b). `next-steps.md` had carried this since M8.2
+  // as "the node that never reached TECHS": `ActionSystem.doTrade` existed,
+  // `EVENT_TYPES` declared it, `DEED_WEIGHT` scored it, and nobody gated the
+  // actual exchange on anything. A practice, like `division_of_labour` above
+  // it in domain — there is nothing to build, it is tried by trading, which
+  // `Person.notePractice` already catches for any `kind: 'practice'` idea.
+  trade: {
+    id: 'trade', label: 'Trade', domain: 'people',
+    age: 'mesolithic', firstKnown: 'about 13,000 years ago',
+    kind: 'practice', practisedBy: ['trade'],
+    // `marking` per the plan: a trade this file's `doTrade` can balance by
+    // `ItemDef.baseValue` needs a count to balance it against first.
+    requires: ['marking'], difficulty: 0.5, skill: 'persuade',
+    prototype: {}, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'marking' }, { kind: 'doing', action: 'trade' }],
+        weight: 1.0, story: 'tallied what went each way in a trade and noticed the two heaps were never equal' },
+      { needs: [{ kind: 'knows', tech: 'marking' }, { kind: 'doing', action: 'talk' },
+                { kind: 'feeling', need: 'company' }],
+        weight: 0.4, story: 'wanted something from a stranger badly enough to work out what would make the swap fair' },
+    ],
+    description:
+      'Counting what a trade is worth on both sides, instead of by feel. A band ' +
+      'that knows it strikes a fairer bargain, and is the one that can send out a caravan.',
+  },
 };
 
 /** The web a technology lives in (`'main'` unless its entry says otherwise). */
@@ -2706,6 +2734,10 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   bloomery: {
     summary: 'Air driven through iron ore and charcoal turns the furnace charge into a bloom the smith can work.',
     site: 'RECIPES.smelt_iron at BUILDINGS.furnace; Ore.wantedOreKinds follows iron ore and charcoal to their sources',
+  },
+  trade: {
+    summary: 'A fairer bargain: what changes hands is weighed by what it is worth, not just by feel.',
+    site: 'ActionSystem.doTrade, via ItemDef.baseValue',
   },
 };
 

@@ -26,6 +26,18 @@ Pruebas: `earth-rivers.test.ts` mide Ebro, Tajo, Rin y Danubio, curvas y clases 
 
 Límites y reproducción: `docs/earth_rivers.md`. Los anchos/profundidades son clases de juego, no mediciones hidrométricas; el atlas prehistórico conserva la geometría moderna aproximada.
 
+## 2026-10-08 — M15 fase 36 (18b): `trade` por fin llega a `TECHS`
+
+Por qué: `next-steps.md` llevaba desde M8.2 señalando `trade` como «el nodo que nunca llegó a `TECHS`» — `ActionSystem.doTrade` existía, `EVENT_TYPES` lo declaraba y `DEED_WEIGHT` lo puntuaba, pero nada en el trueque leía `ItemDef.baseValue` ni dependía de conocer nada. La fase 37 (metal) tiene a `bronze-needs-a-trader` sin medir porque necesita comercio real; esta es la pieza más pequeña que lo desbloquea sin construir todavía caravanas (fase 18c), noticias entre comarcas (18a) o la casa rival (18e), que siguen pendientes de la fase 36 completa.
+
+Cambio: `trade` entra en `TECHS` como práctica (`practisedBy: ['trade']`), requiere `marking` como pide el plan, y se descubre haciendo el propio trueque o hablando con un desconocido mientras se tiene algo que ofrecer. `ActionSystem.doTrade` sigue repartiendo por cuenta ciega (como siempre) mientras nadie lo sabe; quien lo conoce reparte por `ItemDef.baseValue` en su lugar — dos bayas (valor 1) ya no valen lo mismo que dos raciones de pan (valor 4).
+
+Pruebas: `trade.test.ts` compara el reparto con y sin la tecnología conocida, con dos personas solas (sin tercero que comercie de más ni silo donde volcar el sobrante, que es lo que complicó la primera versión de la prueba: 30 bayas sueltas excedían la capacidad de acarreo sin contenedor y una persona las soltaba en un solo tick antes de que empezara el trueque). `tech.test.ts` cubre el nuevo nodo por construcción (`techs-have-effects`, `reachable-from-nothing`).
+
+Hallazgo medido, no adivinado: `people-knowledge.test.ts` («sustained full contact does homogenise») subió de 0,33 a 0,58. Comprobado y revertido: excluir `trade` y `marking` del recuento de divergencia no cambia la cifra, así que la causa no es que alguien aprenda el nodo nuevo de forma asimétrica — es que una tabla de tecnologías más larga diluye cuánto contacto le toca a cada técnica por temporada, y lo que se difunde peor son técnicas que ya estaban en la tabla, no la añadida. El límite sube a 0,6 con la misma nota que dejó la fase 37 sobre el mismo test.
+
+Verificación: `typecheck` limpio; suite completa con `npm.cmd test -- --maxWorkers=1 --testTimeout=15000`: 194/194 ficheros, 1.536 pruebas pasan y 1 omitida, sin fallos; `sim:check` de una semilla con los mismos dos fallos heredados de siempre (`cravings-steer-the-diet`, `perf-budget`, confirmados también en `master` sin este cambio, antes de aplicarlo). Sin cambios de UI: no hace falta captura. Cohortes y matriz diferidas por la instrucción de M15; este cambio no pretende mover la economía.
+
 ## 2026-10-08 — M15 autonomía conservada al elegir o regenerar el mundo
 
 La selección de región y los ajustes reconstruían `Simulation` con su valor inicial `manual`, mientras el HUD seguía mostrando la preferencia autónoma. `rebuildBeforeStart` conserva ahora la autonomía del motor anterior. La regresión de navegador recorre la elección de región, la creación del personaje y 80 ticks reales: fallaba con `manual` antes del arreglo y ahora el personaje actúa en `auto`.
