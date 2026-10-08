@@ -212,6 +212,11 @@ reutilizan para las personas fuera del mapa.
 Los pasos 0 y 1a no comparten código y se hacen en paralelo, cada uno en su
 worktree.
 
+**Pendiente del paso 0 (2026-10-08):** con 300 personas el cerebro es el 71 %
+del paso. Análisis por funciones y plan en dos entregas (arreglos exactos de la
+búsqueda de recursos y la regla de compromiso del propietario) en
+[m15_brain_cost.md](m15_brain_cost.md).
+
 **Avance del paso 1 (2026-10-08).** 1a y 1b hechos; el 1c (modelo compacto) sigue pendiente. Ver el «Avance»
 del §0.2: el mapa del globo es una comarca y el generador sigue al perfil.
 
