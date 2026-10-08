@@ -16,6 +16,7 @@ import { globeGridOf, worldTerrainOf, type GlobeGrid, type WorldTerrain } from '
 import { isCoastalRegion, regionWater } from '../sim/world/StartPlace.ts';
 import { TERRAIN_COLOR, terrainLabel } from './WorldMapView.ts';
 import { t, onLanguageChange } from '../i18n/i18n.ts';
+import { GAME_VERSION_LABEL } from './GameVersion.ts';
 
 const CELL = 12;
 
@@ -76,6 +77,10 @@ export class WorldPicker {
           '</div>' +
         '</div>' +
       '</div>';
+    const version = document.createElement('div');
+    version.className = 'worldpicker-version';
+    version.textContent = GAME_VERSION_LABEL;
+    this.root.appendChild(version);
     container.appendChild(this.root);
     const q = <T extends HTMLElement>(sel: string) => this.root.querySelector(sel) as T;
     this.canvas = q<HTMLCanvasElement>('.worldpicker-canvas');
