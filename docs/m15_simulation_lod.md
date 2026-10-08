@@ -136,6 +136,29 @@ número.
   tres controles negativos que fallan (duplicar arbustos, olvidar aguas someras, cambiar
   bosque por desierto).
 
+**Avance 2026-10-08 (paso 1b hecho; una comarca por mapa).** El propietario decidió que cada casilla del
+mapa del mundo es un mapa jugable (`GLOBE_SPAN` = 1): lo del párrafo anterior sobre «ventana de 4×4
+comarcas» y «la tabla en 4×4» queda sustituido. Una partida abierta desde el globo es **una comarca** de 128×128
+casillas, como la isla clásica, y el generador **obedece el perfil** en ese caso:
+
+- `profileOfStart` (`Simulation.ts`) lee `comarcaResourceProfile` de la comarca que es el mapa; bayas, rebaños,
+  bancos de peces y rodales de cereal salen de `profile.nodes` (cada uno desde su flujo derivado por clase; los
+  rebaños desde uno propio, para no mover a las personas). La isla clásica y las ventanas que no son una comarca
+  alineada conservan cuotas y flujos. El tope es `NODE_CAP_FACTOR` (3 veces la cuota).
+- La tabla (`MeasuredResources.ts`) se midió de nuevo con 3.726 mapas de una comarca (las dos Tierras y tres mundos
+  aleatorios; la clave de relieve de costa se partió en `coast`/`bay`/`offshore` según cuánto mar tiene la comarca).
+  Densidades: 0,0172 bayas, 0,00274 rebaños y 0,292 bancos por casilla de hábitat, 0,00214 rodales (la cuota
+  entre la mediana de las casillas de hábitat de un mapa que tiene alguno).
+- Resumen por bioma (raciones/día de potencial, primavera / verano / otoño / invierno): tierra llana húmeda
+  sin agua (`low|5|dry`) 232 / 307 / 334 / 177; con arroyo 318 / 462 / 442 / 253; costa (`coast|2|dry`) 200 / 314 /
+  267 / 166 (pesca al tope de 150 bancos); estepa seca (`low|1|dry`) unas 196 / 242 / 287 / 146; desierto
+  (`low|0|dry`) 25 todo el año (solo caza); colina árida (`hill|0|dry`) 8; roca 0-0,5; mar abierto 0-1,4.
+- Correspondencia (`resource-profile.test.ts`, `generator-obeys-profile.test.ts`): el mapa generado da lo que el
+  perfil prometió (±1 nodo +5 %) y el hábitat generado coincide con el de la tabla salvo en comarcas de borde de
+  clave (ver `bugs.md`).
+- Escala de `PeopleMeasured` y `BIOME_PRODUCTIVITY` (nivel 2): la absoluta cuadra (una comarca de mapa completo con
+  las cuotas de la isla es la isla), la relativa por bioma no; recalibrar es el paso 5 (`bugs.md`).
+
 ### 0.3 El modelo compacto de banda (fuera del mapa)
 
 Cada día, por banda: produce comida según su gente, sus técnicas (recolección,
@@ -188,6 +211,9 @@ reutilizan para las personas fuera del mapa.
 
 Los pasos 0 y 1a no comparten código y se hacen en paralelo, cada uno en su
 worktree.
+
+**Avance del paso 1 (2026-10-08).** 1a y 1b hechos; el 1c (modelo compacto) sigue pendiente. Ver el «Avance»
+del §0.2: el mapa del globo es una comarca y el generador sigue al perfil.
 
 **Avance del paso 0 (2026-10-08).** Hecho: (A) el perfil atribuye todo el paso
 por bloque (`npm run profile:step`, `m15_profile_systems.md` «Paso 0»): lo que

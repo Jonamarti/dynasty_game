@@ -10,16 +10,17 @@
  * ## Where the numbers come from (measured, not invented)
  *
  * 1. **Habitat** (how much of the comarca is ground a bush, a herd, a shoal or a metal can be on) is *measured*
- *    by `tools/compact-resources.ts`: it generates detailed 4 by 4 windows over the Earth maps and several
- *    generated worlds, assigns every one of the sixteen comarcas a `ProfileKey` from its geography alone, counts
- *    the tiles that the generator's own habitat rules (`Habitat.ts`, the very predicates `Simulation` calls)
- *    accept in that comarca, and averages per key. The committed result is `compact/MeasuredResources.ts`.
- * 2. **Density** (how many bushes, herds, shoals per habitat tile) is the one place the detailed generator gives
- *    no geography to measure: it places a fixed *quota* (280 bushes, 22 herds, 50 shoals, 35 cereal stands) on
- *    whatever habitat exists, so a half-barren window holds the same 280 bushes as a lush one. The profile needs
- *    a window-size-independent figure, so the tool sets it to *the quota spread over the median window that has
- *    any of that habitat*: a typical start window therefore reproduces the quota, and a poorer one holds fewer.
- *    This is the part step 1b (the generator obeys the profile) replaces; see docs/bugs.md.
+ *    by `tools/compact-resources.ts`: it generates detailed one-comarca maps (the game's map since 2026-10-08)
+ *    over the Earth maps and several generated worlds, gives each comarca a `ProfileKey` from its geography alone,
+ *    counts the tiles that the generator's own habitat rules (`Habitat.ts`, the very predicates `Simulation` calls)
+ *    accept in it, and averages per key. The committed result is `compact/MeasuredResources.ts`.
+ * 2. **Density** (how many bushes, herds, shoals per habitat tile) is a *design choice measured against the
+ *    quotas of the classic island*: the island places a fixed quota (280 bushes, 22 herds, 50 shoals, 35 cereal
+ *    stands) on whatever habitat it has, so the tool sets the density to *the quota spread over the median map
+ *    that has any of that habitat*. A median comarca therefore holds what the island holds; a richer one holds
+ *    more (up to `NODE_CAP_FACTOR` times the quota) and a poorer one fewer. **Since step 1b the generator places
+ *    exactly these counts** on a map that is one comarca (`profileOfStart` in `Simulation.ts`); the classic
+ *    island and the inspection windows of other sizes keep the fixed quotas.
  * 3. **Food per node and season** is neither guessed nor tabulated: `foodModel()` runs the game's own
  *    `ResourceNode.regrow` on a real clock for each bush species and for a shoal, and reads the species and
  *    herd tables, so a retuned regrowth rate moves the profile with no regeneration.
@@ -27,8 +28,8 @@
  * ## Units (what the compact band model should read)
  *
  * - **Rations**: one person's daily need, `needs.hungerRate x ticksPerDay` nutrition points (13.2 by default).
- *   `rations.<season>.<source>` is rations *per day*, per comarca, at the game's window span
- *   (`PROFILE_SPAN` = 4, a comarca is 32 by 32 tiles). It is **potential**: what the plants regrow, the shoals
+ *   `rations.<season>.<source>` is rations *per day*, per comarca, at the game's map
+ *   (`PROFILE_SPAN` = 1: a comarca is the whole 128 by 128 tiles, as on the classic island). It is **potential**: what the plants regrow, the shoals
  *   restore and the herds replace, with every node stripped daily. It is not what a band takes. A band's reach,
  *   skill and tools set that fraction, and the compact model has to calibrate it (step 1c).
  * - **`capacity`**: people the comarca feeds through its leanest season *at that potential*, i.e. the smallest
@@ -56,10 +57,22 @@ import { regionalMoisture, riverCorridorAt, worldElevationAt } from './LocalGeog
 import { WORLD_FEATURE } from './WorldFeatureSeeds.ts';
 import type { WorldGeography, WorldGeographyProfile } from './WorldGeography.ts';
 
-/** Comarcas per side of the detailed window the game opens (`GLOBE_SPAN` in main.ts). The table is measured here. */
-export const PROFILE_SPAN = 4;
+/**
+ * Comarcas per side of the detailed window the game opens (`GLOBE_SPAN` in main.ts). The table is measured here. It was 4
+ * until 2026-10-08, when the owner decided that each cell of the world map is one playable map: a comarca is now the whole
+ * 128 by 128 tiles, which is also what the classic island always was.
+ */
+export const PROFILE_SPAN = 1;
 /** Tiles in one comarca at that span: the detailed World is `world.width` by `world.height` over span by span comarcas. */
 export const TILES_PER_COMARCA = DEFAULT_CONFIG.world.width * DEFAULT_CONFIG.world.height / (PROFILE_SPAN * PROFILE_SPAN);
+/**
+ * No kind of node outnumbers its quota by more than this. The density is nodes per habitat tile, set so that the median
+ * window reproduces the quota, so a map that is nearly all one habitat (a coast of shallows, a berry heath) would ask for
+ * many times the quota: the shallows of a median window with any are 121 tiles and a long coast has thousands. A cap is a
+ * design choice, not a measurement: three times is what the fixed-quota generator's richest window could hold without the
+ * map filling with nodes (and without the step slowing down with them).
+ */
+export const NODE_CAP_FACTOR = 3;
 /** Nutrition points one person's day costs: the unit of a ration. */
 export const RATION_NUTRITION = DEFAULT_CONFIG.needs.hungerRate * DEFAULT_CONFIG.time.ticksPerDay;
 
@@ -68,12 +81,13 @@ export const RATION_NUTRITION = DEFAULT_CONFIG.needs.hungerRate * DEFAULT_CONFIG
 // ---------------------------------------------------------------------------
 
 /**
- * `sea`: open water; `coast`: the sea reaches into the comarca; `strand` and `shore`: flats in the beach band that
+ * `sea`: open water; `coast`, `bay` and `offshore`: the sea reaches into the comarca, holding up to a third of it, up to two
+ * thirds, and more (counted on the nine samples below); `strand` and `shore`: flats in the beach band that
  * touch no sea, the lower half and the upper half of the band (the first version called them `coast` and predicted
  * a coastline for a window with no water in it; the lower half is where relief noise dips under the water line);
  * `low`, `hill`, `rock`: the generator's own bands.
  */
-export const RELIEFS = ['sea', 'coast', 'strand', 'shore', 'low', 'hill', 'rock'] as const;
+export const RELIEFS = ['sea', 'offshore', 'bay', 'coast', 'strand', 'shore', 'low', 'hill', 'rock'] as const;
 export type Relief = (typeof RELIEFS)[number];
 /** Fresh water the geography puts in the comarca: nothing, a stream, a broad river, or a lake. */
 export const WATERS = ['dry', 'stream', 'major', 'lake'] as const;
@@ -131,7 +145,9 @@ export function profileKeyOf(geography: Mapped, cx: number, cy: number): Profile
   }
   let relief: Relief;
   if (below === LATTICE.length * LATTICE.length) relief = 'sea';
-  else if (below > 0) relief = 'coast';
+  // How much of the comarca the sea holds: one comarca is a whole map now, and a coast that is a thin strip of water and one
+  // that is nearly all sea are not the same ground (the first single-comarca table averaged them: land share 0.51 against 0.13).
+  else if (below > 0) relief = below <= 3 ? 'coast' : below <= 6 ? 'bay' : 'offshore';
   else {
     const band = classifyGeographicTerrain(sum / (LATTICE.length ** 2), 1, geography.kind, WORLD.waterLevel, WORLD.metresPerUnit);
     const lowerHalf = sum / (LATTICE.length ** 2) - WORLD.waterLevel < beachBandWidth(geography.kind, WORLD.metresPerUnit) / 2;
@@ -334,14 +350,15 @@ export const CULTIVABLE_ARABLE_SHARE = 0.25;
 export function foodFromHabitat(share: Habitat, wildGrain: boolean, table: MeasuredResourceTable = MEASURED_RESOURCES) {
   const tiles = (f: HabitatField): number => share[f] * TILES_PER_COMARCA;
   const d = table.density;
+  const capped = (count: number, entry: DensityEntry): number => Math.min(count, NODE_CAP_FACTOR * entry.quota);
   const nodes = {
-    bushes: tiles('berry') * d.berries.perTile,
-    shoals: (tiles('shallowFresh') + tiles('shallowSalt')) * d.fish.perTile,
+    bushes: capped(tiles('berry') * d.berries.perTile, d.berries),
+    shoals: capped((tiles('shallowFresh') + tiles('shallowSalt')) * d.fish.perTile, d.fish),
     // Herds are counted from the grass the comarca can carry, not from where the generator happens to drop them:
     // it drops the full quota on desert "grass" too, where a herd would starve down to what the sward feeds.
-    herds: tiles('forage') * d.herds.perTile,
+    herds: capped(tiles('forage') * d.herds.perTile, d.herds),
     // Stands exist only where the region carries wild cereal (the generator's gate).
-    wildGrainStands: wildGrain ? tiles('grain') * d.grain.perTile : 0,
+    wildGrainStands: wildGrain ? capped(tiles('grain') * d.grain.perTile, d.grain) : 0,
   };
   const food = foodModel();
   const rations = {} as Record<Season, SourceRations>;
@@ -393,7 +410,7 @@ function hasRegionalFeature(geography: Mapped, centre: MappedProfile, name: 'obs
   return false;
 }
 
-/** Sum of the sixteen comarcas of a window, for comparing with a generated World. */
+/** Sum of the comarcas of a window (one, at the game's map), for comparing with a generated World. */
 export function windowResourceProfile(
   geography: WorldGeography, originX: number, originY: number, span = PROFILE_SPAN, table: MeasuredResourceTable = MEASURED_RESOURCES,
 ) {
