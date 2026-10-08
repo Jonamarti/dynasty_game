@@ -13680,3 +13680,17 @@ flags efectivos. Verificación final: typecheck limpio, 886/886 en 117 archivos,
 69/69 e2e y 18/18 en la gira general. La matriz termina con exit 1 y conserva
 checks aplicables y fallos en 27/27 escenarios de la referencia heredada.
 Logs y comparación: `artifacts/verification/m15-continue-2026-10-03/summary.json`.
+
+## 2026-10-08 — M15 cerebro A1: filtrar solo candidatos más cercanos
+
+`SpatialHash.findNearest` calcula la distancia antes de la elegibilidad: un
+candidato igual o más lejano no podía ganar y no necesita evaluar creencias,
+viajes o nieve. El recorrido y los empates conservan su resultado. Dos pruebas
+nuevas comprueban el ahorro de filtros y que rechazar al más cercano permite
+seguir buscando. SpatialHash 8/8 y TypeScript pasan; hashes completos a 30 y
+300 personas idénticos antes/después y controles negativos detectados.
+`nodeWorth` baja de 179,8 a 55,0 y de 1.829,5 a 482,3 llamadas/paso, respectivamente.
+El tiempo global bajo una suite concurrente no permite afirmar una mejora.
+Perfil: `artifacts/verification/m15-brain-cost-20261008/`; avance en
+`docs/m15_brain_cost.md`. No cambia la UI. La comprobación inicial conserva los
+fallos heredados de dieta y rendimiento; cohortes diferidas por M15.

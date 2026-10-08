@@ -131,14 +131,15 @@ export class SpatialHash<T extends HasPosition> {
           const bucket = this.cells.get(this.key(cx, cy));
           if (!bucket) continue;
           for (const item of bucket) {
-            if (filter && !filter(item)) continue;
             const dx = item.x - x;
             const dy = item.y - y;
             const d2 = dx * dx + dy * dy;
-            if (d2 < bestDist2) {
-              bestDist2 = d2;
-              best = item;
-            }
+            // Equal or farther points cannot win, regardless of the caller predicate.
+            // Apply the geometric cutoff before potentially expensive eligibility.
+            if (d2 >= bestDist2) continue;
+            if (filter && !filter(item)) continue;
+            bestDist2 = d2;
+            best = item;
           }
         }
       }

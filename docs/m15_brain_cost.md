@@ -137,3 +137,19 @@ afirma ninguna mejora económica.
 documentado para M16 por la fase 40. Cada commit lleva el prefijo `m15:`, sus
 tests y su entrada en `docs/changelog.md`. Añade un «Avance» a este documento
 y lo no resuelto a `docs/bugs.md`.
+
+## Avance — 2026-10-08, A1: distancia antes de elegibilidad
+
+Entregado el corte geométrico de `SpatialHash.findNearest` antes del filtro.
+Conserva recorrido, exclusión del radio límite y primer ganador de empates.
+Los llamadores de `queryRadius` ya reciben el corte geométrico: no se añade
+otra optimización sin una medición que la justifique.
+
+Pruebas: 8/8 casos de SpatialHash y TypeScript pasan. El perfil de 480 pasos,
+30 y 300 humanos, conserva el hash completo de referencia, sin exclusiones:
+`c5c71a33580e563d` y `75b5a676015c85ce` (prefijos); instrumentado/control iguales
+y control negativo detectado. Evaluaciones de `nodeWorth` por paso: 179,8 →
+55,0 (30), 1.829,5 → 482,3 (300). Mínimos de tres controles: 0,937 → 0,937 ms
+(30) y 14,747 → 15,243 ms (300); la suite simultánea contamina el tiempo, por
+lo que no se afirma mejora global con esta muestra. Evidencia en
+`artifacts/verification/m15-brain-cost-20261008/{baseline,a1}*`.

@@ -97,6 +97,43 @@ describe('SpatialHash', () => {
     }
   });
 
+  it('runs the filter only for candidates that can improve the current nearest', () => {
+    const nearest = { id: 1, x: 1, y: 0 };
+    const tied = { id: 2, x: -1, y: 0 };
+    const farther = { id: 3, x: 3, y: 0 };
+    const hash = new SpatialHash<Point>(8);
+    hash.rebuild([nearest, tied, farther]);
+    const checked: number[] = [];
+
+    const found = hash.findNearest(0, 0, 8, point => {
+      checked.push(point.id);
+      return true;
+    });
+
+    // The two nearest points tie, so the existing cell and insertion order
+    // still chooses the first one. Neither the tie nor the farther point can
+    // improve it, and therefore neither needs the caller's predicate.
+    expect(found).toBe(nearest);
+    expect(checked).toEqual([nearest.id]);
+  });
+
+  it('continues past a closer candidate rejected by the filter', () => {
+    const rejected = { id: 1, x: 1, y: 0 };
+    const accepted = { id: 2, x: 3, y: 0 };
+    const farther = { id: 3, x: 5, y: 0 };
+    const hash = new SpatialHash<Point>(8);
+    hash.rebuild([rejected, accepted, farther]);
+    const checked: number[] = [];
+
+    const found = hash.findNearest(0, 0, 8, point => {
+      checked.push(point.id);
+      return point.id !== rejected.id;
+    });
+
+    expect(found).toBe(accepted);
+    expect(checked).toEqual([rejected.id, accepted.id]);
+  });
+
   it('handles negative coordinates without key collisions', () => {
     const hash = new SpatialHash<Point>(8);
     const points: Point[] = [
