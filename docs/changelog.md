@@ -2,11 +2,11 @@
 
 M15 se identifica como `0.15.0-alpha`, tomando el número de `package.json`. La etiqueta aparece en la esquina inferior del selector del globo, la primera pantalla al abrir una partida nueva.
 Vite añade al bundle el hash corto del commit (o `GITHUB_SHA`/`SOURCE_COMMIT`
-en compilaciones desplegadas); el menú de inicio muestra ambos en una esquina.
+en compilaciones desplegadas); el selector inicial del globo muestra ambos en una esquina.
 La fase M16 tendrá la versión menor `0.16.0-alpha`, las correcciones incrementan
 parche, y `1.0.0` queda para el lanzamiento público. La prueba de navegador
 comprueba el número contra el único origen, el hash real y la esquina visual;
-captura: `artifacts/screenshots/m15-version-menu-2026-10-08T-02/`.
+captura: `artifacts/screenshots/m15-version-menu-2026-10-08T-03/`.
 
 
 ## 2026-10-08 — Integración de fase 40 y capturas repetibles

@@ -4,7 +4,7 @@ import { test, expect } from '@playwright/test';
 
 const { version } = JSON.parse(readFileSync('package.json', 'utf8')) as { version: string };
 const commit = execFileSync('git', ['rev-parse', '--short=6', 'HEAD'], { encoding: 'utf8' }).trim();
-const shots = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m15-version-menu-2026-10-08T-02';
+const shots = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m15-version-menu-2026-10-08T-03';
 
 test('the main menu shows the package version and checked-out commit', async ({ page }) => {
   mkdirSync(shots, { recursive: true });
