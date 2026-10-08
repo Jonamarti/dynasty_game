@@ -76,6 +76,66 @@ bioma y contando lo que dan, no se inventan. Una banda compacta, una caravana
 que cruza varias comarcas (fase 36) y el mapa que se ve al llegar usan el mismo
 número.
 
+**Avance 2026-10-08 (paso 1a hecho).** `comarcaResourceProfile(geography, x, y)` en
+`src/sim/world/ResourceProfile.ts`; la tabla medida en
+`src/sim/compact/MeasuredResources.ts`; las herramientas, `tools/compact-resources.ts`
+(la tabla), `tools/resource-profile-cost.ts` (el coste) y
+`tools/resource-profile-harvest.ts` (cuánto del potencial toma una banda).
+
+- **Forma y unidades.** La clave de una comarca sale solo de la geografía: relieve
+  (`sea`, `coast`, `strand`, `shore`, `low`, `hill`, `rock`, de nueve muestras de
+  altura con la misma fórmula que el ráster), clase de humedad 0-5 (cortada donde cambia
+  el generador: 0,30 / 0,42 / 0,52 / 0,60 / 0,64) y agua (`dry`, `stream`, `major`, `lake`,
+  con la misma consulta de cauce que pinta el mapa detallado). La tabla da, por clave, la
+  parte de las 1.024 casillas de la comarca que es hábitat de baya, cereal, rebaño,
+  depredador, colina, roca, agua dulce o salada y aguas someras. De ahí salen nodos por
+  comarca, **raciones por día y estación** (una ración = lo que consume una persona en un
+  día, 13,2 puntos de nutrición) separadas en recolección, pesca y caza, la capacidad en
+  personas de la estación más magra, lo cultivable y la lista de minerales. Es potencial
+  (todo nodo vaciado a diario), en la ventana de 4×4 comarcas del juego.
+- **Medido.** 1.450 ventanas detalladas (las dos Tierras y tres mundos aleatorios, más una
+  ventana por región con lago), 23.200 comarcas. La comida por nodo sale de ejecutar
+  `ResourceNode.regrow` sobre el reloj real, no de una tabla a mano. Resumen, raciones por
+  día de potencial en una comarca (primavera / verano / otoño / invierno): tierra baja
+  húmeda sin agua 15 / 20 / 22 / 12 (de ellas, 7 de recolección, 3 de caza, 2 de pesca en
+  el invierno); con arroyo 24 / 35 / 32 / 19; con río ancho 33 / 53 / 45 / 28; costa
+  33-41 en verano y 17-21 en invierno (las costas templadas medidas, 11-17 y 6-9); estepa o llanura seca (humedad 1-2) 13 / 16 / 19 /
+  10; desierto 1,8 todo el año (solo caza); colina árida 0,6; roca y mar abierto, 0.
+- **Coste.** Medido con `tools/resource-profile-cost.ts` en esta máquina: 120-230 µs por
+  comarca la primera vez (llena las cachés de ríos de la geografía) y 20-55 µs después;
+  el modelo de comida de los nodos (dos años de reloj real) se construye una vez por
+  proceso en 15 ms. No se guarda nada: es barato de calcular y sale siempre igual. Lo
+  caro de una geografía aleatoria es construir el mapa (`WorldMap`, ~10 ms), no el perfil.
+- **Qué comparte con el generador.** Comparten la función: la regla de hábitat de bayas,
+  cereal silvestre, sílex, minerales de colina, oro, rebaños y depredadores
+  (`world/Habitat.ts`, de la que ahora leen `Simulation` y `World`); los cortes de relieve
+  (playa, colinas, roca, bosque contra hierba); la humedad (`regionalMoisture`); la
+  puerta regional de cereal, sílex, cobre, estaño y oro (`profileHasResource`); el
+  cauce (`riverCorridorAt`); y la lista de casillas de pesca (`World.shoreTiles`). **No
+  leen el perfil todavía** (es el 1b): ningún *recuento* de nodos. El generador sigue
+  poniendo cuotas fijas; ver `bugs.md`. Cañas, arcilla, palos e hierro de turbera no tienen
+  hábitat compartido (dependen de la orilla y los árboles del mapa ya generado), y el perfil
+  solo da el hierro como "humedad alta junto a agua dulce".
+- **Lo que enseñó la medición.** (1) El generador no escala con el hábitat: la cuota se
+  concentra en lo que haya. El perfil usa una densidad independiente de la ventana: la
+  cuota entre las casillas de hábitat de la ventana mediana que tiene alguno. (2) El mismo
+  tamaño de cuota sobre 16 comarcas da a cada una un dieciseisavo de lo que la isla clásica
+  daba a "una comarca" en la 32c: los números de raciones por comarca de aquí y los de
+  `PeopleMeasured` no están en la misma escala (ver `bugs.md`; decisión para 1b/1c). (3) De
+  lo que está en el perfil, lo que el generador menos respalda son los peces: 50 bancos
+  fijos, así que una costa pesa lo mismo que un río grande.
+- **Cuánto toma una banda.** `tools/resource-profile-harvest.ts`: una banda de 12 fundadores
+  sin técnica (dos años) come 14-18 raciones al día en tres ventanas con agua, es decir
+  entre el 4 y el 10 % del potencial: es su necesidad, no un techo, porque estaba saciada.
+  Con 80 fundadores (la banda se hunde a 11-17 en dos años) llegó a 53-62 raciones al día
+  en verano y otoño, el 11-26 % del potencial; en primavera e invierno, 6-20 %. Orden de
+  magnitud para el 1c, no calibración: un techo de recolección sin técnica de alrededor de
+  una octava a una cuarta parte del potencial.
+- **Correspondencia.** `resource-profile.test.ts`: 32 ventanas que la tabla no vio, con
+  tolerancias escritas antes de medir y dos revisiones declaradas en el propio fichero;
+  tres controles negativos que fallan (duplicar arbustos, olvidar aguas someras, cambiar
+  bosque por desierto).
+
 ### 0.3 El modelo compacto de banda (fuera del mapa)
 
 Cada día, por banda: produce comida según su gente, sus técnicas (recolección,
