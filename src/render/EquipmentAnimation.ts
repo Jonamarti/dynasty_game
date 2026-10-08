@@ -14,6 +14,8 @@ const HELD_ART: Readonly<Record<string, HeldItemKind>> = {
   bronze_axe: 'handaxe',
   copper_dagger: 'copper_dagger',
   bronze_sword: 'bronze_sword',
+  // The same silhouette; the atlas keeps the steel colour on its inventory icon.
+  steel_sword: 'bronze_sword',
   spear: 'spear',
   bow: 'bow',
   atlatl: 'atlatl',

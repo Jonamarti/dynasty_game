@@ -418,6 +418,13 @@ export const ITEMS: Record<string, ItemDef> = {
   // The smith has beaten most of the slag out at a stone anvil. Later iron
   // tools use this clean, workable stock rather than the raw bloom.
   wrought_iron: { id: 'wrought_iron', label: 'Wrought iron', nutrition: 0, spoilTicks: 0, baseValue: 18, class: 'bulky', hand: { perHand: 1, perArms: 3, hands: 1 } },
+  // M15 phase 40d: steel is carburised stock; its edge has a real weapon reader.
+  steel: { id: 'steel', label: 'Steel', nutrition: 0, spoilTicks: 0, baseValue: 24, class: 'bulky', hand: { perHand: 1, perArms: 3, hands: 1 } },
+  steel_sword: {
+    id: 'steel_sword', label: 'Steel sword', nutrition: 0, spoilTicks: 0, baseValue: 44,
+    weapon: { damage: 0.95, reach: 0.65, hunt: 1.55, tech: 'carburising' },
+    class: 'long', hand: { perHand: 1, perArms: 1, hands: 1 },
+  },
 };
 
 export class Inventory {

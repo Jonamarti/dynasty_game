@@ -189,6 +189,8 @@ export const TECHS = [
   'trade',
   // M15 phase 40c: the stone anvil and hammer that work slag out of the bloom.
   'forging',
+  // M15 phase 40d: carbon hardens forged iron into steel for the best edge.
+  'carburising',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -2357,6 +2359,26 @@ export const TECH: Record<Tech, TechDef> = {
     description:
       'A stone hammer and anvil beat slag from the bloom, leaving wrought iron the smith can shape.',
   },
+  // M15 phase 40d (M8.4). Steel stock is made from wrought iron and charcoal;
+  // a separate sword recipe makes that stock a real, technology-scaled weapon.
+  carburising: {
+    id: 'carburising', label: 'Carburising', domain: 'metal', web: 'metal',
+    age: 'iron', firstKnown: 'about 1200 BC',
+    kind: 'device',
+    requires: ['forging', 'charcoal'], difficulty: 0.75, skill: 'smith',
+    prototype: { wrought_iron: 1, charcoal: 1 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'forging' }, { kind: 'knows', tech: 'charcoal' },
+                { kind: 'holding', item: 'wrought_iron' }, { kind: 'holding', item: 'charcoal' },
+                { kind: 'doing', action: 'craft' }],
+        weight: 1.0, story: 'packed charcoal around wrought iron and found the edge could be made harder' },
+      { needs: [{ kind: 'knows', tech: 'forging' }, { kind: 'holding', item: 'wrought_iron' },
+                { kind: 'holding', item: 'charcoal' }],
+        weight: 0.6, story: 'left a bar of iron in the charcoal fire and drew out steel' },
+    ],
+    description:
+      'Carbon from charcoal hardens wrought iron into steel, which holds the sharpest edge.',
+  },
   // M15 phase 36 (M14 fase 18b). `next-steps.md` had carried this since M8.2
   // as "the node that never reached TECHS": `ActionSystem.doTrade` existed,
   // `EVENT_TYPES` declared it, `DEED_WEIGHT` scored it, and nobody gated the
@@ -2759,6 +2781,10 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   forging: {
     summary: 'A stone anvil and hammer work the slag out of the bloom, leaving wrought iron.',
     site: 'BUILDINGS.anvil and RECIPES.forge_iron',
+  },
+  carburising: {
+    summary: 'Charcoal hardens wrought iron into steel; its sword has the best edge in the game.',
+    site: 'RECIPES.carburise_steel and RECIPES.steel_sword; ITEMS.steel_sword.weapon via weaponOf in ActionSystem.doHunt and doAttack',
   },
   trade: {
     summary: 'A fairer bargain: what changes hands is weighed by what it is worth, not just by feel.',
@@ -3308,7 +3334,7 @@ const ERA_LADDER: Omit<EraDef, 'label'>[] = [
     needs: [
       'firemaking', 'cooking', 'hafting', 'clothing', 'fishing', 'netting', 'bow',
       'farming', 'herding', 'pottery', 'masonry',
-      'native_copper', 'smelting', 'casting', 'alloying', 'bronze_tools', 'bog_iron', 'bloomery',
+      'native_copper', 'smelting', 'casting', 'alloying', 'bronze_tools', 'bog_iron', 'bloomery', 'carburising',
     ],
     heldBy: 0.15,
     description: 'Iron-bearing earth, the first step toward a bloomery.',

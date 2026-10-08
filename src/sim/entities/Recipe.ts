@@ -718,6 +718,17 @@ export const RECIPES: Record<string, RecipeDef> = {
     workTicks: 140, ingredients: { iron_bloom: 1 }, output: { wrought_iron: 1 },
     station: 'anvil', keep: 2,
   },
+  // M15 phase 40d (M8.4): charcoal supplies carbon; the one-for-one yield is a model assumption.
+  carburise_steel: {
+    id: 'carburise_steel', label: 'Steel', icon: '\u{1F525}', tech: 'carburising', skill: 'smith',
+    workTicks: 120, ingredients: { wrought_iron: 1, charcoal: 1 }, output: { steel: 1 },
+    station: 'anvil', keep: 2,
+  },
+  steel_sword: {
+    id: 'steel_sword', label: 'Steel sword', icon: '\u{2694}', tech: 'carburising', skill: 'smith',
+    workTicks: 130, ingredients: { steel: 1 }, output: { steel_sword: 1 },
+    station: 'anvil', keep: 1,
+  },
 };
 
 /** Every item any recipe can produce. Used by the "is this reachable?" tests. */

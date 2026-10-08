@@ -1,3 +1,26 @@
+## 2026-10-08 — M15 fase 40d: acero y espada
+
+La cadena gana `carburising`, después de `forging` y `charcoal`: un hierro
+forjado y un carbón producen acero en el yunque en 120 ticks base; un acero
+produce una espada en 130. `weaponOf` lee el filo real en caza y combate con
+el dominio de la técnica, superior al bronce a igual conocimiento. Sin espada
+no hay bonificación. Cantidades y coeficientes son supuestos de diseño.
+Arte de objetos generado desde fuentes; la pose equipada reutiliza la silueta
+de espada existente. Progreso, interrupciones y negativas usan el ejecutor común.
+
+El check suministrado `iron-is-carburised` falló antes de la implementación;
+su negativo sin receta sigue dando FAIL aplicable. Seis pruebas cubren las
+órdenes acero → espada y sus lectores/gates. Capturas y e2e en español:
+`artifacts/screenshots/m15-phase40-carburising-2026-10-08/`.
+
+Verificación: TypeScript limpio; unitarios completos, 200/201 archivos pasan,
+1.562 pruebas pasan, 1 omitida y 1 fallo nuevo: difusión de pueblos 0,65 frente
+a <0,6. Se documenta para M16 sin cambiar el umbral ni tasas; no se presenta
+la suite global como verde. Los seis tests de acero pasan; navegador 2/2;
+`carburisers` 1/1. `sim:check` conserva los fallos previos de dieta/rendimiento,
+2/144. Las cohortes y matriz se difieren por la instrucción de M15, sin afirmar
+mejora económica. Siguen herramientas de hierro y arado.
+
 ## 2026-10-08 — M15 fase 40c: forjar la lupia en hierro
 
 Por qué: la cadena de hierro terminaba en la lupia de `bloomery`; no existía

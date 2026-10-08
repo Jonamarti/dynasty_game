@@ -504,4 +504,11 @@ export const ES_TECH: Record<string, string> = {
     "quiso algo de un desconocido con tantas ganas que calculó qué haría justo el cambio",
   "A fairer bargain: what changes hands is weighed by what it is worth, not just by feel.":
     "Un trato más justo: lo que cambia de manos se pesa por lo que vale, no solo al ojo.",
+  "Carburising": "Carburización",
+  "packed charcoal around wrought iron and found the edge could be made harder": "rodeó el hierro forjado de carbón y descubrió que así podía endurecer el filo",
+  "left a bar of iron in the charcoal fire and drew out steel": "dejó una barra de hierro en el fuego de carbón y obtuvo acero",
+  "Carbon from charcoal hardens wrought iron into steel, which holds the sharpest edge.": "El carbono del carbón vegetal endurece el hierro forjado y lo convierte en acero, que conserva el filo más afilado.",
+  "Charcoal hardens wrought iron into steel; its sword has the best edge in the game.": "El carbón vegetal endurece el hierro forjado y lo convierte en acero; su espada tiene el mejor filo del juego.",
+  "RECIPES.carburise_steel and RECIPES.steel_sword; ITEMS.steel_sword.weapon via weaponOf in ActionSystem.doHunt and doAttack": "RECIPES.carburise_steel y RECIPES.steel_sword; ITEMS.steel_sword.weapon mediante weaponOf en ActionSystem.doHunt y doAttack",
+
 };

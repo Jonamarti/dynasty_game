@@ -39,6 +39,7 @@ import { auditRegions, auditSwimRegions } from './regions.ts';
 import { setupFoodNews, setupConflicts } from './checkFixtures.ts';
 import { setupIronBloom } from './ironFixture.ts';
 import { setupIronForging } from './ironForgingFixture.ts';
+import { setupIronCarburising } from './ironCarburisingFixture.ts';
 import { createFrontier, setupFrontier, observeFrontier, createFrontierCohort, observeFrontierCohort } from './frontierFixture.ts';
 
 /**
@@ -263,6 +264,15 @@ export const SCENARIOS: Record<string, Scenario> = {
     steps: 300,
     setup: setupIronForging,
     checks: ['iron-bloom-becomes-wrought-iron'],
+  },
+  carburisers: {
+    name: 'carburisers',
+    description: 'One ordered steel charge at a finished anvil; tests carburising, not autonomous economics.',
+    config: { seed: 'carburisers', world: { width: 48, height: 48 },
+      population: { bands: 1, peoplePerBand: 6, startingTech: withPrerequisites(['carburising']) } },
+    steps: 300,
+    setup: setupIronCarburising,
+    checks: ['iron-is-carburised'],
   },
   smiths: {
     name: 'smiths',
@@ -3605,6 +3615,15 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
   } else {
     add('iron-bloom-becomes-wrought-iron', wroughtIron > 0,
       forgingOpportunity + ' supplied blooms, ' + wroughtIron + ' forged into wrought iron');
+  }
+  // A supplied, ordered charge detects a missing carburising recipe on the old build.
+  const carburisingOpportunity = tel.iron_carburising_fixture_charges ?? 0;
+  const steelMade = tel.crafted_carburise_steel ?? 0;
+  if (carburisingOpportunity === 0 && steelMade === 0) {
+    skip('iron-is-carburised', 'no supplied carburising charge in this run');
+  } else {
+    add('iron-is-carburised', steelMade > 0,
+      carburisingOpportunity + ' supplied wrought iron and charcoal charges, ' + steelMade + ' steel made');
   }
   // M15 phase 37. The metal tier is a chain of six steps done by whoever holds
   // the ingredients (seam, deadwood, pit, charcoal, furnace, mould), and the

@@ -303,4 +303,8 @@ export const ES_DATA: Record<string, string> = {
   "Wrought iron": "Hierro forjado",
   "Stone anvil": "Yunque de piedra",
   "A heavy stone anvil and a stone-headed hammer set beside it. Together they hold the bloom while the smith beats slag away and draws the iron out.": "Un yunque pesado de piedra y un martillo con cabeza de piedra, colocados juntos. Sujetan la lupia mientras el herrero desprende la escoria y estira el hierro.",
+  "Steel": "Acero",
+  "Carburise steel": "Carburizar hierro",
+  "Steel sword": "Espada de acero",
+
 };

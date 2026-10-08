@@ -3775,6 +3775,8 @@ alcanzable. **Checks:** uno por nodo, cada uno contra el build sin el nodo.
 
 **Avance del 2026-10-08 (40c, `forging`).** El nodo requiere `bloomery` y habilita `forge_iron`: una lupia se convierte en una unidad de `wrought_iron` en el nuevo `anvil`, con la habilidad `smith` y el ejecutor compartido. El conjunto de estación incluye yunque y martillo de piedra para evitar exigir hierro forjado antes de poder producirlo; no es un martillo equipable separado. La relación uno a uno y el tiempo son supuestos de diseño. Herramientas, acero y arado siguen pendientes en `iron_tools`, `carburising` y `ploughshare`. Cohortes y matriz diferidas; no se afirma mejora económica. [Detalle](m15_phase40_iron.md).
 
+**Avance del 2026-10-08 (40d, `carburising`).** El nodo requiere `forging` y `charcoal`; hierro forjado y carbón producen acero en el yunque. El acero se convierte en espada y su filo lo leen la caza y el combate con el dominio de la técnica. El check `iron-is-carburised` mide una orden suministrada, con control sin receta. Cantidades y coeficientes son supuestos de diseño; no se afirma mejora económica y las cohortes quedan diferidas. Capturas: `artifacts/screenshots/m15-phase40-carburising-2026-10-08/`. Siguen `iron_tools` y `ploughshare`. [Detalle](m15_phase40_iron.md).
+
 ## Fase 41 — Calibración final y cierre de M15
 
 - La segunda pasada completa del protocolo de la fase 10 en `generations`,

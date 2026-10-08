@@ -101,3 +101,27 @@ Capturas en español del nodo y el resultado junto al yunque:
 `artifacts/screenshots/m15-phase40-forging-2026-10-08/`.
 
 Verificación final: TypeScript limpio, 199 archivos y 1.557 pruebas unitarias pasan (1 omitida); check forgers 1/1 y navegador focal 2/2. La suite global de navegador terminó 108/109 antes de corregir el fixture de captura de forja; el detalle de la repetición focal consta en el changelog. El sim:check ordinario mantiene los fallos previos de antojos y rendimiento.
+
+## 40d — `carburising`, el acero y su filo
+
+`carburising` requiere `forging` y `charcoal` en la sub-red Metal.
+`carburise_steel` consume un hierro forjado y un carbón para producir un acero
+en el yunque (120 `workTicks`, `smith`, stock objetivo 2). `steel_sword`
+consume un acero en la misma estación (130 `workTicks`, stock objetivo 1).
+Los rendimientos, tiempos y coeficientes son supuestos de diseño, no medidas
+históricas. La temperatura y los recalentados siguen fuera del modelo.
+
+El acero tiene un lector real: la espada usa `weaponOf` en caza y combate,
+con conocimiento/refinamiento de `carburising` y un filo superior al de bronce
+para igual dominio de la técnica. Saber el nodo sin llevar la espada no da
+ninguna bonificación. La animación equipada comparte la silueta de espada ya
+existente; el icono del acero y la espada proceden de `art/src/`.
+
+`carburisers` aporta una carga y una orden real, y su check
+`iron-is-carburised` falla si falta la receta, en lugar de dar n/a.
+Los unitarios cubren los gates y la cadena real acero → espada; la UI en
+español se captura en `artifacts/screenshots/m15-phase40-carburising-2026-10-08/`.
+Las herramientas de hierro y el arado continúan en 40e y 40f. Las cohortes
+siguen diferidas; no se afirma mejora económica.
+
+Verificación 40d: TypeScript limpio, seis unitarios de acero y navegador 2/2, carburisers 1/1. Suite completa: 1.562 pasan y un fallo nuevo de difusión (0,65 frente a <0,6), documentado para M16 sin ajustar tasas/aserción; 1 omitida. Simcheck conserva dos fallos previos de dieta/rendimiento (2/144).

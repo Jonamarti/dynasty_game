@@ -1,3 +1,13 @@
+## M15 fase 40d: difusión entre pueblos vuelve a fallar (2026-10-08)
+
+La base 40c (`b39aecf`) pasaba la suite completa; al añadir `carburising`,
+`people-knowledge.test.ts`, «sustained full contact does homogenise», mide 0,65
+frente a su límite intacto <0,6. Es una regresión nueva de esta entrega, en
+la deuda de sensibilidad al catálogo de tecnologías ya documentada en fase 36;
+no se ha aislado aquí una causa adicional. No se ajustan tasas ni aserciones.
+Se difiere a M16 por la instrucción de terminar funcionalidades M15. Los seis
+unitarios de acero y la puerta ordenada `carburisers` pasan.
+
 ## M15 fase 40c: alcance de la forja (2026-10-08)
 
 El check corto `forgers` demuestra una orden suministrada en un yunque terminado,
