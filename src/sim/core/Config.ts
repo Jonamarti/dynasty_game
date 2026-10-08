@@ -476,6 +476,16 @@ export interface SimConfig {
   sightRadius: number;
   /** A person re-scores their action every this many ticks (staggered by id). */
   thinkInterval: number;
+  /**
+   * The same, for every band but the player's (M15 step 0, owner 2026-10-08):
+   * the same rules at a slower pace. 15 ticks is an hour and a half of game
+   * time at 240 ticks a day, three turns of the player's band to one of theirs;
+   * a walk, a harvest or a meal lasts longer than that, and anything that
+   * interrupts one is woken at once (`ai/ThinkCadence.ts`). Set it equal to
+   * `thinkInterval` to switch the slowing off. Ignored while nobody is the
+   * player (and `Simulation.headlessFocusBand` is null): then no band is slow.
+   */
+  otherBandThinkInterval: number;
 }
 
 export const DEFAULT_CONFIG: SimConfig = {
@@ -653,6 +663,7 @@ export const DEFAULT_CONFIG: SimConfig = {
   },
   sightRadius: 12,
   thinkInterval: 5,
+  otherBandThinkInterval: 15,
 };
 
 /** Deep-ish merge of a partial override onto the defaults. */

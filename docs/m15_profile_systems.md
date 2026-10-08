@@ -228,3 +228,29 @@ como dice §0.1 del LOD, es un 2 %: lo caro es pensar, y pensar es `brain` más
 **Decisión de diseño que no se toca:** que cada persona recuerde como máximo 48
 personas (`capPerKind`) y que en un campamento todos vean a todos. Los arreglos
 de las secciones siguientes conservan esa semántica al bit.
+
+### Después de los arreglos (mínimo de 5 ejecuciones, ms por paso, sin instrumentar)
+
+| Estado del código | 30 | 300 (una banda) | 300 = 3 bandas de 100 |
+|---|---:|---:|---:|
+| Medida inicial (A) | 1,08 | 33,1 | |
+| + B1 (`PlaceMemory` sin recorrido de 48) | 1,11 | 27,1 | |
+| + B2 (`findExplorePoint` sin arrays) | 0,97 | 26,5 | |
+| + C (otras bandas piensan cada 15 ticks) | 0,99 | 23,7 (*) | 12,0 → 9,1 |
+
+(*) Con una banda C no cambia nada, por diseño: el mismo código que la fila
+anterior; la diferencia es el ruido de la máquina (±10 %, otras tareas en
+paralelo). El efecto de C solo se ve con varias bandas: 300 personas en 3 bandas
+de 100, apagando C (`otherBandThinkInterval = 5`) y encendiéndolo (15),
+12,0 → 9,1 (−24 %: dos tercios de la gente re-planifica a un tercio del ritmo,
+y el resto del coste no se toca). Con 30 personas en 3 bandas, 1,04 → 0,93.
+Hashes de estado a los 480 pasos, con una banda y excluyendo solo las dos
+claves nuevas (`--ignore=headlessFocusBand,config.otherBandThinkInterval`):
+`6661381c4a577ce0` (30) y `f036d847fd4d6d1b` (300), **los mismos que antes de
+tocar nada**: en un mundo de una banda, B1, B2 y C son bit-idénticos al original.
+
+`observePlaces` a 300 pasa de 15,6 a 10,3 ms/paso y sigue siendo cuadrático
+(18.000 `remember` por paso, casi todos expulsando); `brain` a 300, de 15,7 a
+11,7. El 300 sigue costando 24 ms/paso frente a 1 de los 30: **no se ha
+alcanzado el objetivo de linealidad**. Lo que queda es de diseño (ver
+`bugs.md`, «paso 0»).

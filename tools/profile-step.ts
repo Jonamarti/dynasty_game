@@ -37,6 +37,8 @@ const humansList = (args.get('humans') ?? '30,300').split(',').map(Number);
 const steps = Number(args.get('steps') ?? 480);
 const wantHash = args.get('hash') !== 'false';
 const seed = args.get('seed') ?? 'profile-4';
+/** `--bands=N`: split the founders into N bands (default 1, the camp of the original measurement). */
+const bands = Math.max(1, Number(args.get('bands') ?? 1));
 const jsonOut = args.get('json');
 /** `--reps=N`: repeat the unmarked control N times and report the minimum and median (the host is noisy; a single run is not a measurement). */
 const reps = Math.max(1, Number(args.get('reps') ?? 1));
@@ -45,6 +47,8 @@ const reps = Math.max(1, Number(args.get('reps') ?? 1));
 const methodOwners = (args.get('methods') ?? '').split(',').filter(Boolean);
 const extra = args.get('config') ? JSON.parse(args.get('config')!) : {};
 
+/** `--ignore=a,config.b`: paths (from the `Simulation`) left out of the hash. Lets a change that only *adds* a field or a config key be shown not to change anything else. */
+const ignored = new Set((args.get('ignore') ?? '').split(',').filter(Boolean).map(p => '$.' + p));
 const encode = (value: any, seen = new WeakMap<object, string>(), path = '$'): any => {
   if (value === null || ['string', 'number', 'boolean'].includes(typeof value)) return value;
   if (typeof value === 'undefined') return null;
@@ -59,6 +63,7 @@ const encode = (value: any, seen = new WeakMap<object, string>(), path = '$'): a
   if (value instanceof Set) return Array.from(value.values(), (entry, index) => encode(entry, seen, `${path}.s${index}`));
   const result: Record<string, unknown> = {};
   for (const key of Object.keys(value).sort()) {
+    if (ignored.has(`${path}.${key}`)) continue;
     const encoded = encode(value[key], seen, `${path}.${key}`);
     if (encoded !== undefined) result[key] = encoded;
   }
@@ -70,6 +75,7 @@ const fingerprint = (sim: Simulation): string => {
   const seen = new WeakMap<object, string>();
   const top = sim as any;
   for (const key of Object.keys(top).sort()) {
+    if (ignored.has(`$.${key}`)) continue;
     const encoded = encode(top[key], seen, `$.${key}`);
     if (encoded !== undefined) hash.update(key + '=' + JSON.stringify(encoded) + ';');
   }
@@ -77,7 +83,7 @@ const fingerprint = (sim: Simulation): string => {
 };
 
 function make(humans: number): Simulation {
-  const config = { ...configFor('normal', {}), population: { bands: 1, peoplePerBand: humans }, seed, ...extra };
+  const config = { ...configFor('normal', {}), population: { bands, peoplePerBand: Math.round(humans / bands) }, seed, ...extra };
   const world = new WorldState(config as any);
   const sim = world.current;
   sim.possessFirst();

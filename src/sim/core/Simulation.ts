@@ -38,6 +38,7 @@ import { NeedsSystem } from '../systems/NeedsSystem.ts';
 import { MovementSystem } from '../systems/MovementSystem.ts';
 import { Pathfinder } from './Pathfinder.ts';
 import { ActionSystem } from '../systems/ActionSystem.ts';
+import { thinkIntervalOf, wakesNow } from '../ai/ThinkCadence.ts';
 import { Brain, type BrainContext } from '../ai/Brain.ts';
 import { carerOf, childRadius } from '../ai/Anchor.ts';
 import { drivePressures, DRIVES } from '../ai/Drives.ts';
@@ -507,6 +508,14 @@ export class Simulation {
    * possesses anybody, so no scenario can reach any other value.
    */
   autonomy: Autonomy = 'manual';
+  /**
+   * Whose band thinks at full pace when nobody is the player (M15 step 0, C).
+   * The game always has a player, whose band is the focus
+   * (`thinkFocusBand`); the headless harness never takes a body, and without
+   * this its runs would never exercise the slower cadence of the other bands
+   * that the game plays with. Null (the default) slows nobody.
+   */
+  headlessFocusBand: number | null = null;
 
   /**
    * Why the player's character, left to look after itself, is doing nothing.
@@ -5146,6 +5155,15 @@ export class Simulation {
     return person;
   }
 
+  /**
+   * The band that thinks at full pace: the player's, which changes with a
+   * succession or with playing as somebody else and is read afresh every tick,
+   * so the next step after a change already uses the new answer.
+   */
+  thinkFocusBand(): number | null {
+    return this.player ? this.player.bandId : this.headlessFocusBand;
+  }
+
   /** The fallback when nobody has chosen: whoever is first in the list. */
   possessFirst(): Person | null {
     this.assertExecutionAuthority();
@@ -5608,6 +5626,7 @@ export class Simulation {
 
     stepMark?.('build contexts');
     const interval = this.config.thinkInterval;
+    const focusBand = this.thinkFocusBand();
     for (const person of this.people) {
       if (!person.alive) continue;
 
@@ -5729,7 +5748,19 @@ export class Simulation {
 
       // A player order holds until the action system completes or abandons it.
       const committed = person.actionTimer > 0 || person.order !== null;
-      const scheduledThink = (this.time.tick + person.thinkOffset) % interval === 0;
+      // M15 step 0 (C): every band but the player's takes its turn to re-plan
+      // less often. The turn is still the id's phase of the cycle, so the slow
+      // band is spread evenly over the ticks and not bunched on one. Somebody
+      // with nothing to do still thinks at once (below), which is how an
+      // interruption reaches them; and being attacked or hurt does not wait for
+      // a turn either. See `ai/ThinkCadence.ts` for why it is the polling that
+      // is slowed and not the reaction.
+      const ownInterval = thinkIntervalOf(person, focusBand, this.config);
+      let scheduledThink = (this.time.tick + person.thinkOffset) % ownInterval === 0;
+      if (ownInterval !== interval && !scheduledThink && wakesNow(person, this.time.tick, underAttack)) {
+        scheduledThink = true;
+        telemetry.count('think_woken_early');
+      }
       // An NPC under a committed order cannot think and does not observe on
       // schedule. The player's score still runs with an order, so their view
       // advances alongside that HUD update.

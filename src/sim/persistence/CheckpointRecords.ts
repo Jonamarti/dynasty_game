@@ -68,7 +68,7 @@ function copyConfig(input: unknown): SimConfig {
     return value;
   };
   const config = visit(input, DEFAULT_CONFIG, 'config') as SimConfig;
-  for (const value of [config.thinkInterval, config.time.ticksPerDay, config.time.daysPerSeason,
+  for (const value of [config.thinkInterval, config.otherBandThinkInterval, config.time.ticksPerDay, config.time.daysPerSeason,
     config.time.maxTicksPerFrame, config.world.width, config.world.height, config.world.chunkSize]) {
     if (!Number.isSafeInteger(value) || value <= 0) invalid('invalid scheduling or dimension configuration');
   }

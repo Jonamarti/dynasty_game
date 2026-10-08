@@ -129,6 +129,25 @@ reutilizan para las personas fuera del mapa.
 Los pasos 0 y 1a no comparten código y se hacen en paralelo, cada uno en su
 worktree.
 
+**Avance del paso 0 (2026-10-08).** Hecho: (A) el perfil atribuye todo el paso
+por bloque (`npm run profile:step`, `m15_profile_systems.md` «Paso 0»): lo que
+no estaba atribuido era `observePlaces`, la memoria de lugares dentro del bucle
+por persona, un 45 % del paso a 300 y cuadrática (138 veces el coste con 10
+veces la gente); lo demás es lineal salvo `Brain.score`, que crece 1,9 veces por
+llamada. (B) Dos arreglos exactos, con el mismo SHA-256 de estado que antes:
+`PlaceMemory.weakestKey` en O(1) y `findExplorePoint` sin asignaciones; 300
+personas en una banda, 33,1 → 26,5 ms/paso (el 30 no cambia: 1,0). (C) Las otras
+bandas re-planifican cada 15 ticks (`otherBandThinkInterval`) y quien acaba una
+acción, la ve interrumpida o es atacado decide en el acto; 300 personas en 3
+bandas, 12,0 → 9,1 ms/paso, `ai-uses-many-actions` intacto. Con una banda,
+bit-idéntico al original.
+**No resuelto:** el 300 sigue siendo 24 veces el 30 (`profile:step`: 24 ms frente
+a 1 ms para 10 veces la gente), `perf-budget` sigue fallando (689 pasos/s con 30
+frente a 1.724) y lo que queda cuadrático es de diseño, no de implementación: en
+un campamento todos ven a todos y cada uno guarda como mucho 48 personas, así que
+cada mirada de cada persona expulsa y reinserta decenas de registros. Opciones
+para el propietario en `bugs.md` («paso 0»); ninguna se ha aplicado.
+
 ## 1. Qué determina el detalle (sustituido por §0.1 el 2026-10-08)
 
 El centro es el **NPC seleccionado vivo**. Si la selección es un edificio,

@@ -4177,6 +4177,13 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
   const steps = stepsOverride ?? scenario.steps;
   const sim = scenario.create?.(scenario.config) ?? new Simulation(scenario.config);
   scenario.setup?.(sim);
+  // The game always has a player, whose band thinks at full pace while every
+  // other band takes its turns more slowly (`config.otherBandThinkInterval`, M15
+  // step 0). This harness takes no body, so without a focus the checks would
+  // measure a world in which nobody is slowed, which is not the one that is
+  // played. The first living person's band is who a new game hands the player
+  // (`possessFirst`).
+  if (!sim.player) sim.headlessFocusBand ??= sim.livingPeople()[0]?.bandId ?? null;
   if (scenario.name === 'porters') {
     const ids = [...new Set(sim.livingPeople().map(person => person.bandId))].sort((a, b) => a - b);
     const equippedBand = ids[0];
