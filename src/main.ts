@@ -116,7 +116,9 @@ const profilePopulation = Number.isInteger(profileHumans) && profileHumans >= 2 
  *
  * Since 33a every world with a map also has peoples in every other region.
  */
-const GLOBE_SPAN = 4;
+// One map is one comarca (owner, 2026-10-08): every cell of the world map is a playable map, like the classic island and like
+// RimWorld's world tiles. It was 4, provisionally (sixteen comarcas squeezed into 128 by 128 tiles under the quotas of one).
+const GLOBE_SPAN = 1;
 let earthChoice: { geography: EarthWorldGeography; start: { x: number; y: number } } | null = null;
 function makeWorldState(overrides: Record<string, unknown>): WorldState {
   const config = { ...configFrom(settings), ...overrides, seed };

@@ -123,6 +123,7 @@ import { createLocalGeography, type LocalGeographySource } from '../world/LocalG
 import type { WorldGeography } from '../world/WorldGeography.ts';
 import { geographicResourceAvailable } from '../world/GeographicResources.ts';
 import { stepMark } from './StepProbe.ts';
+import { comarcaResourceProfile, PROFILE_SPAN, type ComarcaResourceProfile } from '../world/ResourceProfile.ts';
 import {
   berryHabitat, flintHabitat, grainHabitat, hillOreHabitat, goldHabitat, herdHabitat, predatorHabitat,
 } from '../world/Habitat.ts';
@@ -131,6 +132,19 @@ const RESTORE_CONSTRUCTION = Symbol('Simulation restore construction');
 interface RestoreConstruction {
   readonly token: typeof RESTORE_CONSTRUCTION;
   readonly state: CheckpointState;
+}
+
+/**
+ * The resource profile of the comarca a map is, when it is exactly one (M15 step 1b): a one-by-one window whose origin is a
+ * whole comarca of the world map. Anything else (the classic island, a four-comarca inspection window, a window that straddles
+ * four comarcas) has no single comarca to read and keeps the fixed quotas.
+ */
+export function profileOfStart(start: GeographicStart): ComarcaResourceProfile | null {
+  if (start.geography.kind === 'legacyIsland') return null;
+  if ((start.comarcasWide ?? 1) !== PROFILE_SPAN || (start.comarcasHigh ?? 1) !== PROFILE_SPAN) return null;
+  const cx = start.x - PROFILE_SPAN / 2, cy = start.y - PROFILE_SPAN / 2;
+  if (!Number.isInteger(cx) || !Number.isInteger(cy)) return null;
+  return comarcaResourceProfile(start.geography, cx, cy);
 }
 
 export function worldFrameOf(start: GeographicStart): WorldFrame {
@@ -351,6 +365,12 @@ export class Simulation {
   readonly config: SimConfig;
   /** Present only during deterministic generation; checkpoints bake terrain/nodes. */
   private geographicStart: GeographicStart | null;
+  /**
+   * What the resource profile (`world/ResourceProfile.ts`) promises for the comarca this map IS (M15 step 1b, 2026-10-08).
+   * Set only during generation and only for a map that is exactly one comarca of a world map; null everywhere else (the
+   * classic island, and the inspection windows of other sizes, which keep the fixed quotas they always had).
+   */
+  private comarcaProfile: ComarcaResourceProfile | null = null;
   /** See `WorldFrame`. Set by construction, or by `WorldState.fromRestored`. */
   worldFrame: WorldFrame | null = null;
   private localGeography: LocalGeographySource | null;
@@ -679,6 +699,7 @@ export class Simulation {
     const localGeography = geographicStart ? this.makeLocalGeography(geographicStart) : undefined;
     this.localGeography = localGeography ?? null;
     if (geographicStart) this.worldFrame = worldFrameOf(geographicStart);
+    this.comarcaProfile = geographicStart ? profileOfStart(geographicStart) : null;
     this.rng = new RNG(this.config.seed);
 
     // Fork order is part of the seed contract; do not reorder these.
@@ -798,7 +819,9 @@ export class Simulation {
 
     if (geographicStart) this.spawnGeographicResources();
     else this.spawnResources(spawnRng);
-    this.spawnHerds(spawnRng);
+    // A map that is one comarca draws its herds from a stream of its own: the number of herds now follows the profile, and on
+    // the shared `spawnRng` that would move every person. The classic island and the fixed-quota windows keep the shared one.
+    this.spawnHerds(this.comarcaProfile ? this.geographicResourceRng('herds') : spawnRng);
     this.spawnPeople(spawnRng);
     this.spawnFish(fishRng);
     this.spawnWildGrain(grainRng);
@@ -812,6 +835,7 @@ export class Simulation {
     // retain the selected map; the motor keeps only its generated tile arrays.
     this.geographicStart = null;
     this.localGeography = null;
+    this.comarcaProfile = null;
     this.rebuildHashes();
     for (const species of PREY_SPECIES) {
       this.foundingFauna[species] = this.animals.filter(a => a.species === species).length;
@@ -1102,7 +1126,7 @@ export class Simulation {
    */
   private spawnFish(rng: RNG): void {
     if (this.geographicStart) rng = this.geographicResourceRng('fish');
-    const count = this.scaledCount(this.config.world.fishingSpots);
+    const count = this.scaledCount(this.comarcaProfile ? this.comarcaProfile.nodes.shoals : this.config.world.fishingSpots);
     // Sampling random land tiles and rejecting almost all of them made the
     // number of fish collapse when wade-depth water became a narrow contour.
     // Sample that contour directly so raising resolution or changing the sea
@@ -1148,10 +1172,10 @@ export class Simulation {
    */
   private spawnWildGrain(rng: RNG): void {
     if (this.geographicStart) rng = this.geographicResourceRng('wild_grain');
-    const count = this.scaledCount(this.config.world.wildGrainPatches);
+    const count = this.scaledCount(this.comarcaProfile ? this.comarcaProfile.nodes.wildGrainStands : this.config.world.wildGrainPatches);
     let placed = 0;
     let attempts = 0;
-    const maxAttempts = count * 60;
+    const maxAttempts = count * 60 + (this.comarcaProfile ? this.world.width * this.world.height : 0);
     while (placed < count && attempts < maxAttempts) {
       attempts++;
       const spot = this.world.randomWalkable(rng, 1);
@@ -1173,7 +1197,8 @@ export class Simulation {
    * produces neither.
    */
   private spawnHerds(rng: RNG): void {
-    for (let h = 0, herds = this.scaledCount(this.config.world.gameHerds); h < herds; h++) {
+    const wanted = this.comarcaProfile ? this.comarcaProfile.nodes.herds : this.config.world.gameHerds;
+    for (let h = 0, herds = this.scaledCount(wanted); h < herds; h++) {
       const species: Species = rng.pick(PREY_SPECIES as unknown as Species[]);
       const def = SPECIES_DEFS[species];
 
@@ -1707,7 +1732,7 @@ export class Simulation {
   private spawnGeographicResources(): void {
     const cfg = this.config.world;
     const plan: [ResourceKind, number][] = [
-      ['berries', cfg.berryBushes], ['flint', cfg.flintOutcrops],
+      ['berries', this.comarcaProfile ? this.comarcaProfile.nodes.bushes : cfg.berryBushes], ['flint', cfg.flintOutcrops],
       ['sticks', cfg.deadwood], ['reeds', cfg.reedBeds], ['clay', cfg.clayBanks],
     ];
     for (const [kind, quoted] of plan) {
@@ -1715,7 +1740,7 @@ export class Simulation {
     }
   }
 
-  private geographicResourceRng(kind: ResourceKind): RNG {
+  private geographicResourceRng(kind: ResourceKind | 'herds'): RNG {
     const start = this.geographicStart!;
     const width = start.comarcasWide ?? 1;
     const height = start.comarcasHigh ?? 1;
@@ -1749,7 +1774,9 @@ export class Simulation {
     }
     let placed = 0;
     let attempts = 0;
-    const maxAttempts = count * 60;
+    // A profile-driven count is proportional to the habitat, so a map with a sliver of it asks for few nodes and rejection
+    // sampling needs a number of tries that follows the map, not the count: a bush wanted on 0.5% ground takes 200 tries.
+    const maxAttempts = count * 60 + (this.comarcaProfile && geographic && kind === 'berries' ? this.world.width * this.world.height : 0);
     while (placed < count && attempts < maxAttempts) {
       attempts++;
       const spot = this.world.randomWalkable(rng, 1);
