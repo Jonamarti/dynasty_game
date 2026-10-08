@@ -1,11 +1,135 @@
 # M15 — Simulación por visión y evolución compacta del mundo
 
+**Revisado el 2026-10-08: empieza por el §0, que manda sobre el §1 y el §7.**
+
 Decisión del propietario, 2026-10-03. Es el apartado de diseño de la fase 32,
 incluido el LOD dentro de la comarca que antes quedaba fuera de M15. **Todavía
 no está implementado**: `Simulation.step()` actual ejecuta todos los NPC vivos,
 y la niebla limita presentación y selección, no el trabajo de simulación.
 
-## 1. Qué determina el detalle
+## 0. Revisión del propietario, 2026-10-08 (manda sobre §1 y §7)
+
+Decidida en conversación con el propietario tras medir el coste y revisar el
+diseño de 2026-10-03. **Sustituye el §1** (detalle limitado al radio de visión
+dentro de la comarca activa) **y el orden del §7**. Los §2-§6 siguen vigentes en
+todo lo que no contradigan esto: una sola autoridad, conservación, tiempo y RNG,
+y las pruebas con controles negativos.
+
+### 0.1 Qué se simula y cómo
+
+| Dónde | Quién | Cómo |
+|---|---|---|
+| Mapa actual (la `Simulation` detallada) | La banda del jugador | Detalle completo, como hoy |
+| Mapa actual | Las demás bandas | **Las mismas reglas**, pero vuelven a decidir con menos frecuencia (cada pocos ticks en vez de cada tick); las interrupciones (peligro, que les hablen, que les ataquen) llegan siempre en el acto |
+| Fuera del mapa actual | Todos | Compacto, **por banda**, con las personas y sus nombres guardados |
+
+- **Dentro del mapa actual no hay compactos.** Se pasa a compacto **solo al
+  salir del mapa** y se vuelve a detalle al entrar. El recolector o comerciante
+  que sale se compacta y vuelve en detalle. Si migra el jugador, el mapa de
+  destino pasa a ser el actual y lo que se queda atrás se compacta entero.
+- **Consecuencia de arquitectura:** un compacto **nunca está en
+  `Simulation.people` ni en el spatial hash**. Por eso los veinticuatro bucles
+  sobre `this.people` de `Simulation.ts` (anotados en `bugs.md` el 2026-10-08) no
+  hay que tocarlos, y el modelo compacto se construye y prueba sin el bucle
+  principal. La fase 34 (cruzar el borde) es exactamente la frontera entre los
+  dos mundos.
+- **Menos frecuencia, nunca reglas distintas.** Una persona de otra banda tiene
+  el mismo estado que una de la nuestra; solo cambia cada cuánto piensa. Tomar
+  el control de otro NPC (sucesión, jugar como otro) es instantáneo: su banda
+  pasa a pensar a frecuencia completa desde el tick siguiente. Simplificar sus
+  necesidades no ahorraría nada: `Needs.update` es 223 ms de 13.666 en el perfil
+  de 300 humanos; lo caro es pensar.
+- **La cámara muestra lo que ven los ojos del personaje.** El foco lo decide la
+  simulación, no la cámara. Fuera de lo que ve la gente del jugador, la cámara
+  muestra lo que recuerdan (niebla de guerra). Así el mundo no depende de hacia
+  dónde se mira, el arnés sin pantalla tiene un foco definido y no se puede
+  alejar la cámara para pasar a nadie a modo estadístico.
+- **Los humanos no aparecen de la nada.** A diferencia de los animales del
+  borde, todo humano que entra en el mapa existía antes en el modelo del mundo
+  (nivel 1 o cohorte del nivel 2). Nacer y morir sí ocurre.
+- **Los rivales deben seguir el ritmo.** El modelo compacto avanza en técnicas
+  y su comida sale de tasas medidas en el detallado, para que una banda fuera
+  del mapa evolucione como lo haría vista. Un dial de dificultad en los ajustes
+  iniciales queda como opción futura, sin prioridad.
+
+### 0.2 El perfil de recursos de cada comarca
+
+Igual para la Tierra real y para un mundo aleatorio: solo cambia de dónde sale
+la geografía (atlas y ríos de Natural Earth, o ruido y semilla).
+
+1. **Geografía** (existe): bioma, latitud, altitud, temperatura, lluvia, ríos y
+   costa por región y comarca (`WorldMap`, `ComarcaProfile`, `WorldRegionProfile`).
+2. **Perfil de recursos** (nuevo): una función determinista de la geografía que
+   da comida recolectable por estación, pesca, caza, si se puede cultivar y qué
+   minerales hay. No se guarda si es barata de calcular, porque sale siempre
+   igual; solo se guardaría si medir dice que es lenta. Hoy solo hay piezas
+   sueltas: `WorldRegionProfile.resources` y `BIOME_PRODUCTIVITY` (no medida).
+3. **Mapa detallado** (existe): al generar una comarca, el generador **lee el
+   mismo perfil**, de modo que el mapa que aparece da aproximadamente lo que la
+   estimación prometía (como el forraje de una casilla del mundo en RimWorld).
+4. **Libro de la comarca** (`TileLedger`): al marcharse, lo que cambió (tala,
+   agotamiento, campos, obras) queda escrito; la estimación siguiente es el
+   perfil corregido por el libro.
+
+Los números del perfil **se miden** generando comarcas detalladas de cada
+bioma y contando lo que dan, no se inventan. Una banda compacta, una caravana
+que cruza varias comarcas (fase 36) y el mapa que se ve al llegar usan el mismo
+número.
+
+### 0.3 El modelo compacto de banda (fuera del mapa)
+
+Cada día, por banda: produce comida según su gente, sus técnicas (recolección,
+pesca, agricultura) y el perfil de su comarca; guarda el excedente si tiene
+almacenes y lo pierde si no; saca de los almacenes cuando el día sale negativo;
+pasa hambre al llegar a cero; el hambre mata, la población baja hasta cuadrar
+con lo que da la tierra y se recupera cuando la estación mejora. Descubre
+técnicas con una frecuencia estimada y ajustable (reutilizando el modelo de
+`PeopleKnowledge` del nivel 2). Comida y técnica se calibran contra el detallado
+(`RateWatch`, puerta `lod-matches-detail`). Las piezas inertes de
+`src/sim/compact/` (autoridad única, registro de persona, `CompactBody`) se
+reutilizan para las personas fuera del mapa.
+
+### 0.4 Fallos del diseño anterior que esta revisión corrige
+
+1. **El LOD no arreglaba el coste del pueblo que se mira.** 30 humanos juntos
+   cuestan 1,09 ms/paso y 300 cuestan 28,72: diez veces la gente, veintiséis
+   veces el coste. En esa medición los 300 estaban dentro de la visión. Además
+   `perf-budget` ya falla con 30 (546 pasos/s frente a 1.724) y más de la mitad
+   del paso no está instrumentada. Hace falta un paso 0 propio.
+2. **Banda como unidad frente a visión por persona** partía a las familias que
+   recolectan fuera de pantalla. Resuelto: dentro del mapa nadie es compacto.
+3. **Foco por cámara** hacía el mundo no reproducible. Resuelto: ojos del
+   personaje.
+4. **Borde entre niveles** dentro del mapa (ver a nadie en un campamento
+   compacto). Resuelto: solo existe en el borde del mapa.
+5. **Conservación de la comida:** `CompactBody` sin ingesta muere de sed en
+   días, y `CompactIntake` usa tasas medias sin almacenes reales ni agotar el
+   territorio. Resuelto por §0.3.
+6. **Rivales congelados:** el nivel compacto no tenía invención. Resuelto por
+   §0.3.
+7. **Fauna y mundo fuera del plan:** 66 de 70 animales fuera de visión se
+   simulan tick a tick, igual que campos, hierba y deterioro. Va al paso 3 y se
+   mide en el paso 0.
+8. **Los checks medirían otro mundo.** Paso 4: LOD activo en los checks con el
+   foco fijo de §0.1 y determinismo a través de transiciones.
+
+### 0.5 Orden de entregas (sustituye al §7)
+
+0. **Rendimiento del mapa actual.** Instrumentar la parte del paso sin medir,
+   encontrar y arreglar lo que crece con el cuadrado (para todos, también la
+   banda del jugador), y hacer que las otras bandas decidan con menos frecuencia.
+1. **Fuera del mapa.** 1a perfil de recursos por comarca, medido; 1b el
+   generador detallado obedece el perfil; 1c modelo compacto de banda (§0.3).
+2. **Cruzar el borde** (fase 34): compactar a quien sale, materializar a quien
+   entra, `TileLedger` de lo que queda atrás.
+3. LOD de fauna y hierba.
+4. Checks y determinismo con LOD.
+5. Calibración de 32c (que el mundo llegue a la agricultura y a los Estados).
+
+Los pasos 0 y 1a no comparten código y se hacen en paralelo, cada uno en su
+worktree.
+
+## 1. Qué determina el detalle (sustituido por §0.1 el 2026-10-08)
 
 El centro es el **NPC seleccionado vivo**. Si la selección es un edificio,
 recurso u otro objeto, se conserva como centro el personaje controlado. Sin
@@ -208,7 +332,7 @@ En normal se observan FPS, intervalos largos y latencia de input; en aceleració
 se priorizan pasos/s reales y controles con el presupuesto de dibujo reducido.
 No se promete que una aglomeración de 300 visibles cueste lo mismo que 30.
 
-## 7. Entregas separadas y dependencias
+## 7. Entregas separadas y dependencias (orden sustituido por §0.5 el 2026-10-08)
 
 1. **32a, referencia:** cerrar demografía y medir coste por sistema, actividad
    visible y coste remoto. El harness conserva un modo explícito de referencia
