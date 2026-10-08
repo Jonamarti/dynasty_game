@@ -1,3 +1,10 @@
+**2026-10-08: pendientes del propietario sobre agua, pesca y biomas duros (sin fase asignada todavía).** Dictados al revisar el paso 1b del LOD (`m15_simulation_lod.md` §0):
+
+- **Peces proporcionales al agua.** Hoy casi cualquier comarca con agua satura el tope de 150 bancos. Deben depender de la anchura del río y de cuánto mar hay: una isla o una costa, muchos; un río ancho (Danubio, Ebro), muchos; un riachuelo, pocos. Sin comida prácticamente infinita.
+- **El pescado no se recoge como una piedra.** En aguas someras, a mano y sin herramientas: marisco, cangrejos y lo que viva en la orilla (recolección costera). La pesca de verdad es otra cosa: zonas de concentración de peces y **caña de pescar**, una tecnología por descubrir. Hoy `fishing` es una práctica con lanza que solo multiplica el rendimiento, y existe `fish_trap` (red y cestería); revisar cómo encajan caña, red y nasa con la regla de la casa de no declarar contenido inerte.
+- **Bioma de desierto en el mapa local.** El mapa detallado no tiene arena: un desierto se pinta con hierba y conserva 17 manadas. Hace falta el bioma y sus reglas de hábitat. La tundra igual: partidas más duras a propósito.
+- **Agua en el desierto.** Del subsuelo (pozos, `well` ya existe), de plantas (cactus) y otras fuentes; todo sin implementar.
+
 **2026-10-08: fase 40 cerrada funcionalmente.** Seis nodos, recetas/herramientas/arado y un check corto por nodo. Sigue la calibración final de M15; cohortes y matriz diferidas según instrucciones del propietario. Difusión de pueblos y deuda económica en [M16](m16_notes.md), sin cambiar umbrales. [Resultados y límites](m15_phase40_iron.md).
 
 **2026-10-08: fase 40f (`ploughshare`) entregada.** Arado físico, equipo de tiro reservado y rendimiento guardado en el cultivo; siembra manual conservada. Falta registrar la puerta corta de extracción `bog_iron` para cerrar la cobertura de los seis nodos. Calibración/cohortes diferidas a M16. [Detalle](m15_phase40_iron.md).
