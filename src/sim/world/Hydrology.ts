@@ -41,6 +41,8 @@ export interface HydrologyInput {
   riverDistance?: Float64Array;
   /** Canonical, descending absolute river surface sampled from the macro segment. */
   riverSurface?: Float32Array;
+  /** Optional per-tile depth: real major rivers retain a deep core without artificial fords. */
+  riverDepth?: Float32Array;
   /** Ford spacing in comarca units; maps at equal tile resolution share this phase. */
   fordInterval?: number;
   waterLevel: number;
@@ -425,6 +427,7 @@ function validate(input: HydrologyInput): void {
       input.lakeCandidates.length !== n || input.flowX.length !== n || input.flowY.length !== n ||
       input.globalX.length !== n || input.globalY.length !== n ||
       (input.riverDistance !== undefined && input.riverDistance.length !== n) ||
+      (input.riverDepth !== undefined && input.riverDepth.length !== n) ||
       (input.riverSurface !== undefined && input.riverSurface.length !== n) ||
       (input.fordInterval !== undefined && (!Number.isFinite(input.fordInterval) || input.fordInterval <= 0)) ||
       !Number.isFinite(input.waterLevel) || !Number.isFinite(input.wadeDepth) || input.wadeDepth <= 0 ||
@@ -443,7 +446,7 @@ function rasterCanonicalRivers(input: HydrologyInput, kind: Uint8Array, surface:
         !Number.isFinite(waterSurface) || input.elevation[index]! < input.waterLevel ||
         waterSurface < input.waterLevel) continue;
     const ford = isCanonicalFord(input.riverDistance![index]!, fordInterval, fordTolerance);
-    const depth = ford ? input.wadeDepth * 0.65 : input.swimDepth * 1.15;
+    const depth = input.riverDepth?.[index] || (ford ? input.wadeDepth * 0.65 : input.swimDepth * 1.15);
     kind[index] = HYDROLOGY_FRESH;
     surface[index] = waterSurface;
     bed[index] = waterSurface - depth;

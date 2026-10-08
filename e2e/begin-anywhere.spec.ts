@@ -13,7 +13,7 @@
  */
 import { test, expect, type Page } from '@playwright/test';
 
-const SHOTS = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m15-start-anywhere-2026-10-07';
+const SHOTS = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m15-start-anywhere-rivers-2026-10-08';
 
 function guardErrors(page: Page): string[] {
   const errors: string[] = [];
@@ -34,9 +34,9 @@ test('a region with no water nearby offers a choice, and "begin here anyway" sta
   await expect(page.locator('.worldpicker')).toBeVisible({ timeout: 15_000 });
   await expect(page.locator('.worldpicker-canvas')).toBeVisible({ timeout: 15_000 });
 
-  // 49,20: the same arid region `start-place.test.ts` measures as having no river or lake within two rings of regions —
+  // 52,17: the same arid region `start-place.test.ts` measures as having no river or lake within two rings of regions —
   // "the middle of the Sahara" in that file's older phase-33 tests, reused here because it was already pinned down.
-  await clickRegion(page, 49, 20);
+  await clickRegion(page, 52, 17);
   await expect(page.locator('.worldpicker-info')).toContainText('No river or lake is marked here');
   const begin = page.locator('.worldpicker-begin');
   await expect(begin).toBeEnabled();
@@ -92,11 +92,8 @@ test('a coastal region — ocean at its own centre, land next door — is select
   await expect(begin).toBeEnabled();
   await begin.click();
 
-  // This region also has no water within the ordinary search radius (measured in the unit test), so the same confirm
-  // panel appears; taking either door proves the region was genuinely selectable and not merely clickable.
-  await expect(page.locator('.worldpicker-confirm')).toBeVisible({ timeout: 10_000 });
-  await page.locator('.worldpicker-confirm-anyway').click();
-  await expect(page.locator('.worldpicker')).toBeHidden();
+  // The detailed atlas now supplies British freshwater at this coast.
+  await expect(page.locator('.worldpicker')).toBeHidden({ timeout: 15_000 });
   await expect(page.locator('.settings')).toBeVisible({ timeout: 15_000 });
 
   expect(errors).toEqual([]);

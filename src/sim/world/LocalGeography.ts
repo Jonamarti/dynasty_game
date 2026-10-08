@@ -20,6 +20,7 @@ import { WORLD_FEATURE } from './WorldFeatureSeeds.ts';
 import { generateLocalHydrology, type HydrologyResult } from './Hydrology.ts';
 import { SimplexNoise } from '../core/Noise.ts';
 import { RNG } from '../core/RNG.ts';
+import { sampleEarthRiver, usesEarthRiverGeometry } from './EarthRivers.ts';
 
 export interface LocalGeographyBounds {
   /** Global comarca coordinate of the local map's north-west corner. */
@@ -121,6 +122,7 @@ export function createLocalGeography(
   const flowY = new Int8Array(count);
   const riverDistance = new Float64Array(count);
   riverDistance.fill(Number.NaN);
+  const riverDepth = new Float32Array(count);
   const riverSurface = new Float32Array(count);
   riverSurface.fill(Number.NaN);
   const globalX = new Float64Array(count);
@@ -137,12 +139,13 @@ export function createLocalGeography(
   const dischargeByRegion = new Map<string, number>();
   // One tile's footprint in comarca units: the floor a river corridor never
   // goes narrower than (what the old fixed tileRadius gave everywhere), and
-  // the unit canonicalRiverAt's discharge-derived halfWidthTiles is converted
-  // through below. Loop-invariant — it does not depend on x or y — so this is
+  // Raster footprint only: canonicalRiverAt's discharge width uses a fixed
+  // reference scale below. Loop-invariant — it does not depend on x or y — so this is
   // computed once rather than redundantly on every one of width*height tiles
   // the way the old inline version did.
   const tileSize = Math.hypot(frozenBounds.comarcasWide / width, frozenBounds.comarcasHigh / height);
   const tileRadius = tileSize / 2;
+  const realRivers = geography.kind === 'earth' && usesEarthRiverGeometry(geography.entry.id);
   for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
     const index = y * width + x;
     const localX = x + 0.5, localY = y + 0.5;
@@ -160,10 +163,36 @@ export function createLocalGeography(
       const region = geography.map.regions[profile.regionY * geography.map.regionsWide + profile.regionX];
       riverCandidates[index] = region && region.riverFlow >= 3.2 ? 1 : 0;
     }
+    if (realRivers) {
+      const river = sampleEarthRiver(globalX[index]!, globalY[index]!, geography.map.width, geography.map.height);
+      riverCandidates[index] = 0;
+      if (river) {
+        // Cover at least a whole tile footprint; cartographic widths otherwise
+        // disappear between tile centres at a coarse inspection resolution.
+        const halfWidth = Math.max(tileRadius, river.halfWidth);
+        if (river.distance <= halfWidth) {
+          riverCandidates[index] = 1;
+          riverDistance[index] = river.along;
+          riverSurface[index] = elevation[index]!;
+          flowX[index] = river.flow.x;
+          flowY[index] = river.flow.y;
+          const edge = river.distance / halfWidth;
+          const ford = !river.major && Math.abs(river.along / 0.8 - Math.round(river.along / 0.8)) < 0.04;
+          // Broad main stems have no invented ford every nine tiles. Shallow
+          // margins remain fishable; their deep core needs an actual vessel.
+          riverDepth[index] = ford ? config.wadeDepth * 0.65
+            : edge > 0.78 ? config.wadeDepth * 0.65
+            : config.swimDepth * (river.major ? 1.6 : 0.85);
+        }
+      }
+      continue;
+    }
     const path = canonicalRiverAt(geography, profile.regionX, profile.regionY,
       globalX[index]!, globalY[index]!, flowByRegion, distanceByRegion, activeRiverByRegion, heightByRegion,
       dischargeByRegion, waterLevel, metresPerUnit);
     if (path) {
+      // Keep discharge widths in the canonical map scale, not the current
+      // raster's tile size: zoom/resolution used to resize an entire river.
       // Never narrower than one tile (the old fixed behaviour, still right
       // for a headwater trickle); wider where the macro drainage network
       // says more water passes through here. path.halfWidthTiles already
@@ -172,7 +201,7 @@ export function createLocalGeography(
       // so this corridor does not jump tile-to-tile or at a macro-region
       // boundary — the exact bug the old fixed radius's sibling comment in
       // Hydrology.ts's widenRiver warns against.
-      const halfWidth = Math.max(tileRadius, path.halfWidthTiles * tileSize);
+      const halfWidth = Math.max(tileRadius, path.halfWidthTiles * (Math.SQRT2 * 4 / 128));
       riverCandidates[index] = path.distance <= halfWidth + 1e-9 ? 1 : 0;
       if (riverCandidates[index]) {
       flowX[index] = path.flow.x;
@@ -181,6 +210,10 @@ export function createLocalGeography(
       // The cut sits below both the coarse route grade and this tile's ground;
       // regional anchors can otherwise leave a short perched bank on relief.
       riverSurface[index] = Math.min(path.surface, elevation[index]!);
+      const major = path.halfWidthTiles >= 3;
+      const ford = !major && Math.abs(path.distanceToOutlet / 0.8 - Math.round(path.distanceToOutlet / 0.8)) < 0.04;
+      riverDepth[index] = ford || path.distance / halfWidth > 0.78 ? config.wadeDepth * 0.65
+        : config.swimDepth * (major ? 1.6 : 0.85);
       }
     } else {
       riverCandidates[index] = 0;
@@ -191,7 +224,7 @@ export function createLocalGeography(
   const riverCorridor = riverCandidates.slice();
   const hydrology = generateLocalHydrology({
     width, height, elevation, moisture, riverCandidates, riverCorridor, lakeCandidates, globalX, globalY,
-    riverDistance, riverSurface,
+    riverDistance, riverSurface, riverDepth,
     flowX, flowY, waterLevel, wadeDepth: config.wadeDepth, swimDepth: config.swimDepth,
     fordInterval: 9 * (frozenBounds.comarcasWide / width + frozenBounds.comarcasHigh / height) / 2,
   });
@@ -490,7 +523,8 @@ function dischargeOfRegion(geography: MappedGeography, x: number, y: number, reg
 
 /**
  * Discharge to a channel half-width, in TILE units (not comarca units —
- * converted at the call site, which knows this local map's own tile size).
+ * converted at the call site using the canonical 128-tile/four-comarca size,
+ * never this inspection window's resolution).
  * Square-root scaling is the common simple hydraulic-geometry approximation
  * (channel width grows with the square root of discharge); the base keeps a
  * headwater at roughly the old fixed one-tile radius, and the cap keeps an
@@ -521,8 +555,8 @@ const MEANDER_NOISE = new SimplexNoise(new RNG('local-river-meander'));
  * t = 0 and t = 1 — see the long comment at the call site for why that zero
  * is load-bearing, not decorative. */
 function meanderDisplacement(px: number, py: number, t: number, regionSize: number): number {
-  const MEANDER_AMPLITUDE_FRACTION = 0.1; // of one region's size, comarca units
-  const MEANDER_SCALE = 1.6; // wavelength roughly 0.6 region per cycle
+  const MEANDER_AMPLITUDE_FRACTION = 0.16; // of one region's size, comarca units
+  const MEANDER_SCALE = 8; // wavelength roughly 0.125 region per cycle
   const raw = MEANDER_NOISE.fbm(px, py, 3, 2, 0.5, MEANDER_SCALE / regionSize) * 2 - 1;
   return raw * Math.sin(Math.PI * t) * regionSize * MEANDER_AMPLITUDE_FRACTION;
 }

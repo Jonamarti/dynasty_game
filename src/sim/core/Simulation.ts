@@ -1274,14 +1274,14 @@ export class Simulation {
       // shoreline the most valuable ground to camp on.
       case 'reeds':
         if (this.geographicStart) {
-          return (biome === 'beach' || biome === 'grass' || biome === 'forest') && this.world.isShore(x, y);
+          return (biome === 'beach' || biome === 'grass' || biome === 'forest' || biome === 'hills' || biome === 'river') && this.world.isShore(x, y);
         }
         return biome === 'beach' && this.world.isShore(x, y);
       case 'clay':
         // Continental rivers cut through forest too. Requiring a classic beach
         // or meadow erased all clay from wooded river starts with real banks.
         return (biome === 'beach' || biome === 'grass' ||
-          (this.geographicStart !== null && biome === 'forest')) && this.world.isShore(x, y);
+          (this.geographicStart !== null && (biome === 'forest' || biome === 'hills' || biome === 'river'))) && this.world.isShore(x, y);
       // M15 phase 27c: the fish are in the water, on walkable shallows. Keep
       // them on fishRng's dedicated stream and in this post-people pass; putting
       // them into spawnResources would move every herd and person after them.

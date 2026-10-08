@@ -537,12 +537,13 @@ describe('M15 terrain variety: tributaries', () => {
 
   it('leaves a real arid window close to no hydrology at all', () => {
     const geography = earthAtlas();
-    // Region (49, 20): the Sahara fixture from start-place.test.ts's "middle
-    // of the Sahara" guard — arid Köppen, well under the wet-terrain
+    // Region (49, 18): the Sahara fixture from start-place.test.ts's "middle
+    // of the Sahara" guard. 49,20 was actually Sokoto in Nigeria, whose
+    // real river is now retained. This inland desert is under the wet-terrain
     // threshold, with no river or lake feature flagged either.
     const config = { ...DEFAULT_CONFIG.world, width: 128, height: 128 };
     const span = 4;
-    const originX = 49 * 10 + 5 - span / 2, originY = 20 * 10 + 5 - span / 2;
+    const originX = 49 * 10 + 5 - span / 2, originY = 18 * 10 + 5 - span / 2;
     const local = createLocalGeography(geography, { originX, originY, comarcasWide: span, comarcasHigh: span }, config);
     const fresh = Array.from(local.hydrology.kind).filter(kind => kind === 1).length;
     expect(fresh, 'an arid window should not spontaneously grow tributaries').toBeLessThanOrEqual(2);

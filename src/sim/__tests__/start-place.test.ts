@@ -99,15 +99,15 @@ describe('beginning on the Earth', () => {
   });
 
   it('a region marked without water moves to the nearest that has some, never farther than the radius', () => {
-    expect(regionWater(geography, 48, 12)).toBe('none');
-    const start = findNearestStart(geography, 48, 12, SPAN, config, 2)!;
+    expect(regionWater(geography, 50, 13)).toBe('none');
+    const start = findNearestStart(geography, 50, 13, SPAN, config, 2)!;
     expect(start).not.toBeNull();
     expect(isStart(start.report)).toBe(true);
-    expect(Math.max(Math.abs(start.region.x - 48), Math.abs(start.region.y - 12))).toBeLessThanOrEqual(2);
+    expect(Math.max(Math.abs(start.region.x - 50), Math.abs(start.region.y - 13))).toBeLessThanOrEqual(2);
   });
 
   it('the middle of the Sahara has no water within two regions, and says so rather than begin there', () => {
-    expect(findNearestStart(geography, 49, 20, SPAN, config, 2)).toBeNull();
+    expect(findNearestStart(geography, 52, 17, SPAN, config, 2)).toBeNull();
   });
 
   it('the open sea is not a place to begin', () => {
@@ -137,11 +137,11 @@ describe('M15 "begin anywhere" (2026-10-07): a coastal region is selectable, and
     expect(isCoastalRegion(geography, 5, 24)).toBe(false);
   });
 
-  it('a coastal region, with no water measured nearby, still gives a dry-land start with both shore and sea in view', () => {
-    // The region itself is ocean, so the water-requiring search (today's default) finds nothing — exactly as it always
-    // has for anything classed ocean. `requireWater: false` is the new door: it widens the search across the boundary
-    // into the region that made this one "coastal", and finds the shore rather than reporting nothing.
-    expect(findStartInRegion(geography, 46, 10, SPAN, config)).toBeNull();
+  it('a coastal region still gives a dry-land start with both shore and sea in view', () => {
+    // Both the normal and dry fallback searches may use land next to a coastal
+    // region, whose own atlas centre samples as ocean.
+    // Detailed British rivers now provide water where the coarse atlas omitted it.
+    expect(findStartInRegion(geography, 46, 10, SPAN, config)?.report.fresh).toBeGreaterThanOrEqual(MIN_FRESH_TILES);
     const dry = findStartInRegion(geography, 46, 10, SPAN, config, { requireWater: false })!;
     expect(dry).not.toBeNull();
     expect(dry.region).toEqual({ x: 46, y: 10 });
@@ -156,14 +156,14 @@ describe('M15 "begin anywhere" (2026-10-07): a coastal region is selectable, and
   });
 
   it('a region with no water nearby gets a dry-land start on request, land only, never invented water', () => {
-    // 49,20 is the same Sahara-ish region "the middle of the Sahara has no water within two regions" already uses: no
+    // 52,17 is the same Sahara-ish region "the middle of the Sahara has no water within two regions" already uses: no
     // river or lake within two rings of regions, so `findNearestStart` (the water-requiring search) refuses it. The
     // dry fallback is the "Begin here anyway" button's door: it still has to find solid ground, but it must not pretend
     // there is water where there measurably is none.
-    expect(findNearestStart(geography, 49, 20, SPAN, config, 2)).toBeNull();
-    const dry = findStartInRegion(geography, 49, 20, SPAN, config, { requireWater: false })!;
+    expect(findNearestStart(geography, 52, 17, SPAN, config, 2)).toBeNull();
+    const dry = findStartInRegion(geography, 52, 17, SPAN, config, { requireWater: false })!;
     expect(dry).not.toBeNull();
-    expect(dry.region).toEqual({ x: 49, y: 20 });
+    expect(dry.region).toEqual({ x: 52, y: 17 });
     expect(dry.report.land).toBeGreaterThanOrEqual(MIN_LAND_SHARE);
   });
 });

@@ -1,3 +1,7 @@
+## M15 ríos: límites cartográficos pendientes de hidrología detallada (2026-10-08)
+
+Natural Earth aporta geometría y `scalerank`, no anchuras ni profundidades medidas, ni una dirección garantizada de digitalización. Los anchos y fondos son clases legibles de juego; la superficie se apoya en el relieve local del DEM grueso y no constituye un modelo hidráulico. El atlas de hace 12.000 años conserva cursos modernos aproximados, igual que conserva clima moderno. No se ha reconstruido paleohidrografía. Documentación y reproducción: `earth_rivers.md`.
+
 ## M15 recursos de orilla: el índice general aún incluye los bordes recortados (2026-10-08)
 
 Al probar una ventana continental plana y seca de 32×32, `World.shoreTiles` contiene 124 casillas del perímetro: `isShore` hereda el comportamiento clásico de `isWater` fuera del mapa. `freshShore` y `saltShore` están vacíos en esa fixture. Los nuevos spawns de barro y juncos exigen agua dentro de los límites del mapa, por lo que no crean recursos allí; el índice general y los otros consumidores conservan ese comportamiento. Revisar sus consumidores en M16 antes de cambiar globalmente `isShore`, para no desplazar los mundos clásicos.

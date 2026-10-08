@@ -1,3 +1,13 @@
+## 2026-10-08 — M15 trazas fluviales y recursos continentales
+
+El atlas de ríos de 1:110 millones solo marcaba regiones; los cursos locales se inventaban entre sus centros. En las ventanas de Zaragoza, Ratisbona y Toledo faltaban tanto el cauce en la ubicación real como barro y juncos. El Rin tenía recursos pero tampoco pasaba por la ubicación medida. Comprobado contra `a3261b4` en una copia aislada: las cuatro regresiones de ubicación fallan, y Ebro/Danubio/Tajo tienen 0/0 nodos frente a los 6/9 pedidos.
+
+Ahora se conservan 1.201 ríos de Natural Earth 1:10m y sus curvas, con índice espacial compartido y sin red/RNG durante la partida. El generador del atlas usa la misma fuente detallada para las banderas regionales. Los anchos usan clases cartográficas constantes en coordenadas globales y un mínimo de huella de casilla; los grandes tienen núcleo profundo sin vados periódicos inventados y márgenes someros. Los mapas aleatorios también conservan la anchura al cambiar de resolución, presentan meandros de escala local y distinguen cauces principales profundos. Las orillas continentales de colina y agua vadeable admiten barro/juncos; no cambia el generador de islas clásicas ni se reordenan forks.
+
+Pruebas: `earth-rivers.test.ts` mide Ebro, Tajo, Rin y Danubio, curvas y clases de anchura. Pasan los controles focalizados de generación, recursos, pesca, comienzos y las seis regresiones cartográficas nuevas. Las fixtures antiguas llamadas Sáhara incluían el Sokoto y otras regiones que la fuente nueva reconoce con agua: se usa el desierto medido (52,17), y se actualiza el caso de costa británica que ahora sí tiene río. Cuatro e2e cartográficos y dos de comienzo pasan. Capturas revisadas: `artifacts/screenshots/m15-river-geometry-2026-10-08/` y `artifacts/screenshots/m15-start-anywhere-rivers-2026-10-08/`. La verificación conjunta se registrará con la navegación y el barro. Cohortes y matriz completa diferidas por la instrucción de M15; no se afirma mejora económica.
+
+Límites y reproducción: `docs/earth_rivers.md`. Los anchos/profundidades son clases de juego, no mediciones hidrométricas; el atlas prehistórico conserva la geometría moderna aproximada.
+
 ## 2026-10-08 — M15 autonomía conservada al elegir o regenerar el mundo
 
 La selección de región y los ajustes reconstruían `Simulation` con su valor inicial `manual`, mientras el HUD seguía mostrando la preferencia autónoma. `rebuildBeforeStart` conserva ahora la autonomía del motor anterior. La regresión de navegador recorre la elección de región, la creación del personaje y 80 ticks reales: fallaba con `manual` antes del arreglo y ahora el personaje actúa en `auto`.

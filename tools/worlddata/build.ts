@@ -11,6 +11,7 @@ import { decodeWorldRaster, encodeWorldRaster } from '../../src/sim/world/WorldB
 import { seededWorldFeatures } from '../../src/sim/world/WorldFeatureSeeds.ts';
 import { decodeBeckClimateTiff } from './beck.ts';
 import { zipEntry } from './archive.ts';
+import { buildRiverData } from './rivers.ts';
 import { rasterizeLakes, rasterizeRivers } from './shapefile.ts';
 
 const WIDTH = 96;
@@ -18,7 +19,7 @@ const HEIGHT = 48;
 const ETOPO_URL = 'https://oceanwatch.pifsc.noaa.gov/erddap/griddap/ETOPO_2022_v1_60s.csv?z[(-88.125):225:(88.125)][(1.875):225:(358.125)]';
 const BECK_ZIP_URL = 'https://ndownloader.figshare.com/files/12407516';
 const BECK_MEMBER = 'Beck_KG_V1_present_0p5.tif';
-const NATURAL_EARTH_RIVERS_URL = 'https://naturalearth.s3.amazonaws.com/110m_physical/ne_110m_rivers_lake_centerlines.zip';
+const NATURAL_EARTH_RIVERS_URL = 'https://naturalearth.s3.amazonaws.com/10m_physical/ne_10m_rivers_lake_centerlines.zip';
 const NATURAL_EARTH_LAKES_URL = 'https://naturalearth.s3.amazonaws.com/110m_physical/ne_110m_lakes.zip';
 
 export interface WorldDataBuildOptions {
@@ -38,10 +39,11 @@ export async function buildWorldData(options: WorldDataBuildOptions = {}): Promi
     options.lakesZipPath ? readFile(options.lakesZipPath) : fetchBytes(NATURAL_EARTH_LAKES_URL),
   ]);
 
+  await buildRiverData(new Uint8Array(riversZip));
   const elevation = parseElevationCsv(elevationCsv);
   const climateRaster = decodeBeckClimateTiff(zipEntry(beckZip, BECK_MEMBER));
   const koppen = sampleClimate(climateRaster);
-  const rivers = rasterizeRivers(zipEntry(riversZip, 'ne_110m_rivers_lake_centerlines.shp'), WIDTH, HEIGHT);
+  const rivers = rasterizeRivers(zipEntry(riversZip, 'ne_10m_rivers_lake_centerlines.shp'), WIDTH, HEIGHT);
   const lakes = rasterizeLakes(zipEntry(lakesZip, 'ne_110m_lakes.shp'), WIDTH, HEIGHT);
   const features = seededWorldFeatures(WIDTH, HEIGHT);
   for (let i = 0; i < features.length; i++) features[i] |= rivers[i]! | lakes[i]!;

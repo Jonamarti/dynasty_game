@@ -4142,3 +4142,7 @@ Cohortes de economía y matriz completa diferidas por la instrucción de M15; es
 ## 2026-10-08 — Autonomía al reconstruir el mundo
 
 Corregida la pérdida silenciosa del modo autónomo al elegir región o cambiar los ajustes de generación. Prueba del flujo completo de navegador y captura en artifacts/screenshots/m15-autonomy-rebuild-2026-10-08/.
+
+## 2026-10-08 — Ríos y materiales de orilla
+
+Completada la sustitución del atlas fluvial grueso por trazas Natural Earth 1:10m, con anchos independientes de resolución, meandros locales para mapas aleatorios y núcleos profundos en los cauces grandes. Comprobadas las ventanas del Ebro, Tajo, Rin y Danubio, con barro y juncos incluso en orillas de colina. Procedencia y límites en `earth_rivers.md`; capturas en `artifacts/screenshots/m15-river-geometry-2026-10-08/`. Cohortes diferidas durante M15.

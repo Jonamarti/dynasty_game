@@ -23,7 +23,7 @@ describe('random map bank resources', () => {
       for (const node of nodes) {
         expect(sim.world.isWalkable(node.x, node.y)).toBe(true);
         expect(sim.world.isShore(node.x, node.y)).toBe(true);
-        expect(sim.world.biomeAt(node.x, node.y)).toBe('forest');
+        expect(['forest', 'river']).toContain(sim.world.biomeAt(node.x, node.y));
       }
     }
   });

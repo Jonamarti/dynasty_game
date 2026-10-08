@@ -41,7 +41,7 @@ export function rasterizeLakes(shapefile: Uint8Array, width = 96, height = 48): 
   return flags;
 }
 
-function readShapes(bytes: Uint8Array, expectedType: number): ShapeRecord[] {
+export function readShapes(bytes: Uint8Array, expectedType: number): ShapeRecord[] {
   if (bytes.length < 100) throw new Error('Truncated ESRI Shapefile');
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   if (view.getInt32(0, false) !== 9994) throw new Error('Invalid ESRI Shapefile signature');
