@@ -5184,7 +5184,13 @@ export class Simulation {
   possess(person: Person): Person {
     this.assertExecutionAuthority();
     this.assertCanonical(this.peopleById, person, 'person');
-    if (this.player && this.player.id !== person.id) this.player.isPlayer = false;
+    if (this.player && this.player.id !== person.id) {
+      this.player.isPlayer = false;
+      // The character handed back to the brain stops being the one the screen
+      // is drawn for, so what they wrote down about people (`observePlaces`)
+      // would never be read again.
+      this.player.placeMemory.forgetPeople();
+    }
     person.isPlayer = true;
     this.player = person;
     return person;
@@ -5949,12 +5955,22 @@ export class Simulation {
     }
     for (const other of this.peopleHash.queryRadius(person.x, person.y, radius, this.placePeopleCandidates)) {
       if (other.id !== person.id && other.alive && near(other.x, other.y)) {
-        const years = other.years;
-        const age = other.isElder ? 'elder' : years < 3 ? 'infant' : years < 8 ? 'child' :
-          years < ADULT_YEARS ? 'adolescent' : 'adult';
-        memory.remember('person', other.x, other.y, day, 2, 'seen', {
-          type: 'person', id: other.id, sex: other.sex, age, bandId: other.bandId,
-        });
+        // M15 step 0 (D, owner 2026-10-08): only the player's character writes
+        // down where it last saw somebody. That record is read by the renderer
+        // alone (the fog of war) and nothing in `ai/`, `social/` or `systems/`
+        // asks for it, yet in a camp of three hundred it was 299 `remember`
+        // calls a look, each evicting the 48-person cap to make room (41 % of
+        // the step). What an NPC knows about people lives where it always did:
+        // `Memory` (what they did to me) and `RelationshipGraph`. The two
+        // things this loop does for everybody stay below.
+        if (person.isPlayer) {
+          const years = other.years;
+          const age = other.isElder ? 'elder' : years < 3 ? 'infant' : years < 8 ? 'child' :
+            years < ADULT_YEARS ? 'adolescent' : 'adult';
+          memory.remember('person', other.x, other.y, day, 2, 'seen', {
+            type: 'person', id: other.id, sex: other.sex, age, bandId: other.bandId,
+          });
+        }
         if (this.worldFrame && other.bandId !== person.bandId) this.meetOnGlobe(person, other);
         this.noticeStarving(person, other);
       }

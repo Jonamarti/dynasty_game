@@ -8,6 +8,27 @@ parche, y `1.0.0` queda para el lanzamiento público. La prueba de navegador
 comprueba el número contra el único origen, el hash real y la esquina visual;
 captura: `artifacts/screenshots/m15-version-menu-2026-10-08T-03/`.
 
+## 2026-10-08 — M15 paso 0 (D): la niebla al tomar el control de otro personaje
+
+Segunda mitad de la decisión del propietario: al cambiar de personaje (sucesión, «jugar como»), la pantalla muestra solo lo que cabe en el radio de visión del nuevo; lo demás, negro, como si nunca se hubiera movido más allá. Su IA, en cambio, **no pierde nada**: agua, comida y manadas siguen en su `PlaceMemory` (si en modo automático la olvidara, moriría de sed junto a un río que conocía).
+
+**Decisión: capa de niebla solo de presentación, que se reinicia al cambiar de observador** (`render/FogReveal.ts`), y no limpiar lo visual de la memoria del personaje. Razones: (1) el mapa mental (`seenDayAt`, registros de recursos y agua) lo lee `Brain.findExplorePoint` y no se puede separar de lo que se pinta sin partir `PlaceMemory` en dos; vaciarlo desharía la regla de que la IA conserva lo que sabe; (2) no se serializa nada, así que ningún guardado antiguo deja de cargar (el comportamiento de `otherBandThinkInterval` no se repite); (3) no toca `Knowledge`: el renderer sigue leyendo solo la memoria del personaje del jugador, nunca la de un extraño. El personaje con el que empieza la partida no tiene capa (muestra lo que ha explorado); solo un *cambio* de observador la arranca, y cada cambio posterior la vacía. La capa va marcando las celdas de 4×4 cuyo centro cae en el radio mientras camina, y la niebla y `fogDescriptionAt` solo enseñan lo recordado dentro de esas celdas. Los avistamientos de personas del personaje que sale se borran (`forgetPeople`, entrega A) y el entrante empieza a apuntar desde ese momento.
+
+Límite conocido (en `bugs.md`): la capa no se guarda, así que tras recargar una partida se ve todo el mapa recordado del personaje en curso.
+
+Pruebas: `render/__tests__/fog-reveal.test.ts` (la regla: sin capa para el primero, solo el radio tras un cambio, rastro conservado, reinicio en cada cambio, `null` ignorado) y `e2e/fog-on-switch.spec.ts` (añadido a `npm run e2e`: tras `possess`, la capa está activa, el cerebro sigue conociendo un punto lejano que la pantalla oculta, el rastro se conserva al andar). Capturas: `artifacts/screenshots/m15-fog-on-switch-2026-10-08/`.
+
+## 2026-10-08 — M15 paso 0 (D): solo el jugador apunta dónde vio a la gente
+
+Decisión del propietario (`m15_simulation_lod.md` §0): lo único que seguía creciendo con el cuadrado era `observePlaces`, que en cada mirada de cada persona llamaba a `PlaceMemory.remember('person', …)` por cada una de las 299 que ve y, con el tope de 48 por tipo, expulsaba y reinsertaba sin parar (41 % del paso a 300). Esos registros `'person'` solo los lee el renderer (`drawRememberedPerson`, la niebla de guerra) y `fogDescriptionAt`: se comprobó con grep que ni `ai/`, ni `social/`, ni `systems/` los piden (`Brain` filtra `herd:`, `SocialSystem` cuenta lugares por tipo y `person` no está en su lista). Ahora solo el personaje del jugador los escribe.
+
+Lo que **no** cambia: `Memory` (hechos), `RelationshipGraph`, los registros de recursos, agua, árboles, edificios, manadas y montones y la rejilla `seenDayAt`, para todos. `noticeStarving` y `meetOnGlobe` siguen en el mismo bucle y para todos, exactos (el bucle se recorre igual; solo se evita el `remember`, que era lo caro). Cuando `possess` cambia de personaje, el saliente borra sus avistamientos (`PlaceMemory.forgetPeople`): nadie más los leería.
+
+Medido con `npm run profile:step -- --humans=30,300 --steps=480 --reps=3` (mínimo de 3, ms/paso): 30 personas 0,98 → 0,99 (ruido; `observePlaces` 0,101 → 0,078); 300 personas 24,5 → 14,5 (`observePlaces` 9,74 → 1,65 ms). Estado: el hash completo cambia solo por los registros `'person'`; excluyendo cada `placeMemory` (`--ignoreKeys=placeMemory`, opción nueva de la herramienta) el hash es idéntico antes y después, a 30 (`c9bab523bfd4ddf6`) y a 300 (`b7acbd6453853f65`), así que decisiones, necesidades, relaciones y RNG no se movieron. `sim:check` de una semilla: 2/147 fallos, los heredados `cravings-steer-the-diet` y `perf-budget`. No se tocó nada que se serialice (los guardados viejos con registros `'person'` en NPCs cargan igual y esos registros son inertes).
+
+Pruebas: `person-sightings.test.ts` (ningún NPC apunta personas tras 300 pasos, el jugador sí; al cambiar de personaje el saliente se vacía y el entrante empieza a apuntar).
+Cohortes de semillas no ejecutadas (instrucción de M15); no se afirma ninguna mejora de la economía.
+
 
 ## 2026-10-08 — Integración de fase 40 y capturas repetibles
 

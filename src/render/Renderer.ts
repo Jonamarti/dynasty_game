@@ -15,6 +15,7 @@ import { Interpolator, type Placed } from './Interpolator.ts';
 import type { Inscription } from '../sim/entities/Inscription.ts';
 import type { Person } from '../sim/entities/Person.ts';
 import type { PlaceRecord, PlaceVisual } from '../sim/social/PlaceMemory.ts';
+import { FogReveal } from './FogReveal.ts';
 import type { World } from '../sim/core/World.ts';
 import { BIOMES, type Biome } from '../sim/core/World.ts';
 import type { Season } from '../sim/core/TimeManager.ts';
@@ -347,6 +348,8 @@ export class Renderer {
   private fogFrame: HTMLCanvasElement | null = null;
   private fogFrameCtx: CanvasRenderingContext2D | null = null;
   private fogRecordsFor = -1;
+  /** After a change of character the fog shows only what they see now (`FogReveal`). */
+  private readonly fogReveal = new FogReveal();
   private fogRecords: PlaceRecord[] = [];
   /** Observer mode is an explicit presentation choice, never simulation state. */
   fogEnabled = true;
@@ -385,6 +388,7 @@ export class Renderer {
     this.fogLayer = null;
     this.fogLayerKey = '';
     this.fogRecordsFor = -1;
+    this.fogReveal.reset();
     const visual = this.seasonVisual();
     this.terrain = this.prerenderTerrain(sim.world, visual);
     this.seasonKey = visual.key;
@@ -557,6 +561,8 @@ export class Renderer {
 
     const view = camera.visibleTiles();
     const scale = camera.scale;
+    // Noticed even with the fog off, or a swap made meanwhile would not count.
+    this.fogReveal.follow(sim.player?.id ?? null);
     const observer = this.fogEnabled ? sim.player : null;
     const inSight = (x: number, y: number): boolean =>
       canSeePlace(observer, x, y, sim.config.sightRadius);
@@ -878,7 +884,7 @@ export class Renderer {
   fogDescriptionAt(x: number, y: number): string | null {
     const observer = this.fogEnabled ? this.sim.player : null;
     if (!observer || Math.hypot(x - observer.x, y - observer.y) <= this.sim.config.sightRadius) return null;
-    if (observer.placeMemory.seenDayAt(x, y) === 0) return null;
+    if (observer.placeMemory.seenDayAt(x, y) === 0 || !this.fogReveal.shows(x, y)) return null;
     const place = observer.placeMemory.nearestAny(x, y, 0.65);
     if (!place) return null;
     return place.source === 'told'
@@ -911,7 +917,10 @@ export class Renderer {
   private drawFog(observer: Person, view: ReturnType<Camera['visibleTiles']>, alpha: number): void {
     const { canvas, camera, sim } = this;
     const memory = observer.placeMemory;
-    const key = observer.id + ':' + sim.world.width + 'x' + sim.world.height + ':' + memory.revision;
+    const reveal = this.fogReveal;
+    reveal.observe(observer.x, observer.y, sim.config.sightRadius, sim.world.width, sim.world.height);
+    const key = observer.id + ':' + sim.world.width + 'x' + sim.world.height + ':' + memory.revision +
+      ':' + reveal.revision;
     if (!this.fogLayer || this.fogLayer.width !== sim.world.width * TILE || this.fogLayer.height !== sim.world.height * TILE) {
       this.fogLayer = document.createElement('canvas');
       this.fogLayer.width = sim.world.width * TILE;
@@ -934,7 +943,8 @@ export class Renderer {
         for (let cx = 0; cx < memory.cols; cx++) {
           const x = cx * cell;
           const y = cy * cell;
-          fog.fillStyle = memory.seenDayAt(x + cell / 2, y + cell / 2) > 0
+          fog.fillStyle = memory.seenDayAt(x + cell / 2, y + cell / 2) > 0 &&
+            reveal.shows(x + cell / 2, y + cell / 2)
             ? 'rgba(10, 16, 40, 0.28)' : '#000000';
           fog.fillRect(x * TILE, y * TILE,
             Math.min(cell, sim.world.width - x) * TILE,
@@ -948,7 +958,7 @@ export class Renderer {
       for (const place of this.fogRecords) {
         // A rumour can name an unvisited place. Keep the knowledge, but the
         // owner's never-visited map must remain visually black.
-        if (memory.seenDayAt(place.x, place.y) === 0) continue;
+        if (memory.seenDayAt(place.x, place.y) === 0 || !reveal.shows(place.x, place.y)) continue;
         this.drawRememberedPlace(place, fog, place.x * TILE, place.y * TILE, TILE * 0.26);
       }
       this.fogLayerKey = key;
