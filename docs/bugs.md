@@ -1,3 +1,7 @@
+## M15 paso 0 (D): la niebla de un personaje recién tomado no se guarda (2026-10-08)
+
+`FogReveal` (presentación) se reinicia al cambiar de observador y no se serializa: tras recargar una partida se ve el mapa recordado completo del personaje que se carga, aunque se hubiera tomado ese mismo día. Dejado a propósito: guardarlo exigiría un campo nuevo en el guardado y la regla del propietario no lo pide. Además, las celdas del borde del círculo cuyo centro queda fuera del radio no se desvelan, y al alejarse se oscurecen del todo en vez de quedar atenuadas.
+
 ## M15 paso 0: lo que sigue cuadrático es de diseño (2026-10-08)
 
 Medido en `m15_profile_systems.md` «Paso 0». Tras los arreglos exactos y el ritmo de las otras bandas, 300 personas en un campamento cuestan 24 ms/paso frente a 1 de 30. No se ha cambiado nada de lo siguiente porque cambia lo que la gente recuerda o hace, y es del propietario:
