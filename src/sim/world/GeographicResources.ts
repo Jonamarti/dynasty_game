@@ -4,7 +4,7 @@
  * still decides where a supported resource can actually be placed.
  */
 import type { ResourceKind } from '../entities/ResourceNode.ts';
-import type { WorldGeography } from './WorldGeography.ts';
+import type { WorldGeography, WorldGeographyProfile } from './WorldGeography.ts';
 import { WORLD_FEATURE } from './WorldFeatureSeeds.ts';
 import type { WorldResource } from './WorldMap.ts';
 
@@ -25,15 +25,28 @@ export function geographicResourceAvailable(
   kind: ResourceKind,
 ): boolean {
   if (geography.kind === 'legacyIsland') return true;
+  if (GATED[kind] === undefined) return true;
+  return profileHasResource(geography, geography.profileAt(x, y), kind);
+}
+
+/**
+ * Whether a comarca's profile carries the gate a resource kind needs. Exported for M15 step 1a: the resource
+ * profile (`ResourceProfile.ts`) lists a comarca's minerals by asking this same question of every gated kind, so
+ * the compact model and the detailed generator cannot disagree about where the copper is. A kind with no gate is
+ * always available, as before.
+ */
+export function profileHasResource(
+  geography: Exclude<WorldGeography, { kind: 'legacyIsland' }>,
+  profile: WorldGeographyProfile,
+  kind: ResourceKind,
+): boolean {
   const gate = GATED[kind];
   if (gate === undefined) return true;
-
-  const profile = geography.profileAt(x, y);
   if (geography.kind === 'random') {
+    if (profile.kind !== 'random') return true;
     return geography.map.regionAt(profile.regionX, profile.regionY).resources.includes(gate.resource);
   }
-
-  if (geography.kind !== 'earth' || profile.kind !== 'earth') return true;
+  if (profile.kind !== 'earth') return true;
   return (profile.features & gate.features) !== 0;
 }
 
@@ -52,3 +65,6 @@ const GATED: Partial<Record<ResourceKind, { resource: WorldResource; features: n
   // for it (the ore bodies are the same hills); the Earth carries it as a feature.
   gold: { resource: 'copper', features: WORLD_FEATURE.gold },
 };
+
+/** The kinds a profile can forbid, in a fixed order. */
+export const GATED_KINDS: readonly ResourceKind[] = Object.keys(GATED) as ResourceKind[];
