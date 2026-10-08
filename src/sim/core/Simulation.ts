@@ -119,6 +119,9 @@ import { ParkedSimulation, assertExecutionOwner, parkExecutionOwner, registerExe
 import { createLocalGeography, type LocalGeographySource } from '../world/LocalGeography.ts';
 import type { WorldGeography } from '../world/WorldGeography.ts';
 import { geographicResourceAvailable } from '../world/GeographicResources.ts';
+import {
+  berryHabitat, flintHabitat, grainHabitat, hillOreHabitat, goldHabitat, herdHabitat, predatorHabitat,
+} from '../world/Habitat.ts';
 
 const RESTORE_CONSTRUCTION = Symbol('Simulation restore construction');
 interface RestoreConstruction {
@@ -1167,7 +1170,7 @@ export class Simulation {
         const spot = this.world.randomWalkable(rng, 1);
         if (!spot) continue;
         const biome = this.world.biomeAt(spot.x, spot.y);
-        if (biome === 'grass' || biome === 'forest') home = spot;
+        if (herdHabitat(biome)) home = spot;
       }
       if (!home) continue;
       const herdId = this.ids.claimGroupId('herd', h);
@@ -1235,7 +1238,7 @@ export class Simulation {
         const spot = this.world.randomWalkable(rng, 1);
         if (!spot) continue;
         const biome = this.world.biomeAt(spot.x, spot.y);
-        if (biome !== 'forest' && biome !== 'hills') continue;
+        if (!predatorHabitat(biome)) continue;
         if (founders.some(p => Math.hypot(p.x - spot.x, p.y - spot.y) < PREDATOR_START_DISTANCE)) continue;
         home = spot;
       }
@@ -1264,13 +1267,13 @@ export class Simulation {
   private suitsBiome(kind: ResourceKind, x: number, y: number): boolean {
     const biome = this.world.biomeAt(x, y);
     switch (kind) {
-      case 'berries': return (biome === 'grass' || biome === 'forest') && this.world.fertilityAt(x, y) > 0.3;
+      case 'berries': return berryHabitat(biome, this.world.fertilityAt(x, y));
       // Fallen branches collect where there are branches to fall: a stick pile
       // far from any tree is just litter the map put there.
       case 'sticks':
         return (biome === 'forest' || biome === 'grass' || biome === 'hills') &&
           this.treeHash.findNearest(x, y, 6, t => t.standing) !== null;
-      case 'flint': return biome === 'hills' || biome === 'beach';
+      case 'flint': return flintHabitat(biome);
       // Reeds and clay both belong at the water's edge, which quietly makes
       // shoreline the most valuable ground to camp on.
       case 'reeds':
@@ -1292,17 +1295,17 @@ export class Simulation {
       // fertility floor is higher than the berry bush's because thin ground
       // carries scrub, not a crop worth gathering.
       case 'wild_grain':
-        return biome === 'grass' && this.world.fertilityAt(x, y) > 0.42;
+        return grainHabitat(biome, this.world.fertilityAt(x, y));
       // M15 phase 37. Float copper weathers out of the hills; the one place a
       // person is likely to walk past a nugget and not know what it is.
-      case 'native_copper': return biome === 'hills';
+      case 'native_copper': return hillOreHabitat(biome);
       // The seams are in the hills too, which is where a band that has learned to
       // dig will go looking.
-      case 'copper_ore': return biome === 'hills';
-      case 'tin_ore': return biome === 'hills';
+      case 'copper_ore': return hillOreHabitat(biome);
+      case 'tin_ore': return hillOreHabitat(biome);
       // Placer gold lies where water has sorted the gravel: the stream-mouth
       // beaches and the foot of the hills.
-      case 'gold': return biome === 'beach' || biome === 'hills';
+      case 'gold': return goldHabitat(biome);
       case 'iron_ore': {
         if (!this.geographicStart) {
           return biome === 'beach' && this.shoreHash.findNearest(x + 0.5, y + 0.5, 0.75,

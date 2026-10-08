@@ -12,6 +12,7 @@ import { grassCapacity } from './Grass.ts';
 import type { RNG } from './RNG.ts';
 import type { WorldConfig } from './Config.ts';
 import type { LocalGeographySource } from '../world/LocalGeography.ts';
+import { classifyTerrain, classifyGeographicTerrain } from '../world/Habitat.ts';
 
 export const BIOMES = ['water', 'beach', 'grass', 'forest', 'hills', 'rock', 'river'] as const;
 export type Biome = (typeof BIOMES)[number];
@@ -952,26 +953,14 @@ export class World {
     Object.defineProperty(this, 'waterSurface', { value: waterSurface, enumerable: true, writable: true, configurable: true });
   }
 
+  // The cutoffs live in `world/Habitat.ts`, shared with the resource profile (M15 step 1a): the profile has to
+  // know which band an elevation falls in, and it must be the band painted here.
   private classify(elev: number, moist: number): Biome {
-    const water = this.config.waterLevel;
-    if (elev < water) return 'water';
-    if (elev < water + 0.04) return 'beach';
-    if (elev > 0.78) return 'rock';
-    if (elev > 0.62) return 'hills';
-    return moist > 0.52 ? 'forest' : 'grass';
+    return classifyTerrain(elev, moist, this.config.waterLevel);
   }
 
   private classifyGeographic(elev: number, moist: number, kind: LocalGeographySource['kind']): Biome {
-    if (kind === 'random') return this.classify(elev, moist);
-    // Earth heights are metresPerUnit-scaled world units. Apply explicit
-    // absolute relief bands (10 m beach, 500 m hills, 1500 m bare rock) rather
-    // than reusing the classic island's normalized cutoffs.
-    const aboveSea = elev - this.config.waterLevel;
-    if (aboveSea < 0) return 'water';
-    if (aboveSea < 10 / this.config.metresPerUnit) return 'beach';
-    if (aboveSea >= 1500 / this.config.metresPerUnit) return 'rock';
-    if (aboveSea >= 500 / this.config.metresPerUnit) return 'hills';
-    return moist > 0.52 ? 'forest' : 'grass';
+    return classifyGeographicTerrain(elev, moist, kind, this.config.waterLevel, this.config.metresPerUnit);
   }
 
   index(x: number, y: number): number {

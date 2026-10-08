@@ -201,7 +201,7 @@ export function createLocalGeography(
       // so this corridor does not jump tile-to-tile or at a macro-region
       // boundary — the exact bug the old fixed radius's sibling comment in
       // Hydrology.ts's widenRiver warns against.
-      const halfWidth = Math.max(tileRadius, path.halfWidthTiles * (Math.SQRT2 * 4 / 128));
+      const halfWidth = canonicalHalfWidth(path.halfWidthTiles, tileRadius);
       riverCandidates[index] = path.distance <= halfWidth + 1e-9 ? 1 : 0;
       if (riverCandidates[index]) {
       flowX[index] = path.flow.x;
@@ -262,6 +262,55 @@ interface CanonicalRiverSample {
 }
 
 export type MappedGeography = Exclude<WorldGeography, { kind: 'legacyIsland' }>;
+
+/**
+ * The half width of a generated river's corridor in comarca units: never narrower than one tile's footprint, wider
+ * where the macro drainage says more water passes. One formula for the raster above and for `riverCorridorAt`.
+ */
+export function canonicalHalfWidth(halfWidthTiles: number, tileRadius: number): number {
+  return Math.max(tileRadius, halfWidthTiles * (Math.SQRT2 * 4 / 128));
+}
+
+interface RiverCaches {
+  flow: Map<string, { x: number; y: number }>;
+  distance: Map<string, number>;
+  active: Map<string, boolean>;
+  height: Map<string, number>;
+  discharge: Map<string, number>;
+}
+const RIVER_CACHES = new WeakMap<object, RiverCaches>();
+
+export interface RiverCorridor {
+  /** Distance from the point to the channel's centreline, in comarca units. */
+  distance: number;
+  /** Half width of the corridor the generator would paint, in comarca units. */
+  halfWidth: number;
+  /** A broad river: the generator's own definition (Earth rank 3 or better; generated half width of 3 tiles). */
+  major: boolean;
+}
+
+/**
+ * Whether, and how far, the river the generator paints passes from a global comarca point: the same lookup
+ * `createLocalGeography` makes for every tile (`sampleEarthRiver` on the real maps, `canonicalRiverAt` elsewhere),
+ * exposed for the resource profile so it counts a river where the detailed map would draw one. The per-region
+ * caches live with the geography and are filled lazily, so asking about a few comarcas is cheap.
+ */
+export function riverCorridorAt(geography: MappedGeography, x: number, y: number, tileRadius: number,
+  waterLevel: number, metresPerUnit: number): RiverCorridor | null {
+  if (geography.kind === 'earth' && usesEarthRiverGeometry(geography.entry.id)) {
+    const river = sampleEarthRiver(x, y, geography.map.width, geography.map.height);
+    return river ? { distance: river.distance, halfWidth: Math.max(tileRadius, river.halfWidth), major: river.major } : null;
+  }
+  let caches = RIVER_CACHES.get(geography);
+  if (!caches) {
+    caches = { flow: new Map(), distance: new Map(), active: new Map(), height: new Map(), discharge: new Map() };
+    RIVER_CACHES.set(geography, caches);
+  }
+  const profile = geography.profileAt(x, y);
+  const path = canonicalRiverAt(geography, profile.regionX, profile.regionY, x, y,
+    caches.flow, caches.distance, caches.active, caches.height, caches.discharge, waterLevel, metresPerUnit);
+  return path ? { distance: path.distance, halfWidth: canonicalHalfWidth(path.halfWidthTiles, tileRadius), major: path.halfWidthTiles >= 3 } : null;
+}
 
 function canonicalRiverAt(geography: MappedGeography, regionX: number, regionY: number,
   x: number, y: number, flowCache: Map<string, { x: number; y: number }>,
@@ -530,7 +579,7 @@ function dischargeOfRegion(geography: MappedGeography, x: number, y: number, reg
  * headwater at roughly the old fixed one-tile radius, and the cap keeps an
  * enormous drainage network from swallowing a four-comarca local map.
  */
-function halfWidthTilesOf(discharge: number): number {
+export function halfWidthTilesOf(discharge: number): number {
   const HALF_WIDTH_BASE_TILES = 0.5;
   const HALF_WIDTH_PER_SQRT_DISCHARGE = 0.35;
   const HALF_WIDTH_MAX_TILES = 4;
@@ -763,7 +812,13 @@ function macroFlowDirection(geography: MappedGeography,
   return { x: 0, y: 0 };
 }
 
-function regionalMoisture(profile: Exclude<WorldGeographyProfile, { kind: 'legacyIsland' }>): number {
+/**
+ * The wetness the generator reads for a comarca. Exported for M15 step 1a: the resource profile keys its table on
+ * this same number, because it is the only climate signal the detailed generator sees (fertility, forest against
+ * grass and the wet-ground hydrology all come from it), so a profile built on a different climate reading would
+ * describe a different world.
+ */
+export function regionalMoisture(profile: Exclude<WorldGeographyProfile, { kind: 'legacyIsland' }>): number {
   if (profile.kind === 'random') {
     switch (profile.biome) {
       case 'ocean': return 0.65;
