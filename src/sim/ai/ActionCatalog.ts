@@ -76,6 +76,8 @@ export interface ActionOption {
    * id alone no longer says what would be made.
    */
   recipeId?: string;
+  /** Item mode for a verb with a physical tool variant, such as plough-sowing. */
+  itemId?: string;
   /**
    * The building a `craft` option is to be done at, for a station recipe.
    *
@@ -168,6 +170,8 @@ export interface CatalogContext {
    * disagree.
    */
   plantRefusal?: (x: number, y: number) => string | null;
+  /** Same tool, tech, seed-capacity and nearby-team answer used by explicit plough orders. */
+  ploughRefusal?: (person: Person, field: Building) => string | null;
   /**
    * Whether the actor can use a structure without an owner stopping them.
    * Optional for hand-built test contexts; the live catalogue always supplies
@@ -1008,6 +1012,18 @@ function buildingActions(
     // camp rather than after.
     if (building.crop) {
       const crop = building.crop;
+      const ploughReason = ctx.ploughRefusal ? ctx.ploughRefusal(actor, building) : t('there is no available pair of draft animals nearby');
+      options.push({
+        id: 'sow',
+        itemId: 'iron_plough',
+        label: t('Plough and sow'),
+        icon: '\u{1F6E0}',
+        enabled: !ploughReason && crop.isFallow && !building.ruined,
+        reason: building.ruined ? t('It has been trampled, and needs mending first')
+          : !crop.isFallow ? t('Something is growing here already')
+          : ploughReason ?? undefined,
+        warning: watched,
+      });
       const seed = actor.inventory.count('grain');
       const knows = techPower(actor, 'farming') > 0;
       options.push({

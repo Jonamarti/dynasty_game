@@ -391,6 +391,13 @@ export const ITEMS: Record<string, ItemDef> = {
   bronze_adze: { id: 'bronze_adze', label: 'Bronze adze', nutrition: 0, spoilTicks: 0, baseValue: 26, class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 } },
   bronze_sickle: { id: 'bronze_sickle', label: 'Bronze sickle', nutrition: 0, spoilTicks: 0, baseValue: 22, class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 } },
   bronze_spade: { id: 'bronze_spade', label: 'Bronze spade', nutrition: 0, spoilTicks: 0, baseValue: 30, class: 'long', hand: { perHand: 1, perArms: 1, hands: 1 } },
+  // M15 phase 40e: each iron tool is read by its existing economic work path.
+  iron_axe: { id: 'iron_axe', label: 'Iron axe', nutrition: 0, spoilTicks: 0, baseValue: 32, class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 } },
+  iron_adze: { id: 'iron_adze', label: 'Iron adze', nutrition: 0, spoilTicks: 0, baseValue: 30, class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 } },
+  iron_sickle: { id: 'iron_sickle', label: 'Iron sickle', nutrition: 0, spoilTicks: 0, baseValue: 26, class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 } },
+  iron_spade: { id: 'iron_spade', label: 'Iron spade', nutrition: 0, spoilTicks: 0, baseValue: 34, class: 'long', hand: { perHand: 1, perArms: 1, hands: 1 } },
+  // One person carries and steers the plough; the animal pair is leased from a pen during sowing.
+  iron_plough: { id: 'iron_plough', label: 'Iron plough', nutrition: 0, spoilTicks: 0, baseValue: 48, class: 'long', hand: { perHand: 1, perArms: 1, hands: 2 } },
   // `bronze_arms`. The sword is a weapon like the dagger, further reaching and
   // harder-hitting than anything a flint can be; the helm is the first garment
   // to cover the head, and its worth passes through `armourTech`.
@@ -415,6 +422,16 @@ export const ITEMS: Record<string, ItemDef> = {
   // M15 phase 40b: the spongy, slag-bearing iron from the bloomery; forging
   // will turn it into wrought iron in the next node.
   iron_bloom: { id: 'iron_bloom', label: 'Iron bloom', nutrition: 0, spoilTicks: 0, baseValue: 12, class: 'bulky', hand: { perHand: 1, perArms: 3, hands: 1 } },
+  // The smith has beaten most of the slag out at a stone anvil. Later iron
+  // tools use this clean, workable stock rather than the raw bloom.
+  wrought_iron: { id: 'wrought_iron', label: 'Wrought iron', nutrition: 0, spoilTicks: 0, baseValue: 18, class: 'bulky', hand: { perHand: 1, perArms: 3, hands: 1 } },
+  // M15 phase 40d: steel is carburised stock; its edge has a real weapon reader.
+  steel: { id: 'steel', label: 'Steel', nutrition: 0, spoilTicks: 0, baseValue: 24, class: 'bulky', hand: { perHand: 1, perArms: 3, hands: 1 } },
+  steel_sword: {
+    id: 'steel_sword', label: 'Steel sword', nutrition: 0, spoilTicks: 0, baseValue: 44,
+    weapon: { damage: 0.95, reach: 0.65, hunt: 1.55, tech: 'carburising' },
+    class: 'long', hand: { perHand: 1, perArms: 1, hands: 1 },
+  },
 };
 
 export class Inventory {

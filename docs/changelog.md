@@ -66,6 +66,154 @@ Nueve pruebas en `comarca-neighbour.test.ts`, incluido un control negativo contr
 
 Verificación: `typecheck` limpio; `comarca-neighbour.test.ts` 9/9. Sin cambios de UI: no hace falta captura.
 
+## 2026-10-08 — M15 fase 40: puerta de extracción y cierre funcional
+
+La extracción de hierro tenía pruebas de generación pero le faltaba una
+puerta de salud ejercitada con trabajo real. `ironminers` suministra un nodo
+local y ordena recoger: `iron-ore-is-mined` observa su desgaste y dos unidades
+de mineral. No afirma medir el emplazamiento húmedo. Cuatro pruebas pasan;
+quitar el nodo, la definición del recurso o `bog_iron` da FAIL aplicable.
+
+Quedan cerrados los seis nodos funcionales de la fase 40, con documentación,
+pruebas y commits por función. Los seis escenarios cortos de extracción,
+bloomery, forja, acero, herramientas y arado pasan su comprobación aplicable.
+TypeScript limpio. La suite global inicial de 40f registró 1.579 pruebas
+pasando, dos fallos y una omitida: la traducción ausente se corrigió y pasa
+6/6 focal; la difusión de conocimiento queda en 0,81 frente a <0,6 y se
+registra para M16. Las pruebas focales del arado pasan 10/10. No se declara
+verde la suite global.
+
+Navegador global: 114/115. La prueba de forja perdió su mundo tras fabricar,
+coincidiendo con cambios de fuentes bajo Vite; repetida sin cambios de fuentes
+pasa 2/2. Acero, herramientas y arado pasan en la suite global. Las capturas
+nuevas del último cambio de UI están en
+`artifacts/screenshots/m15-phase40-ploughshare-2026-10-08/`; se conservaron
+los hitos anteriores. El último `sim:check` conserva los dos fallos previos
+de dieta y rendimiento, 2/147. Cohortes y matriz pesada diferidas por la
+instrucción de M15: no se afirma mejora económica ni calibración final.
+
+
+## 2026-10-08 — M15 fase 40f: arado, tiro reservado y cosecha
+
+`ploughshare` cierra el último nodo funcional del hierro. El arado físico
+se forja con hierro y palos en el yunque; la nueva opción «Arar y sembrar»
+requiere semilla en un recipiente equipado y una pareja del corral propio.
+Un solo agricultor usa cada equipo; ambas rutas de `take` y `takeItem`
+protegen sus dos cabezas. Cancelación, interrupción, muerte o pérdida del
+corral invalidan la reserva. El trabajo pagado al sembrar queda en el
+cultivo como factor 1,2 hasta cosechar, sin bonificación para siembra manual.
+No se añaden RNG, especies ni pesos al scorer. Costes/factor son supuestos
+de diseño; la representación abstracta del tiro y la economía diferida se
+registran en bugs y M16, sin afirmar excedente económico medido.
+
+Diez pruebas focales pasan: cosechas por órdenes reales comparadas, pérdida
+del corral, checkpoint y continuación, dos agricultores, borde del hash,
+gates físicos y controles sin receta/nodo. `oxen-turn-the-field` falló en
+la implementación anterior aunque hubiera cosecha manual; `ploughmen`
+ahora fabrica 1/1 arados, ara/siembra 1/1 campos y cosecha 26 de grano.
+TypeScript limpio y arte 18/18. Navegador focal 2/2, incluido el clic real
+del menú y el motivo sin yunta; cinco capturas españolas nuevas en
+`artifacts/screenshots/m15-phase40-ploughshare-2026-10-08/`.
+
+`sim:check` conserva los fallos previos de dieta/rendimiento, 2/146.
+Suite global inicial: 202/204 archivos pasan, 1.579 pruebas pasan, 1 omitida;
+falla una clave española (corregida, i18n focal 6/6) y difusión 0,81 frente
+a <0,6. La sensibilidad se registra en `m16_notes.md`; la suite no es verde.
+La suite de navegador global se registra en el cierre siguiente; la sensibilidad de
+difusión de pueblos vuelve a aparecer y no se cambia su umbral. Resta el
+instrumento de extracción `bog_iron` para tener un check por cada nodo.
+
+## 2026-10-08 — M15 fase 40e: herramientas de hierro
+
+`iron_tools` conecta hacha, azuela, hoz y pala con los lectores compartidos
+para talar, construir, cosechar y cavar. Todas se forjan en el yunque; la
+pala cava a 6× frente al palo 1× a dominio base. Saber la técnica sin llevar
+la herramienta no concede el factor. Costes y coeficientes son supuestos
+de diseño, sin afirmar mejora económica; cohortes diferidas hasta M16.
+
+Nueve pruebas y `ironworkers` cubren las órdenes reales, lectores y cuatro
+controles que eliminan una receta y dan FAIL aplicable. Iconos y pala en mano
+generados desde fuentes; traducciones y capturas españolas en
+`artifacts/screenshots/m15-phase40-iron-tools-2026-10-08/`.
+
+Verificación: TypeScript limpio; suite completa inicial 202/203 archivos,
+1.571 pruebas pasan, 1 omitida, falla cobertura del dibujo de pala en mano.
+Se añadió ese dibujo y se regeneró el atlas: arte focal 18/18. La prueba de
+difusión que falló en 40d vuelve a pasar con el catálogo de herramientas;
+se conserva su registro de sensibilidad, sin ajustar tasas ni aserciones.
+`ironworkers` 1/1; `sim:check` mantiene los dos fallos previos de dieta y
+rendimiento (2/145). Sigue el arado de reja para cerrar los seis nodos.
+
+## 2026-10-08 — M15 fase 40d: acero y espada
+
+La cadena gana `carburising`, después de `forging` y `charcoal`: un hierro
+forjado y un carbón producen acero en el yunque en 120 ticks base; un acero
+produce una espada en 130. `weaponOf` lee el filo real en caza y combate con
+el dominio de la técnica, superior al bronce a igual conocimiento. Sin espada
+no hay bonificación. Cantidades y coeficientes son supuestos de diseño.
+Arte de objetos generado desde fuentes; la pose equipada reutiliza la silueta
+de espada existente. Progreso, interrupciones y negativas usan el ejecutor común.
+
+El check suministrado `iron-is-carburised` falló antes de la implementación;
+su negativo sin receta sigue dando FAIL aplicable. Seis pruebas cubren las
+órdenes acero → espada y sus lectores/gates. Capturas y e2e en español:
+`artifacts/screenshots/m15-phase40-carburising-2026-10-08/`.
+
+Verificación: TypeScript limpio; unitarios completos, 200/201 archivos pasan,
+1.562 pruebas pasan, 1 omitida y 1 fallo nuevo: difusión de pueblos 0,65 frente
+a <0,6. Se documenta para M16 sin cambiar el umbral ni tasas; no se presenta
+la suite global como verde. Los seis tests de acero pasan; navegador 2/2;
+`carburisers` 1/1. `sim:check` conserva los fallos previos de dieta/rendimiento,
+2/144. Las cohortes y matriz se difieren por la instrucción de M15, sin afirmar
+mejora económica. Siguen herramientas de hierro y arado.
+
+## 2026-10-08 — M15 fase 40c: forjar la lupia en hierro
+
+Por qué: la cadena de hierro terminaba en la lupia de `bloomery`; no existía
+una operación para separar la escoria y producir el material de las siguientes
+herramientas. `forging` requiere `bloomery` en la sub-red Metal, y
+`forge_iron` convierte una lupia en una unidad de `wrought_iron` en `anvil`,
+con `smith`, 140 ticks base y el ejecutor común. El yunque ocupa 2×2, cuesta
+ocho sílex y cuatro palos y necesita 160 ticks base de construcción. Integra
+un martillo de piedra para que la primera forja no dependa del hierro que
+pretende obtener. Cantidades, tiempos y rendimiento son supuestos de diseño.
+
+La estación usa el planificador de obras existente; la receta conserva trabajo
+y materiales durante las interrupciones urgentes y comunica las negativas de
+conocimiento, estación o ingredientes. Arte y traducciones entregados desde sus
+fuentes, con atlas regenerados. No se tocan forks, spawning ni integración de
+la fase 32, que está trabajando otro agente. `forging` se anexa al final de
+`TECHS` para conservar el orden de los nodos anteriores.
+
+Pruebas: cuatro regresiones fallaron sobre la base sin el nodo. Siete pruebas
+nuevas cubren la receta y estación, orden real, gates y sed urgente con progreso
+guardado y reanudación. `forgers` aporta una carga con orden real;
+`iron-bloom-becomes-wrought-iron` pasa y retirar la receta hace fallar el check
+sin n/a. La prueba de navegador muestra el nodo en español y el producto en el
+equipo junto a la estación. Capturas nuevas:
+`artifacts/screenshots/m15-phase40-forging-2026-10-08/`.
+
+Quedan `carburising`, `iron_tools` y `ploughshare`. Las cohortes económicas y
+la matriz completa se difieren por la instrucción vigente de M15; no se afirma
+mejora económica ni producción autónoma sostenida. El taller integra el martillo
+como estación fija y no representa temperatura ni recalentados; estos límites
+se recogen en `bugs.md` para M16.
+
+Verificación final: TypeScript limpio; suite completa con
+`npm.cmd test -- --maxWorkers=3 --pool=threads --testTimeout=60000`, 199/199
+archivos y 1.557 pruebas pasan, 1 omitida. La primera corrida global había
+leído las definiciones nuevas antes de terminar sus traducciones (1 fallo de
+i18n); la corrida completa final pasa. Los workers por procesos no arrancaron
+correctamente en este entorno; se usó `threads` sin cambiar la configuración.
+Playwright completo: 108 pasan y 1 fallo en una escena intermedia que no
+hallaba sitio para el yunque; restaurada la escena, las 2/2 pruebas de forja
+pasan y las capturas se revisan. No se describe aquella corrida global como
+verde ni se repite completa después del ajuste del fixture.
+`sim:check` de una semilla mantiene los dos fallos previos, antojos de dieta
+y presupuesto de rendimiento (2/142 antes, 2/143 después); `forgers` pasa 1/1.
+Las capturas históricas regeneradas por la suite se restauran: solo se guarda
+el nuevo directorio de este hito.
+
 ## 2026-10-08 — M15 balsa de juncos para cruzar cauces profundos
 
 Una balsa pequeña fabricable con 6 haces de paja/juncos (`thatch`, el material que producen los juncos), 2 palos y 1 cuerda, usando cordelería. `keep: 0`: se construye para el viaje, no se impone una nueva fabricación a todos los NPC. La orden «Viajar en balsa de juncos», las órdenes normales de desplazamiento y las teclas comparten la capacidad real de la embarcación. La balsa sirve en agua dulce; no habilita viajes por mar.

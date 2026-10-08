@@ -1,6 +1,13 @@
-# M15 fase 40a — `bog_iron`
+# M15 fase 40 — El hierro
 
-Primera entrega de la fase 40 (M8.4); la fase sigue abierta. Añade `iron_ore`, su
+**Estado del 2026-10-08:** seis nodos y sus mecanismos implementados; seis
+checks cortos con oportunidades suministradas. Los apartados siguientes
+conservan el alcance y resultados de cada entrega. Calibración económica y
+sensibilidad de difusión pendientes en [M16](m16_notes.md).
+
+## 40a — `bog_iron` (entrega inicial)
+
+Primera entrega de la fase 40 (M8.4), descrita aquí en su alcance original. Añade `iron_ore`, su
 recolección y la tecnología que la habilita. No incluye `bloomery`, `forging`,
 `carburising`, `iron_tools`, `ploughshare`, herramientas ni recetas posteriores.
 
@@ -65,3 +72,153 @@ los nodos restantes.
 Hallazgo de calibración para M16: el test de difusión de pueblos pasa de
 0,32 en 40a a 0,43 con el nuevo nodo (límite < 0,4). Es una regresión nueva;
 se conserva la tasa y la aserción sin ajuste. Detalle en `bugs.md`.
+
+## 40c — `forging`, el hierro forjado
+
+`forging` requiere `bloomery` y pertenece a la sub-red Metal. La receta
+`forge_iron` convierte una `iron_bloom` en una `wrought_iron`, usando `smith`
+en la nueva estación `anvil`, con 140 `workTicks` y stock objetivo `keep: 2`. El conjunto de estación incluye un yunque y
+un martillo de piedra: no exige hierro forjado para producir el primer hierro
+forjado. No se añade un martillo equipable ni un requisito de herramienta
+consumible. La conversión uno a uno y el coste de trabajo son supuestos de
+diseño; no representan una medición histórica del rendimiento metalúrgico.
+
+La ejecución reutiliza las órdenes, ingredientes, interrupciones, progreso y
+motivos de parada de `doCraft`. La banda reconoce el yunque mediante la lista
+común de estaciones y recetas. No se añade RNG, spawn ni lógica de LOD.
+El yunque y el hierro tienen fuentes en `art/src/`; los atlas se regeneran.
+
+La entrega cubre la estación y el material de forja. Las herramientas de
+hierro corresponden a `iron_tools`; siguen pendientes `carburising`,
+`iron_tools` y `ploughshare`. No se afirma producción autónoma sostenida ni
+mejora económica: las cohortes y la matriz completa se difieren por la
+instrucción vigente de M15.
+
+El yunque ocupa 2×2 casillas, cuesta ocho sílex y cuatro palos y necesita 160
+`workTicks` de construcción con progreso guardado por el edificio. El taller
+no representa temperatura ni recalentados del metal. Estas cantidades también
+son supuestos de diseño.
+
+Pruebas: `forging.test.ts` cubre la orden, negativas de estación/materiales y
+conocimiento, y sed urgente con progreso guardado y reanudación. Las cuatro
+pruebas iniciales fallaron en el build anterior por ausencia de las definiciones.
+`forging-check.test.ts` comprueba una carga suministrada por `forgers`; quitar
+la receta hace fallar `iron-bloom-becomes-wrought-iron`, sin convertirlo en n/a.
+Capturas en español del nodo y el resultado junto al yunque:
+`artifacts/screenshots/m15-phase40-forging-2026-10-08/`.
+
+Verificación final: TypeScript limpio, 199 archivos y 1.557 pruebas unitarias pasan (1 omitida); check forgers 1/1 y navegador focal 2/2. La suite global de navegador terminó 108/109 antes de corregir el fixture de captura de forja; el detalle de la repetición focal consta en el changelog. El sim:check ordinario mantiene los fallos previos de antojos y rendimiento.
+
+## 40d — `carburising`, el acero y su filo
+
+`carburising` requiere `forging` y `charcoal` en la sub-red Metal.
+`carburise_steel` consume un hierro forjado y un carbón para producir un acero
+en el yunque (120 `workTicks`, `smith`, stock objetivo 2). `steel_sword`
+consume un acero en la misma estación (130 `workTicks`, stock objetivo 1).
+Los rendimientos, tiempos y coeficientes son supuestos de diseño, no medidas
+históricas. La temperatura y los recalentados siguen fuera del modelo.
+
+El acero tiene un lector real: la espada usa `weaponOf` en caza y combate,
+con conocimiento/refinamiento de `carburising` y un filo superior al de bronce
+para igual dominio de la técnica. Saber el nodo sin llevar la espada no da
+ninguna bonificación. La animación equipada comparte la silueta de espada ya
+existente; el icono del acero y la espada proceden de `art/src/`.
+
+`carburisers` aporta una carga y una orden real, y su check
+`iron-is-carburised` falla si falta la receta, en lugar de dar n/a.
+Los unitarios cubren los gates y la cadena real acero → espada; la UI en
+español se captura en `artifacts/screenshots/m15-phase40-carburising-2026-10-08/`.
+Las herramientas de hierro y el arado continúan en 40e y 40f. Las cohortes
+siguen diferidas; no se afirma mejora económica.
+
+Verificación 40d: TypeScript limpio, seis unitarios de acero y navegador 2/2, carburisers 1/1. Suite completa: 1.562 pasan y un fallo nuevo de difusión (0,65 frente a <0,6), documentado para M16 sin ajustar tasas/aserción; 1 omitida. Simcheck conserva dos fallos previos de dieta/rendimiento (2/144).
+
+## 40e — `iron_tools`, herramientas para los trabajos existentes
+
+`iron_tools` requiere `forging` y pertenece a Metal. Hacha, azuela y hoz
+consumen un hierro forjado cada una; la pala consume dos. Se fabrican con
+`smith` en el yunque, en 120, 120, 100 y 130 ticks base respectivamente,
+con stock objetivo 1. Estos costes y coeficientes son supuestos de diseño.
+
+El hacha entra en `AXE_TOOLS` (trabajo restante 0,24 a dominio 1), la azuela
+en `buildFactor` (1,5), la hoz en `reapFactor` (0,4) y la pala en
+`Earth.digTool` (6× frente al palo 1×). Los lectores exigen herramienta y
+conocimiento y escogen la mejor alternativa sin apilar bonificaciones.
+Los factores de trabajo se comprueban también en los refinamientos admitidos.
+No se sustituye la lógica de tala, obra, cosecha o excavación.
+
+`ironworkers` suministra cuatro cargas y órdenes reales; el check
+`iron-tools-cut-the-day` exige los cuatro resultados y sus lectores.
+Los negativos detectan las recetas ausentes. La UI española se captura en
+`artifacts/screenshots/m15-phase40-iron-tools-2026-10-08/`, incluyendo una
+excavación real. No se afirma mejora de la economía; las cohortes continúan
+diferidas. Solo resta `ploughshare` para implementar los seis nodos de fase 40.
+
+## 40f — `ploughshare`, arado y equipo de tiro
+
+El arado es un objeto físico de dos manos (`iron_plough`) fabricado en el
+yunque con un hierro forjado y dos palos, 120 ticks base de `smith` y stock
+objetivo 1. `ploughshare` pertenece a Campo y
+requiere `iron_tools`, `farming` y `herding`. La siembra manual sigue siendo
+posible; la orden de arar y sembrar exige herramienta, técnica, semilla y
+una pareja disponible en un corral terminado, sin ruina, de la misma banda.
+
+El ganado del juego continúa usando la abstracción existente del corral:
+las cabezas vivas son su stock `meat`. Dos cabezas forman un equipo de tiro,
+reservado durante la siembra. No se añade una especie salvaje ni un stream
+de RNG. La búsqueda pasa por el hash de edificios, con radio de 12 tiles.
+Cada corral sirve a un solo agricultor a la vez; tomar ganado, tanto por
+acción como por la API del panel, respeta esa reserva. Una orden cancelada,
+interrumpida o terminada libera el equipo; un dueño muerto deja de reservarlo.
+Las reservas se identifican por IDs, sin referencias cruzadas al serializar.
+
+El trabajo pagado queda en el cultivo: sembrar con arado guarda factor 1,2
+para la cosecha, aunque el corral se pierda después. Una nueva siembra manual,
+cosecha, pérdida o pisoteo vuelve al factor 1. Saber el nodo sin arado y tiro
+no cambia el rendimiento. El tiempo, coste, radio, dos cabezas y factor 1,2
+son supuestos de diseño; no se afirma excedente económico medido. La adopción
+por AI usa la misma siembra existente, sin ajustar pesos de acciones.
+
+Las negativas se traducen y aparecen en la orden y el menú contextual.
+Capturas españolas del nuevo nodo y de la orden en
+`artifacts/screenshots/m15-phase40-ploughshare-2026-10-08/`.
+
+## Cierre de la fase 40 — cobertura de los seis nodos
+
+El check de extracción que faltaba en 40a es `iron-ore-is-mined`:
+`ironminers` suministra un nodo local de mineral y una orden real de recoger,
+con RNG propio del fixture, sin tocar generación ni streams del juego.
+Se observa el desgaste de ese nodo y el mineral cosechado. La oportunidad
+sigue siendo aplicable al quitar el nodo suministrado, la definición del
+recurso o `TECH.bog_iron`: los tres controles dan FAIL. El fixture no mide
+emplazamiento húmedo; la playa y el proxy geográfico siguen cubiertos por
+las pruebas originales de `metal.test.ts`, con sus limitaciones de datos.
+
+| Nodo | Escenario corto | Check |
+|---|---|---|
+| `bog_iron` | `ironminers` | `iron-ore-is-mined` |
+| `bloomery` | `ironsmiths` | `iron-ore-becomes-bloom` |
+| `forging` | `forgers` | `iron-bloom-becomes-wrought-iron` |
+| `carburising` | `carburisers` | `iron-is-carburised` |
+| `iron_tools` | `ironworkers` | `iron-tools-cut-the-day` |
+| `ploughshare` | `ploughmen` | `oxen-turn-the-field` |
+
+Seis puertas con una comprobación aplicable cada una; no demuestran la cadena
+autónoma desde mineral ni mejora económica. Las cohortes y matriz larga
+continúan diferidas por la instrucción de M15. No se cierra la calibración
+final de M15 ni se altera la fase 32 que trabaja otro agente.
+
+Verificación de cierre: TypeScript limpio; 10/10 pruebas focales del arado,
+4/4 controles de minería y 6/6 de traducciones. La suite global de 40f
+registró 202/204 archivos y 1.579 pruebas pasando, 1 omitida, con dos fallos:
+la clave española ausente se corrigió y su suite focal pasa; la difusión
+sigue en 0,81 frente a <0,6 y queda en M16 sin retocar tasas ni aserciones.
+El control de check del arado se añadió tras iniciar esa suite y está incluido
+en el 10/10 focal. No se presenta la suite global como verde.
+
+Navegador: la suite completa dio 114/115; la forja produjo hierro antes de
+perder el fixture por un reinicio del mundo, coincidiendo con cambios de
+comentarios/formato bajo Vite. Repetida con fuentes congeladas, forja pasa
+2/2. Las pruebas de acero, herramientas y arado pasan en la suite global.
+Se preservaron los sets históricos y se guardaron nuevos hitos por función.
+`sim:check` de un seed conserva dos fallos previos, dieta/rendimiento, 2/147.

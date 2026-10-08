@@ -105,6 +105,28 @@ export const ITEMS: ItemArt[] = [
     limb([[32, 6], [32, 39]], 3.4, WOOD, WOOD_D)
     + shape('M24,36L40,36L42,53Q32,66 22,53Z', '#b08a3e', '#5a4216')
     + stroke('M30,39L28,53M34,39L36,53', '#dcc072', 1), 20)],
+  ['iron_axe', 'Hacha de hierro', 'iron_tools', () => rot(
+    limb([[32, 60], [32, 10]], 3.6, WOOD, WOOD_D)
+    + shape(poly([[32, 6], [50, 3], [55, 22], [32, 24]]), '#7d898d', '#293237')
+    + stroke('M30,14L35,14M30,18L35,18M30,22L35,22', CORD, 1.6)
+    + stroke('M48,7L52,20', '#dce5e7', 1.2), 30)],
+  ['iron_adze', 'Azuela de hierro', 'iron_tools', () => rot(
+    limb([[30, 60], [30, 14]], 3.4, WOOD, WOOD_D)
+    + shape(poly([[26, 14], [48, 9], [50, 15], [30, 20]]), '#7d898d', '#293237')
+    + stroke('M30,17L34,15.6M30,21L34,19.6', CORD, 1.6), 24)],
+  ['iron_sickle', 'Hoz de hierro', 'iron_tools', () =>
+    stroke('M16,56Q10,24 40,14Q52,12 56,22Q40,20 30,34Q26,46 22,56', '#7d898d', 4)
+    + stroke('M14,56L22,56', WOOD, 5)
+    + stroke('M20,26Q30,18 44,16', '#dce5e7', 1.2)],
+  ['iron_spade', 'Pala de hierro', 'iron_tools', () => rot(
+    limb([[32, 6], [32, 39]], 3.4, WOOD, WOOD_D)
+    + shape('M24,36L40,36L42,53Q32,66 22,53Z', '#7d898d', '#293237')
+    + stroke('M30,39L28,53M34,39L36,53', '#dce5e7', 1), 20)],
+  ['iron_plough', 'Arado de hierro', 'ploughshare', () => rot(
+    limb([[18, 10], [32, 48], [50, 52]], 3.2, WOOD, WOOD_D)
+    + shape(poly([[44, 44], [56, 48], [50, 58], [40, 52]]), '#7d898d', '#293237')
+    + stroke('M42,49L52,53', '#dce5e7', 1.2)
+    + stroke('M20,14L14,8M30,46L24,54', CORD, 1.5), 18)],
   ['bronze_sword', 'Espada de bronce', 'bronze_arms', () => rot(
     shape(poly([[32, 2], [37.5, 40], [26.5, 40]]), '#b08a3e', '#5a4216')
     + stroke('M32,8L32,36', '#dcc072', 1.2)
@@ -138,6 +160,20 @@ export const ITEMS: ItemArt[] = [
     + shape(smooth([[28, 41], [34, 37], [41, 41], [39, 47], [31, 48]]), '#403a36', '#292523')
     + ell(22, 44, 2.2, 1.6, '#262321') + ell(47, 42, 2.1, 1.5, '#262321')
     + stroke('M17,30L23,27M36,26L42,25M15,45L20,50M43,49L49,45', '#8a7460', 1.2)],
+  // The wrought bar is dense and smooth where the bloom was porous and slaggy.
+  ['wrought_iron', 'Hierro forjado', 'forging', () =>
+    shape(smooth([[10, 40], [14, 31], [23, 29], [28, 34], [40, 34], [47, 29], [55, 34], [53, 43], [46, 47], [26, 47], [18, 51], [11, 47]]), '#747a7b', '#343839')
+    + shape(smooth([[17, 35], [25, 33], [29, 37], [24, 40], [16, 40]]), '#c3c5c2')
+    + stroke('M29,36L43,36M27,43L47,43', '#a4a9a8', 1.2)],
+  ['steel', 'Acero', 'carburising', () =>
+    shape(poly([[8, 42], [18, 24], [48, 24], [58, 42], [50, 52], [16, 52]]), '#59666c', '#202a2e')
+    + shape(poly([[18, 24], [48, 24], [44, 32], [22, 32]]), '#d5e1e4', '#202a2e')
+    + stroke('M18,40L48,40M22,46L44,46', '#87989e', 1.2)],
+  ['steel_sword', 'Espada de acero', 'carburising', () => rot(
+    shape(poly([[32, 2], [37.5, 40], [26.5, 40]]), '#77858a', '#202a2e')
+    + stroke('M32,8L32,36', '#e4edef', 1.2)
+    + limb([[20, 42], [44, 42]], 3.2, '#40484c', null)
+    + limb([[32, 42], [32, 60]], 4.8, WOOD, WOOD_D), 26)],
   ['sling', 'Honda', 'sling', () =>
     stroke('M10,34Q16,10 30,26', CORD, 2.4)
     + stroke('M10,34Q16,52 30,40', CORD, 2.4)

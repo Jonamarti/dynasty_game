@@ -32,6 +32,7 @@ import {
   isTrap, isHeap, isHerd, isWell, isStructure, type Building,
 } from '../entities/Building.ts';
 import { SOW_SEED, SPREAD_LOAD, harvestYield } from '../entities/Field.ts';
+import { activeDraftLease, availableDraftHeads, claimDraftTeam, findDraftPen, hasBusyDraftPen, reservedDraftHeads, hasSeedContainer } from './Draft.ts';
 import { isGroundSpent, COMPOST_ORGANIC } from '../core/Soil.ts';
 import { CUT_ABOVE, CUT_BITE, CUT_FLOOR, THATCH_PER_HEIGHT } from '../core/Grass.ts';
 import { DIG_TICKS, canDigBankMud, DIG_TO, EARTH_UNIT, LIFT, PILE_TICKS, PILE_TO, TOPSOIL_ITEMS, digTool, digToolFailure, earthworkWorkRefusal, liftKind } from '../core/Earth.ts';
@@ -124,6 +125,7 @@ export interface ActionContext {
   /** Whether a walking child has fallen outside their carer's close-family radius. */
   childAwayFromCarer: (person: Person) => boolean;
   peopleHash: SpatialHash<Person>;
+  buildingHash: SpatialHash<Building>;
   /** For `mayUse`'s reading of how the two bands involved currently stand. */
   bandRelations: BandRelations;
   social: SocialSystem;
@@ -2666,7 +2668,8 @@ export class ActionSystem {
           person.carryCapacity - person.carrying,
           itemCapacityFor(person, ctx.carry, itemId) - person.inventory.count(itemId),
         ));
-        const got = store.store.remove(itemId, Math.min(6, count, room));
+        const available = itemId === 'meat' ? availableDraftHeads(store, ctx.peopleById, ctx.buildingsById) : count;
+        const got = store.store.remove(itemId, Math.min(6, count, available, room));
         if (got > 0) {
           stow(person, ctx.carry, itemId, got);
           person.handled.set(itemId, ctx.tick);
@@ -2674,7 +2677,8 @@ export class ActionSystem {
         }
       }
       if (shared === 0) {
-        this.abandon(person, store.store.total > 0 ? 'hands_full' : 'store_empty', ctx);
+        const teamReserved = reservedDraftHeads(store, ctx.peopleById, ctx.buildingsById) > 0;
+        this.abandon(person, teamReserved ? 'draft_team_busy' : store.store.total > 0 ? 'hands_full' : 'store_empty', ctx);
         return;
       }
       telemetry.count('withdrawn', shared);
@@ -2699,7 +2703,14 @@ export class ActionSystem {
       this.abandon(person, 'hands_full', ctx);
       return;
     }
-    const taken = store.store.remove(itemId, Math.min(amount, room));
+    const available = isHerd(store.def) && itemId === 'meat'
+      ? availableDraftHeads(store, ctx.peopleById, ctx.buildingsById)
+      : store.store.count(itemId);
+    if (available <= 0 && isHerd(store.def) && itemId === 'meat') {
+      this.abandon(person, 'draft_team_busy', ctx);
+      return;
+    }
+    const taken = store.store.remove(itemId, Math.min(amount, room, available));
     stow(person, ctx.carry, itemId, taken);
     // M15 phase 11b: taking something off a shelf is handling it.
     if (taken > 0) person.handled.set(itemId, ctx.tick);
@@ -3502,6 +3513,32 @@ export class ActionSystem {
       this.abandon(person, 'dont_know_how', ctx);
       return;
     }
+    const ploughing = person.targetItemId === 'iron_plough';
+    if (ploughing) {
+      if (techPower(person, 'ploughshare') <= 0) {
+        this.abandon(person, 'no_plough_knowledge', ctx); return;
+      }
+      if (!person.inventory.has('iron_plough')) {
+        this.abandon(person, 'no_iron_plough', ctx); return;
+      }
+      if (!hasSeedContainer(person)) {
+        this.abandon(person, 'no_seed_container', ctx); return;
+      }
+      if (person.draftPenId === null) {
+        const pen = findDraftPen(person, ctx.buildingHash, ctx.peopleById, ctx.buildingsById);
+        if (!pen) {
+          this.abandon(person, hasBusyDraftPen(person, ctx.buildingHash, ctx.peopleById, ctx.buildingsById)
+            ? 'draft_team_busy' : 'no_draft_team', ctx); return;
+        }
+        if (!claimDraftTeam(person, pen, ctx.peopleById, ctx.buildingsById)) {
+          this.abandon(person, 'draft_team_busy', ctx); return;
+        }
+      }
+      const pen = person.draftPenId === null ? null : ctx.buildingsById.get(person.draftPenId) ?? null;
+      if (!pen || activeDraftLease(pen, ctx.peopleById, ctx.buildingsById)?.id !== person.id) {
+        this.abandon(person, 'draft_team_lost', ctx); return;
+      }
+    }
     if (!field.crop.isFallow) {
       this.abandon(person, 'already_sown', ctx);
       return;
@@ -3533,7 +3570,8 @@ export class ActionSystem {
     if (person.workedTicks < SOW_TICKS) return;
 
     person.inventory.remove('grain', SOW_SEED);
-    field.crop.sow(ctx.day);
+    field.crop.sow(ctx.day, ploughing ? 1.2 : 1);
+    if (ploughing) telemetry.count('field_ploughed');
     // The tilling, paid here rather than in a verb of its own - see the header
     // of `Field.ts`. Every tile of the plot, because the whole plot was broken.
     this.tillPlot(field, ctx);
@@ -3593,9 +3631,12 @@ export class ActionSystem {
     // at all, so it has no business raising the 0.5 floor a farmer-less band
     // still gets.
     const grasp = Math.max(0.5, techPower(person, 'farming')) * calendarFactor(person);
-    const yielded = harvestYield(
+    const baseYield = harvestYield(
       this.plotFertility(field, ctx), person.skillFactor('farm'), grasp
     );
+    const ploughFactor = field.crop.ploughYieldFactor ?? 1;
+    const yielded = Math.round(baseYield * ploughFactor);
+    if (ploughFactor > 1) telemetry.count('plough_grain_harvested', yielded);
     field.crop.reaped(yielded);
     this.reapPlot(field, ctx);
 

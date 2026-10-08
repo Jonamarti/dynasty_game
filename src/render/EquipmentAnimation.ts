@@ -12,8 +12,12 @@ const HELD_ART: Readonly<Record<string, HeldItemKind>> = {
   // The cast axe is the same head on a haft; the dagger has a held picture of its own.
   copper_axe: 'handaxe',
   bronze_axe: 'handaxe',
+  iron_axe: 'handaxe',
+  iron_plough: 'iron_plough',
   copper_dagger: 'copper_dagger',
   bronze_sword: 'bronze_sword',
+  // The same silhouette; the atlas keeps the steel colour on its inventory icon.
+  steel_sword: 'bronze_sword',
   spear: 'spear',
   bow: 'bow',
   atlatl: 'atlatl',

@@ -658,6 +658,29 @@ export const RECIPES: Record<string, RecipeDef> = {
     id: 'bronze_spade', label: 'Bronze spade', icon: '\u{2660}', tech: 'bronze_tools', skill: 'smith',
     workTicks: 130, ingredients: { bronze: 3 }, output: { bronze_spade: 1 }, station: 'furnace', keep: 1,
   },
+  // M15 phase 40e: wrought iron is common enough for the whole tool set;
+  // handles are implicit, as they are for bronze. The iron spade costs two bars.
+  iron_axe: {
+    id: 'iron_axe', label: 'Iron axe', icon: '\u{1FA93}', tech: 'iron_tools', skill: 'smith',
+    workTicks: 120, ingredients: { wrought_iron: 1 }, output: { iron_axe: 1 }, station: 'anvil', keep: 1,
+  },
+  iron_adze: {
+    id: 'iron_adze', label: 'Iron adze', icon: '\u{1FA93}', tech: 'iron_tools', skill: 'smith',
+    workTicks: 120, ingredients: { wrought_iron: 1 }, output: { iron_adze: 1 }, station: 'anvil', keep: 1,
+  },
+  iron_sickle: {
+    id: 'iron_sickle', label: 'Iron sickle', icon: '\u{1F5E1}', tech: 'iron_tools', skill: 'smith',
+    workTicks: 100, ingredients: { wrought_iron: 1 }, output: { iron_sickle: 1 }, station: 'anvil', keep: 1,
+  },
+  iron_spade: {
+    id: 'iron_spade', label: 'Iron spade', icon: '\u{2660}', tech: 'iron_tools', skill: 'smith',
+    workTicks: 130, ingredients: { wrought_iron: 2 }, output: { iron_spade: 1 }, station: 'anvil', keep: 1,
+  },
+  // A heavy share and timber handles: a physical plough, but its draft team comes from a nearby live pen.
+  iron_plough: {
+    id: 'iron_plough', label: 'Iron plough', icon: '\u{1F6E0}', tech: 'ploughshare', skill: 'smith',
+    workTicks: 120, ingredients: { wrought_iron: 1, sticks: 2 }, output: { iron_plough: 1 }, station: 'anvil', keep: 1,
+  },
   // `bronze_arms`, at the furnace. Three of bronze for the sword and two for the
   // helm; `keep: 1`, and not more, for the reason the tools give.
   bronze_sword: {
@@ -710,6 +733,24 @@ export const RECIPES: Record<string, RecipeDef> = {
     id: 'smelt_iron', label: 'Iron bloom', icon: '\u{1F525}', tech: 'bloomery', skill: 'smith',
     workTicks: 120, ingredients: { iron_ore: 2, charcoal: 1 }, output: { iron_bloom: 1 },
     station: 'furnace', keep: 2,
+  },
+  // M15 phase 40c (M8.4): the stone hammer and anvil work slag out of the bloom.
+  // The 1:1 yield is a design assumption, not a claim about historic mass.
+  forge_iron: {
+    id: 'forge_iron', label: 'Wrought iron', icon: '\u{1F528}', tech: 'forging', skill: 'smith',
+    workTicks: 140, ingredients: { iron_bloom: 1 }, output: { wrought_iron: 1 },
+    station: 'anvil', keep: 2,
+  },
+  // M15 phase 40d (M8.4): charcoal supplies carbon; the one-for-one yield is a model assumption.
+  carburise_steel: {
+    id: 'carburise_steel', label: 'Steel', icon: '\u{1F525}', tech: 'carburising', skill: 'smith',
+    workTicks: 120, ingredients: { wrought_iron: 1, charcoal: 1 }, output: { steel: 1 },
+    station: 'anvil', keep: 2,
+  },
+  steel_sword: {
+    id: 'steel_sword', label: 'Steel sword', icon: '\u{2694}', tech: 'carburising', skill: 'smith',
+    workTicks: 130, ingredients: { steel: 1 }, output: { steel_sword: 1 },
+    station: 'anvil', keep: 1,
   },
 };
 

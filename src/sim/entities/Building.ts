@@ -682,6 +682,24 @@ export const BUILDINGS: Record<string, BuildingDef> = {
       'the side with air. The heat is more than a kiln gives, and what runs ' +
       'out of the bottom is metal.',
   },
+  // M15 phase 40c (M8.4): the stone anvil and hammer let a smith turn
+  // the bloom into wrought iron. They are one fixed station, not pack tools;
+  // there is no useful forging action without a place to brace the work.
+  anvil: {
+    id: 'anvil',
+    label: 'Stone anvil',
+    icon: '\u{1F528}',
+    width: 2, height: 2,
+    materials: { flint: 8, sticks: 4 },
+    workTicks: 160,
+    shelter: 0,
+    storage: 0,
+    station: true,
+    requiresTech: 'forging',
+    description:
+      'A heavy stone anvil and a stone-headed hammer set beside it. Together ' +
+      'they hold the bloom while the smith beats slag away and draws the iron out.',
+  },
   charcoal_pit: {
     id: 'charcoal_pit',
     label: 'Charcoal pit',
@@ -786,6 +804,8 @@ export class Building {
   haulTrips = 0;
   /** Goods kept here once finished. */
   readonly store = new Inventory();
+  /** Person holding the live draft-team lease; validity is derived, not trusted. */
+  draftUserId: number | null = null;
 
   /** Ticks of work done. Complete when it reaches `def.workTicks`. */
   progress = 0;

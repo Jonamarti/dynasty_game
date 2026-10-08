@@ -40,6 +40,45 @@ Antes de construir `leave_comarca` de verdad (más allá de la aritmética de ve
 
 Relacionado con el hallazgo de la fase 31 más abajo: `WorldKnowledge.tellAllTo` (el canal "llega alguien de otra comarca") sigue sin llamador real hasta que una de estas piezas aterrice.
 
+## M15 fase 40f: alcance del arado (2026-10-08)
+
+El tiro usa las cabezas abstractas del corral existente, no una nueva especie
+individual de buey: todavía no hay domesticación/sexo/edad ni animación propia
+de una pareja animal vinculada al arado. La pareja se reserva y se libera sin
+consumir ganado; el arado físico sí debe fabricarse y la siembra paga trabajo
+y semilla. El factor de cosecha 1,2, radio de 12 tiles y costes son supuestos
+de diseño, sin medición de excedente ni de adopción autónoma a largo plazo.
+Las cargas cortas prueban las operaciones suministradas; la calibración y las
+cohortes siguen diferidas a M16 por instrucción del propietario.
+
+## M15 fase 40d: difusión entre pueblos vuelve a fallar (2026-10-08)
+
+La base 40c (`b39aecf`) pasaba la suite completa; al añadir `carburising`,
+`people-knowledge.test.ts`, «sustained full contact does homogenise», mide 0,65
+frente a su límite intacto <0,6. Es una regresión nueva de esta entrega, en
+la deuda de sensibilidad al catálogo de tecnologías ya documentada en fase 36;
+no se ha aislado aquí una causa adicional. No se ajustan tasas ni aserciones.
+Se difiere a M16 por la instrucción de terminar funcionalidades M15. Los seis
+unitarios de acero y la puerta ordenada `carburisers` pasan.
+
+En 40e la misma aserción vuelve a pasar al ampliar el catálogo con herramientas;
+la sensibilidad queda registrada para M16, sin cambio de tasas ni umbral.
+En 40f vuelve a fallar al ampliar el catálogo con `ploughshare`; el resultado
+global mide 0,81 frente a <0,6. No se cambia el umbral; queda en M16.
+
+## M15 fase 40c: alcance de la forja (2026-10-08)
+
+El check corto `forgers` demuestra una orden suministrada en un yunque terminado,
+no la cadena autónoma de extracción, fundición, construcción de estación y forja.
+La relación lupia/hierro forjado 1:1, 140 ticks de receta y los materiales/coste
+del yunque son supuestos de diseño; no se ha medido su coste económico por
+cohortes, diferidas hasta terminar M15. El yunque integra un martillo de piedra
+como conjunto fijo: no existe todavía un martillo equipable/no consumible.
+La receta no modela temperatura del metal ni recalentados; sigue el nivel de
+abstracción de las recetas metalúrgicas existentes. Herramientas de hierro,
+acero y arado eran los nodos pendientes al entregar 40c; están implementados
+en 40d/40e/40f. La medición económica autónoma continúa pendiente para M16.
+
 ## M15 navegación fluvial: alcance de la balsa inicial (2026-10-08)
 
 La balsa de juncos es un transporte personal de agua dulce; no implementa tripulaciones, cargas de varios NPC, embarcaciones grandes ni navegación marítima. Se fabrica para una orden de viaje (`keep: 0`), por lo que el AI no adopta todavía un plan de explorar/fabricar una embarcación para colonizar otra orilla. Los cruces ordenados y los movimientos con una balsa ya disponible funcionan; esa planificación queda para navegación/fase 35. Cavar barro de la orilla es una orden disponible al jugador, no una nueva fuente elegida automáticamente por el abastecimiento de obras cuando faltan depósitos.

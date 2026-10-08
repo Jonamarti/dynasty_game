@@ -187,6 +187,14 @@ export const TECHS = [
   // M15 phase 36 (M14 fase 18b): the oldest open node in `m8_plan_the_ages.md`
   // that `next-steps.md` had not reclaimed yet — see `ActionSystem.doTrade`.
   'trade',
+  // M15 phase 40c: the stone anvil and hammer that work slag out of the bloom.
+  'forging',
+  // M15 phase 40d: carbon hardens forged iron into steel for the best edge.
+  'carburising',
+  // M15 phase 40e: common iron tools read the same work paths as bronze.
+  'iron_tools',
+  // M15 phase 40f: a plough's crop gain is paid at sowing and stored on the crop.
+  'ploughshare',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -2336,6 +2344,82 @@ export const TECH: Record<Tech, TechDef> = {
     description:
       'Air forced through bog iron and charcoal leaves a spongy bloom for the smith to work.',
   },
+  // M15 phase 40c (M8.4). Stone tools do the first hot-forging, so wrought
+  // iron is not required to make its own tools.
+  forging: {
+    id: 'forging', label: 'Forging', domain: 'metal', web: 'metal',
+    age: 'iron', firstKnown: 'about 1200 BC',
+    kind: 'device',
+    requires: ['bloomery'], difficulty: 0.7, skill: 'smith',
+    prototype: { iron_bloom: 1 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'bloomery' }, { kind: 'holding', item: 'iron_bloom' },
+                { kind: 'doing', action: 'craft' }],
+        weight: 1.0, story: 'set the iron bloom on a stone and beat it with a hammer until the slag fell away' },
+      { needs: [{ kind: 'knows', tech: 'bloomery' }, { kind: 'holding', item: 'iron_bloom' },
+                { kind: 'place', biome: 'beach' }],
+        weight: 0.6, story: 'found that a hard stone could draw the bloom into a clean bar of iron' },
+    ],
+    description:
+      'A stone hammer and anvil beat slag from the bloom, leaving wrought iron the smith can shape.',
+  },
+  // M15 phase 40d (M8.4). Steel stock is made from wrought iron and charcoal;
+  // a separate sword recipe makes that stock a real, technology-scaled weapon.
+  carburising: {
+    id: 'carburising', label: 'Carburising', domain: 'metal', web: 'metal',
+    age: 'iron', firstKnown: 'about 1200 BC',
+    kind: 'device',
+    requires: ['forging', 'charcoal'], difficulty: 0.75, skill: 'smith',
+    prototype: { wrought_iron: 1, charcoal: 1 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'forging' }, { kind: 'knows', tech: 'charcoal' },
+                { kind: 'holding', item: 'wrought_iron' }, { kind: 'holding', item: 'charcoal' },
+                { kind: 'doing', action: 'craft' }],
+        weight: 1.0, story: 'packed charcoal around wrought iron and found the edge could be made harder' },
+      { needs: [{ kind: 'knows', tech: 'forging' }, { kind: 'holding', item: 'wrought_iron' },
+                { kind: 'holding', item: 'charcoal' }],
+        weight: 0.6, story: 'left a bar of iron in the charcoal fire and drew out steel' },
+    ],
+    description:
+      'Carbon from charcoal hardens wrought iron into steel, which holds the sharpest edge.',
+  },
+  // M15 phase 40f: the iron share is drawn by a leased pair from a live nearby pen.
+  ploughshare: {
+    id: 'ploughshare', label: 'Ploughshare', domain: 'plants', web: 'field',
+    age: 'iron', firstKnown: 'about 1200 BC',
+    kind: 'device',
+    requires: ['iron_tools', 'farming', 'herding'], difficulty: 0.72, skill: 'farm',
+    prototype: { wrought_iron: 1, sticks: 2 }, maxRefinement: 1,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'iron_tools' }, { kind: 'knows', tech: 'farming' },
+                { kind: 'knows', tech: 'herding' }, { kind: 'holding', item: 'wrought_iron' },
+                { kind: 'doing', action: 'sow' }],
+        weight: 1.0, story: 'fixed a shaped iron share to timber and drew it through the field with a pair from the pen' },
+      { needs: [{ kind: 'knows', tech: 'iron_tools' }, { kind: 'knows', tech: 'farming' },
+                { kind: 'knows', tech: 'herding' }, { kind: 'holding', item: 'sticks' },
+                { kind: 'doing', action: 'sow' }],
+        weight: 0.6, story: 'saw that the soil opened faster when a team pulled the iron blade' },
+    ],
+    description: 'An iron share, timber handles and a nearby pair from a live pen turn a sowing into a deeper furrow and a larger crop.',
+  },
+  // M15 phase 40e (M8.4). A wrought-iron tool for each ordinary trade: axe,
+  // adze, sickle and spade. The readers are shared with their bronze peers.
+  iron_tools: {
+    id: 'iron_tools', label: 'Iron tools', domain: 'metal', web: 'metal',
+    age: 'iron', firstKnown: 'about 1200 BC',
+    kind: 'device',
+    requires: ['forging'], difficulty: 0.6, skill: 'smith',
+    prototype: { wrought_iron: 1 }, maxRefinement: 1,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'forging' }, { kind: 'holding', item: 'wrought_iron' },
+                { kind: 'doing', action: 'craft' }],
+        weight: 1.0, story: 'looked at the clean bar of iron and saw an axe, an adze, a sickle and a spade' },
+      { needs: [{ kind: 'knows', tech: 'forging' }, { kind: 'doing', action: 'chop' }],
+        weight: 0.6, story: 'felled a tree with an iron edge and saw the work finish before the stone one' },
+    ],
+    description:
+      'A wrought-iron axe, adze, sickle and spade: common tools that fell, build, reap and dig faster.',
+  },
   // M15 phase 36 (M14 fase 18b). `next-steps.md` had carried this since M8.2
   // as "the node that never reached TECHS": `ActionSystem.doTrade` existed,
   // `EVENT_TYPES` declared it, `DEED_WEIGHT` scored it, and nobody gated the
@@ -2735,6 +2819,22 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
     summary: 'Air driven through iron ore and charcoal turns the furnace charge into a bloom the smith can work.',
     site: 'RECIPES.smelt_iron at BUILDINGS.furnace; Ore.wantedOreKinds follows iron ore and charcoal to their sources',
   },
+  forging: {
+    summary: 'A stone anvil and hammer work the slag out of the bloom, leaving wrought iron.',
+    site: 'BUILDINGS.anvil and RECIPES.forge_iron',
+  },
+  carburising: {
+    summary: 'Charcoal hardens wrought iron into steel; its sword has the best edge in the game.',
+    site: 'RECIPES.carburise_steel and RECIPES.steel_sword; ITEMS.steel_sword.weapon via weaponOf in ActionSystem.doHunt and doAttack',
+  },
+  iron_tools: {
+    summary: 'Wrought-iron tools speed felling, building and reaping; the spade digs six times as fast as a stick.',
+    site: 'Tech.axeFactor (AXE_TOOLS), buildFactor, reapFactor and Earth.digTool (DIG_TOOLS); RECIPES.iron_*',
+  },
+  ploughshare: {
+    summary: 'An iron plough pulled by two available heads from a nearby pen improves the harvest from that sowing.',
+    site: 'RECIPES.iron_plough; ActionSystem.doSow leases a live team and Crop.ploughYieldFactor persists through harvest',
+  },
   trade: {
     summary: 'A fairer bargain: what changes hands is weighed by what it is worth, not just by feel.',
     site: 'ActionSystem.doTrade, via ItemDef.baseValue',
@@ -2973,7 +3073,9 @@ export function buildFactor(person: Person): number {
   // M15 phase 37: a bronze adze, on the same double gate. One adze swings at a
   // time, so the better of the two counts and the two do not stack.
   const bronze = person.inventory.has('bronze_adze') ? scaled(person, 'bronze_tools', 1.45) : 1;
-  return scaled(person, 'carpentry', 1.3) * Math.max(adze, bronze);
+  // A wrought-iron adze is the next shared-tool tier; one held adze does the work.
+  const iron = person.inventory.has('iron_adze') ? scaled(person, 'iron_tools', 1.5) : 1;
+  return scaled(person, 'carpentry', 1.3) * Math.max(adze, bronze, iron);
 }
 
 /**
@@ -3011,6 +3113,8 @@ export const AXE_TOOLS: readonly { item: string; tech: Tech; full: number }[] = 
   { item: 'stone_axe', tech: 'ground_stone', full: 0.35 },
   { item: 'copper_axe', tech: 'casting', full: 0.3 },
   { item: 'bronze_axe', tech: 'bronze_tools', full: 0.25 },
+  // M15 phase 40e: refined iron edges leave less work than even the bronze axe.
+  { item: 'iron_axe', tech: 'iron_tools', full: 0.24 },
 ];
 
 /** The strongest axe present, optionally limited to what is actually in hand. */
@@ -3039,7 +3143,9 @@ export function reapFactor(person: Person): number {
   // M15 phase 37: the bronze sickle, the better of the two (a smaller number is
   // less work). `full` 0.45 stays positive at `bronze_tools`' one refinement step.
   const bronze = person.inventory.has('bronze_sickle') ? scaled(person, 'bronze_tools', 0.45) : 1;
-  return Math.min(flint, bronze);
+  // The iron edge takes still less work than bronze; whichever sickle is best wins.
+  const iron = person.inventory.has('iron_sickle') ? scaled(person, 'iron_tools', 0.4) : 1;
+  return Math.min(flint, bronze, iron);
 }
 
 /**
@@ -3283,7 +3389,7 @@ const ERA_LADDER: Omit<EraDef, 'label'>[] = [
     needs: [
       'firemaking', 'cooking', 'hafting', 'clothing', 'fishing', 'netting', 'bow',
       'farming', 'herding', 'pottery', 'masonry',
-      'native_copper', 'smelting', 'casting', 'alloying', 'bronze_tools', 'bog_iron', 'bloomery',
+      'native_copper', 'smelting', 'casting', 'alloying', 'bronze_tools', 'bog_iron', 'bloomery', 'carburising', 'iron_tools',
     ],
     heldBy: 0.15,
     description: 'Iron-bearing earth, the first step toward a bloomery.',

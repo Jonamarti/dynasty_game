@@ -19,7 +19,8 @@ import { anchorOf, carerOf, childRadius } from '../src/sim/ai/Anchor.ts';
 import { telemetry } from '../src/sim/core/Telemetry.ts';
 import { RNG } from '../src/sim/core/RNG.ts';
 import type { DeepPartial, SimConfig } from '../src/sim/core/Config.ts';
-import { TECH, techPower, type Tech } from '../src/sim/knowledge/Tech.ts';
+import { TECH, techPower, type Tech, axeFactor, buildFactor, reapFactor } from '../src/sim/knowledge/Tech.ts';
+import { digTool } from '../src/sim/core/Earth.ts';
 
 /** Whether somebody holds a technology at any strength — for the civilisation check. */
 const TECH_KNOWN = (person: import('../src/sim/entities/Person.ts').Person, tech: Tech) => techPower(person, tech) > 0;
@@ -28,7 +29,7 @@ import { fightsBack, HEAVY_ACTIONS, trimesterOf } from '../src/sim/entities/Preg
 import { isTrap, isHeap, isHerd, isWell } from '../src/sim/entities/Building.ts';
 import { Building, BUILDINGS } from '../src/sim/entities/Building.ts';
 import { RECIPES } from '../src/sim/entities/Recipe.ts';
-import { isFoodKind, ResourceNode, type ResourceKind } from '../src/sim/entities/ResourceNode.ts';
+import { isFoodKind, ResourceNode, RESOURCE_DEFS, type ResourceKind } from '../src/sim/entities/ResourceNode.ts';
 import { PathStatus } from '../src/sim/core/Pathfinder.ts';
 import { TERRITORY_RADIUS } from '../src/sim/systems/BandSystem.ts';
 import { isHeld, isBound } from '../src/sim/social/Defence.ts';
@@ -38,6 +39,11 @@ import { FIRE_AVOID } from '../src/sim/systems/WildlifeSystem.ts';
 import { auditRegions, auditSwimRegions } from './regions.ts';
 import { setupFoodNews, setupConflicts } from './checkFixtures.ts';
 import { setupIronBloom } from './ironFixture.ts';
+import { setupIronMining } from './ironMiningFixture.ts';
+import { setupIronForging } from './ironForgingFixture.ts';
+import { setupIronCarburising } from './ironCarburisingFixture.ts';
+import { setupIronTools } from './ironToolsFixture.ts';
+import { setupIronPlough } from './ironPloughFixture.ts';
 import { createFrontier, setupFrontier, observeFrontier, createFrontierCohort, observeFrontierCohort } from './frontierFixture.ts';
 
 /**
@@ -253,6 +259,53 @@ export const SCENARIOS: Record<string, Scenario> = {
     steps: 300,
     setup: setupIronBloom,
     checks: ['iron-ore-becomes-bloom'],
+  },
+  forgers: {
+    name: 'forgers',
+    description: 'One ordered iron bloom forged at a finished stone anvil; tests forging, not autonomous economics.',
+    config: { seed: 'forgers', world: { width: 48, height: 48 },
+      population: { bands: 1, peoplePerBand: 6, startingTech: withPrerequisites(['forging']) } },
+    steps: 300,
+    setup: setupIronForging,
+    checks: ['iron-bloom-becomes-wrought-iron'],
+  },
+  ironminers: {
+    name: 'ironminers',
+    description: 'One supplied mining order against a local iron ore node; tests extraction, not autonomous supply.',
+    config: { seed: 'ironminers', world: { width: 48, height: 48 },
+      population: { bands: 1, peoplePerBand: 6, startingTech: withPrerequisites(['mining']) } },
+    steps: 200,
+    setup: setupIronMining,
+    checks: ['iron-ore-is-mined'],
+  },
+  carburisers: {
+    name: 'carburisers',
+    description: 'One ordered steel charge at a finished anvil; tests carburising, not autonomous economics.',
+    config: { seed: 'carburisers', world: { width: 48, height: 48 },
+      population: { bands: 1, peoplePerBand: 6, startingTech: withPrerequisites(['carburising']) } },
+    steps: 300,
+    setup: setupIronCarburising,
+    checks: ['iron-is-carburised'],
+  },
+  ironworkers: {
+    name: 'ironworkers',
+    description: 'Four supplied iron-tool orders at one finished anvil; checks each tool reader, not autonomous economics.',
+    config: { seed: 'ironworkers', world: { width: 48, height: 48 },
+      population: { bands: 1, peoplePerBand: 6,
+        startingTech: withPrerequisites(['forging', 'ground_stone', 'bronze_tools', 'carpentry', 'sickle']) } },
+    steps: 300,
+    setup: setupIronTools,
+    checks: ['iron-tools-cut-the-day'],
+  },
+  ploughmen: {
+    name: 'ploughmen',
+    description: 'One supplied iron-plough recipe and explicit draft-team sowing through harvest; tests the mechanism, not farm economics.',
+    config: { seed: 'ploughmen', world: { width: 48, height: 48 },
+      population: { bands: 1, peoplePerBand: 6,
+        startingTech: withPrerequisites(['iron_tools', 'farming', 'herding']) } },
+    steps: 8000,
+    setup: setupIronPlough,
+    checks: ['oxen-turn-the-field'],
   },
   smiths: {
     name: 'smiths',
@@ -3587,6 +3640,104 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
       ironOpportunity + ' supplied charges, ' + ironBlooms + ' completed iron smelts');
   }
 
+  // M15 phase 40a: supplied mining keeps the iron-ore node observable,
+  // and this fixture counter makes a missing node or resource row fail instead
+  // of disappearing into an inapplicable scenario.
+  const bogIronOpportunity = tel.bog_iron_fixture_mining_opportunities ?? 0;
+  const bogIronOrders = tel.bog_iron_fixture_mining_orders ?? 0;
+  const bogIronHarvested = tel.harvest_iron_ore ?? 0;
+  const bogIronFixtureId = tel.bog_iron_fixture_node_id ?? 0;
+  const bogIronFixtureNode = bogIronFixtureId > 0 ? sim.nodesById.get(bogIronFixtureId) : undefined;
+  const bogIronNodeWorked = bogIronFixtureNode?.kind === 'iron_ore' && bogIronFixtureNode.amount < 12;
+  const bogIronTechPresent = Object.prototype.hasOwnProperty.call(TECH, 'bog_iron');
+  const bogIronResourcePresent = RESOURCE_DEFS.iron_ore !== undefined;
+  if (bogIronOpportunity === 0) {
+    skip('iron-ore-is-mined', 'no supplied iron mining opportunity in this run');
+  } else {
+    add('iron-ore-is-mined', bogIronNodeWorked && bogIronTechPresent &&
+      bogIronResourcePresent && bogIronOrders > 0 && bogIronHarvested > 0,
+      'fixture node worked ' + !!bogIronNodeWorked + ', bog_iron tech ' + bogIronTechPresent +
+      ', iron_ore resource ' + bogIronResourcePresent + ', ' + bogIronOrders + '/' +
+      bogIronOpportunity + ' supplied mining orders, ' + bogIronHarvested + ' iron ore harvested');
+  }
+  // A supplied bloom and real order expose a missing forging recipe on the old build.
+  const forgingOpportunity = tel.iron_forging_fixture_charges ?? 0;
+  const wroughtIron = tel.crafted_forge_iron ?? 0;
+  if (forgingOpportunity === 0 && wroughtIron === 0) {
+    skip('iron-bloom-becomes-wrought-iron', 'no supplied bloom-forging charge in this run');
+  } else {
+    add('iron-bloom-becomes-wrought-iron', wroughtIron > 0,
+      forgingOpportunity + ' supplied blooms, ' + wroughtIron + ' forged into wrought iron');
+  }
+  // A supplied, ordered charge detects a missing carburising recipe on the old build.
+  const carburisingOpportunity = tel.iron_carburising_fixture_charges ?? 0;
+  const steelMade = tel.crafted_carburise_steel ?? 0;
+  if (carburisingOpportunity === 0 && steelMade === 0) {
+    skip('iron-is-carburised', 'no supplied carburising charge in this run');
+  } else {
+    add('iron-is-carburised', steelMade > 0,
+      carburisingOpportunity + ' supplied wrought iron and charcoal charges, ' + steelMade + ' steel made');
+  }
+  // One supplied charge per tool keeps a missing recipe visible and verifies
+  // that all four outputs reach the existing felling/building/reaping/digging readers.
+  const ironToolSpecs = [
+    { id: 'iron_axe', reader: axeFactor, better: (withTool: number, bare: number) => withTool < bare },
+    { id: 'iron_adze', reader: buildFactor, better: (withTool: number, bare: number) => withTool > bare },
+    { id: 'iron_sickle', reader: reapFactor, better: (withTool: number, bare: number) => withTool < bare },
+  ] as const;
+  const ironToolResults = ironToolSpecs.map(({ id, reader, better }) => {
+    const opportunity = tel['iron_tools_fixture_' + id + '_charges'] ?? 0;
+    const made = tel['crafted_' + id] ?? 0;
+    const holder = sim.livingPeople().find(person => person.inventory.count(id) > 0 && techPower(person, 'iron_tools') > 0);
+    let works = false;
+    if (holder) {
+      const count = holder.inventory.remove(id, 1);
+      const bare = reader(holder);
+      holder.inventory.add(id, count);
+      works = better(reader(holder), bare);
+    }
+    return { id, opportunity, made, works };
+  });
+  const spadeOpportunity = tel.iron_tools_fixture_iron_spade_charges ?? 0;
+  const spades = tel.crafted_iron_spade ?? 0;
+  const digger = sim.livingPeople().find(person => person.inventory.count('iron_spade') > 0 && techPower(person, 'iron_tools') > 0);
+  let ironSpade = digger ? digTool(digger) : null;
+  let spadeWorks = false;
+  if (digger) {
+    const count = digger.inventory.remove('iron_spade', 1);
+    const bare = digTool(digger);
+    digger.inventory.add('iron_spade', count);
+    ironSpade = digTool(digger);
+    spadeWorks = ironSpade?.item === 'iron_spade' && ironSpade.power >= 6 && (bare?.power ?? 0) < ironSpade.power;
+  }
+  const allIronTools = ironToolResults.every(result => result.opportunity > 0 && result.made > 0 && result.works) &&
+    spadeOpportunity > 0 && spades > 0 && spadeWorks;
+  if (ironToolResults.every(result => result.opportunity === 0) && spadeOpportunity === 0 &&
+      ironToolResults.every(result => result.made === 0) && spades === 0) {
+    skip('iron-tools-cut-the-day', 'no supplied iron-tool charges in this run');
+  } else {
+    add('iron-tools-cut-the-day', allIronTools,
+      ironToolResults.map(result => result.id + ': ' + result.made + '/' + result.opportunity + ' crafted, reader ' + result.works).join('; ') +
+      '; iron_spade: ' + spades + '/' + spadeOpportunity + ' crafted, dig power ' + (ironSpade?.power ?? 0) + ' (need 6)');
+  }
+  // A charged recipe and an explicitly ploughed harvest keep ordinary farming
+  // from passing by silently ignoring the requested tool.
+  const ploughRecipeOpportunity = tel.iron_plough_fixture_recipe_charges ?? 0;
+  const ploughRecipeMade = tel.crafted_iron_plough ?? 0;
+  const ploughSowOpportunity = tel.iron_plough_fixture_sow_orders ?? 0;
+  const ploughSown = tel.field_ploughed ?? 0;
+  const ploughReaped = tel.plough_grain_harvested ?? 0;
+  const ploughNodePresent = Object.prototype.hasOwnProperty.call(TECH, 'ploughshare');
+  const ploughRecipePresent = RECIPES.iron_plough !== undefined;
+  if (ploughRecipeOpportunity === 0 && ploughRecipeMade === 0 && ploughSowOpportunity === 0 && ploughSown === 0) {
+    skip('oxen-turn-the-field', 'no supplied iron-plough recipe or sow order in this run');
+  } else {
+    add('oxen-turn-the-field', ploughNodePresent && ploughRecipePresent && ploughRecipeMade > 0 &&
+      ploughSowOpportunity > 0 && ploughSown > 0 && ploughReaped > 0,
+      'node ' + ploughNodePresent + ', recipe ' + ploughRecipePresent + ', ' +
+      ploughRecipeMade + '/' + ploughRecipeOpportunity + ' iron ploughs made; ' + ploughSown + '/' +
+      ploughSowOpportunity + ' explicit plough sowings, ' + ploughReaped + ' grain harvested by the plough');
+  }
   // M15 phase 37. The metal tier is a chain of six steps done by whoever holds
   // the ingredients (seam, deadwood, pit, charcoal, furnace, mould), and the
   // failure worth a check is the chain that breaks in the middle. Measured on

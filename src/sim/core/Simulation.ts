@@ -72,6 +72,8 @@ import { knowledgeOfPerson, corpseIdentity } from '../social/Knowledge.ts';
 import { averageRenownByBand, Household } from '../entities/Household.ts';
 import { Tree, type TreeSpecies } from '../entities/Tree.ts';
 import { plantable, plantingRefusal, plantRefusalText } from '../entities/Orchard.ts';
+import { findDraftPen, hasBusyDraftPen, claimDraftTeam, availableDraftHeads, reservedDraftHeads, hasSeedContainer } from '../systems/Draft.ts';
+import { SOW_SEED } from '../entities/Field.ts';
 import { giftWorth } from '../social/Events.ts';
 import { ItemPile } from '../entities/ItemPile.ts';
 import { Corpse, stageOf, WOUNDS_SHOW_FOR, GONE_AFTER } from '../entities/Corpse.ts';
@@ -2954,7 +2956,15 @@ export class Simulation {
     }
     const room = Math.max(0, Math.min(person.carryCapacity - person.carrying,
       itemCapacityFor(person, this.config.carry, itemId) - person.inventory.count(itemId)));
-    const moved = store.store.remove(itemId, Math.min(room, count, store.store.count(itemId)));
+    const available = isHerd(store.def) && itemId === 'meat'
+      ? availableDraftHeads(store, this.peopleById, this.buildingsById)
+      : store.store.count(itemId);
+    if (available <= 0 && isHerd(store.def) && itemId === 'meat' &&
+        reservedDraftHeads(store, this.peopleById, this.buildingsById) > 0) {
+      this.lastRefusal = t('the nearby draft team is already working');
+      return 0;
+    }
+    const moved = store.store.remove(itemId, Math.min(room, count, available));
     if (moved <= 0) {
       this.lastRefusal = room <= 0 ? t('{name} cannot carry any more', { name: person.name }) : t('there was nothing to take');
       return 0;
@@ -4090,6 +4100,13 @@ export class Simulation {
       person.targetBuildingId = building.id;
       person.targetX = building.centerX;
       person.targetY = building.centerY;
+      if (action === 'sow' && target.itemId === 'iron_plough') {
+        const refusal = this.ploughOrderRefusal(person, building);
+        if (refusal) return this.cancelOrder(person, refusal);
+        const pen = findDraftPen(person, this.buildingHash, this.peopleById, this.buildingsById);
+        if (!pen || !claimDraftTeam(person, pen, this.peopleById, this.buildingsById))
+          return this.cancelOrder(person, t('the nearby draft team is already working'));
+      }
       return true;
     }
     if (target.nodeId !== undefined) {
@@ -4210,6 +4227,21 @@ export class Simulation {
     return true;
   }
 
+  /** The radial menu and explicit sow order use the same physical-team gate. */
+  ploughOrderRefusal(person: Person, field: Building): string | null {
+    if (!field.def.field || !field.crop || !field.complete || field.ruined) return t('that is not a working field');
+    if (techPower(person, 'farming') <= 0 || techPower(person, 'ploughshare') <= 0)
+      return t('you do not know how to use an iron plough');
+    if (!person.inventory.has('iron_plough')) return t('an iron plough is required');
+    if (!hasSeedContainer(person)) return t('a basket or another food container is needed for seed');
+    if (person.inventory.count('grain') < SOW_SEED || itemCapacityFor(person, this.config.carry, 'grain') < SOW_SEED)
+      return t('a pair of draft animals and room for seed are needed');
+    if (!field.crop.isFallow) return t('something is growing here already');
+    if (findDraftPen(person, this.buildingHash, this.peopleById, this.buildingsById, field)) return null;
+    return hasBusyDraftPen(person, this.buildingHash, this.peopleById, this.buildingsById, field)
+      ? t('the nearby draft team is already working')
+      : t('there is no available pair of draft animals nearby');
+  }
   /**
    * Why this person cannot set a tree at this tile, or null. The wording lives
    * here once, so the menu (`ActionCatalog`) and the order say the same thing.
@@ -5545,6 +5577,7 @@ export class Simulation {
           childRadius(person, this.config.motivation) + 3;
       },
       peopleHash: this.peopleHash,
+      buildingHash: this.buildingHash,
       bandRelations: this.bandRelations,
       social: this.social,
       rng: this.actionRng,
