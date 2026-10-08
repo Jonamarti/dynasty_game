@@ -1,3 +1,7 @@
+## 2026-10-08 — M15 paso 0: los guardados anteriores vuelven a cargar
+
+Revisión antes de mergear el paso 0. `otherBandThinkInterval` hizo que `copyConfig` rechazara todo guardado anterior, porque exige la configuración completa para no cambiar las reglas de una partida antigua. Ahora un checkpoint sin la clave carga con `otherBandThinkInterval = thinkInterval`: exactamente la regla con la que se guardó, sin ralentizar a nadie. Prueba nueva en `checkpoint-records.test.ts`, que falla contra el código sin el arreglo. Verificación: `typecheck` limpio, suite completa y `sim:check` de una semilla en el commit de merge.
+
 ## 2026-10-08 — M15 paso 0 (C): las otras bandas re-planifican cada 15 ticks
 
 Regla del propietario (`m15_simulation_lod.md` §0.1): la banda del jugador piensa como siempre; las demás siguen las mismas reglas pero deciden con menos frecuencia. Nuevo valor de configuración `otherBandThinkInterval` (15 ticks = hora y media de juego a 240 ticks por día, tres turnos del jugador por uno suyo; el mismo valor que `thinkInterval`, 5, lo apaga). La banda en foco es la del jugador (`Simulation.thinkFocusBand()`, se lee cada tick: al jugar como otro, su banda va a ritmo completo en el paso siguiente y la que se deja pasa a la lenta) y el reparto de turnos sigue siendo `(tick + id) % intervalo`, parejo entre ticks. Sin jugador no se frena a nadie, salvo que el arnés sin pantalla fije `headlessFocusBand` (`runScenario` lo pone a la banda del primer vivo, que es la que el juego entrega al jugador; si no, los checks medirían un mundo que no se juega).

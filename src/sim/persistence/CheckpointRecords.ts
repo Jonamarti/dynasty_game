@@ -67,6 +67,14 @@ function copyConfig(input: unknown): SimConfig {
     } else if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) invalid(path);
     return value;
   };
+  // A checkpoint written before the other bands were slowed (M15 step 0) has no
+  // `otherBandThinkInterval`. Rejecting it would lose every saved game; giving it
+  // today's default would change its rules on the next tick, which is what this
+  // function exists to prevent. Equal to `thinkInterval` is exactly the old rule:
+  // nobody is slowed.
+  if (object(input) && !Object.hasOwn(input, 'otherBandThinkInterval') && Object.hasOwn(input, 'thinkInterval')) {
+    input = { ...input, otherBandThinkInterval: input.thinkInterval };
+  }
   const config = visit(input, DEFAULT_CONFIG, 'config') as SimConfig;
   for (const value of [config.thinkInterval, config.otherBandThinkInterval, config.time.ticksPerDay, config.time.daysPerSeason,
     config.time.maxTicksPerFrame, config.world.width, config.world.height, config.world.chunkSize]) {

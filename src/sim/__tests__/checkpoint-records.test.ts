@@ -49,6 +49,15 @@ describe('coordinated detached checkpoints', () => {
     expect(sim.idSnapshot()).toEqual(beforeIds);
   });
 
+  it('loads a checkpoint saved before otherBandThinkInterval existed with the old rule: nobody slowed', () => {
+    const sim = fixture();
+    for (let tick = 0; tick < 10; tick++) sim.step();
+    const saved = wire(toCheckpointRecord(sim)) as any;
+    delete saved.config.otherBandThinkInterval;
+    const restored = fromCheckpointRecord(saved);
+    expect(restored.config.otherBandThinkInterval).toBe(restored.config.thinkInterval);
+  });
+
   it('rejects mixed ticks, changed rules, unknown fields and allocators that would reissue identities', () => {
     const saved = toCheckpointRecord(fixture());
     const corruptions: ((copy: any) => void)[] = [
