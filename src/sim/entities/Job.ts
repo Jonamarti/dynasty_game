@@ -39,7 +39,7 @@ export const WORK_ACTIONS = new Set([
   'build', 'haul', 'store', 'craft', 'prototype',
   // M15 phase 26c. Spades side by side are work alongside each other, and a
   // job that lists them is one a person is biased toward.
-  'dig', 'pile',
+  'dig', 'dig_mud', 'pile',
   // M15 phase 24. Setting trees side by side is work alongside each other.
   'plant',
   // M8.2. Both belong here for the second reason this set exists as well as the

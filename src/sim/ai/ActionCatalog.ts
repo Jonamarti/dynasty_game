@@ -17,7 +17,7 @@ import { debtTo, offerFor, OFFER_AT_LEAST } from '../social/Amends.ts';
 import { isCaptive, isEscapee } from '../social/Captivity.ts';
 import type { Person } from '../entities/Person.ts';
 import { CUT_ABOVE } from '../core/Grass.ts';
-import { DIG_TO, PILE_TO, digTool, digToolFailure, earthworkWorkRefusal } from '../core/Earth.ts';
+import { canDigBankMud, DIG_TO, PILE_TO, digTool, digToolFailure, earthworkWorkRefusal } from '../core/Earth.ts';
 import type { ResourceNode } from '../entities/ResourceNode.ts';
 import type { World } from '../core/World.ts';
 import type { Building } from '../entities/Building.ts';
@@ -1198,6 +1198,10 @@ function groundActions(
         icon: '⛏️',
         enabled: reason === undefined,
         reason,
+      });
+      if (canDigBankMud(ctx.world, target.x, target.y)) options.push({
+        id: 'dig_mud', label: t('Dig mud from the bank'), icon: '⛏️',
+        enabled: reason === undefined, reason,
       });
       if (actor.inventory.count('earth') > 0) {
         const high = -dug >= PILE_TO - 1e-9;

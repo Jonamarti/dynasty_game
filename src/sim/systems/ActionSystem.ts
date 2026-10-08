@@ -33,7 +33,7 @@ import {
 import { SOW_SEED, SPREAD_LOAD, harvestYield } from '../entities/Field.ts';
 import { isGroundSpent, COMPOST_ORGANIC } from '../core/Soil.ts';
 import { CUT_ABOVE, CUT_BITE, CUT_FLOOR, THATCH_PER_HEIGHT } from '../core/Grass.ts';
-import { DIG_TICKS, DIG_TO, EARTH_UNIT, LIFT, PILE_TICKS, PILE_TO, TOPSOIL_ITEMS, digTool, digToolFailure, earthworkWorkRefusal, liftKind } from '../core/Earth.ts';
+import { DIG_TICKS, canDigBankMud, DIG_TO, EARTH_UNIT, LIFT, PILE_TICKS, PILE_TO, TOPSOIL_ITEMS, digTool, digToolFailure, earthworkWorkRefusal, liftKind } from '../core/Earth.ts';
 import { BORROW_DEPTH, borrowTile, nearestTile, pendingTiles, spoilTile, standingFor, standingForRim, type EarthworkTile } from '../entities/Earthwork.ts';
 import { SNOW_BURY_AT } from '../core/Snow.ts';
 import type { Tree, TreeSpecies } from '../entities/Tree.ts';
@@ -786,6 +786,7 @@ export class ActionSystem {
       case 'reflect': this.doReflect(person, ctx); break;
       case 'cut_grass': this.doCutGrass(person, ctx); break;
       case 'plant': this.doPlant(person, ctx); break;
+      case 'dig_mud':
       case 'dig': this.doDig(person, ctx); break;
       case 'pile': this.doPile(person, ctx); break;
       case 'discuss': this.doDiscuss(person, ctx); break;
@@ -1725,6 +1726,11 @@ export class ActionSystem {
       this.abandon(person, 'nowhere_to_dig', ctx);
       return;
     }
+    if (person.action === 'dig_mud' && !canDigBankMud(ctx.world, person.targetX, person.targetY)) {
+      this.abandon(person, 'no_mud_bank', ctx); return;
+    }
+    const interrupted = this.interruption(person, ctx);
+    if (interrupted) { this.stop(person, interrupted, ctx); return; }
     const tool = digTool(person);
     if (!tool) {
       this.abandon(person, digToolFailure(person), ctx);
@@ -1752,7 +1758,9 @@ export class ActionSystem {
     if (person.actionTimer > 0) return;
 
     const depth = ctx.world.depthDug(tx, ty);
-    const kind = liftKind(ctx.world, tx, ty, depth);
+    const kind = person.action === 'dig_mud'
+      ? { item: 'mud' as const, topsoil: depth < TOPSOIL_ITEMS * EARTH_UNIT, limit: LIFT }
+      : liftKind(ctx.world, tx, ty, depth);
     const room = Math.max(0, Math.min(
       person.carryCapacity - person.carrying,
       itemCapacityFor(person, ctx.carry, kind.item) - person.inventory.count(kind.item),

@@ -118,3 +118,13 @@ export function earthworkWorkRefusal(
   if (!digs && heaps && person.inventory.count('earth') > 0) return null;
   return digToolFailure(person);
 }
+
+/** Exposed freshwater sediment, excluding salt coasts and clipped map edges.
+ * A bank lift yields mud immediately; ordinary inland digging keeps its humus
+ * layer. Both bank their finite progress in the same terrain offset. */
+export function canDigBankMud(world: World, x: number, y: number): boolean {
+  const tx = Math.floor(x), ty = Math.floor(y);
+  if (!world.inBounds(tx, ty) || !world.isWalkable(tx, ty) || world.isWater(tx, ty) || world.biomeAt(tx, ty) === 'rock') return false;
+  return [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) =>
+    world.inBounds(tx + dx!, ty + dy!) && world.isFreshWater(tx + dx!, ty + dy!));
+}

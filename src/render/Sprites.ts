@@ -165,7 +165,7 @@ export function hasBeardOf(person: Person): boolean {
 export function heldItemFor(person: Person, autoEquipTools = false): HeldItemKind | null {
   // A worker holding both a spear and a spade must show the tool doing the
   // work. Ask the executor's selector so refinements choose the same tool.
-  if (person.action === 'dig') {
+  if (person.action === 'dig' || person.action === 'dig_mud') {
     const tool = digTool(person);
     if (tool?.item === 'sticks') return 'digging_stick';
     if (tool?.item === 'spade' || tool?.item === 'antler_pick' || tool?.item === 'bronze_spade') return tool.item;

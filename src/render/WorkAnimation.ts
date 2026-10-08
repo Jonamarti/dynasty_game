@@ -39,7 +39,7 @@ export function diggingPose(
   person: Person, sim: Pick<Simulation, 'world'>,
   moving: boolean, alpha = 1,
 ): ArtPose | null {
-  if (moving || !person.alive || person.action !== 'dig' || person.actionTimer <= 0 || person.workedTicks <= 0
+  if (moving || !person.alive || (person.action !== 'dig' && person.action !== 'dig_mud') || person.actionTimer <= 0 || person.workedTicks <= 0
     || person.targetX === null || person.targetY === null) return null;
   // World coordinates name the tile's south-west corner; valid walking targets
   // arrive within the centred aim square. The action stays `dig` while walking.

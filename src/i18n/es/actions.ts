@@ -402,4 +402,8 @@ export const ES_ACTIONS: Record<string, string> = {
   "they do not know how to mine": "no saben extraer mineral",
   "They do not know how to mine": "No saben extraer mineral",
   "You do not know how to mine": "No sabes extraer mineral",
+  "Dig mud from the bank": "Cavar barro de la orilla",
+  "digging mud": "cavando barro",
+  "mud can only be dug on a freshwater bank": "solo se puede cavar barro en una orilla de agua dulce",
+  "there is no freshwater mud bank there": "no hay una orilla de barro de agua dulce allí",
 };

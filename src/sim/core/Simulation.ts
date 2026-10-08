@@ -13,7 +13,7 @@
  */
 import { trustEachOther } from '../social/Factions.ts';
 import { advanceGrass, grassBuried, CUT_ABOVE } from './Grass.ts';
-import { DIG_TO, PILE_TO, digTool, digToolFailure, earthworkWorkRefusal } from './Earth.ts';
+import { canDigBankMud, DIG_TO, PILE_TO, digTool, digToolFailure, earthworkWorkRefusal } from './Earth.ts';
 import { animalBlow } from '../entities/AnimalAttack.ts';
 import { RNG } from './RNG.ts';
 import { World } from './World.ts';
@@ -4123,10 +4123,12 @@ export class Simulation {
       }
       // M15 phase 26: moving earth is refused where it is pointless, with the
       // reason, rather than walked to and abandoned.
-      if (action === 'dig' || action === 'pile') {
+      if (action === 'dig' || action === 'dig_mud' || action === 'pile') {
+        if (action === 'dig_mud' && !canDigBankMud(this.world, target.x, target.y))
+          return this.cancelOrder(person, t('mud can only be dug on a freshwater bank'));
         const biome = this.world.biomeAt(target.x, target.y);
         if (biome === 'water' || biome === 'rock') {
-          return this.cancelOrder(person, action === 'dig'
+          return this.cancelOrder(person, action !== 'pile'
             ? t('the ground there is too hard to dig')
             : t('there is nowhere to put earth there'));
         }
@@ -4135,7 +4137,7 @@ export class Simulation {
         if (this.buildingAt(target.x, target.y)) {
           return this.cancelOrder(person, t('there is a building on that ground'));
         }
-        if (action === 'dig') {
+        if (action !== 'pile') {
           if (!digTool(person)) return this.cancelOrder(person,
             digToolFailure(person) === 'dont_know_digging_tool'
               ? t('they do not know how to use their digging tools') : t('they have nothing to dig with'));

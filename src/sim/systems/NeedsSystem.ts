@@ -35,6 +35,7 @@ const EXERTION: Record<string, number> = {
   // Hard physical work.
   chop: 1.5,
   build: 1.4,
+  dig_mud: 1.4,
   hunt: 1.4,
   haul: 1.35,
   attack: 1.5,

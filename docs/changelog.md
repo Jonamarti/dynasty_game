@@ -1,3 +1,9 @@
+## 2026-10-08 — M15 cavar barro en orillas sin depósitos
+
+Nueva orden «Cavar barro de la orilla» en suelo seco caminable adyacente a agua dulce real. Usa las herramientas y el ejecutor compartido de excavación, entrega `mud` desde la primera extracción y conserva progreso/fertilidad en el terreno. No exige un nodo de arcilla y no crea barro en costa salada ni fuera del mapa. Respeta edificios, capacidad, profundidad máxima y la inundación del agujero; las paradas/refusales tienen texto traducido. El trabajo comprueba interrupciones durante cada extracción, además de entre ellas, y muestra la misma herramienta/animación de cavar.
+
+Tres regresiones prueban producción sin depósitos, orden/refusal y sed durante una extracción; el progreso se conserva al guardar/restaurar. La orden en la versión anterior produce cero barro tras 150 ticks, confirmado en la copia aislada de `a3261b4`. Los tests existentes de excavación y el flujo de navegador del Ebro pasan. Capturas: `artifacts/screenshots/m15-river-tools-2026-10-08/Ebro-01-banks.png` y `Ebro-02-mud-dug.png`. Verificación conjunta en el siguiente hito de navegación; cohortes diferidas según M15.
+
 ## 2026-10-08 — M15 trazas fluviales y recursos continentales
 
 El atlas de ríos de 1:110 millones solo marcaba regiones; los cursos locales se inventaban entre sus centros. En las ventanas de Zaragoza, Ratisbona y Toledo faltaban tanto el cauce en la ubicación real como barro y juncos. El Rin tenía recursos pero tampoco pasaba por la ubicación medida. Comprobado contra `a3261b4` en una copia aislada: las cuatro regresiones de ubicación fallan, y Ebro/Danubio/Tajo tienen 0/0 nodos frente a los 6/9 pedidos.
