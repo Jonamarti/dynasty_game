@@ -796,3 +796,11 @@ ComarcaFrontier v5 guarda una ruta y el único checkpoint de destino preparado. 
 Los animales de transporte tienen una asignación recíproca persona/animal. TransportAnimals resuelve la entidad viva canónica y valida práctica, dueño y alcance; las cachés no crean capacidad por sí solas. Una pasada de generación derivada de semilla añade asnos/caballos después de los spawns existentes sin consumir spawnRng. La velocidad de monta se aplica solo a viajes y retorno de exploración.
 
 La vela concede alcance marítimo únicamente al plan de viaje con canoa y vela físicas y sus dos prácticas. El modo de paso local sigue siendo el de la canoa; la vela no altera los costes del movimiento local.
+
+## Noticias y tráfico mundial — M15 fase 36, 2026-10-09
+
+WorldNews es un registro acotado de cada persona. SocialSystem etiqueta origen y transmite solo el hecho contado en un contacto real; cruzar o llegar no publica noticias. El archivo mundial resuelve sujetos ausentes sin mutar al propietario extranjero.
+
+WorldTrafficCoordinator vincula la agenda WorldCaravans a un único checkpoint por partida en tránsito. Personas y mercancías tienen un propietario: comarca activa, comarca aparcada o tráfico. El comercio deposita la carga al llegar, negocia existencias físicas por baseValue y regresa tras el campamento; conserva provisiones consumibles y cadáveres. La raíz v5 guarda tráfico y lee v1–v4 con tráfico vacío. Llegadas nuevas retiran residentes reales del macro; técnicas aprendidas llegan a su sociedad con un portador de vuelta en su región. La raíz despacha incursiones aceptadas después del step y las entrega a las acciones locales por el borde. No hay segundo motor detallado ni inventario macro inventado.
+
+La vista RivalHouseView recibe archivo mundial, pero cada nombre pasa por Knowledge y la memoria de enemistades es la del hogar observado. La reconciliación del regreso conserva la memoria llevada sin sumar dos veces una historia compartida. Ver los contratos m15_phase36_news.md, m15_phase36_traffic.md y m15_phase36_raids.md.

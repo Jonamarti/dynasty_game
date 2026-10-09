@@ -1,3 +1,9 @@
+## 2026-10-09 — M15 fase 36: cierre y verificación conjunta
+
+Noticias, casas rivales, caravanas e incursiones quedan reunidas con contratos, persistencia v5 y capturas cronológicas. Versión 0.15.7-alpha. Typecheck pasa; el índice final suma 1.885 pruebas aprobadas, una omitida y el fallo heredado de difusión (0,68 frente a <0,6). Simcheck mantiene dieta/rendimiento: 2/147 fallan. La pasada general de E2E aprobó 132/132; tras el arreglo de memoria y la pausa del fixture de captura, la focal aprueba 5/5. Dos timeouts previos de screenshot se conservan en el informe, sin describirlos como aprobados.
+
+Capturas: artifacts/screenshots/m15-phase36-final-2026-10-09/ y artifacts/screenshots/m15-phase36-final-2026-10-09T-05/. Se restauraron los PNG históricos que algunos specs regeneran y se preservaron sus nuevas copias en el hito final. [Informe, commits, logs y límites](m15_phase36_verification_20261009.md). Producción macro por artículo y calibración siguen en bugs/M16; cohortes/matriz pesada diferidas. Siguiente fase: 41.
+
 ## 2026-10-09 — M15 fase 36e: captura con el fixture detenido
 
 Dos pasadas focales alcanzaron las aserciones de casas rivales, pero agotaron 60 segundos al capturar con días artificiales de cuatro ticks y el mundo en marcha. El E2E pausa después de sincronizar el nuevo propietario; conserva las comprobaciones de viaje, memoria y privacidad. Versión 0.15.7-alpha. Los timeouts se conservan en el informe final. Con la pausa pasan 5/5 E2E focales; captura revisada: artifacts/screenshots/m15-phase36-final-2026-10-09T-05/01-rival-from-origin-archive.png.
