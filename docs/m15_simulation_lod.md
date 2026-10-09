@@ -508,3 +508,5 @@ Entrega 1c: parcelas Crop/Soil, semillas finitas y trabajo bancado; fórmula de 
 Entrega 1c: procesamiento groats con receta/coste real, molino/practicante/ingredientes, progreso por persona y comida suplementaria conservada en el ledger. Grano crudo sigue con nutrición cero. 28/28 del conjunto focal pasan; integración del motor en curso.
 
 Entrega 1c: CompactBandProduction liquida bandas de una misma comarca con techo compartido por fuente, trabajo/técnicas, reparto explícito y fechas únicas. 7/7 pruebas pasan. El coordinador de borde agrupará por comarca en paso 2.
+
+Instrumento 1c: nutrición retirada/ticks productivos por fuente y CLI de una semilla corta, informe m15_compact_food_rates_20261009.json. No-efecto determinista comprobado; 15/15 focales pasan. Rates descriptivas, sin coeficientes por defecto ni calibración estacional; puerta de correspondencia pendiente de paso 4.

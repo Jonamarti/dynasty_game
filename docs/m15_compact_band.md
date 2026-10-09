@@ -174,3 +174,23 @@ Siete pruebas pasan. El motor de una banda recibe este resultado mediante
 su política de oferta; el coordinador del borde deberá reunir todas las
 bandas de cada comarca antes de repartir, como parte del paso 2.
 Hito: `artifacts/screenshots/m15-band-production-2026-10-09T-01/`.
+
+## Tasas observadas: mecanismo, no pronóstico — 2026-10-09
+
+`ActionSystem` emite nutrición efectivamente retirada y ticks productivos por
+fuente solo cuando telemetry está habilitada. Incluye lo comido en la fuente;
+la caza cuenta carne llevada, no todo lo que dejó el animal. No consume RNG ni
+cambia decisiones. `CompactFoodRateWatch` divide por `RATION_NUTRITION`; los
+contadores de nutrición no son raciones. El reparto de tiempo se divide por
+ticks de personas vivas de todas las edades, porque también trabajan niños.
+`tools/compact-food-rates.ts` reproduce una semilla de diez días y doce personas.
+
+El informe `m15_compact_food_rates_20261009.json` observa 117 persona-días,
+11 vivos al final, cinco días de primavera y cinco de verano. Rendimientos por
+jornada productiva: recolección 8,846; pesca 11,661; caza 21,505 raciones.
+Son jornadas de acción, excluyen viaje/búsqueda y no se aplican por defecto a
+todos los habitantes. Cinco muertes de presas son una muestra pequeña; otoño,
+invierno y técnicas iniciales no están cubiertos. `n/a` conserva esa ausencia.
+No se convierte este informe en coeficientes estacionales ni en un pronóstico.
+Quince pruebas focales incluyen conversión, overflow y mundo idéntico con/sin
+telemetry. Hito: `artifacts/screenshots/m15-band-food-rates-2026-10-09T-01/`.

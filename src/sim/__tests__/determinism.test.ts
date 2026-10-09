@@ -10,6 +10,7 @@ import { describe, it, expect } from 'vitest';
 import { RNG } from '../core/RNG.ts';
 import { Simulation } from '../core/Simulation.ts';
 import { setLanguage } from '../../i18n/i18n.ts';
+import { telemetry } from '../core/Telemetry.ts';
 
 const SMALL = {
   seed: 'determinism',
@@ -87,6 +88,22 @@ describe('Simulation determinism', () => {
     expect(fingerprint(a)).toBe(fingerprint(b));
   });
 
+  it('food observation counters do not change the seeded world', () => {
+    telemetry.reset();
+    const quiet = new Simulation(SMALL);
+    const observed = new Simulation(SMALL);
+    try {
+      telemetry.disable();
+      for (let i = 0; i < 1200; i++) quiet.step();
+      telemetry.enable();
+      for (let i = 0; i < 1200; i++) observed.step();
+      expect(fingerprint(observed)).toBe(fingerprint(quiet));
+      expect(telemetry.get('compact_food_nutrition_gather')).toBeGreaterThan(0);
+    } finally {
+      telemetry.disable();
+      telemetry.reset();
+    }
+  });
   // The simulation writes some of its own sentences — a line in somebody's
   // life, a refusal, a band's name — through `t`, in whatever language is set.
   // Words must never feed back into the world: a Spanish player and an English

@@ -1530,6 +1530,7 @@ export class ActionSystem {
     }
     person.actionTimer--;
     person.workedTicks++;
+    if ((ITEMS[node.itemId]?.nutrition ?? 0) > 0) telemetry.count('compact_food_work_ticks_' + (node.kind === 'fish' ? 'fish' : 'gather'));
     if (person.actionTimer > 0) return;
 
     const yieldUnits = Math.max(1, Math.round(
@@ -1555,6 +1556,7 @@ export class ActionSystem {
     const taken = node.take(Math.min(yieldUnits - eatenAtSource, room));
     if (room === 0 && !node.depleted) telemetry.count('hand_capacity_blocked');
     if (taken > 0 || eatenAtSource > 0) {
+      telemetry.count('compact_food_nutrition_' + (node.kind === 'fish' ? 'fish' : 'gather'), (ITEMS[node.itemId]?.nutrition ?? 0) * (taken + eatenAtSource));
       person.inventory.add(node.itemId, taken);
       person.yieldNutrition += (ITEMS[node.itemId]?.nutrition ?? 0) * taken;
       person.practice(node.def.skill, 0.6);
@@ -2154,6 +2156,7 @@ export class ActionSystem {
     }
     person.actionTimer--;
     person.workedTicks++;
+    telemetry.count('compact_food_work_ticks_gather');
     if (person.actionTimer > 0) return;
 
     const room = Math.max(0, Math.min(
@@ -2179,6 +2182,7 @@ export class ActionSystem {
     const picked = tree.pick(Math.min(Math.max(0, yieldUnits - eatenAtSource), room));
     if (room === 0 && tree.fruit > 0) telemetry.count('hand_capacity_blocked');
     if ((picked > 0 || eatenAtSource > 0) && tree.def.fruitItem) {
+      telemetry.count('compact_food_nutrition_gather', (ITEMS[tree.def.fruitItem]?.nutrition ?? 0) * (picked + eatenAtSource));
       if (picked > 0) person.inventory.add(tree.def.fruitItem, picked);
       person.yieldNutrition += (ITEMS[tree.def.fruitItem]?.nutrition ?? 0) * picked;
       person.practice('forage', 0.5);
@@ -2871,6 +2875,7 @@ export class ActionSystem {
       return;
     }
     person.workedTicks++;
+    telemetry.count('compact_food_work_ticks_game');
 
     // The weapon is chosen before the range test, not after, and that is M8.1
     // closing one of the three repairs the plan lists.
@@ -2953,6 +2958,7 @@ export class ActionSystem {
     if (meatTaken < yielded) telemetry.count('hand_capacity_blocked');
     person.inventory.add('meat', meatTaken);
     person.yieldNutrition += ITEMS.meat.nutrition * meatTaken;
+    telemetry.count('compact_food_nutrition_game', ITEMS.meat.nutrition * meatTaken);
     telemetry.count('hunt_killed');
     telemetry.count('harvest_meat', yielded);
     // The skin comes off with the meat. Nothing consumed hides before M6b, and

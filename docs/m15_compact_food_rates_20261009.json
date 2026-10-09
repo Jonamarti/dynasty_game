@@ -1,0 +1,67 @@
+{
+  "recordType": "CompactFoodRateWatchRecord",
+  "version": 1,
+  "seed": "compact-food-rate-watch-2026-10-09",
+  "scenario": "default generated world; one band; 12 founders",
+  "elapsedDays": 10,
+  "ticksPerDay": 240,
+  "initialPopulation": 12,
+  "finalPopulation": 11,
+  "observedPersonDays": 117,
+  "livingAdultTicks": 18480,
+  "livingPersonTicks": 28319,
+  "startingTechs": [],
+  "endingKnownTechs": [],
+  "climate": {
+    "spring": {
+      "days": 5,
+      "meanAmbientTemperature": -0.08898819039739223
+    },
+    "summer": {
+      "days": 5,
+      "meanAmbientTemperature": 0.30842252192962155
+    },
+    "autumn": {
+      "days": 0,
+      "meanAmbientTemperature": null
+    },
+    "winter": {
+      "days": 0,
+      "meanAmbientTemperature": null
+    }
+  },
+  "temperatureScale": "simulation temperature units",
+  "interpretation": "single-seed mechanism observation; not a calibrated forecast",
+  "sources": {
+    "gather": {
+      "nutritionUnits": 1553,
+      "rations": 117.65151515151516,
+      "workTicks": 3192,
+      "rationsPerProductiveWorkerDay": 8.845978582820688,
+      "shareOfLivingPersonTicks": 0.11271584448603411,
+      "coverage": "measured"
+    },
+    "fish": {
+      "nutritionUnits": 540,
+      "rations": 40.909090909090914,
+      "workTicks": 842,
+      "rationsPerProductiveWorkerDay": 11.660548477650616,
+      "shareOfLivingPersonTicks": 0.029732688301140578,
+      "coverage": "measured"
+    },
+    "game": {
+      "nutritionUnits": 330,
+      "rations": 25,
+      "workTicks": 279,
+      "rationsPerProductiveWorkerDay": 21.50537634408602,
+      "shareOfLivingPersonTicks": 0.009852042798121402,
+      "coverage": "measured"
+    }
+  },
+  "crossChecks": {
+    "fishHarvestEvents": 30,
+    "meatYieldUnitsGross": 48,
+    "berryHarvestEvents": 110,
+    "huntKills": 5
+  }
+}

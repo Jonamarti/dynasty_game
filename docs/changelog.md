@@ -1,3 +1,8 @@
+## 2026-10-09 — M15 1c: observar cosecha por fuente sin alterar el mundo
+
+Contadores optativos en ActionSystem registran nutrición retirada y ticks productivos de recolección, pesca y caza. El reporte `CompactFoodRateWatch` convierte nutrición a raciones, conserva cobertura n/a, contexto climático/técnico y exposición de todas las edades. La CLI `tools/compact-food-rates.ts` reproduce una semilla corta; resultado guardado en `m15_compact_food_rates_20261009.json`. Los eventos de pesca son eventos, no unidades; la carne gross yield se distingue de lo realmente llevado.
+
+Diez días, doce personas iniciales, 117 persona-días y once vivos: 8,846 / 11,661 / 21,505 raciones por jornada productiva en recolección / pesca / caza. Sin viaje/búsqueda, sin técnicas, solo primavera/verano y cinco presas: es observación de mecanismo, no calibración estacional o mejora económica. No se adoptan tasas por defecto. 15/15 focales incluyendo no-efecto determinista; la comprobación global de TypeScript se termina con la integración. Captura equivalente 1/1 en `artifacts/screenshots/m15-band-food-rates-2026-10-09T-01/`, sin UI nueva. Cohortes y matriz pesada diferidas por AGENTS.md.
 ## 2026-10-09 — M15 1c: varias bandas comparten una oferta finita
 
 `CompactBandProduction` distribuye el potencial estacional de una comarca entre sus bandas por trabajo elegible y tasas explícitas. La suma de recolección, pesca y caza no puede superar el perfil compartido. Se comprueban prerequisitos, fechas/estación y duplicados; el resultado ordenado es independiente del orden de entrada y cada reserva conserva su ledger propio.
@@ -13835,6 +13840,7 @@ Nuevo: `compact-correspondence craft/delta`, diferencia de hambre 23,401,
 límite declarado ≤15. No se ha relajado el límite ni recalibrado su tabla;
 queda pendiente para M16. Recogida, alimentación y lectura pasan en esta
 repetición. La suite no está verde. Resultado: `commitment-final-tests.txt`.
+
 
 
 

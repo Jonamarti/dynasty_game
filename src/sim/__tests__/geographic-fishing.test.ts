@@ -113,5 +113,7 @@ describe('geographic fish placement', () => {
     sim.peopleHash.rebuild(sim.livingPeople());
     for (let tick = 0; tick < 1200 && (telemetry.get('harvest_fish') ?? 0) === 0; tick++) sim.step();
     expect(telemetry.get('harvest_fish')).toBeGreaterThan(0);
+    expect(telemetry.get('compact_food_nutrition_fish')).toBeGreaterThan(0);
+    expect(telemetry.get('compact_food_work_ticks_fish')).toBeGreaterThan(0);
   }, 20000);
 });
