@@ -1586,3 +1586,8 @@ conservan terreno/objetos por comarca, fechas y revisiones; v1/v2 migran a libro
 vacío. Sigue conectar autoridad, primera jornada parcial, stock tipado,
 materialización y cruce jugable. Fase abierta; cohortes diferidas.
 [Contrato](m15_phase34_frontier.md).
+
+**2026-10-09: fase 34 — primera jornada parcial entregada.** Ya no exige esperar
+medianoche para iniciar compacto; computa solo el tramo restante y lo conserva
+al guardar. Sigue coordinación de autoridad, stock tipado y materialización.
+[Contrato](m15_phase34_partial_day.md). Fase abierta; sin cohortes.

@@ -520,3 +520,9 @@ Registro `TileLedger` por comarca/geografía y persistencia en raíz v3, con
 migración de v1/v2. Conserva estado detallado a fecha exacta; no activa motores
 compactos ni corrige potencial o deterioro por el tiempo transcurrido. El cruce
 real y materialización siguen pendientes. [Contrato](m15_phase34_frontier.md).
+
+**Avance del paso 2 (2026-10-09, primer tramo parcial).** El runtime ya puede
+recibir personas en cualquier tick sin regalar una jornada de producción o
+trabajo. Ancla e intervalo persisten y se validan al restaurar; demanda/cuotas
+se suministran para el tiempo restante. No hay activación del cruce todavía.
+[Contrato](m15_phase34_partial_day.md).

@@ -33,8 +33,8 @@ function intakeModel(): IntakeModel {
   return new IntakeModel(table);
 }
 
-function fixture(seed: string, initialStock = 0, quotaShare = 1, initialTick = 0): CompactBandRuntime {
-  const config = makeConfig({ time: { ticksPerDay: 2, daysPerSeason: 3, startDay: 0 },
+function fixture(seed: string, initialStock = 0, quotaShare = 1, initialTick = 0, ticksPerDay = 2, scaledSupply = false): CompactBandRuntime {
+  const config = makeConfig({ time: { ticksPerDay, daysPerSeason: 3, startDay: 0 },
     needs: { hungerRate: 1, thirstRate: 0, coldRate: 0 }, population: { conceptionChance: 0 } });
   const ids = new IdSpace();
   const person = new Person('Ari', 2, 3, 7, new RNG(seed), config.time.daysPerSeason * 4, ids);
@@ -51,9 +51,9 @@ function fixture(seed: string, initialStock = 0, quotaShare = 1, initialTick = 0
   const runtimeOptions: CompactBandRuntimeOptions = {
     bandId: 7, roster: [compact], calendar, needs: config.needs, time: config.time,
     bodyIntake: { model: intakeModel(), capacity: () => undefined, childhood: config.childhood },
-    resolveFoodDay: ({ roster }) => ({
-      supply: { population: roster.filter(p => p.person.alive).length, demandRations: 1,
-        profile, techs: [], work: { gather: work, fish: work, game: work } },
+    resolveFoodDay: ({ roster, durationFactor }) => ({
+      supply: { population: roster.filter(p => p.person.alive).length, demandRations: scaledSupply ? durationFactor : 1,
+        profile, techs: [], work: { gather: scaledSupply ? { ...work, workerDays: durationFactor, rationsPerWorkerDay: 1000 } : work, fish: work, game: work } },
       waterAvailability: 0,
     }),
     allocateIntake: ({ roster, foodBudget }) => ({ allocations: roster.filter(p => p.person.alive).map(p => ({
@@ -69,6 +69,21 @@ function fixture(seed: string, initialStock = 0, quotaShare = 1, initialTick = 0
 }
 
 describe('detached compact band runtime', () => {
+  it('attaches mid-day, limits supply to the real interval, and restores continuation exactly', () => {
+    const whole = fixture('runtime-partial-attach', 0, 1, 1, 4, true);
+    const cut = fixture('runtime-partial-attach', 0, 1, 1, 4, true);
+    whole.advanceTo(2);
+    cut.advanceTo(2);
+    const saved = wire(cut.toRecord());
+    expect(saved.pendingDay?.period).toEqual({ day: 1, season: 'spring', fromTick: 1, toTick: 4 });
+    const restored = CompactBandRuntime.fromRecord(saved, cut.services);
+    const result = restored.advanceTo(4);
+    whole.advanceTo(4);
+    expect(result.food[0]?.plannedDemand).toBeCloseTo(0.75);
+    expect(result.food[0]?.producedBySource.gather).toBeCloseTo(Math.min(profile.rations.spring.gather * 0.75, 750));
+    expect(wire(restored.toRecord())).toEqual(wire(whole.toRecord()));
+  });
+
   it('advances all ticks and survives a mid-day JSON restore without renewing intake or food', () => {
     const whole = fixture('runtime-cut'), cut = fixture('runtime-cut');
     const expected = whole.advanceTo(11);
@@ -119,6 +134,26 @@ describe('detached compact band runtime', () => {
     expect(wire(runtime.toRecord())).toEqual(afterOneDay);
     expect(runtime.calendar.foodState.day).toBe(1);
     expect(runtime.intakeReport.day).toBe(0);
+  });
+
+  it('rejects a calendar anchor that contradicts the runtime transfer tick', () => {
+    const active = fixture('runtime-partial-anchor', 0, 1, 1, 4, true);
+    active.advanceTo(2);
+    const corrupt = wire(active.toRecord()) as any;
+    corrupt.calendar.dayStartTick = 0;
+    expect(() => CompactBandRuntime.fromRecord(corrupt, active.services)).toThrow(/day anchor/);
+  });
+
+  it('rejects a food policy that tries to persist its own duration factor', () => {
+    const base = fixture('runtime-partial-factor');
+    const runtime = CompactBandRuntime.fromRecord(base.toRecord(), {
+      ...base.services,
+      resolveFoodDay: context => {
+        const plan = base.services.resolveFoodDay(context);
+        return { ...plan, supply: { ...plan.supply, durationFactor: 1 } } as any;
+      },
+    });
+    expect(() => runtime.advanceTo(1)).toThrow(/cannot override the interval duration factor/);
   });
 
   it('rejects inconsistent partial runtime snapshots before resuming', () => {

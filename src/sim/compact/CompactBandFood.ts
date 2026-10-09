@@ -47,8 +47,10 @@ export interface CompactBandFoodDayInput {
   readonly day: number;
   readonly season: CompactBandFoodSeason;
   readonly population: number;
-  /** Person-days of food needed today, supplied by the caller's explicit need model. */
+  /** Person-days of food needed for this (possibly partial) interval, supplied by the caller's explicit need model. */
   readonly demandRations: number;
+  /** Fraction of a calendar day represented by this ledger entry; defaults to a complete day. */
+  readonly durationFactor?: number;
   /** Already processed edible nutrition expressed in rations; absent means none was supplied. */
   readonly supplementalRations?: number;
   /** One comarca only: ResourceProfile already describes the band's entire compact territory. */
@@ -124,6 +126,8 @@ export function advanceCompactBandFoodDay(
   validDay(input.day, 'food input day');
   if (!Number.isSafeInteger(input.population) || input.population < 0) throw new RangeError('food population must be a non-negative integer');
   finiteNonNegative(input.demandRations, 'food demand');
+  const durationFactor = input.durationFactor ?? 1;
+  if (!Number.isFinite(durationFactor) || durationFactor <= 0 || durationFactor > 1) throw new RangeError('food duration factor must be in (0, 1]');
   const supplemental = input.supplementalRations ?? 0;
   finiteNonNegative(supplemental, 'supplemental food production');
   const known = validateTechs(input.techs, 'food techniques');
@@ -141,7 +145,7 @@ export function advanceCompactBandFoodDay(
     work[source] = { workerDays: row.workerDays, rationsPerWorkerDay: row.rationsPerWorkerDay, requires: [...requires] };
     totalWorkerDays += row.workerDays;
   }
-  if (totalWorkerDays > input.population) throw new RangeError('food worker-days exceed band population');
+  if (totalWorkerDays > input.population * durationFactor) throw new RangeError('food worker-days exceed interval population');
 
   const producedBySource = {} as Record<CompactBandFoodSource, number>;
   for (const source of COMPACT_BAND_FOOD_SOURCES) {
@@ -149,7 +153,7 @@ export function advanceCompactBandFoodDay(
     const eligible = rate.requires.every(tech => known.has(tech));
     const labourLimit = eligible ? rate.workerDays * rate.rationsPerWorkerDay : 0;
     // One profile is one comarca; repeated comarcas require their own measured profile.
-    producedBySource[source] = Math.min(potential[source], labourLimit);
+    producedBySource[source] = Math.min(potential[source] * durationFactor, labourLimit);
   }
   const produced = COMPACT_BAND_FOOD_SOURCES.reduce((sum, source) => sum + producedBySource[source]!, supplemental);
   finiteNonNegative(produced, 'food production');

@@ -749,3 +749,10 @@ records v3 retain it, while v1/v2 migrate to an empty book. Root save/load
 checks geography and calendar dates. Hydration is an exact-date detached graph,
 not authority transfer or elapsed off-map ecology. See
 [m15_phase34_frontier.md](m15_phase34_frontier.md).
+
+`CompactBandRuntime` can now attach at any tick. Its first food/work interval
+ends at the next midnight; potential, labor, crop growth and soil recovery are
+limited by elapsed ownership. Calendar v2 retains `dayStartTick` and reads v1;
+runtime v1 derives duration from `startTick` and the pending period. Policies
+supply already interval-specific demand, work and water. They cannot override
+the derived duration. See [m15_phase34_partial_day.md](m15_phase34_partial_day.md).

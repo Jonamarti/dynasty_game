@@ -13871,3 +13871,20 @@ es estado fechado, no una segunda autoridad. Contrato: `m15_phase34_frontier.md`
 
 Verificación focal final del libro/raíz: 20/20; TypeScript integrado limpio.
 Semilla única conserva dieta y rendimiento (2/147), sin nuevos fallos.
+
+## 2026-10-09 — M15 fase 34: primera jornada parcial sin producción gratuita
+
+La salida futura puede ocurrir en cualquier tick. `CompactBandRuntime` limita
+la primera oferta silvestre y trabajo a lo que queda del día, y escala cultivo
+y recuperación del suelo. Las políticas reciben duración y devuelven demanda,
+agua y cuotas para ese intervalo; no se aplica un segundo factor a esas entradas.
+Calendario v2 persiste el ancla y migra v1. Runtime v1 deriva la fracción del
+intervalo guardado y rechaza anclas discordantes o factores inyectados.
+
+El rechazo original de attach parcial se reprodujo antes de la implementación.
+42/42 focales; TypeScript limpio. Gira 1/1, trece capturas de hito en
+`artifacts/screenshots/m15-frontier-partial-day-2026-10-09T-01/`, UI sin cambios.
+Semilla única conserva fallos heredados de dieta/rendimiento. La suite global
+estable se informa al final de la integración. Cohortes/matriz diferidas.
+No activa cruces, no inventa cosechas ni declara calibración económica.
+Contrato: `m15_phase34_partial_day.md`.

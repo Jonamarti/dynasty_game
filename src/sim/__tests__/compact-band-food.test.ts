@@ -139,6 +139,17 @@ describe('compact band food ledger', () => {
     }
   });
 
+  it('limits a partial interval by proportional seasonal potential and worker-days', () => {
+    const { fertile: profile } = FIXTURES;
+    const work = { ...EMPTY_WORK, gather: { workerDays: 0.5, rationsPerWorkerDay: 1000, requires: [] } };
+    const result = advanceCompactBandFoodDay(state(), input({ profile, population: 1,
+      durationFactor: 0.5, demandRations: 0, work }));
+    expect(result.report.producedBySource.gather).toBeCloseTo(Math.min(profile.rations.summer.gather * 0.5, 500));
+    expect(() => advanceCompactBandFoodDay(state(), input({ population: 1, durationFactor: 0.5,
+      work: { ...work, gather: { ...work.gather, workerDays: 0.5001 } } }))).toThrow(/interval population/);
+    expect(() => advanceCompactBandFoodDay(state(), input({ durationFactor: 0 }))).toThrow(/duration factor/);
+  });
+
   it('rejects invalid numeric inputs, missing source rates and malformed profile potentials', () => {
     const base = input();
     const validWork = { ...EMPTY_WORK, gather: { workerDays: 1, rationsPerWorkerDay: Number.MAX_VALUE, requires: [] } };

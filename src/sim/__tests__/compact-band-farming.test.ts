@@ -46,6 +46,18 @@ describe('compact band farming', () => {
     expect(farm.seedGrain).toBe(Math.min(expected, SOW_SEED));
   });
 
+  it('applies only fractional crop growth and soil recovery during a partial day', () => {
+    const sourcePlot = plot();
+    sourcePlot.crop.sow(0);
+    sourcePlot.soil.till(0);
+    const farm = new CompactBandFarming(0, 0, 0, [sourcePlot]);
+    const field = farm.plot(1)!;
+    const organicBefore = field.soil.organic[0]!;
+    farm.advanceDay(1, 1, [farmer()], 0, false, 0.5);
+    expect(field.crop.growth).toBeCloseTo(0.1);
+    expect(field.soil.organic[0]).toBeCloseTo(organicBefore + 0.0002, 6);
+  });
+
   it('does not mint seed or spend work when seed is short or the comarca is not cultivable', () => {
     const worker = farmer();
     const short = new CompactBandFarming(0, 0, SOW_SEED - 1, [plot()]);

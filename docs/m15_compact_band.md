@@ -275,3 +275,13 @@ como hallazgo pendiente en bugs/M16 y la puerta del paso 4.
   `artifacts/m15-band-phase-simcheck-20261009.log` (locales ignorados).
 - Cohortes/matriz pesada diferidas. No se declara mejora económica ni puerta
   de correspondencia calibrada; las obligaciones de paso 2/4 están arriba.
+
+## Revisión de la unión a mitad de día — Fase 34, 2026-10-09
+
+Sustituye la restricción anterior de crear un runtime solo en frontera diaria:
+ahora puede recibir propiedad en cualquier tick. El primer periodo empieza en
+startTick y termina a medianoche, con límites de recurso/trabajo/cultivo/suelo
+para ese tramo. Policies calculan su propia demanda, agua y cuotas del tramo.
+Calendario v2 conserva el ancla y migra v1; duración se deriva del intervalo.
+42/42 focales; TypeScript limpio. Sigue sin conectarse la autoridad de Simulation.
+[Contrato detallado](m15_phase34_partial_day.md).

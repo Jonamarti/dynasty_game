@@ -4214,3 +4214,15 @@ y fechas futuras o incoherentes. No transfiere autoridad ni simula deterioro.
 Pruebas focales iniciales de libro/raíz/guardados: 19/19. Capturas de hito sin UI nueva:
 `artifacts/screenshots/m15-frontier-ledger-2026-10-09T-01/`.
 [Contrato y pendientes](m15_phase34_frontier.md). Fase 34 sigue abierta.
+
+## Avance del 2026-10-09 — Fase 34, primera jornada parcial
+
+`CompactBandRuntime` puede empezar en cualquier tick. La primera jornada
+cuenta solo el intervalo restante hasta medianoche: potencial de recursos,
+trabajo adulto, cultivo y recuperación del suelo limitados por esa duración.
+Demanda, agua y cuotas son políticas explícitas para ese tramo. Calendario v2
+persiste el ancla y lee v1; runtime v1 deriva duración de startTick e intervalo,
+sin reiniciar cuotas al recargar. 42/42 focales y TypeScript limpio.
+Gira 1/1, trece capturas sin UI nueva:
+`artifacts/screenshots/m15-frontier-partial-day-2026-10-09T-01/`.
+[Contrato](m15_phase34_partial_day.md). Sigue conectar el cruce y autoridad.

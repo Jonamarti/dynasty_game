@@ -36,8 +36,9 @@ import type { CompactBandProcessingRecord, CompactBandProcessingReport } from '.
 import { fromCompactBandKnowledgeRecord, toCompactBandKnowledgeRecord,
   type CompactBandKnowledgeRecord } from './CompactBandKnowledge.ts';
 
+export type CompactBandRuntimeFoodSupply = Omit<CompactBandDaySupply, 'supplementalRations' | 'durationFactor'>;
 export interface CompactBandRuntimeFoodPlan {
-  readonly supply: Omit<CompactBandDaySupply, 'supplementalRations'>;
+  readonly supply: CompactBandRuntimeFoodSupply;
   readonly waterAvailability: CompactWaterAvailability;
 }
 export interface CompactBandRuntimeFoodReport extends CompactBandDatedFoodReport { readonly plannedDemand: number; readonly unmetDemand: number }
@@ -51,6 +52,9 @@ export interface CompactBandRuntimeProcessingWork {
 }
 export interface CompactBandRuntimeDayContext {
   readonly period: CompactBandDay;
+  /** The interval this policy is planning, derived from period.fromTick/toTick. */
+  readonly durationTicks: number;
+  readonly durationFactor: number;
   readonly roster: readonly CompactPerson[];
   readonly farmReport: CompactFarmDayReport | null;
   readonly processingReport: CompactBandProcessingReport | null;
@@ -93,15 +97,15 @@ export interface CompactBandRuntimeServices {
   /** Explicit policy. No equal-share/default allocation is added by the runtime. */
   /** Must name each living member once and remain deterministic/pure; no quota split is inferred here. */
   readonly allocateIntake: (context: CompactBandRuntimeQuotaContext) => CompactBandRuntimeQuotaPlan;
-  readonly farmWork?: (period: CompactBandDay, roster: readonly CompactPerson[]) => CompactBandRuntimeFarmWork;
-  readonly processingWork?: (period: CompactBandDay, roster: readonly CompactPerson[]) => CompactBandRuntimeProcessingWork;
+  readonly farmWork?: (period: CompactBandDay, roster: readonly CompactPerson[], durationFactor: number) => CompactBandRuntimeFarmWork;
+  readonly processingWork?: (period: CompactBandDay, roster: readonly CompactPerson[], durationFactor: number) => CompactBandRuntimeProcessingWork;
   readonly life: CompactBandRuntimeLifeServices;
   readonly resolveKnowledge: (season: number, members: readonly Person[]) => CompactBandRuntimeKnowledgeContext;
 }
 export interface CompactBandRuntimeOptions extends CompactBandRuntimeServices {
   readonly roster: readonly CompactPerson[];
   readonly calendar: CompactBandCalendar;
-  /** Boundary tick when this detached runtime began owning the band. */
+  /** Tick when this detached runtime began owning the band; transfer may start mid-day. */
   readonly startTick?: number;
   readonly lifeLedger?: CompactBandLifeLedger;
   readonly knowledge: CompactBandKnowledgeState;
@@ -176,17 +180,17 @@ export class CompactBandRuntime {
     this.lifeLedger = options.lifeLedger ?? { version: 1, lastAdvancedDay: null };
     this.knowledge = options.knowledge;
     this.validateSetup();
-    if (!restoring && this.calendar.tick % options.time.ticksPerDay !== 0) {
-      throw new RangeError('new compact band runtime must start at a day boundary; restore a mid-day runtime record instead');
-    }
+    if (!restoring && this.startTick !== this.calendar.tick) throw new RangeError('new compact runtime must start at its current calendar tick');
   }
 
   private validateSetup(): void {
     if (!Number.isSafeInteger(this.bandId) || this.bandId < 0) throw new RangeError('invalid compact runtime band id');
-    if (!Number.isSafeInteger(this.startTick) || this.startTick < 0 || this.startTick % this.services.time.ticksPerDay !== 0 || this.startTick > this.calendar.tick) throw new RangeError('invalid compact runtime start tick');
+    if (!Number.isSafeInteger(this.startTick) || this.startTick < 0 || this.startTick > this.calendar.tick) throw new RangeError('invalid compact runtime start tick');
     const savedTime = this.calendar.toRecord().time.config;
     if (savedTime.ticksPerDay !== this.services.time.ticksPerDay || savedTime.daysPerSeason !== this.services.time.daysPerSeason || savedTime.startDay !== this.services.time.startDay || savedTime.tickRate !== this.services.time.tickRate || savedTime.maxTicksPerFrame !== this.services.time.maxTicksPerFrame) throw new RangeError('runtime and calendar clocks differ');
     if (this.intake.ticksPerDay !== this.services.time.ticksPerDay) throw new RangeError('runtime and intake clocks differ');
+    const dayBoundary = Math.floor(this.calendar.tick / this.services.time.ticksPerDay) * this.services.time.ticksPerDay;
+    if (this.calendar.currentDayStartTick !== Math.max(dayBoundary, this.startTick)) throw new RangeError('runtime day anchor does not match its start tick');
     if (JSON.stringify(this.services.bodyIntake.childhood) !== JSON.stringify(this.life.childhood)) throw new RangeError('body and life childhood configs differ');
     const seen = new Set<number>();
     for (const compact of this.roster) {
@@ -294,7 +298,10 @@ export class CompactBandRuntime {
     const before = TimeManager.fromSnapshot({ ...calendarRecord.time, tick: boundary - 1 });
     const afterDay = TimeManager.fromSnapshot({ ...calendarRecord.time, tick: boundary });
     const period: CompactBandDay = { day: this.calendar.foodState.day + 1, season: before.season,
-      fromTick: boundary - tpd, toTick: boundary };
+      fromTick: Math.max(boundary - tpd, this.startTick), toTick: boundary };
+    const durationTicks = period.toTick - period.fromTick;
+    const durationFactor = durationTicks / tpd;
+    if (durationTicks <= 0 || durationTicks > tpd) throw new RangeError('invalid compact day interval');
     if (period.day !== afterDay.day) throw new RangeError('food ledger day does not align with the game clock');
     const living = this.roster.filter(member => member.person.alive);
     const adultCount = living.filter(member => !member.person.isChild).length;
@@ -308,12 +315,12 @@ export class CompactBandRuntime {
     let edibleGrainAdded = 0;
     if (farm) {
       if (!this.services.farmWork) throw new TypeError('farm needs an explicit daily work policy');
-      const plan = this.services.farmWork(period, this.roster);
+      const plan = this.services.farmWork(period, this.roster, durationFactor);
       farmWorkTicks = plan.workTicks;
       const candidate = CompactBandFarming.fromRecord(farm.toRecord());
-      if (!Number.isSafeInteger(plan.workTicks) || plan.workTicks < 0 || plan.workTicks > adultCount * tpd || typeof plan.cultivable !== 'boolean') throw new RangeError('invalid daily farming work allocation');
+      if (!Number.isSafeInteger(plan.workTicks) || plan.workTicks < 0 || plan.workTicks > adultCount * durationTicks || typeof plan.cultivable !== 'boolean') throw new RangeError('invalid daily farming work allocation');
       farmReport = candidate.advanceDay(period.day, afterDay.growth,
-        workPeople, plan.workTicks, plan.cultivable);
+        workPeople, plan.workTicks, plan.cultivable, durationFactor);
       farm = candidate;
       if (this.processing) edibleGrainAdded = farm.takeEdibleGrain();
     }
@@ -323,19 +330,20 @@ export class CompactBandRuntime {
     let processingReport: CompactBandProcessingReport | null = null;
     if (processing) {
       if (!this.services.processingWork) throw new TypeError('processing needs an explicit daily work policy');
-      const plan = this.services.processingWork(period, this.roster);
+      const plan = this.services.processingWork(period, this.roster, durationFactor);
       processingWorkTicks = plan.workTicks;
-      if (!Number.isSafeInteger(plan.workTicks) || plan.workTicks < 0 || plan.workTicks > adultCount * tpd || !Array.isArray(plan.buildings)) throw new RangeError('invalid daily processing work allocation');
+      if (!Number.isSafeInteger(plan.workTicks) || plan.workTicks < 0 || plan.workTicks > adultCount * durationTicks || !Array.isArray(plan.buildings)) throw new RangeError('invalid daily processing work allocation');
       const candidate = CompactBandProcessing.fromRecord(processing.toRecord());
       processingReport = candidate.advanceDay(period.day, plan.workTicks,
         workPeople, plan.buildings, edibleGrainAdded);
       processing = candidate;
     }
 
-    const context: CompactBandRuntimeDayContext = { period, roster: this.roster,
+    const context: CompactBandRuntimeDayContext = { period, durationTicks, durationFactor, roster: this.roster,
       farmReport, processingReport, edibleGrainAdded };
     const foodPlan = this.services.resolveFoodDay(context);
     if (!foodPlan || !foodPlan.supply) throw new TypeError('food day planner must supply measured food inputs');
+    if (Object.hasOwn(foodPlan.supply, 'durationFactor')) throw new TypeError('food planner cannot override the interval duration factor');
     const livingCount = living.length;
     if (foodPlan.supply.population !== livingCount) throw new RangeError('food planner population differs from the living roster');
     const livingTechs = new Set<string>();
@@ -343,11 +351,11 @@ export class CompactBandRuntime {
     if (foodPlan.supply.techs.some(tech => !livingTechs.has(tech))) throw new RangeError('food planner supplied a technique not held by a living band member');
     const foodWorkerDays = Object.values(foodPlan.supply.work).reduce((sum, rate) => sum + rate.workerDays, 0);
     const laborTicks = farmWorkTicks + processingWorkTicks + foodWorkerDays * tpd;
-    if (!Number.isFinite(foodWorkerDays) || !Number.isFinite(laborTicks) || foodWorkerDays > adultCount || laborTicks > adultCount * tpd) {
+    if (!Number.isFinite(foodWorkerDays) || !Number.isFinite(laborTicks) || foodWorkerDays > adultCount * durationFactor || laborTicks > adultCount * durationTicks) {
       throw new RangeError('daily food, farm, and processing work exceeds living adult labor');
     }
     const supplementalRations = (processingReport?.nutritionProduced ?? 0) / RATION_NUTRITION;
-    const input = { ...foodPlan.supply, day: period.day, season: period.season, supplementalRations };
+    const input = { ...foodPlan.supply, day: period.day, season: period.season, durationFactor, supplementalRations };
     const preview = advanceCompactBandFoodDay(this.calendar.foodState, input);
     const foodBudget = preview.report.consumed * RATION_NUTRITION;
     if (!Number.isFinite(foodBudget)) throw new RangeError('daily food relief budget overflow');
@@ -437,7 +445,6 @@ export class CompactBandRuntime {
     const calendar = CompactBandCalendar.fromRecord(raw.calendar);
     const intake = CompactBandIntake.fromRecord(raw.intake, services.time.ticksPerDay);
     const runtime = new CompactBandRuntime({ ...services, roster, calendar, life,
-
       startTick: raw.startTick,lifeLedger: raw.lifeLedger, knowledge: fromCompactBandKnowledgeRecord(raw.knowledge),
       farm: raw.farm ? CompactBandFarming.fromRecord(raw.farm) : undefined,
       processing: raw.processing ? CompactBandProcessing.fromRecord(raw.processing) : undefined }, true);
@@ -449,7 +456,8 @@ export class CompactBandRuntime {
     if (!lifeRaw || Object.keys(lifeRaw).length !== 2 || !Object.hasOwn(lifeRaw, 'version') || !Object.hasOwn(lifeRaw, 'lastAdvancedDay') || lifeRaw.version !== 1) throw new TypeError('invalid saved life ledger');
     const lifeLastDay = lifeRaw.lastAdvancedDay;
     if (!(lifeLastDay === null || (typeof lifeLastDay === 'number' && Number.isSafeInteger(lifeLastDay) && lifeLastDay >= 0))) throw new TypeError('invalid saved life date');
-    if (tick >= (raw.startTick as number) + services.time.ticksPerDay) {
+    const firstBoundaryAfterStart = (Math.floor((raw.startTick as number) / services.time.ticksPerDay) + 1) * services.time.ticksPerDay;
+    if (tick >= firstBoundaryAfterStart) {
       const clock = TimeManager.fromSnapshot(calendar.toRecord().time);
       if (lifeLastDay !== clock.day) throw new RangeError('life ledger date does not match runtime clock');
     } else if (lifeLastDay !== null) throw new RangeError('life ledger advanced before its first daily boundary');
@@ -463,19 +471,21 @@ export class CompactBandRuntime {
       const expectedDay = Math.floor((calendar.tick - 1) / tpd);
       const expectedToTick = (Math.floor(calendar.tick / tpd) + 1) * tpd;
       const before = TimeManager.fromSnapshot({ ...calendar.toRecord().time, tick: expectedToTick - 1 });
-      if (intake.report.day !== expectedDay || pending.period.day !== calendar.foodState.day + 1 || pending.period.fromTick !== expectedToTick - tpd || pending.period.toTick !== expectedToTick || pending.period.season !== before.season || pending.waterAvailability !== intake.report.waterAvailability) throw new RangeError('pending day, intake quota, or season does not match runtime clock');
+      const expectedFromTick = Math.max(expectedToTick - tpd, raw.startTick as number);
+      if (intake.report.day !== expectedDay || pending.period.day !== calendar.foodState.day + 1 || pending.period.fromTick !== expectedFromTick || pending.period.toTick !== expectedToTick || pending.period.season !== before.season || pending.waterAvailability !== intake.report.waterAvailability) throw new RangeError('pending day, intake quota, or season does not match runtime clock');
       const aliveIds = roster.filter(member => member.person.alive).map(member => member.person.id);
       const rosterIds = new Set(roster.map(member => member.person.id));
       const quotaIds = new Set(intake.toRecord().allocations.map(row => row.personId));
       if ([...quotaIds].some(id => !rosterIds.has(id)) || aliveIds.some(id => !quotaIds.has(id))) throw new RangeError('saved intake allocations do not match the runtime roster');
       const supplyKeys = Object.keys(pending.supply);
       if (supplyKeys.some(key => !['population','demandRations','profile','techs','work','supplementalRations'].includes(key))) throw new TypeError('unknown pending food input field');
+      const durationFactor = (pending.period.toTick - pending.period.fromTick) / tpd;
       const recomputed = advanceCompactBandFoodDay(calendar.foodState, {
-        ...pending.supply, day: pending.period.day, season: pending.period.season,
+        ...pending.supply, day: pending.period.day, season: pending.period.season, durationFactor,
       });
       if (JSON.stringify(recomputed.report) !== JSON.stringify(pending.expectedFood)) throw new RangeError('pending food preview does not match saved food ledger');
       runtime.pendingDay = { ...pending, farmReport: null, processingReport: null, edibleGrainAdded: 0 };
-    } else if (calendar.tick % services.time.ticksPerDay !== 0) {
+    } else if (calendar.tick !== raw.startTick && calendar.tick % services.time.ticksPerDay !== 0) {
       throw new RangeError('mid-day runtime record is missing its saved food plan');
     }
     return runtime;

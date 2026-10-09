@@ -66,18 +66,19 @@ export class CompactBandFarming {
     return surplus;
   }
 
-  advanceDay(day: number, growth: number, people: readonly Person[], workTicks: number, cultivable: boolean): CompactFarmDayReport {
+  advanceDay(day: number, growth: number, people: readonly Person[], workTicks: number, cultivable: boolean, durationFactor = 1): CompactFarmDayReport {
     if (day !== this.lastDay + 1) throw new RangeError('farm must advance exactly one day');
-    number(growth, 'growth'); number(workTicks, 'work');
+    number(growth, 'growth'); number(workTicks, 'work'); number(durationFactor, 'duration factor');
+    if (durationFactor <= 0 || durationFactor > 1) throw new RangeError('farm duration factor must be in (0, 1]');
     if (growth > 1) throw new RangeError('farm growth must be between 0 and 1');
     if (typeof cultivable !== 'boolean') throw new TypeError('invalid cultivable flag');
     if (!Array.isArray(people)) throw new TypeError('farm workers must be an array');
     const workers = people.filter(p => p.alive && !p.isChild && p.bandId === this.bandId).sort((a, b) => a.id - b.id);
     let remaining = workTicks, seedSpent = 0, harvestedGrain = 0, fieldsSown = 0, fieldsReaped = 0;
     // Recover each retained soil once, even if two fields share it. Growth reads the game's clock, not a date table.
-    for (const soil of new Set(this.plots.map(p => p.soil))) soil.recover(1);
+    for (const soil of new Set(this.plots.map(p => p.soil))) soil.recover(durationFactor);
     for (const plot of this.plots) {
-      if (plot.crop.advance(day, growth)) { plot.reapWork = 0; plot.sowWork = 0; }
+      if (plot.crop.advance(day, growth * durationFactor)) { plot.reapWork = 0; plot.sowWork = 0; }
       if (plot.crop.stage === 'ripe') {
         const farmer = workers[0];
         if (!farmer || remaining === 0) continue;

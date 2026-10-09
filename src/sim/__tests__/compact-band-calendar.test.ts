@@ -43,6 +43,35 @@ describe('compact band calendar', () => {
     expect(restored.toRecord()).toEqual(whole.toRecord());
   });
 
+  it('retains a partial handoff interval across cuts and JSON restore', () => {
+    const clock = new TimeManager({ ...DEFAULT_CONFIG.time, ticksPerDay: 8, daysPerSeason: 10, startDay: 9 });
+    clock.tick = 3;
+    const band = new CompactBandCalendar(clock.snapshot(), { day: clock.day, stockRations: 0, storageCapacityRations: 10 });
+    const seen: unknown[] = [];
+    band.advanceTo(5, period => {
+      seen.push(period);
+      return { ...supply, demandRations: (period.toTick - period.fromTick) / 8 };
+    });
+    const restored = CompactBandCalendar.fromRecord(wire(band.toRecord()));
+    const reports = restored.advanceTo(8, period => {
+      seen.push(period);
+      return { ...supply, demandRations: (period.toTick - period.fromTick) / 8 };
+    });
+    expect(seen).toEqual([{ day: 10, season: 'spring', fromTick: 3, toTick: 8 }]);
+    expect(reports[0]?.demand).toBeCloseTo(0.625);
+    expect(restored.toRecord().dayStartTick).toBe(8);
+  });
+
+  it('loads a v1 calendar saved mid-day from its historical boundary anchor', () => {
+    const band = make();
+    band.advanceTo(5, () => supply);
+    const v2 = wire(band.toRecord()) as any;
+    const v1 = { recordType: v2.recordType, version: 1, time: v2.time, food: v2.food };
+    const restored = CompactBandCalendar.fromRecord(v1);
+    expect(restored.advanceTo(8, () => supply)).toHaveLength(1);
+    expect(restored.toRecord().dayStartTick).toBe(8);
+  });
+
   it('a bad later day rolls back earlier settlements and retry withdraws only once', () => {
     const band = make(), before = band.toRecord();
     expect(() => band.advanceTo(24, day => day.day === 11 ? { ...supply, demandRations: NaN } : supply)).toThrow();
@@ -73,7 +102,7 @@ describe('compact band calendar', () => {
     const before = band.toRecord();
     expect(() => band.advanceTo(8, () => { band.advanceTo(8, () => supply); return supply; })).toThrow(/reentrant/);
     expect(band.toRecord()).toEqual(before);
-    expect(() => CompactBandCalendar.fromRecord({ ...before, version: 2 })).toThrow();
+    expect(() => CompactBandCalendar.fromRecord({ ...before, version: 3 })).toThrow();
     expect(() => CompactBandCalendar.fromRecord({ ...before, extra: true })).toThrow();
     expect(() => CompactBandCalendar.fromRecord({ ...before, food: { ...before.food, day: 8 } })).toThrow(/date/);
     expect(() => CompactBandCalendar.fromRecord({ ...before, time: { ...before.time, tick: NaN } })).toThrow();
