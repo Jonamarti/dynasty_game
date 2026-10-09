@@ -132,6 +132,7 @@ describe('saving the whole game (phase 33c)', () => {
     const envelope = JSON.parse(serializeSave(state, 0));
     envelope.world.version = 1;
     delete envelope.world.peoples;
+    delete envelope.world.tileLedger;
     const loaded = deserializeSave(JSON.stringify(envelope));
     expect(loaded.peoples).toBeNull();
   });

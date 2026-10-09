@@ -740,3 +740,12 @@ match the cry; non-food gifts still interrupt. Timed work discards travel intent
 before Simulation reads the stateful cry signal, leaving that read to the
 ActionSystem interruption path. The scorer and interruption policy share the
 edible-inventory helper.
+
+## Geographic comarca book — M15 phase 34b, 2026-10-09
+
+`WorldState.tileLedger` keeps detached geographic comarca revisions. Its v1
+book reuses the terrain/object codecs and canonical corpse references; root
+records v3 retain it, while v1/v2 migrate to an empty book. Root save/load
+checks geography and calendar dates. Hydration is an exact-date detached graph,
+not authority transfer or elapsed off-map ecology. See
+[m15_phase34_frontier.md](m15_phase34_frontier.md).

@@ -4,6 +4,7 @@ import type { DeepPartial, SimConfig } from '../core/Config.ts';
 import type { WorldGeography } from './WorldGeography.ts';
 import { legacyIslandGeography } from './WorldGeography.ts';
 import { PeopleWorld, gridFromGeography, regionOfStart, type PeopleWorldRecord } from './PeopleWorld.ts';
+import { TileLedger, comarcaIdentityAt } from '../persistence/TileLedger.ts';
 
 export interface WorldStateGeographicStart {
   geography: WorldGeography;
@@ -36,6 +37,8 @@ export class WorldState {
   readonly geography: WorldGeography;
   readonly ids = new IdSpace();
   readonly current: Simulation;
+  /** Detached comarca revisions survive root saves; this book activates no off-map motor. */
+  readonly tileLedger = new TileLedger();
   /** Original placement, kept by the root even though Simulation consumes it only during construction. */
   readonly initialGeographicStart: (WorldStateGeographicStart & { comarcasWide: number; comarcasHigh: number }) | null;
   /**
@@ -73,7 +76,8 @@ export class WorldState {
 
   /** Join an independently restored Simulation checkpoint to its world root. */
   static fromRestored(current: Simulation, geography: WorldGeography,
-    geographicStart: WorldStateGeographicStart | null, peoplesRecord: PeopleWorldRecord | null = null): WorldState {
+    geographicStart: WorldStateGeographicStart | null, peoplesRecord: PeopleWorldRecord | null = null,
+    tileLedger = new TileLedger()): WorldState {
     // The JSON reader is not the only caller of this public assembly path.
     // A classic checkpoint cannot acquire a salt coast merely by attaching
     // macro metadata. Geographic water provenance must come from its terrain.
@@ -92,11 +96,13 @@ export class WorldState {
       current.worldFrame = worldFrameOf({ geography, ...geographicStart.start,
         comarcasWide: geographicStart.comarcasWide, comarcasHigh: geographicStart.comarcasHigh });
     }
+    assertWorldTileLedger(tileLedger, geography, current);
     const state = Object.create(WorldState.prototype) as WorldState;
     Object.defineProperties(state, {
       geography: { value: geography, enumerable: true },
       ids: { value: current.ids, enumerable: true },
       current: { value: current, enumerable: true },
+      tileLedger: { value: tileLedger, enumerable: true },
       initialGeographicStart: { value: retainStart(geography, geographicStart), enumerable: true },
       peoples: { value: restorePeoples(geography, geographicStart, peoplesRecord), enumerable: true },
     });
@@ -121,4 +127,19 @@ function restorePeoples(geography: WorldGeography, start: WorldStateGeographicSt
   if (!start || !gridFromGeography(geography)) throw new RangeError('A world of peoples needs a map to stand on');
   const { grid, options } = peopleOptions(geography, start.start);
   return PeopleWorld.fromRecord(grid, record, options);
+}
+
+
+/** A root must never attach another map's book or restore local history from its future. */
+export function assertWorldTileLedger(ledger: TileLedger, geography: WorldGeography, current: Simulation): void {
+  for (const entry of ledger.toRecord().entries) {
+    if (geography.kind === 'legacyIsland' ||
+        JSON.stringify(entry.identity) !== JSON.stringify(comarcaIdentityAt(geography, entry.identity.cx, entry.identity.cy))) {
+      throw new RangeError('Tile ledger geography does not match its world root');
+    }
+    const expectedDay = current.config.time.startDay + Math.floor(entry.lastAdvancedTick / current.config.time.ticksPerDay);
+    if (entry.lastAdvancedTick > current.time.tick || entry.lastAdvancedDay !== expectedDay) {
+      throw new RangeError('Tile ledger date does not match its world clock');
+    }
+  }
 }

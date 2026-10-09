@@ -4567,3 +4567,20 @@ propiedad exclusiva son obligaciones del coordinador, no efectos de crear el
 motor. Políticas externas (oferta, agua, edificios, contactos, IntakeModel) deben
 restaurarse equivalentes; sus closures no se serializan. El stock agregado no
 puede coexistir con sus objetos de origen. No se afirma mejora económica.
+
+## M15 fase 34: libro fechado y transferencia todavía sin activar (2026-10-09)
+
+`TileLedger` conserva revisiones y raíz v3 las guarda, pero hidratar a fecha
+posterior se rechaza: no hay deterioro/ecología off-map ni corrección del perfil
+tras tala/agotamiento. Tampoco posee población ni reserva autoridad; volver a
+materializar requiere el coordinador del paso 2 con archivo canónico completo,
+reservas ID compartidas y retirada del estado físico usado por el compacto.
+Un snapshot reutilizable no autoriza ejecutar dos dueños. Sigue como trabajo
+de fase 34, no una puerta aprobada de cruce/migración.
+
+La revisión de 34b identifica otros límites antes de activar materialización:
+la identidad Earth usa ID de atlas/metadatos, sin fingerprint del raster; no
+se compara todavía el IdSpace raíz contra IDs de todas las comarcas guardadas.
+Esos registros son historia inerte, no entidades ejecutadas: el coordinador
+deberá comprobar/reservar identidades antes de insertarlas y validar identidad
+del contenido geográfico si se admiten atlas modificados bajo el mismo ID.

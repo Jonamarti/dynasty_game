@@ -4203,3 +4203,14 @@ Primera pieza de la fase 36 (`next-steps.md` lo llevaba desde M8.2 como el nodo 
 Iniciada la contabilidad diaria de banda fuera del mapa (`CompactBandFood`): techo por recursos y trabajo, técnicas explícitas, consumo de reservas, capacidad de almacén, pérdida de excedente y déficit fechado; persistencia JSON estricta. El orden vigente sigue en `m15_simulation_lod.md` §0.5 (decisión del 2026-10-08), no en la numeración de las fases. Agricultura, alimentación finita de personas, avance demográfico/técnico e integración de frontera permanecen pendientes; no se declara 1c ni M15 completos. Tasas por trabajador obligatorias: no hay coeficientes de cosecha inferidos del potencial. [Contrato y límites](m15_compact_band.md). Captura de hito sin cambio de UI: `artifacts/screenshots/m15-compact-band-food-2026-10-09T-01/`. Cohortes y matriz diferidas por AGENTS.md.
 
 **Avance del 2026-10-09 (1c, calendario).** Segunda funcionalidad: `CompactBandCalendar` liquida el ledger al completar días del calendario real; la estación pertenece al día terminado, no al que comienza al cruzar medianoche. Guardado JSON a mitad de día y rollback antes de escribir estado, con cinco pruebas de cortes/fechas/reentrancia. Detalle en `m15_compact_band.md`; hito `artifacts/screenshots/m15-compact-band-calendar-2026-10-09T-01/`. La fase 1c sigue abierta para alimentación finita de personas y evolución completa de banda.
+
+## Avance del 2026-10-09 — Fase 34b, libro de comarca
+
+`TileLedger` conserva revisiones por geografía/comarca: terreno/suelo editado,
+objetos, inventarios y progreso mediante los codecs existentes. La hidratación
+exige fecha exacta y personas canónicas para cadáveres. `WorldStateRecord` v3
+lo guarda; v1/v2 cargan con libro vacío. Guarda/carga rechaza geografía ajena
+y fechas futuras o incoherentes. No transfiere autoridad ni simula deterioro.
+Pruebas focales iniciales de libro/raíz/guardados: 19/19. Capturas de hito sin UI nueva:
+`artifacts/screenshots/m15-frontier-ledger-2026-10-09T-01/`.
+[Contrato y pendientes](m15_phase34_frontier.md). Fase 34 sigue abierta.

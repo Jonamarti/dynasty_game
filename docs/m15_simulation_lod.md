@@ -513,3 +513,10 @@ Instrumento 1c: nutrición retirada/ticks productivos por fuente y CLI de una se
 
 
 **Cierre de implementación de 1c — 2026-10-09.** CompactBandRuntime compone ingesta finita, todos los cuerpos antes de LifeSystem, PeopleKnowledge por estación, campo/suelo y molienda reales, reserva del consumo aplicado, pérdidas y déficit visible en informes; mano de obra, techs e identidades limitadas al roster canónico. JSON guarda cuota/oferta pendiente, día parcial, archivos/parentesco/IDs/streams, cultivos, molino, configuraciones y fecha inicial tardía. Preparación del día transaccional; nuevas pruebas cubren origen tardío, fallos del allocator, muerte mid-day y cultivo/molienda/restore. No se activa Simulation ni se declara calibrada la puerta lod-matches-detail: frontera/TileLedger paso 2, correspondencia y leche/agua/estaciones paso 4. Ver contrato m15_compact_band.md y hallazgos bugs.md; cohortes y matriz pesada diferidas. Hito final: artifacts/screenshots/m15-band-runtime-2026-10-09T-01/.
+
+## Avance del paso 2 — 2026-10-09, libro de comarca
+
+Registro `TileLedger` por comarca/geografía y persistencia en raíz v3, con
+migración de v1/v2. Conserva estado detallado a fecha exacta; no activa motores
+compactos ni corrige potencial o deterioro por el tiempo transcurrido. El cruce
+real y materialización siguen pendientes. [Contrato](m15_phase34_frontier.md).

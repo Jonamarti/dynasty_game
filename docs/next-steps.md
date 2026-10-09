@@ -1580,3 +1580,9 @@ Ver [m15_phase37_metal.md](m15_phase37_metal.md). En orden de lo que desbloquea:
 4. **El yelmo puesto**: el arte de personas solo dibuja las prendas de `Wear`; el yelmo de bronce protege pero no se ve en la cabeza.
 5. **Cohortes de 20 semillas** de `sim:seeds` con y sin el metal, cuando el propietario levante el aplazamiento: lo medido hasta ahora son semillas sueltas.
 6. **`heldBy` 0,15** de los peldaños del Calcolítico y del Bronce es una suposición: ningún escenario de una corrida los alcanza.
+
+**2026-10-09: fase 34 iniciada — libro de comarca.** `TileLedger` y raíz v3
+conservan terreno/objetos por comarca, fechas y revisiones; v1/v2 migran a libro
+vacío. Sigue conectar autoridad, primera jornada parcial, stock tipado,
+materialización y cruce jugable. Fase abierta; cohortes diferidas.
+[Contrato](m15_phase34_frontier.md).

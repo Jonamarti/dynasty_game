@@ -13849,3 +13849,25 @@ Nuevo: `compact-correspondence craft/delta`, diferencia de hambre 23,401,
 límite declarado ≤15. No se ha relajado el límite ni recalibrado su tabla;
 queda pendiente para M16. Recogida, alimentación y lectura pasan en esta
 repetición. La suite no está verde. Resultado: `commitment-final-tests.txt`.
+
+## 2026-10-09 — M15 fase 34b: libro persistente de comarca
+
+`TileLedger` conserva revisiones por geografía/comarca reutilizando los codecs
+reales de terreno, suelo y objetos. Mantiene tala, recursos, inventarios, obras
+y progreso; hidrata un grafo independiente a fecha exacta y enlaza cadáveres
+con personas canónicas. Rechaza retrocesos, claves duplicadas, objetos fuera
+del terreno y ventanas sin alineación. No genera terreno ni usa RNG.
+
+`WorldState` posee el libro y formato raíz v3 lo guarda. Los v1/v2 migran
+con libro vacío; raíz valida geografía y fecha. Pruebas focales iniciales de
+libro/raíz/guardado: 19/19. Gira de hito 1/1, trece capturas en
+`artifacts/screenshots/m15-frontier-ledger-2026-10-09T-01/`. UI sin cambios.
+La verificación conjunta final se registra al reunir los puentes de esta entrega.
+Cohortes y matriz pesada diferidas por AGENTS.md.
+
+Fase 34 abierta: todavía no hay transferencia entre comarca activa y compacto,
+cruce del jugador, corrección del perfil ni deterioro fuera del mapa. El libro
+es estado fechado, no una segunda autoridad. Contrato: `m15_phase34_frontier.md`.
+
+Verificación focal final del libro/raíz: 20/20; TypeScript integrado limpio.
+Semilla única conserva dieta y rendimiento (2/147), sin nuevos fallos.

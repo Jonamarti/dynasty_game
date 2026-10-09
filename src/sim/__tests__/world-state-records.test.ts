@@ -92,4 +92,38 @@ describe('WorldState JSON envelope', () => {
     expect(() => WorldState.fromRestored(classic.current, map, null))
       .toThrow(/geography must match its starting placement/i);
   });
+
+  it('retains a detached comarca book through root save/load and migrates older roots to an empty book', () => {
+    const geography = randomWorldGeography('ledger-root', { regionsWide: 8, regionsHigh: 4 });
+    const state = new WorldState(config, { geography, start: { x: 23.5, y: 15.5 }, peoples: false });
+    const entry = state.tileLedger.capture(state);
+    const record = JSON.parse(JSON.stringify(toWorldStateRecord(state)));
+    const restored = fromWorldStateRecord(record);
+    expect(restored.tileLedger.toRecord()).toEqual(state.tileLedger.toRecord());
+    record.tileLedger.entries[0].terrain.tiles.fertility[0] = 0;
+    expect(restored.tileLedger.at(entry.identity)).toEqual(entry);
+    for (const version of [1, 2]) {
+      const old = JSON.parse(JSON.stringify(toWorldStateRecord(state)));
+      old.version = version;
+      delete old.tileLedger;
+      if (version === 1) delete old.peoples;
+      const migrated = fromWorldStateRecord(old);
+      expect(migrated.tileLedger.toRecord().entries).toEqual([]);
+      expect(toCheckpointRecord(migrated.current)).toEqual(toCheckpointRecord(state.current));
+    }
+  });
+
+  it('rejects a root book from another geography or a future local date', () => {
+    const geography = randomWorldGeography('ledger-root-check', { regionsWide: 8, regionsHigh: 4 });
+    const state = new WorldState(config, { geography, start: { x: 23.5, y: 15.5 }, peoples: false });
+    state.tileLedger.capture(state);
+    const record = JSON.parse(JSON.stringify(toWorldStateRecord(state)));
+    record.tileLedger.entries[0].identity.seed = 'alien';
+    expect(() => fromWorldStateRecord(record)).toThrow(/ledger geography/i);
+    const future = JSON.parse(JSON.stringify(toWorldStateRecord(state)));
+    future.tileLedger.entries[0].lastAdvancedTick = 1;
+    future.tileLedger.entries[0].objects.lastAdvancedTick = 1;
+    expect(() => fromWorldStateRecord(future)).toThrow(/ledger date/i);
+  });
+
 });
