@@ -1,3 +1,8 @@
+## 2026-10-09 — M15 1c: técnicas ligadas a practicantes vivos
+
+`CompactBandKnowledge` adapta `PeopleKnowledge` estacional a las personas nombradas: reconstruye población y técnicas de los vivos, conserva RNG/ledger y asigna cada adquisición a quien cumple individualmente los prerequisitos. No concede conocimiento por combinar prerrequisitos de personas diferentes, ni conserva una técnica cuando muere su último portador. Materiales, clima y contactos son entradas explícitas.
+
+8/8 pruebas nuevas; 11/11 con demografía. Typecheck limpio en la entrega del módulo. Captura equivalente 1/1 en `artifacts/screenshots/m15-band-knowledge-2026-10-09T-01/`, sin cambio de UI. Plan y contrato actualizados. No se han recalibrado los parámetros de difusión ni relajado su fallo heredado. Cohortes y matriz pesada diferidas; motor conjunto en curso.
 ## 2026-10-09 — M15 1c: demografía de personas compactas
 
 `CompactBandLife` comparte las reglas de edad, embarazo, concepción y muerte con `LifeSystem`. Primero deben alcanzar el mismo tick todos los cuerpos; un ledger impide liquidar dos veces el día. Los nacimientos conservan padres, hogar, parentesco, crónicas traducidas e IDs únicos. Cada persona usa su stream propio y la concepción exige techo explícito, sin el antiguo atajo de suponer que todo hogar lo tiene.
@@ -13815,5 +13820,6 @@ Nuevo: `compact-correspondence craft/delta`, diferencia de hambre 23,401,
 límite declarado ≤15. No se ha relajado el límite ni recalibrado su tabla;
 queda pendiente para M16. Recogida, alimentación y lectura pasan en esta
 repetición. La suite no está verde. Resultado: `commitment-final-tests.txt`.
+
 
 

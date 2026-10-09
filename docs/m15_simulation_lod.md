@@ -500,3 +500,5 @@ mixto medido; las antiguas estimaciones de microsegundos no son un benchmark.
 Entrega 1c del 2026-10-09: cuotas finitas de comida/agua conectadas a CompactBody, con checkpoint parcial y prohibición de reabrir el día. Contrato: m15_compact_band.md. El motor conjunto sigue en curso.
 
 Entrega 1c: demografía conectable con LifeSystem después de sincronizar todos los cuerpos, IDs/parentesco y fecha persistidos; no se concede techo implícito. Tres pruebas pasan. Ver m15_compact_band.md; motor conjunto en integración.
+
+Entrega 1c: técnicas estacionales de PeopleKnowledge en practicantes vivos con prerequisitos individuales, pérdida de último portador, contactos explícitos y RNG/ledger JSON. Ocho pruebas pasan; motor conjunto en integración.

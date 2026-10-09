@@ -118,3 +118,15 @@ La concepción necesita la lectura real de `roofTonight` suministrada por el
 llamante; no se inventa un techo a partir de pertenecer a un hogar.
 Tres pruebas cubren nacimiento, sincronización y conservación por JSON.
 Hito sin cambio de UI: `artifacts/screenshots/m15-band-life-2026-10-09T-01/`.
+
+## Técnicas en personas vivas — 2026-10-09
+
+`CompactBandKnowledge` usa el mecanismo estacional medido de `PeopleKnowledge`
+con la población real por sexo y edad. La unión técnica se reconstruye en cada
+estación; solo sirve como vista, no es memoria omnisciente. Una adquisición se
+concede a un practicante vivo que posee individualmente sus prerequisitos.
+Cuando muere el último portador desaparece de la vista. Prerequisitos repartidos
+entre personas no crean un aprendiz ficticio. Los contactos y materiales de
+la región se suministran explícitamente. RNG y KnowledgeLedger persisten;
+repetir la estación se rechaza. Ocho pruebas pasan, incluidos estados técnicos
+malformados. Hito: `artifacts/screenshots/m15-band-knowledge-2026-10-09T-01/`.
