@@ -1,3 +1,5 @@
+**2026-10-09: orden vigente de M15, LOD paso 1c en curso.** La revisión del propietario del 2026-10-08 (`m15_simulation_lod.md` §0.5) prioriza el compacto fuera del mapa antes de cruzar el borde y de la calibración final. Primera pieza: contabilidad diaria `CompactBandFood`, con trabajo/potencial acotados, reservas, excedente perdido y déficit; tasas obligatorias sin defaults de cosecha. Falta conectar alimentación finita de cuerpos, agricultura, demografía, técnicas y cambios del territorio antes de activar el puente de fase 34. No está cerrado 1c. [Contrato](m15_compact_band.md). Cohortes y matriz pesada siguen diferidas.
+
 **2026-10-08: pendientes del propietario sobre agua, pesca y biomas duros (sin fase asignada todavía).** Dictados al revisar el paso 1b del LOD (`m15_simulation_lod.md` §0):
 
 - **Peces proporcionales al agua.** Hoy casi cualquier comarca con agua satura el tope de 150 bancos. Deben depender de la anchura del río y de cuánto mar hay: una isla o una costa, muchos; un río ancho (Danubio, Ebro), muchos; un riachuelo, pocos. Sin comida prácticamente infinita.

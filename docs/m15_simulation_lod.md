@@ -492,3 +492,5 @@ UI tienen capturas en un hito nuevo. La deuda de supervivencia y los checks
 abiertos de la pasada actual se mantienen visibles: este diseño no los arregla
 ni declara entregado el LOD. El presupuesto numérico final se fija con el modelo
 mixto medido; las antiguas estimaciones de microsegundos no son un benchmark.
+
+**Avance del 2026-10-09 (1c, contabilidad diaria).** `CompactBandFood` liquida comida de una banda en una comarca: trabajo acotado por población, requisitos de técnicas y techo estacional por fuente; reservas con capacidad explícita, pérdidas del excedente y déficit fechado. Estado/codec JSON v1 puro, sin RNG ni tasas inventadas. Las ocho pruebas iniciales pasan; quitar el techo de potencial hace fallar cuatro. El potencial geográfico no mide cosecha por trabajador: los rendimientos son entradas obligatorias hasta la calibración. No se activa LOD ni se conecta aún la ingesta, agricultura, demografía o invención; 1c sigue abierto. Detalle en [m15_compact_band.md](m15_compact_band.md). Hito visual del juego mediante la gira (sin cambios de UI): `artifacts/screenshots/m15-compact-band-food-2026-10-09T-01/`. Cohortes y matriz pesada diferidas.

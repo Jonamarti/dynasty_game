@@ -1,3 +1,10 @@
+## 2026-10-09 — M15 paso 1c: contabilidad de comida de banda
+
+Primera funcionalidad del siguiente paso del orden revisado de LOD: `CompactBandFood` liquida una jornada de una banda en una comarca sin inventar tasas de cosecha. Cada fuente queda limitada por las jornadas disponibles, sus requisitos tecnológicos y el potencial estacional del perfil; consume la producción y después las reservas, almacena hasta capacidad y devuelve pérdidas y déficit fechados. Código puro y codec JSON v1 estricto, sin RNG ni cambio de la simulación detallada.
+
+Pruebas focales: 10/10; quitar temporalmente el techo de potencial hizo fallar cuatro de las ocho pruebas iniciales y restaurarlo las volvió verdes. Typecheck limpio. `sim:check` final conserva los dos fallos iniciales (`cravings-steer-the-diet`, `perf-budget`), 2/147. La suite completa está en curso al registrar esta primera funcionalidad; el resultado final se recoge en la entrega de calendario. No se declara un run fallido como aprobado ni se modifica ningún umbral.
+
+Gira visual 1/1, 13 capturas de hito en `artifacts/screenshots/m15-compact-band-food-2026-10-09T-01/`; imagen de arranque revisada. No cambia la UI. Detalle y límites en `m15_compact_band.md`: 1c sigue abierto, sin conexión de ingesta finita, agricultura, demografía, invención ni frontera. Cohortes económicas y matriz completa diferidas por la instrucción M15; no se afirma mejora económica.
 ## 2026-10-08 — Identidad de versión en el menú principal
 
 M15 se identifica como `0.15.0-alpha`, tomando el número de `package.json`. La etiqueta aparece en la esquina inferior del selector del globo, la primera pantalla al abrir una partida nueva.
