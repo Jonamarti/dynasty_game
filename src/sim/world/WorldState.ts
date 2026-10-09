@@ -118,6 +118,9 @@ export class WorldState {
   /** Rebind executable callbacks after construction, restoration, or a comarca handoff. */
   private bindCurrentPolicies(): void {
     const simulation = this.current;
+    const origin = this.frontier.active;
+    simulation.social.worldOrigin = origin ? { cx: origin.cx, cy: origin.cy } : null;
+    simulation.social.worldPersonById = id => this.findArchivedParent(id) ?? undefined;
     simulation.comarcaParent = id => this.findArchivedParent(id);
     simulation.comarcaTravel = {
       refusal: (person, direction, scout) => this.travelRefusal(simulation, person, direction, scout),

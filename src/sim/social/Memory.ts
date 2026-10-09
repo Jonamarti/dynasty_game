@@ -37,6 +37,8 @@ export interface MemoryEntry {
    * the same number `absorb` used, not a guess at it.
    */
   magnitude: number;
+  /** Origin of the deed, so a retelling can carry the same event across comarcas. */
+  originComarca?: { cx: number; cy: number };
 }
 
 /** Beyond this, the least salient memories are dropped. */
@@ -89,6 +91,7 @@ export class Memory {
       sourceId,
       victimBandId: event.victimBandId,
       magnitude: event.magnitude,
+      ...(event.originComarca ? { originComarca: { ...event.originComarca } } : {}),
     });
     this.known.add(event.id);
     this.trim();

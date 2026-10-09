@@ -1,3 +1,7 @@
+## 2026-10-09 — M15 fase 36a: noticias transportadas por personas
+
+Los robos conservan comarca, testigo, fuente y confianza en el registro personal. Viajar no difunde noticias: un relato real las entrega después de cruzar, aunque el culpable permanezca archivado en origen. Guardado y viaje ejercitados: 20/20 pruebas focales pasan. Versión 0.15.2-alpha. [Contrato](m15_phase36_news.md). Verificación conjunta pendiente; no cambia UI.
+
 ## 2026-10-09 — M15 fase 35: cierre funcional y verificación
 
 Cuatro entregas separadas completan canoa, viajes provisionados/rastra/carro, animales y vela. Typecheck pasa; suite completa estable: 1.848 pasan, solo falla difusión heredada y una omitida. Los controles finales de viaje/encuentros pasan 16/16. sim:check mantiene los dos fallos conocidos de 147, sin relajar límites. E2E general: 126/128 pasan; los dos fallos y las cuatro nuevas se repiten con servidor fresco, 8/8 pasan. Capturas nuevas revisadas en artifacts/screenshots/m15-phase35-final-2026-10-09T-02/, preservando las históricas. Se actualiza el plan y se señala fase 36. Límites de reloj en bloque, residentes/ecología/reproducción en tránsito y conservación manufacturada en bugs/M16; cohortes/matriz/calibración diferidas. [Informe y comandos](m15_phase35_verification_20261009.md).

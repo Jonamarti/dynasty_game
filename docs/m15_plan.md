@@ -3470,6 +3470,8 @@ El ticket abstracto guarda partida, destino canónico, fechas, carga, comida, st
 
 ## Fase 36 — Noticias, comercio y caravanas (M14 fase 18)
 
+**Avance 2026-10-09, 36a.** Noticias personales con origen y procedencia; un viaje real prueba que solo un relato transmite el robo al pasajero. Archivo del culpable resuelto sin modificarlo. 20/20 pruebas focales pasan. Ver [contrato](m15_phase36_news.md). 36c–e en curso; verificación conjunta pendiente.
+
 **Detalle en `m14_plan.md` fase 18.** Las noticias viajan con la gente;
 `trade` (el nodo de M8.2 que nunca llegó a `TECHS`, práctica neolítica que
 requiere `marking`); caravanas que se pueden asaltar; incursiones que llegan

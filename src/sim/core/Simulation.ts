@@ -3708,7 +3708,7 @@ export class Simulation {
       if (DEED_WEIGHT[memory.type] >= 0) continue;
       if (!story || memory.salience > story.salience) story = memory;
     }
-    if (story) this.social.tellStory(teller, listener, story, this.peopleById);
+    if (story) this.social.tellStory(teller, listener, story, this.peopleById, this.time.tick);
   }
 
   /**

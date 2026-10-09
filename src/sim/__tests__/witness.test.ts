@@ -74,6 +74,37 @@ describe('a deed records who saw it', () => {
     expect(remembered!.firsthand).toBe(true);
   });
 
+
+  it('carries a theft origin through an actual witness and only the rumor told onward', () => {
+    const [actor, victim, witness, listener] = people();
+    witness!.x = 51;
+    witness!.y = 51;
+    listener!.x = 110;
+    listener!.y = 110;
+    const { social, hash } = world([actor!, victim!, witness!, listener!]);
+    social.worldOrigin = { cx: 3, cy: 5 };
+
+    const event = social.emit('theft', actor!, victim!, 0.5, 1000, hash, SIGHT);
+    const unrelated = social.emit('theft', actor!, victim!, 0.3, 1001, hash, SIGHT);
+    expect([...(victim!.worldNews?.entries() ?? [])]).toMatchObject([
+      { eventId: event.id, originCx: 3, originCy: 5, firsthand: true },
+      { eventId: unrelated.id, originCx: 3, originCy: 5, firsthand: true },
+    ]);
+    expect([...(witness!.worldNews?.entries() ?? [])]).toMatchObject([
+      { eventId: event.id, originCx: 3, originCy: 5, firsthand: true },
+      { eventId: unrelated.id, originCx: 3, originCy: 5, firsthand: true },
+    ]);
+    expect(listener!.worldNews).toBeUndefined();
+
+    const story = witness!.memory.all().find(entry => entry.eventId === event.id)!;
+    social.tellStory(witness!, listener!, story, new Map([[actor!.id, actor!], [victim!.id, victim!]]));
+    expect([...(listener!.worldNews?.entries() ?? [])]).toMatchObject([{
+      eventId: event.id, originCx: 3, originCy: 5, firsthand: false,
+      sourceId: witness!.id, channel: 'conversation',
+    }]);
+    expect(listener!.worldNews!.has(unrelated.id, 3, 5)).toBe(false);
+  });
+
   it('ignores the actor and the victim however close they are', () => {
     // The two people in the deed stand on each other's toes, and that is not
     // two witnesses. A deed between a couple by the fire is still a secret

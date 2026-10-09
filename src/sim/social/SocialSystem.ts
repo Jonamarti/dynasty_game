@@ -34,6 +34,7 @@ import { t } from '../../i18n/i18n.ts';
 import { frighten, opennessOf } from './Fear.ts';
 import { noteMischief, partiality, STRANGER_REGARD_MEAN, type Culture } from './Restraint.ts';
 import type { IdSpace } from '../core/IdSpace.ts';
+import { WorldNews } from './WorldNews.ts';
 
 export interface LifeEvent {
   tick: number;
@@ -236,6 +237,10 @@ export function resetEventIds(): void {
 }
 
 export class SocialSystem {
+  /** Set by the world root; classic maps leave news origins absent. */
+  worldOrigin: { cx: number; cy: number } | null = null;
+  /** Optional parent-owned archive lookup for a story whose actor left this comarca. */
+  worldPersonById: ((id: number) => Person | undefined) | null = null;
   private mutationGuard: (people: readonly Person[]) => void = () => {};
   private mutationGuardBound = false;
 
@@ -358,6 +363,7 @@ export class SocialSystem {
       magnitude: Math.max(0, Math.min(1, magnitude)),
       witnesses: 0,
       victimBandId: target?.bandId ?? ownerBandId ?? null,
+      ...(this.worldOrigin ? { originComarca: { ...this.worldOrigin } } : {}),
     };
 
     telemetry.count('event_' + type);
@@ -424,7 +430,12 @@ export class SocialSystem {
     // one saw that" about a deed of the player's own character.
     event.witnesses = witnesses;
 
-    this.recent.push(event);
+    // The recent-event ledger has a closed schema; place provenance lives on
+    // each witness's MemoryEntry, where it can actually travel with them.
+    if (event.originComarca) {
+      const { originComarca: _originComarca, ...recentEvent } = event;
+      this.recent.push(recentEvent);
+    } else this.recent.push(event);
     if (this.recent.length > this.recentCap) this.recent.shift();
     this.onDeed?.(actor, type, event.magnitude);
 
@@ -529,6 +540,12 @@ export class SocialSystem {
     targetBandId: number | null
   ): void {
     if (!observer.memory.record(event, firsthand, confidence, sourceId)) return;
+    // Only an event-specific firsthand memory can seed a regional story. The
+    // victim and actual witnesses pass through this same path; hearsay cannot.
+    if (firsthand && event.type === 'theft' && event.originComarca) {
+      (observer.worldNews ??= new WorldNews()).witnessTheft(
+        event, observer.memory, event.originComarca.cx, event.originComarca.cy);
+    }
     // M11 phase 16c: a husband or a wife is widowed when they come to know
     // the other is dead — by finding the body, by being told it was found,
     // or by seeing the killing — and not a tick before. Until then they are
@@ -540,7 +557,12 @@ export class SocialSystem {
       telemetry.count(firsthand ? 'widowed_by_seeing' : 'widowed_by_word');
     }
     if (observer.id === actor.id) return;
-    this.introduce(observer, actor);
+    const canonicalActor = this.worldPersonById?.(actor.id);
+    if (canonicalActor && canonicalActor !== actor) {
+      // A remote subject is read only; only the local listener and relationship
+      // graph change when their traveller tells the story.
+      this.relationships.introduce(observer.id, actor.id, firstImpression(observer, actor, this.bandRelations));
+    } else this.introduce(observer, actor);
     // M11 phase 14a. After `record`, so only news frightens anybody: a story
     // already known, told again, is not a second reason to be afraid.
     frighten(observer, event, actor, firsthand, confidence, targetBandId, this.relationships);
@@ -651,8 +673,8 @@ export class SocialSystem {
       this.shareOnePlace(b, a);
     }
     for (let i = 0; i < stories; i++) {
-      this.gossip(a, b, peopleById);
-      this.gossip(b, a, peopleById);
+      this.gossip(a, b, peopleById, tick);
+      this.gossip(b, a, peopleById, tick);
     }
   }
 
@@ -909,10 +931,10 @@ export class SocialSystem {
   }
 
   /** `teller` passes their best story to `listener`. */
-  private gossip(teller: Person, listener: Person, peopleById: Map<number, Person>): void {
+  private gossip(teller: Person, listener: Person, peopleById: Map<number, Person>, tick: number): void {
     const story = teller.memory.bestGossipFor(listener.memory);
     if (!story) return;
-    this.tellStory(teller, listener, story, peopleById);
+    this.tellStory(teller, listener, story, peopleById, tick);
   }
 
   /**
@@ -927,10 +949,13 @@ export class SocialSystem {
    * on a different one than the speaker meant to tell.
    */
   tellStory(
-    teller: Person, listener: Person, story: MemoryEntry, peopleById: Map<number, Person>
+    teller: Person, listener: Person, story: MemoryEntry, peopleById: Map<number, Person>,
+    atTick: number = story.tick
   ): void {
     this.mutationGuard([teller, listener]);
-    const actor = peopleById.get(story.actorId);
+    // A story can outlive its subject in the active roster: travelers leave a
+    // detailed comarca behind, but the archived person is still the referent.
+    const actor = peopleById.get(story.actorId) ?? this.worldPersonById?.(story.actorId);
     if (!actor) return;
 
     const confidence = story.confidence * RUMOR_DECAY;
@@ -951,12 +976,25 @@ export class SocialSystem {
       // true for a story told after the fact.
       witnesses: 0,
       victimBandId: story.victimBandId,
+      ...(story.originComarca ? { originComarca: { ...story.originComarca } } : {}),
     };
 
     const before = listener.memory.size;
     this.absorb(listener, event, actor, false, confidence, teller.id,
-      story.targetId === null ? null : peopleById.get(story.targetId)?.bandId ?? null);
-    if (listener.memory.size > before) telemetry.count('rumor_spread');
+      story.targetId === null ? null : peopleById.get(story.targetId)?.bandId ?? story.victimBandId);
+    if (listener.memory.size > before) {
+      telemetry.count('rumor_spread');
+      // A normal conversation passes the selected theft only; unrelated stories
+      // in the teller's bag wait for the conversation that actually tells them.
+      if (story.type === 'theft' && story.originComarca && teller.worldNews) {
+        (listener.worldNews ??= new WorldNews());
+        const channel = teller.spouseId === listener.id || listener.spouseId === teller.id
+          ? 'spouse'
+          : teller.captiveOf !== null || listener.captiveOf !== null ? 'captive' : 'conversation';
+        teller.worldNews.tellEventTo(listener.worldNews, teller.id, story.eventId,
+          story.originComarca.cx, story.originComarca.cy, channel, atTick);
+      }
+    }
   }
 
   /**

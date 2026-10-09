@@ -90,6 +90,8 @@ export interface SocialEvent {
    * way the deed was.
    */
   victimBandId: number | null;
+  /** Geographic origin retained only in world-map social events (M15 phase 36a). */
+  originComarca?: { cx: number; cy: number };
 }
 
 /**

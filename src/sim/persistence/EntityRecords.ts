@@ -12,6 +12,7 @@ import { Mood } from '../core/Mood.ts';
 import { MacroBalance } from '../core/Macros.ts';
 import { SeasonLore } from '../knowledge/SeasonLore.ts';
 import { WorldKnowledge } from '../social/WorldKnowledge.ts';
+import { WorldNews } from '../social/WorldNews.ts';
 import { fromObjectGraph, registerGraphPrototype, toObjectGraph, type ObjectGraph } from './GraphRecords.ts';
 import { COMMITMENT_DRIVES } from '../ai/Commitment.ts';
 
@@ -25,7 +26,7 @@ export interface BandRecord extends RecordEnvelope { readonly recordType: 'BandR
 const constructorEntries: [string, Function][] = [
   ['Person', Person], ['Household', Household], ['Inventory', Inventory], ['Beliefs', Beliefs],
   ['PlaceMemory', PlaceMemory], ['SpatialHash', SpatialHash], ['Memory', Memory],
-  ['Mood', Mood], ['MacroBalance', MacroBalance], ['SeasonLore', SeasonLore], ['WorldKnowledge', WorldKnowledge],
+  ['Mood', Mood], ['MacroBalance', MacroBalance], ['SeasonLore', SeasonLore], ['WorldKnowledge', WorldKnowledge], ['WorldNews', WorldNews],
 ];
 for (const [tag, ctor] of constructorEntries) registerGraphPrototype(tag, ctor);
 

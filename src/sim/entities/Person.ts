@@ -5,6 +5,7 @@
  */
 import { SeasonLore } from '../knowledge/SeasonLore.ts';
 import type { WorldKnowledge } from '../social/WorldKnowledge.ts';
+import type { WorldNews } from '../social/WorldNews.ts';
 import type { OpenInvestigation } from '../social/Investigation.ts';
 import type { Debt, Grievance } from '../social/Amends.ts';
 import type { Case } from '../social/Justice.ts';
@@ -390,6 +391,8 @@ export class Person {
    * person has no such property at all and persists exactly as before.
    */
   declare worldKnowledge?: WorldKnowledge;
+  /** Private stories that can travel with this person between comarcas. */
+  declare worldNews?: WorldNews;
   placeMemoryStaticCell = -1;
   placeMemoryStaticDay = -1;
   /** Evidence accumulator for the current food gathering attempt. */

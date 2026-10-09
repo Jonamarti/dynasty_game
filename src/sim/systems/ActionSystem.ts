@@ -6002,7 +6002,7 @@ export class ActionSystem {
       person.caughtTick = ctx.tick;
       const story = caller.memory.all().find(m =>
         m.actorId === offenderId && m.firsthand && INTERVENABLE.has(m.type));
-      if (story) ctx.social.tellStory(caller, person, story, ctx.peopleById);
+      if (story) ctx.social.tellStory(caller, person, story, ctx.peopleById, ctx.tick);
       telemetry.count('help_told');
     }
     person.helpCallerId = null;
@@ -6218,7 +6218,7 @@ export class ActionSystem {
       for (const memory of other.memory.all()) {
         if (memory.type === 'murder' && memory.targetId === dead.id && memory.firsthand &&
           memory.actorId !== other.id) {
-          ctx.social.tellStory(other, person, memory, ctx.peopleById);
+          ctx.social.tellStory(other, person, memory, ctx.peopleById, ctx.tick);
         }
       }
       weighEvidence(other, dead, open.diedTick, true, person.id, scores);
@@ -6432,7 +6432,7 @@ export class ActionSystem {
       return;
     }
 
-    ctx.social.tellStory(person, other, story, ctx.peopleById);
+    ctx.social.tellStory(person, other, story, ctx.peopleById, ctx.tick);
     ctx.social.emit(
       sign === 'bad' ? 'slander' : 'praise', person, subject,
       Math.min(1, story.salience),
