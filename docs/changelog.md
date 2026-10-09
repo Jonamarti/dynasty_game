@@ -1,3 +1,38 @@
+## 2026-10-09 — M15 fase 34: deterioro fechado del inventario físico
+
+`ComarcaInventoryDecay` conserva escrow tipado, tick/ancla, tasa y factores de
+conservación explícitos. Barre en cada medianoche con Inventory.spoil;
+conserva carry y orden, y valida todos los clones antes de publicar. El primer
+barrido tras una transferencia parcial sigue siendo diario completo como en
+el detallado, mientras los presupuestos de producción/ingesta siguen parciales.
+Tasa cero no envejece el stock. Se rechazan carries, vidas derivadas y versiones
+desbordados antes de publicar; una fuente tardía inválida no liquida las primeras.
+No se colapsan varios días en una sola llamada proporcional, que cambia pérdidas.
+[Contrato](m15_phase34_decay.md).
+
+TypeScript final limpio; conjunto estable de escrow/raciones/deterioro 28/28
+(11 existentes, 8 nuevas de raciones, 9 de deterioro). Control mutante que omite
+applySweep: 7/9 fallan; restaurado el código, 9/9 pasan. La suite completa
+anterior incluye raciones y termina con 234 archivos: 1.773 pasan, una omitida,
+y los dos fallos heredados de compact-correspondence (hambre 23,401 vs <=15)
+y people-knowledge (difusión 0,81 vs <0,6). El módulo de deterioro añadido después
+se verifica en el conjunto focal final; no se atribuyen sus nueve pruebas a esa
+suite anterior. La semilla final conserva los dos fallos heredados de dieta y
+rendimiento, 2/147. Ningún umbral ni coeficiente modificado. No se declara verde
+la suite global. Logs: artifacts/m15-frontier-stock-{baseline-tests,final-focused,
+final-typecheck,final-simcheck}-20261009.log.
+
+Segunda gira 1/1, trece capturas nuevas en
+`artifacts/screenshots/m15-frontier-decay-2026-10-09T-01/`; arranque revisado.
+Las dos giras suman 26 capturas, sin cambio de UI. Log de esta gira:
+`artifacts/m15-frontier-decay-shots-20261009.log`.
+
+Fase 34 sigue abierta: el coordinador debe aplicar cada retirada/llegada en su
+tick antes de la siguiente barrida, conciliar producción/stock tipado y transferir
+una sola autoridad. No activa Simulation, no avanza ecología/edificios de
+TileLedger ni habilita leave_comarca. Plan, arquitectura, contratos, bugs y
+próximos pasos actualizados. Cohortes y matriz pesada diferidas por AGENTS.md;
+no se afirma mejora económica. Notas y debug.log previos del usuario intactos.
 ## 2026-10-09 — M15 fase 34: retirar raciones del escrow físico
 
 `ComarcaInventoryTransfer.consumeRations` descuenta reservas de alimentos

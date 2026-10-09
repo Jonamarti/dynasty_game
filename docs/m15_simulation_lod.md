@@ -538,3 +538,9 @@ por prioridad completa explícita, preservando alimentos tipados, materiales y
 carry. Las pruebas concilian la retirada del ledger con el saldo físico.
 [Contrato](m15_phase34_rations.md). No activa Simulation; producción almacenada,
 consumo parcial y autoridad/materialización continúan pendientes.
+
+**Avance del paso 2 (2026-10-09, deterioro físico).** Un reloj detached aplica
+barridas diarias al escrow y persiste carry, preservación y ancla, sin convertir
+varios días en una sola pérdida proporcional. [Contrato](m15_phase34_decay.md).
+La secuencia de consumo/producción en ticks pertenece al coordinador futuro;
+no activa Simulation ni sustituye la corrección ecológica de TileLedger.

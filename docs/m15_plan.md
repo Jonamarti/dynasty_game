@@ -4248,3 +4248,17 @@ a cualquier mutación. El informe diario debe conciliar `withdrawn` con estas
 reservas, porque `consumed` incluye la producción comida ese día.
 [Contrato y límites](m15_phase34_rations.md). Sigue conectar la producción
 almacenada, el consumo parcial y el coordinador de autoridad; fase 34 abierta.
+
+## Avance del 2026-10-09 — Fase 34, deterioro físico fechado
+
+`ComarcaInventoryDecay` guarda el escrow tipado, reloj/ancla, tasa de pudrición
+y conservación explícita por fuente. Aplica una barrida de Inventory.spoil en
+cada medianoche; dividir avances o guardar/cargar no renueva alimentos ni carry.
+La primera barrida tras transferir a mitad del día cobra el día completo como
+el detallado: los alimentos físicos ya existían, a diferencia del presupuesto
+parcial de producción. Tasa cero conserva contenido y carry; fallo de una
+fuente/día deja el estado anterior intacto. [Contrato](m15_phase34_decay.md).
+El coordinador debe intercalar cada consumo/llegada física en su tick antes de
+la siguiente barrida; no se afirma correspondencia para mutaciones ignoradas.
+Sigue autoridad global, producción tipada, ecología/terreno y materialización;
+no hay cruce jugable ni cierre de fase 34.

@@ -74,3 +74,9 @@ sin alterar materiales/carry. La retirada de reservas corresponde a `withdrawn`
 del reporte compacto; la producción consumida no se vuelve a cobrar. Contrato
 en [m15_phase34_rations.md](m15_phase34_rations.md). Sigue el coordinador de
 stock producido, consumo parcial y autoridad/materialización; fase 34 abierta.
+
+**Avance 2026-10-09 (deterioro de inventario).** El escrow ahora dispone de un
+reductor detached con reloj diario, carry y conservación explícita por fuente.
+[Contrato](m15_phase34_decay.md). No avanza fauna, bosques, nodos, edificios o
+terreno de TileLedger. La secuencia real de retiradas y producción deberá
+intercalarse con cada barrida bajo una sola autoridad; frontera aún abierta.

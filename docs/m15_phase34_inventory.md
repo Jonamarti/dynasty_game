@@ -24,3 +24,9 @@ validación atómica y déficit real. El informe diario debe cobrar `withdrawn`
 a las reservas anteriores, mientras `consumed` también incluye producción.
 [Contrato](m15_phase34_rations.md). Sigue enlazar autoridad, reservas, producción
 almacenada y consumo durante una jornada parcial; no se activa `leave_comarca`.
+
+El deterioro fechado del escrow dispone de un codec/reductor separado en
+[ComarcaInventoryDecay](m15_phase34_decay.md). Conserva barridas diarias; no
+conoce consumos o llegadas ocurridos entre ellas. `consumeRations` y ese reloj
+aún requieren una secuencia compartida bajo autoridad del coordinador; no son
+dos reservas utilizables a la vez.

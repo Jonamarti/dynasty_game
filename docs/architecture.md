@@ -771,3 +771,12 @@ nutrition/shortfall. The compact ledger's `withdrawn`, rather than total
 `consumed`, is the charge against pre-existing stock. Stored production and
 mid-day consumption still need the frontier coordinator; this API does not
 activate off-map ownership. See [m15_phase34_rations.md](m15_phase34_rations.md).
+
+`ComarcaInventoryDecay` v1 holds a detached typed escrow, daily sweep anchor,
+clock, spoil rate and explicit per-source preservation factors. It applies
+Inventory.spoil once at each midnight, validating all cloned states before
+publishing. A zero rate leaves stock/carry unchanged; a partial-day ownership
+transfer still receives the detailed full daily inventory sweep. Production
+and intake remain partial intervals. Consumed/arriving stock must be applied
+chronologically by the future authority coordinator; no correspondence is
+claimed across unobserved changes. See [m15_phase34_decay.md](m15_phase34_decay.md).

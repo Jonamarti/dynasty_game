@@ -4603,3 +4603,14 @@ producción almacenada ni retiradas reales a mitad del día, hidratación/macros
 veneno o propiedad. El coordinador debe secuenciar consumos y deterioro en sus
 ticks y reconciliar ambos saldos sin duplicarlos antes de activar la frontera.
 Ver `m15_phase34_rations.md`. La fase 34 permanece abierta.
+
+## Deterioro de bienes: secuencia pendiente del coordinador — 2026-10-09
+
+El escrow sí dispone ahora de deterioro fechado (`ComarcaInventoryDecay`),
+con la misma barrida diaria de Inventory. Aún no lo ejecuta Simulation y no
+conoce las retiradas/producción realizadas fuera de su snapshot. Posponer todas
+las barridas hasta después de comer cambia las pérdidas, porque se calculan
+sobre el stock presente. El coordinador de frontera debe ordenar esos eventos,
+reconciliar el ledger de raciones y conservar una sola autoridad. Este avance
+no cubre deterioro de edificios ni regeneración ecológica de TileLedger.
+Ver `m15_phase34_decay.md`; no se declara cruce o mejora económica.
