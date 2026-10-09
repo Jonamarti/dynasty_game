@@ -314,10 +314,29 @@ export class WorldState {
       const enteringEdge: ComarcaEdge = request.direction === 'n' ? 's' : request.direction === 's' ? 'n' : request.direction === 'e' ? 'w' : 'e';
       const departureMemories = request.travellerIds.map(id=>({ id, memory: stagedSource.peopleById.get(id)!.placeMemory }));
       stagedSource.transferTravellersTo(stagedDestination, request.travellerIds, enteringEdge);
+      // A `scout` order is written for an NPC sent ahead while the player stays
+      // home (M15 phase 34): the party is parked at the destination, dated
+      // knowledge is withheld until the dated return, and `source` keeps
+      // running as the live comarca. But `WorldMapOverlay`'s travel buttons
+      // always order `sim.player` (main.ts), so clicking "Scout" sends the
+      // live controlled character, not a subordinate. For that traveller the
+      // whole premise is backwards: there is no "home" left for them to pilot,
+      // and the owner found their character gone for two in-game days with no
+      // explanation, selection cleared and the globe reporting no knowledge at
+      // all (`knowledgeOfWorld(null)`), because `commitPendingCross` parked
+      // them exactly like an absent NPC. `playerTravelled` below is true only
+      // for that case, and routes the controlled traveller through the normal
+      // "install the destination" path a few lines down, same as `leave_comarca` —
+      // they arrive controllable at once, see the place as themselves standing
+      // in it, and no round-trip ticket is created, since nothing autonomous is
+      // meant to walk them home again. A genuine NPC scout (never the player)
+      // keeps the original delayed-knowledge, parked-destination, timed-return
+      // behaviour untouched.
+      const playerTravelled = worldPlayer !== undefined && request.travellerIds.includes(worldPlayer);
       for (const id of request.travellerIds) {
         const traveller = stagedDestination.peopleById.get(id)!;
         traveller.placeMemory = this.frontier.memoryAt(id,request.destination) ?? new PlaceMemory(stagedDestination.world.width,stagedDestination.world.height,48);
-        if (!request.scout) (traveller.worldKnowledge ??= new WorldKnowledge()).see(request.destination.cx,request.destination.cy,stagedDestination.time.day);
+        if (!request.scout || playerTravelled) (traveller.worldKnowledge ??= new WorldKnowledge()).see(request.destination.cx,request.destination.cy,stagedDestination.time.day);
       }
       if (request.migration && !request.scout) fissionMigratingParty(stagedSource, stagedDestination, request.travellerIds);
       const sourceRecord = toCheckpointRecord(stagedSource);
@@ -333,7 +352,11 @@ export class WorldState {
       const destination = Simulation.fromCheckpointRecordWithSharedIds(destinationRecord, this.ids);
       destination.worldFrame = worldFrameOf({ geography: this.geography, ...destinationStart.start, comarcasWide: 1, comarcasHigh: 1 });
       this.frontier.takePendingCross();
-      if (request.scout || (worldPlayer !== undefined && !request.travellerIds.includes(worldPlayer))) {
+      // Unchanged for everyone except the controlled traveller (see above):
+      // stay home and park the destination whenever either a genuine NPC
+      // scout went out, or some known player exists elsewhere and did not
+      // travel with this party.
+      if (!playerTravelled && (request.scout || worldPlayer !== undefined)) {
         const destinationTile = new TileLedger().capture({ geography: this.geography,
           current: stagedDestination, initialGeographicStart: destinationStart } as WorldState);
         const scoutRuntime = ComarcaOffmapRuntime.rebase(destinationRecord,destinationTile,destinationRuntime,this.frontier.compactState()).toRecord();
@@ -694,6 +717,11 @@ export class WorldState {
         home.insights.push({ personId: scout.id, text: t('{name} has returned from scouting', { name: scout.name }), kind: 'gain' });
       } else if (scout) {
         // A dead player returns as history, so the home can offer succession.
+        // `commitPendingCross` no longer sends the live player down this
+        // parked-scout path (2026-10-09 frontier-bug fix: `playerTravelled`
+        // installs their destination at once instead), so a freshly created
+        // ticket cannot name them here any more. This stays only to resolve a
+        // ticket a save captured before that fix.
         if (scout.isPlayer) {
           away.people = away.people.filter(p=>p.id!==scout.id); away.peopleById.delete(scout.id); away.player=null;
           for(const household of away.households) { household.remove(scout.id); if(household.headId===scout.id) household.headId=household.memberIds[0]??scout.id; }

@@ -234,7 +234,13 @@ describe('real frontier ownership and scout return',()=>{
     expect(society().techs.has(learned)).toBe(true);
   });
   it('keeps the home current until a dated scout returns with actual knowledge, including a partial-day save',()=>{
-    const state=root(),actor=state.current.possessFirst()!,id=actor.id,origin=state.frontier.active!;
+    // A `scout` ticket, a parked destination and a dated return are written for
+    // a subordinate sent ahead while the player stays home — never for the
+    // player's own controlled body (see the `playerTravelled` comment in
+    // `WorldState.commitPendingCross`). Keep a different player possessed so
+    // `actor` here is a genuine NPC scout and this test still exercises that path.
+    const state=root(); state.current.possessFirst();
+    const actor=state.current.livingPeople().find(p=>p.id!==state.current.player!.id&&!p.isChild)!,id=actor.id,origin=state.frontier.active!;
     actor.worldKnowledge=new WorldKnowledge(); actor.worldKnowledge.see(origin.cx,origin.cy,0);
     cross(state,id,'e',true);
     expect(state.frontier.active).toEqual(origin); expect(state.current.peopleById.has(id)).toBe(false);
@@ -250,6 +256,28 @@ describe('real frontier ownership and scout return',()=>{
     expect(returned.age).toBeGreaterThan(actor.age);
     expect(resumed.current.insights.some(n=>n.text.includes('returned from scouting'))).toBe(true);
     expect(()=>fromWorldStateRecord(JSON.parse(JSON.stringify(toWorldStateRecord(resumed))))).not.toThrow();
+  });
+  // Regression for the owner's 2026-10-09 report: clicking the globe's "Scout"
+  // button always orders `sim.player` (main.ts's `WorldMapOverlay` callback
+  // never names anyone else), which used to run the subordinate-scout branch
+  // above on the controlled character — parking them with no live owner for a
+  // full round trip, with `current.player` null the whole time. That is
+  // `selected` going null, the HUD losing the player, and the globe reporting
+  // `knowledgeOfWorld(null)` (an all-black map, no "you are here"), which from
+  // the owner's side looked exactly like the character had stopped existing.
+  it('a scout order on the controlled character installs the destination at once, like leave_comarca',()=>{
+    const state=root(),actor=state.current.possessFirst()!,id=actor.id,origin=state.frontier.active!;
+    expect(state.current.comarcaTravel!.arrive({person:actor,direction:'e',scout:true,travellerIds:[id]})).toBeNull();
+    expect(state.commitPendingCross()).toBe(true);
+    // The controlled traveller is live at the destination immediately: no
+    // parked scout ticket, no round trip, no gap with a null `current.player`.
+    expect(state.frontier.scouts).toHaveLength(0);
+    expect(state.frontier.active).not.toEqual(origin);
+    expect(state.current.player).not.toBeNull();
+    expect(state.current.player!.id).toBe(id);
+    expect(state.current.peopleById.get(id)).toBeDefined();
+    // Standing in the new comarca counts as having seen it, same as a plain crossing.
+    expect(state.current.player!.worldKnowledge!.entry(state.frontier.active!.cx,state.frontier.active!.cy)?.source).toBe('seen');
   });
 });
 
@@ -307,19 +335,38 @@ describe('frontier demography and drought gates',()=>{
   });
 });
 
-it('a scout who dies gives no observation and the player receives succession at home',()=>{
+// Before the frontier-bug fix (2026-10-09), `commitPendingCross` parked
+// *any* scouting traveller, including the player themselves, leaving `current`
+// with no player at all for the whole round trip — the owner's "my character
+// stopped existing" report. A genuine NPC scout, never the controlled body,
+// is still parked and can still die away; `scout.isPlayer` in `returnScouts`
+// stays as dead-save compatibility for a ticket captured before the fix, but a
+// freshly created scout ticket can no longer name the live player.
+it('a scout who dies gives no observation and the home band learns they did not return',()=>{
   const state=new WorldState({seed:'scout-death',world:{width:32,height:32},population:{bands:1,peoplePerBand:4,conceptionChance:0},time:{ticksPerDay:40,daysPerSeason:20,startDay:0},needs:{coldRate:0}},
     {geography:frontierGeography(),start:{x:40.5,y:20.5},peoples:false});
-  const actor=state.current.possessFirst()!;actor.worldKnowledge=new WorldKnowledge();
+  state.current.possessFirst();
+  const actor=state.current.livingPeople().find(p=>p.id!==state.current.player!.id&&!p.isChild)!;
+  actor.worldKnowledge=new WorldKnowledge();
   expect(state.current.comarcaTravel!.arrive({person:actor,direction:'e',scout:true})).toBeNull();expect(state.commitPendingCross()).toBe(true);
+  // Keep whoever stays home from autonomously migrating on their own while the
+  // long wait for the scout's dated return plays out (the frontier fixture has
+  // no fresh water at this comarca, so the thirsty-band-leaves gate — tested
+  // above — would otherwise fire well before the return tick and move `active`
+  // out from under this test). `commitPendingCross` just rebound this through
+  // `installCurrent`, so it has to be set after, not before. This test is
+  // about the dead scout's own report, not home band drought pressure.
+  state.current.comarcaMigration = () => null;
   const ticket=state.frontier.scouts[0]!,record=state.frontier.parkedAt(ticket.destination)!;
   const raw=record.roster.people.find(p=>fromPersonRecord(p).id===actor.id)!,dead=fromPersonRecord(raw);dead.die('thirst');
   const checkpoint={...record,roster:{...record.roster,people:record.roster.people.map(p=>fromPersonRecord(p).id===dead.id?toPersonRecord(dead,record.lastAdvancedTick):p)}};
   const tile=state.tileLedger.at(ticket.destination)!;
   state.frontier.park(ticket.destination,checkpoint,ComarcaOffmapRuntime.start(checkpoint,tile).toRecord());
+  const playerId=state.current.player!.id;
   while(state.current.time.tick<ticket.returnTick){state.current.step();state.advancePeoples();}
-  expect(state.current.succession!.died.id).toBe(actor.id);expect(state.current.succession!.died.alive).toBe(false);
-  expect(state.current.succession!.died.worldKnowledge!.entry(ticket.destination.cx,ticket.destination.cy)).toBeUndefined();
+  // The scout never comes home; the player who stayed behind is untouched.
+  expect(state.current.player!.id).toBe(playerId); expect(state.current.player!.alive).toBe(true);
+  expect(state.current.peopleById.get(actor.id)).toBeUndefined();
   expect(state.current.insights.some(n=>n.text.includes('did not return'))).toBe(true);
   expect(()=>fromWorldStateRecord(JSON.parse(JSON.stringify(toWorldStateRecord(state))))).not.toThrow();
 });
@@ -328,7 +375,9 @@ it('shortens scout return only with a canonical living riding horse, not knowled
   function duration(mounted: boolean) {
     const state = new WorldState({ seed: 'horse-scout-return', world: { width: 32, height: 32 }, population: { bands: 1, peoplePerBand: 4, conceptionChance: 0 }, time: { ticksPerDay: 40, daysPerSeason: 20, startDay: 0 }, needs: { coldRate: 0 } },
       { geography: frontierGeography(), start: { x: 40.5, y: 20.5 }, peoples: false });
-    const sim = state.current, actor = sim.possessFirst()!;
+    const sim = state.current;
+    sim.possessFirst();
+    const actor = sim.livingPeople().find(p => p.id !== sim.player!.id && !p.isChild)!;
     actor.knownTech.add('horse_riding');
     if (mounted) {
       const horse = sim.animals.find(animal => animal.alive && animal.species === 'horse')!;
