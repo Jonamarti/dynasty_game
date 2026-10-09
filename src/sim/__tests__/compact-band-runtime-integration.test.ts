@@ -19,7 +19,7 @@ import { IntakeModel } from '../compact/CompactIntake.ts';
 import { CompactBandCalendar } from '../compact/CompactBandCalendar.ts';
 import { CompactBandFarming } from '../compact/CompactBandFarming.ts';
 import { CompactBandProcessing } from '../compact/CompactBandProcessing.ts';
-import { CompactBandRuntime, type CompactBandRuntimeOptions } from '../compact/CompactBandRuntime.ts';
+import { CompactBandRuntime, type CompactBandRuntimeOptions, type CompactBandRuntimeSharedState } from '../compact/CompactBandRuntime.ts';
 import { createCompactBandKnowledgeState } from '../compact/CompactBandKnowledge.ts';
 import { deriveCompactStream, goalOf, type CompactPerson } from '../compact/CompactPerson.ts';
 
@@ -39,11 +39,11 @@ function makeIntakeModel(): IntakeModel {
   return new IntakeModel(table);
 }
 
+type FixtureShared = { ids: IdSpace; peopleById: Map<number, Person>; householdsById: Map<number, Household>; relationships: RelationshipGraph };
 type FixtureOptions = {
   seed: string; couple?: boolean; thirsty?: boolean; farm?: boolean; processing?: boolean;
-  quern?: boolean; throwAllocator?: boolean; middayDeath?: boolean;
+  quern?: boolean; throwAllocator?: boolean; middayDeath?: boolean; bandId?: number; shared?: FixtureShared;
 };
-
 function fixture(options: FixtureOptions): CompactBandRuntime {
   const tpd = options.throwAllocator ? 500 : options.farm ? 240 : options.processing ? 500 : 2;
   const config = makeConfig({
@@ -51,9 +51,10 @@ function fixture(options: FixtureOptions): CompactBandRuntime {
     needs: { hungerRate: options.processing ? 0.01 : 0, thirstRate: options.thirsty ? 1 : 0, coldRate: 0 },
     population: { conceptionChance: 0 },
   });
-  const ids = new IdSpace();
-  const people = [new Person('Ari', 2, 3, 7, new RNG(options.seed + '-one'), config.time.daysPerSeason * 4, ids)];
-  if (options.couple) people.push(new Person('Bea', 2, 3, 7, new RNG(options.seed + '-two'), config.time.daysPerSeason * 4, ids));
+  const ids = options.shared?.ids ?? new IdSpace();
+  const bandId = options.bandId ?? 7;
+  const people = [new Person('Ari', 2, 3, bandId, new RNG(options.seed + '-one'), config.time.daysPerSeason * 4, ids)];
+  if (options.couple) people.push(new Person('Bea', 2, 3, bandId, new RNG(options.seed + '-two'), config.time.daysPerSeason * 4, ids));
   for (const person of people) {
     person.age = 24 * person.daysPerYear;
     person.lifespanDays = 80 * person.daysPerYear;
@@ -66,7 +67,7 @@ function fixture(options: FixtureOptions): CompactBandRuntime {
     mother!.spouseId = father!.id; father!.spouseId = mother!.id;
     mother!.pregnant = true; mother!.gestationLeft = 1; mother!.pregnantBy = father!.id;
     mother!.lastBirthDay = -100;
-    household = new Household('Ari', mother!.id, 7, 0, ids);
+    household = new Household('Ari', mother!.id, bandId, 0, ids);
     for (const person of people) { household.add(person.id); person.householdId = household.id; }
   }
   if (options.thirsty) people[0]!.needs.thirst = options.middayDeath ? 100 : 84;
@@ -84,16 +85,18 @@ function fixture(options: FixtureOptions): CompactBandRuntime {
   });
   const geography = randomWorldGeography(options.seed + '-geography');
   const profile = comarcaResourceProfile(geography, 100, 100);
-  const peopleById = new Map(people.map(person => [person.id, person]));
-  const householdsById = new Map(household ? [[household.id, household]] : []);
+  const peopleById = options.shared?.peopleById ?? new Map<number, Person>();
+  for (const person of people) peopleById.set(person.id, person);
+  const householdsById = options.shared?.householdsById ?? new Map<number, Household>();
+  if (household) householdsById.set(household.id, household);
   const mill = options.processing ? new CompactBandProcessing(0, 3) : undefined;
-  const quern = options.quern ? new Building(BUILDINGS.quern!, 2, 3, 7, ids) : undefined;
+  const quern = options.quern ? new Building(BUILDINGS.quern!, 2, 3, bandId, ids) : undefined;
   if (quern) quern.complete = true;
-  const farm = options.farm ? new CompactBandFarming(7, 0, 7, [{ id: 1, crop: new Crop(),
+  const farm = options.farm ? new CompactBandFarming(bandId, 0, 7, [{ id: 1, crop: new Crop(),
     soil: new Soil(1, new Float32Array([0.85]), () => 0.85), tiles: [0], sowWork: 0, reapWork: 0 }]) : undefined;
 
   const runtimeOptions: CompactBandRuntimeOptions = {
-    bandId: 7, roster, calendar, needs: config.needs, time: config.time,
+    bandId, roster, calendar, needs: config.needs, time: config.time,
     bodyIntake: { model: makeIntakeModel(), capacity: () => undefined, childhood: config.childhood },
     resolveFoodDay: ({ roster: members }) => {
       const population = members.filter(member => member.person.alive).length;
@@ -118,10 +121,10 @@ function fixture(options: FixtureOptions): CompactBandRuntime {
       buildings: quern ? [quern] : [],
     }) : undefined,
     life: { population: config.population, childhood: config.childhood, learning: config.learning,
-      worldSeed: options.seed, ids, peopleById, householdsById, relationships: new RelationshipGraph(),
+      worldSeed: options.seed, ids, peopleById, householdsById, relationships: options.shared?.relationships ?? new RelationshipGraph(),
       roofTonight: members => new Map(members.filter(member => member.person.householdId !== null)
         .map(member => [member.person.id, member.person.householdId!])) },
-    knowledge: createCompactBandKnowledgeState(options.seed, 7),
+    knowledge: createCompactBandKnowledgeState(options.seed, bandId),
     resolveKnowledge: () => ({ region, mu: 0, partial: PARTIAL_START }),
     farm, processing: mill,
   };
@@ -129,6 +132,29 @@ function fixture(options: FixtureOptions): CompactBandRuntime {
 }
 
 describe('compact band runtime integration', () => {
+  it('uses shared root identities when two detached bands give birth on the same date', () => {
+    const shared = { ids: new IdSpace(), peopleById: new Map<number, Person>(),
+      householdsById: new Map<number, Household>(), relationships: new RelationshipGraph() };
+    const first = fixture({ seed: 'shared-birth-one', couple: true, bandId: 7, shared });
+    const second = fixture({ seed: 'shared-birth-two', couple: true, bandId: 8, shared });
+    const sharedState: CompactBandRuntimeSharedState = shared;
+    const firstLoaded = CompactBandRuntime.fromRecord(wire(first.toRecord()), first.services, sharedState);
+    const secondLoaded = CompactBandRuntime.fromRecord(wire(second.toRecord()), second.services, sharedState);
+
+    const firstBirth = firstLoaded.advanceTo(2).events.find(event => event.kind === 'birth');
+    const secondBirth = secondLoaded.advanceTo(2).events.find(event => event.kind === 'birth');
+    const firstChild = firstBirth?.data.childId as number;
+    const secondChild = secondBirth?.data.childId as number;
+    expect(firstChild).toBeTypeOf('number');
+    expect(secondChild).toBeTypeOf('number');
+    expect(secondChild).not.toBe(firstChild);
+    expect(shared.peopleById.get(firstChild)?.bandId).toBe(7);
+    expect(shared.peopleById.get(secondChild)?.bandId).toBe(8);
+    expect(firstLoaded.life.ids).toBe(shared.ids);
+    expect(secondLoaded.life.ids).toBe(shared.ids);
+    expect(firstLoaded.life.relationships).toBe(shared.relationships);
+    expect(secondLoaded.life.relationships).toBe(shared.relationships);
+  });
   it('registers a newborn once, restores mid-day, and ages the child at the next life boundary', () => {
     const whole = fixture({ seed: 'runtime-birth', couple: true });
     const cut = fixture({ seed: 'runtime-birth', couple: true });

@@ -1,3 +1,7 @@
+## 2026-10-09 — M15 fase 34: identidades compartidas entre bandas compactas
+
+CompactBandRuntime puede hidratarse con el IdSpace, archivo de personas/hogares y grafo de relaciones del coordinador. Evita que dos bandas fuera del mapa asignen el mismo ID a nacimientos simultáneos. Siete pruebas focales pasan, incluido el control de dos nacimientos en una misma medianoche. [Contrato](m15_phase34_shared_runtime.md). Sin cambio visual propio; registro contemporáneo en artifacts/screenshots/m15-phase34-travel-2026-10-09T-02/. Cohortes y matriz aplazadas por AGENTS.md.
+
 ## 2026-10-09 — M15 fase 34: ecología de la comarca abandonada
 
 ComarcaEcology avanza el TileLedger físico y fechado sin ejecutar una segunda Simulation: recursos, bosque, suelo, cultivos, fauna, nieve, deterioro y ruinas por abandono. Conserva streams propios y carry de nacimientos; el IdSpace se concilia con el dueño global. La ruina a 60 años es una regla explícita de diseño, pendiente de calibración empírica. Cuatro pruebas focales pasan; la integración de viajes se verifica en la siguiente funcionalidad. [Detalle](m15_phase34_ecology.md).

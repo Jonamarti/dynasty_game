@@ -112,6 +112,13 @@ export interface CompactBandRuntimeOptions extends CompactBandRuntimeServices {
   readonly farm?: CompactBandFarming;
   readonly processing?: CompactBandProcessing;
 }
+export interface CompactBandRuntimeSharedState {
+  readonly ids: IdSpace;
+  readonly peopleById: Map<number, Person>;
+  readonly householdsById: Map<number, Household>;
+  readonly relationships: RelationshipGraph;
+}
+
 export interface CompactBandRuntimeRecord {
   readonly recordType: 'CompactBandRuntimeRecord';
   readonly version: 1;
@@ -407,7 +414,7 @@ export class CompactBandRuntime {
   }
 
   /** Rebuild owned person/household graphs from codecs; policies and external world data are supplied again. */
-  static fromRecord(value: unknown, services: CompactBandRuntimeServices): CompactBandRuntime {
+  static fromRecord(value: unknown, services: CompactBandRuntimeServices, shared?: CompactBandRuntimeSharedState): CompactBandRuntime {
     if (!value || typeof value !== 'object' || Array.isArray(value)) throw new TypeError('invalid compact runtime record');
     const raw = value as Partial<CompactBandRuntimeRecord>;
     const keys = Object.keys(raw).sort();
@@ -428,20 +435,23 @@ export class CompactBandRuntime {
     }
     const roster = raw.roster.map(rec => {
       const compact = fromCompactRecord(rec);
-      const canonical = peopleById.get(compact.person.id);
+      const canonical = shared?.peopleById.get(compact.person.id) ?? peopleById.get(compact.person.id);
       if (!canonical) throw new RangeError(`compact person ${compact.person.id} missing from canonical person records`);
       if (JSON.stringify(personRecordsById.get(compact.person.id)) !== JSON.stringify((rec as CompactPersonRecord).person)) throw new RangeError(`compact/canonical person ${compact.person.id} records disagree`);
       // CompactPerson and life share the same instance, never two copies of a named person.
       return { ...compact, person: canonical };
     });
-    const householdsById = new Map<number, Household>();
+    const decodedHouseholdsById = new Map<number, Household>();
     for (const rec of raw.households) {
       const household = fromHouseholdRecord(rec);
-      if (householdsById.has(household.id)) throw new RangeError(`duplicate runtime household ${household.id}`);
-      householdsById.set(household.id, household);
+      if (decodedHouseholdsById.has(household.id)) throw new RangeError(`duplicate runtime household ${household.id}`);
+      decodedHouseholdsById.set(household.id, household);
     }
-    const life = { ...services.life, ids: IdSpaceFactory.fromSnapshot(raw.ids), peopleById,
-      householdsById, relationships: RelationshipGraphFactory.fromSnapshot(raw.relationships as ReturnType<RelationshipGraph['snapshot']>) };
+    const canonicalPeople = shared?.peopleById ?? peopleById;
+    const householdsById = shared?.householdsById ?? decodedHouseholdsById;
+    const ids = shared?.ids ?? IdSpaceFactory.fromSnapshot(raw.ids);
+    const relationships = shared?.relationships ?? RelationshipGraphFactory.fromSnapshot(raw.relationships as ReturnType<RelationshipGraph['snapshot']>);
+    const life = { ...services.life, ids, peopleById: canonicalPeople, householdsById, relationships };
     const calendar = CompactBandCalendar.fromRecord(raw.calendar);
     const intake = CompactBandIntake.fromRecord(raw.intake, services.time.ticksPerDay);
     const runtime = new CompactBandRuntime({ ...services, roster, calendar, life,
