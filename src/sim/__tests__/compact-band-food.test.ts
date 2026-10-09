@@ -56,6 +56,28 @@ function conservation(before: CompactBandFoodState, result: ReturnType<typeof ad
 }
 
 describe('compact band food ledger', () => {
+  it('accounts for processed-food rations separately and conserves them through stock and loss', () => {
+    const before = state({ stockRations: 2, storageCapacityRations: 5 });
+    const result = advanceCompactBandFoodDay(before, input({ demandRations: 3, supplementalRations: 4 }));
+    expect(result.report.producedSupplemental).toBe(4);
+    expect(result.report.produced).toBe(4);
+    expect(result.report.consumed).toBe(3);
+    expect(result.state.stockRations).toBe(3);
+    conservation(before, result);
+    expect(() => advanceCompactBandFoodDay(state(), input({ supplementalRations: -1 }))).toThrow(/supplemental/);
+    expect(() => advanceCompactBandFoodDay(state(), input({ supplementalRations: Number.POSITIVE_INFINITY }))).toThrow(/supplemental/);
+  });
+
+  it('rejects overflow when finite wild potential is added to finite processed food', () => {
+    const p = {
+      ...FIXTURES.fertile,
+      rations: { ...FIXTURES.fertile.rations,
+        summer: { gather: Number.MAX_VALUE, fish: 0, game: 0, total: Number.MAX_VALUE } },
+    } as ComarcaResourceProfile;
+    const work = { ...EMPTY_WORK, gather: { workerDays: 1, rationsPerWorkerDay: Number.MAX_VALUE, requires: [] } };
+    expect(() => advanceCompactBandFoodDay(state(), input({ profile: p, work, population: 1,
+      demandRations: 0, supplementalRations: Number.MAX_VALUE }))).toThrow(/food production/);
+  });
   it('conserves rations across harvest, consumption, storage and loss', () => {
     const { fertile: profile } = FIXTURES;
     const work = { ...EMPTY_WORK, gather: { workerDays: 10, rationsPerWorkerDay: 100, requires: [] } };
@@ -119,7 +141,7 @@ describe('compact band food ledger', () => {
 
   it('rejects invalid numeric inputs, missing source rates and malformed profile potentials', () => {
     const base = input();
-    const validWork = { ...EMPTY_WORK, gather: { workerDays: 1, rationsPerWorkerDay: 1, requires: [] } };
+    const validWork = { ...EMPTY_WORK, gather: { workerDays: 1, rationsPerWorkerDay: Number.MAX_VALUE, requires: [] } };
     expect(() => advanceCompactBandFoodDay(state(), input({ demandRations: Number.NaN }))).toThrow();
     expect(() => advanceCompactBandFoodDay(state(), input({ demandRations: Number.POSITIVE_INFINITY }))).toThrow();
     expect(() => advanceCompactBandFoodDay(state(), input({
@@ -218,3 +240,4 @@ describe('compact band food ledger', () => {
     expect(() => fromCompactBandFoodRecord({ ...record, unrecognized: true })).toThrow();
   });
 });
+

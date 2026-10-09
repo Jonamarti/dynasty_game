@@ -49,6 +49,8 @@ export interface CompactBandFoodDayInput {
   readonly population: number;
   /** Person-days of food needed today, supplied by the caller's explicit need model. */
   readonly demandRations: number;
+  /** Already processed edible nutrition expressed in rations; absent means none was supplied. */
+  readonly supplementalRations?: number;
   /** One comarca only: ResourceProfile already describes the band's entire compact territory. */
   readonly profile: ComarcaResourceProfile;
   readonly techs: readonly Tech[];
@@ -60,6 +62,8 @@ export interface CompactBandFoodDayReport {
   readonly day: number;
   readonly producedBySource: Readonly<Record<CompactBandFoodSource, number>>;
   readonly produced: number;
+  /** Processed edible rations, separate from wild-resource potential. */
+  readonly producedSupplemental: number;
   readonly demand: number;
   readonly consumed: number;
   readonly withdrawn: number;
@@ -120,6 +124,8 @@ export function advanceCompactBandFoodDay(
   validDay(input.day, 'food input day');
   if (!Number.isSafeInteger(input.population) || input.population < 0) throw new RangeError('food population must be a non-negative integer');
   finiteNonNegative(input.demandRations, 'food demand');
+  const supplemental = input.supplementalRations ?? 0;
+  finiteNonNegative(supplemental, 'supplemental food production');
   const known = validateTechs(input.techs, 'food techniques');
   const potential = profilePotential(input.profile, input.season);
 
@@ -145,7 +151,7 @@ export function advanceCompactBandFoodDay(
     // One profile is one comarca; repeated comarcas require their own measured profile.
     producedBySource[source] = Math.min(potential[source], labourLimit);
   }
-  const produced = COMPACT_BAND_FOOD_SOURCES.reduce((sum, source) => sum + producedBySource[source]!, 0);
+  const produced = COMPACT_BAND_FOOD_SOURCES.reduce((sum, source) => sum + producedBySource[source]!, supplemental);
   finiteNonNegative(produced, 'food production');
   const demand = input.demandRations;
   let withdrawn = 0, stored = 0, lost = 0, unmet = 0, consumed: number;
@@ -167,7 +173,8 @@ export function advanceCompactBandFoodDay(
     storageCapacityRations: state.storageCapacityRations,
   };
   const report: CompactBandFoodDayReport = {
-    day: input.day, producedBySource, produced, demand, consumed, withdrawn, stored, lost, unmet, stock,
+    day: input.day, producedBySource, produced, producedSupplemental: supplemental,
+    demand, consumed, withdrawn, stored, lost, unmet, stock,
   };
   return { state: nextState, report };
 }

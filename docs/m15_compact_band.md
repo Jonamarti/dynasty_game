@@ -144,3 +144,18 @@ pobre no veta una parcela sana. Los costes de siembra/cosecha se exportan desde
 el destino, no que el grano crudo sea alimento. La molienda es un paso separado.
 Cinco pruebas nuevas más farming detallado: 27/27. Hito sin cambio de UI:
 `artifacts/screenshots/m15-band-farming-2026-10-09T-01/`.
+
+## Molienda: el grano necesita procesamiento — 2026-10-09
+
+`CompactBandProcessing` ejecuta `RECIPES.groats`: tres granos pagados por una
+harina, en un molino completo de la banda, con un adulto que conoce molienda.
+Coste y habilidad son los de `ActionSystem.doCraft`; el trabajo se banca por
+practicante y cada lote practica la habilidad. Una ausencia devuelve razón
+explícita (`no_grain`, `no_station`, `no_practitioner`, `working`). JSON conserva
+existencias y horas, y la fecha no se puede repetir. El grano crudo no alimenta.
+La nutrición exacta de harina se convierte a raciones de referencia;
+`CompactBandFood.supplementalRations` la contabiliza aparte de fuentes silvestres,
+con el mismo almacenamiento, déficit y conservación. El perfil de arbustos no
+limita una cosecha que ya pagó semillas y trabajo. Cuatro pruebas de molienda
+más dos de comida suplementaria; conjunto de cuatro módulos: 28/28 pasan.
+Hito: `artifacts/screenshots/m15-band-processing-2026-10-09T-01/`.

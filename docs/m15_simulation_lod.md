@@ -504,3 +504,5 @@ Entrega 1c: demografía conectable con LifeSystem después de sincronizar todos 
 Entrega 1c: técnicas estacionales de PeopleKnowledge en practicantes vivos con prerequisitos individuales, pérdida de último portador, contactos explícitos y RNG/ledger JSON. Ocho pruebas pasan; motor conjunto en integración.
 
 Entrega 1c: parcelas Crop/Soil, semillas finitas y trabajo bancado; fórmula de suelo promedio y costes compartidos con ActionSystem. 27/27 pruebas agrícolas pasan; la molienda y el motor se integran separadamente.
+
+Entrega 1c: procesamiento groats con receta/coste real, molino/practicante/ingredientes, progreso por persona y comida suplementaria conservada en el ledger. Grano crudo sigue con nutrición cero. 28/28 del conjunto focal pasan; integración del motor en curso.

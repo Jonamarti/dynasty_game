@@ -1,3 +1,8 @@
+## 2026-10-09 — M15 1c: molienda finita y comida procesada
+
+El cultivo produce grano crudo (nutrición cero). `CompactBandProcessing` lo transforma con la receta detallada de groats: consume tres granos, exige molienda y molino completo propio, paga coste de habilidad y produce una harina con la nutrición de ITEMS. Banca las horas por practicante, practica tras terminar, persiste grano/progreso y devuelve razones explícitas cuando no puede trabajar. `CompactBandFood` contabiliza esta nutrición suplementaria separada de la oferta silvestre; no cambia los rendimientos ni regala grano.
+
+Cuatro pruebas nuevas de procesamiento y dos de comida suplementaria; conjunto food/calendar/processing/production 28/28 pasa. Typecheck limpio. La prueba de overflow usa dos sumandos MAX_VALUE: sumar uno al máximo no excedía el límite por redondeo, y se corrigió el caso de prueba. Hito equivalente 1/1 en `artifacts/screenshots/m15-band-processing-2026-10-09T-01/`, sin UI nueva. Docs actualizadas; cohortes y matriz pesada diferidas, sin afirmar mejora económica.
 ## 2026-10-09 — M15 1c: cultivo compacto con Crop y Soil
 
 Las parcelas compactas usan crecimiento, fertilidad, semillas, técnica y rendimiento del modelo detallado. El trabajo de siembra/cosecha queda bancado y persiste con las parcelas y el suelo; no se regalan campos por tener terreno cultivable. Se extrae `Soil.isPlotSpent` para compartir el promedio que ya usaba la siembra detallada, corrigiendo la divergencia inicial del compacto que vetaba toda la parcela por una sola baldosa agotada. Costes de trabajo compartidos desde Field.
@@ -13825,6 +13830,7 @@ Nuevo: `compact-correspondence craft/delta`, diferencia de hambre 23,401,
 límite declarado ≤15. No se ha relajado el límite ni recalibrado su tabla;
 queda pendiente para M16. Recogida, alimentación y lectura pasan en esta
 repetición. La suite no está verde. Resultado: `commitment-final-tests.txt`.
+
 
 
 
