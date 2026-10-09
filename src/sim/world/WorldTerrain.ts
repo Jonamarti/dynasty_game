@@ -9,6 +9,7 @@
  */
 import type { WorldGeography, WorldGeographyProfile } from './WorldGeography.ts';
 import { COMARCAS_PER_REGION } from './WorldMap.ts';
+import { WORLD_FEATURE } from './WorldFeatureSeeds.ts';
 
 export const WORLD_TERRAINS = [
   'ocean', 'lake', 'ice', 'tundra', 'boreal_forest', 'temperate_forest',
@@ -35,7 +36,12 @@ export function worldTerrainOf(profile: WorldGeographyProfile): WorldTerrain | n
   if (profile.kind === 'legacyIsland') return null;
   if (profile.kind === 'random') return profile.biome;
   if (profile.water === 'salt') return 'ocean';
-  if (profile.water === 'fresh') return 'lake';
+  // `water === 'fresh'` also fires for a comarca a river merely passes
+  // through (RealWorldMap.ts sets it from river-or-lake features alike), so
+  // reading it alone painted almost every forested region of the globe blue.
+  // Only an actual lake feature makes the comarca itself a body of water;
+  // a river still leaves the surrounding biome in charge of the colour.
+  if (profile.water === 'fresh' && (profile.features & WORLD_FEATURE.lake) !== 0) return 'lake';
   return terrainOfKoppen(profile.climateClass);
 }
 
