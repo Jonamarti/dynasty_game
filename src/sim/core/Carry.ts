@@ -31,8 +31,8 @@ function equippedCapacity(person: Person, itemClass?: ItemClass): number {
 
 /** Total carrying room, in units, from hands and containers actually equipped. */
 export function capacityFor(person: Person, config: CarryConfig): number {
-  if (config.legacyPack) return Math.round(40 * person.vigour * carryFactor(person));
-  return Math.max(1, Math.floor(BARE_HANDS * person.vigour * freeArms(person) / 2 + equippedCapacity(person)));
+  if (config.legacyPack) return Math.round(40 * person.vigour * carryFactor(person)) + person.transportCapacity;
+  return Math.max(1, Math.floor(BARE_HANDS * person.vigour * freeArms(person) / 2 + equippedCapacity(person) + person.transportCapacity));
 }
 
 /** Maximum amount of one item the hands, shoulder and fitted containers can hold. */
@@ -52,7 +52,7 @@ export function itemCapacityFor(person: Person, config: CarryConfig, itemId: str
     ? Math.floor((def.hand.shoulder ?? 0) * person.vigour)
     : 0;
   return Math.max(def.container ? 1 : 0,
-    handCapacity + shoulderCapacity + equippedCapacity(person, def.class));
+    handCapacity + shoulderCapacity + equippedCapacity(person, def.class) + person.transportCapacity);
 }
 
 /** Whether `n` more of `itemId` fits both the overall load and its own limits. */

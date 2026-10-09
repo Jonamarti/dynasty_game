@@ -1886,6 +1886,21 @@ function issue(
     possess(target.person);
     return;
   }
+  if (target.animal && (actionId === 'transport_pack' || actionId === 'transport_riding')) {
+    const subject = commanding && commanding.alive ? commanding : actor;
+    const mode = actionId === 'transport_pack' ? 'pack' : 'riding';
+    if (!sim.claimTransportAnimalFor(subject.id, target.animal.id, mode)) {
+      renderer.floaters.push(target.animal.x, target.animal.y, sim.lastRefusal ?? t('The request was refused'), { color: '#ff8c82', boxed: true });
+    }
+    return;
+  }
+  if (actionId === 'release_transport') {
+    const subject = commanding && commanding.alive ? commanding : actor;
+    if (!sim.releaseTransportAnimalFor(subject.id)) {
+      renderer.floaters.push(subject.x, subject.y, sim.lastRefusal ?? t('The request was refused'), { color: '#ff8c82', boxed: true });
+    }
+    return;
+  }
   if (actionId === 'pickup' && target.pile) {
     // The subject, not the player: what is on the ground is in plain sight of
     // anybody, so unlike a store's contents there is nothing here the player
@@ -2576,7 +2591,7 @@ function frame(now: number): void {
   if (journey) {
     const ticksPerDay = worldState.current.config.time.ticksPerDay;
     const encounterText = journey.encounters.length ? journey.encounters.map(kind => { switch (kind) { case 'wildlife': return t('Wildlife encounter'); case 'storm': return t('Storm delay'); default: return t('Settlement sighted'); } }).join(', ') : t('No encounters');
-    const journeyMode = (() => { switch (journey.transport.mode) { case 'foot': return t('On foot'); case 'sledge': return t('By sledge'); case 'cart': return t('By cart'); case 'boat': return t('By boat'); } })();
+    const journeyMode = (() => { switch (journey.transport.mode) { case 'foot': return t('On foot'); case 'sledge': return t('By sledge'); case 'cart': return t('By cart'); case 'pack': return t('With a pack animal'); case 'riding': return t('On horseback'); case 'boat': return t('By boat');  } })();
     const journeyState = worldState.current.time.tick >= journey.arrivalTick ? (worldState.current.lastRefusal ? t('Arrival delayed: {reason}', { reason: worldState.current.lastRefusal }) : t('Arriving')) : t('Travelling');
     journeyStatus.textContent = t('{status}: {mode} journey to {x}, {y}; departs day {day}; {provisions} provisions ({preserved} shelf-stable); {cargo} cargo; {encounters}; {remaining} days remaining', {
       status: journeyState, mode: journeyMode, x: journey.destination.cx + 1, y: journey.destination.cy + 1,

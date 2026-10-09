@@ -1,4 +1,5 @@
 import { boatTileFor, canUseBoat, canUseLogboat, canUseRaft, sameBoatRouteFor } from './Raft.ts';
+import { transferTransportAnimal } from './TransportAnimals.ts';
 /**
  * The simulation: owns the world, the people, the clock and the systems, and
  * runs them in a fixed order every step.
@@ -79,7 +80,7 @@ import { giftWorth } from '../social/Events.ts';
 import { ItemPile } from '../entities/ItemPile.ts';
 import { Corpse, stageOf, WOUNDS_SHOW_FOR, GONE_AFTER } from '../entities/Corpse.ts';
 import {
-  Animal, PREY_SPECIES, SPECIES_DEFS, type Species,
+  Animal, PREY_SPECIES, SPECIES_DEFS, TRANSPORT_SPECIES, type Species,
 } from '../entities/Animal.ts';
 import { WildlifeSystem, DOG_HEARING, DOG_SIGHT } from '../systems/WildlifeSystem.ts';
 import { ForestSystem, seedInitialForest } from '../systems/ForestSystem.ts';
@@ -107,6 +108,7 @@ import {
 import { NAME_ONSETS, NAME_CODAS } from '../../data/names.ts';
 import { t, aNoun, theNoun, language } from '../../i18n/i18n.ts';
 import { handsEmptyForSwimming, swimRefusal, swimRouteRefusal, swimRefusalText } from './Swimming.ts';
+import { claimTransportAnimal, refreshTransportLease, transportOf, releaseTransportAnimal } from './TransportAnimals.ts';
 import { sightIntruders, SIGHTING_EVERY, type Sightings, type Territory } from '../social/Fear.ts';
 import { MAP_CELL } from '../social/BandMaps.ts';
 import { feastVenue, isLarder } from '../social/Feast.ts';
@@ -842,6 +844,8 @@ export class Simulation {
     this.spawnPredators(this.ecologyRng);
     this.spawnOres(oreRng);
     this.spawnIronOre(ironRng);
+    // A seed-derived pass after all existing spawns keeps both spawnRng and IDs of old fauna stable.
+    this.spawnTransportAnimals(new RNG(`${this.config.seed}:transport-fauna`));
     // Geography is construction input, not live simulation state. The root may
     // retain the selected map; the motor keeps only its generated tile arrays.
     this.geographicStart = null;
@@ -946,6 +950,12 @@ export class Simulation {
     if (destination.player && travellers.some(person => person.isPlayer)) throw new RangeError('Destination already has a player character');
 
     const travellerSet = new Set(travellers.map(person => person.id));
+    for (const person of travellers) {
+      const lease = transportOf(person, this.animalsById);
+      if (lease && destination.animalsById.has(lease.animal.id)) {
+        throw new RangeError(`Transport animal ${lease.animal.id} already belongs to the destination`);
+      }
+    }
     const householdMoves: { source: Household; destination: Household; members: Person[]; removeSource: boolean; merge: boolean }[] = [];
     const householdIds = new Set<number>();
     for (const person of travellers) if (person.householdId !== null) householdIds.add(person.householdId);
@@ -999,6 +1009,8 @@ export class Simulation {
     }
     for (let index = 0; index < travellers.length; index++) {
       const person = travellers[index]!;
+      const animal = transferTransportAnimal(person, this.animals, this.animalsById, destination.animals, destination.animalsById);
+      if (animal) { this.animalHash.remove(animal); animal.x = arrivalSlots[index]!.x; animal.y = arrivalSlots[index]!.y; if (animal.alive) destination.animalHash.insert(animal); }
       this.peopleHash.remove(person);
       person.clearTarget();
       person.order = null;
@@ -1124,6 +1136,7 @@ export class Simulation {
     this.freshShoreHash.rebuild(world.freshShore);
     this.saltShoreHash.rebuild(world.saltShore);
     this.rebuildHashes();
+    this.reconcileTransportLeases();
     this.treeHash.rebuild(this.trees);
     this.pileHash.rebuild(this.piles);
     this.corpseHash.rebuild(this.corpses);
@@ -1359,6 +1372,38 @@ export class Simulation {
    * kind never moves the ones before it. On a world with a map each kind draws
    * from its own stream and is placed only where the region's profile has it.
    */
+  /**
+   * Wild equids and asses are seeded after every established pass so they cannot
+   * move fish, resources, people, or predators in existing seeds.
+   */
+  private spawnTransportAnimals(rng: RNG): void {
+    const founders = this.people.filter(person => person.alive);
+    const founderHash = new SpatialHash<Person>(8);
+    for (const founder of founders) founderHash.insert(founder);
+    const count = this.scaledCount(2);
+    if (count <= 0) return;
+    for (let index = 0; index < TRANSPORT_SPECIES.length; index++) {
+      const species = TRANSPORT_SPECIES[index]!;
+      let home: { x: number; y: number } | null = null;
+      for (let attempt = 0; attempt < 100 && !home; attempt++) {
+        const spot = this.world.randomWalkable(rng, 1);
+        if (!spot || !herdHabitat(this.world.biomeAt(spot.x, spot.y))) continue;
+        if (founderHash.queryRadius(spot.x, spot.y, 16).length > 0) continue;
+        home = spot;
+      }
+      if (!home) continue;
+      const herdId = this.ids.claimGroupId('herd', 1_000_000 + index);
+      for (let n = 0; n < count; n++) {
+        const spot = this.world.findWalkableNear(
+          Math.round(home.x + rng.range(-3, 3)),
+          Math.round(home.y + rng.range(-3, 3)),
+        ) ?? home;
+        const animal = new Animal(species, spot.x, spot.y, herdId, rng, this.ids);
+        this.animals.push(animal);
+        this.animalsById.set(animal.id, animal);
+      }
+    }
+  }
   private spawnOres(rng: RNG): void {
     const geographic = this.geographicStart !== null;
     for (const kind of RESOURCE_KINDS) {
@@ -2123,6 +2168,42 @@ export class Simulation {
    * some regard in the eyes of whoever refused — telling someone to do
    * something they will not do is itself a move, and a bad one.
    */
+  /** Claim a live tamed donkey or horse through the same lease rules as the simulation. */
+  claimTransportAnimalFor(personId: number, animalId: number, mode: 'pack' | 'riding'): boolean {
+    this.assertExecutionAuthority();
+    const person = this.peopleById.get(personId);
+    const animal = this.animalsById.get(animalId);
+    if (!person?.alive || !animal || !this.animals.includes(animal)) {
+      this.lastRefusal = t('That transport animal is no longer available');
+      return false;
+    }
+    if (Math.hypot(person.x - animal.x, person.y - animal.y) > 2.2) {
+      this.lastRefusal = t('Come closer to the transport animal');
+      return false;
+    }
+    if (!claimTransportAnimal(person, animal, mode, this.animalsById)) {
+      this.lastRefusal = t('You need the right training and a living tamed animal');
+      return false;
+    }
+    person.carryReconciledVersion = -1;
+    this.lastRefusal = null;
+    return true;
+  }
+
+  /** Release a transport lease without harming or untaming its animal. */
+  releaseTransportAnimalFor(personId: number): boolean {
+    this.assertExecutionAuthority();
+    const person = this.peopleById.get(personId);
+    if (!person?.alive || !transportOf(person, this.animalsById)) {
+      this.lastRefusal = t('You have no active transport animal');
+      return false;
+    }
+    releaseTransportAnimal(person, this.animalsById);
+    person.transportAutoClaim = false;
+    person.carryReconciledVersion = -1;
+    this.lastRefusal = null;
+    return true;
+  }
   command(
     leader: Person,
     subordinate: Person,
@@ -5399,6 +5480,7 @@ export class Simulation {
     if (living.length === 0) return null;
     return this.possess(living[0]!);
   }
+
   /**
    * Advance only the named travellers through the ordinary needs clock. The
    * comarca motor is deliberately not stepped: that would run wildlife,
@@ -5503,6 +5585,7 @@ export class Simulation {
       onBite: (animal: Animal, person: Person) => this.animalBites(animal, person),
     });
     stepMark?.('wildlife.update');
+    this.reconcileTransportLeases();
 
     const nurslingFactor = nurslingHungerFactor(this.config.childhood.feedsPerDay,
       this.config.time.ticksPerDay, this.config.needs.hungerRate);
@@ -6223,6 +6306,31 @@ export class Simulation {
     this.cleanupDead();
     stepMark?.('cleanupDead');
   }
+
+  /** Keep the carry cache and owned transport lease in step with living fauna. */
+  private reconcileTransportLeases(): void {
+    for (const person of this.people) {
+      const before = person.transportCapacity;
+      const active = refreshTransportLease(person, this.animalsById);
+      if (!active && person.alive && person.transportAnimalId === null) {
+        const canRide = techPower(person, 'horse_riding') > 0;
+        const canPack = techPower(person, 'pack_animals') > 0;
+        if ((!canRide && !canPack) || !person.transportAutoClaim) {
+          if (before !== person.transportCapacity) person.carryReconciledVersion = -1;
+          continue;
+        }
+        const radius = 2.2;
+        const candidate = this.animalHash.queryRadius(person.x, person.y, radius)
+          .filter(animal => animal.alive && animal.tamedBy === person.id && animal.transportedBy === null &&
+            ((canRide && animal.species === 'horse') || (canPack && animal.species === 'donkey')))
+          .sort((a, b) => Math.hypot(a.x - person.x, a.y - person.y) - Math.hypot(b.x - person.x, b.y - person.y) || a.id - b.id)[0];
+        if (candidate) claimTransportAnimal(person, candidate,
+          candidate.species === 'horse' ? 'riding' : 'pack', this.animalsById);
+      }
+      if (before !== person.transportCapacity) person.carryReconciledVersion = -1;
+    }
+  }
+
   /** Record only what is currently visible; phase 2f will be the first reader. */
   private observePlaces(person: Person): void {
     const memory = person.placeMemory;

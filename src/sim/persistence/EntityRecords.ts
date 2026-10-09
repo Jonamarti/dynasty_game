@@ -101,6 +101,14 @@ export function fromPersonRecord(record: unknown): Person {
         typeof commitment.baselinePressure !== 'number' || !Number.isFinite(commitment.baselinePressure) || commitment.baselinePressure < 0 ||
         typeof commitment.goal !== 'string' || commitment.goal.length === 0) fail('Person commitment is malformed');
   }
+  if (!Object.hasOwn(personState, 'transportAnimalId')) person.transportAnimalId = null;
+  else if (!(person.transportAnimalId === null || Number.isSafeInteger(person.transportAnimalId) && person.transportAnimalId > 0)) fail('Person transport animal id is malformed');
+  if (!Object.hasOwn(personState, 'transportMode')) person.transportMode = null;
+  else if (!(person.transportMode === null || person.transportMode === 'pack' || person.transportMode === 'riding')) fail('Person transport mode is malformed');
+  if (!Object.hasOwn(personState, 'transportCapacity')) person.transportCapacity = 0;
+  else if (typeof person.transportCapacity !== 'number' || !Number.isFinite(person.transportCapacity) || person.transportCapacity < 0) fail('Person transport capacity is malformed');
+  if (!Object.hasOwn(personState, 'transportAutoClaim')) person.transportAutoClaim = true;
+  else if (typeof person.transportAutoClaim !== 'boolean') fail('Person transport auto-claim setting is malformed');
   // The belief hook is executable behaviour, so it is rebound deliberately instead of serialized.
   Object.defineProperty((person.beliefs as any), 'onNewBelief', {
     value: () => person.noteDiscovery(), enumerable: true, writable: true, configurable: true,

@@ -54,6 +54,7 @@ import {
 import type { RNG } from '../core/RNG.ts';
 import { ITEMS } from '../entities/Item.ts';
 import { animalBlow } from '../entities/AnimalAttack.ts';
+import { claimTransportAnimal } from '../core/TransportAnimals.ts';
 import { canTake, equipContainer, itemCapacityFor, stow } from '../core/Carry.ts';
 import { equipFor as fitToolForAction, type ToolAction } from '../core/ToolEquipment.ts';
 import { RECIPES, hasIngredients } from '../entities/Recipe.ts';
@@ -3541,6 +3542,11 @@ export class ActionSystem {
     if (animal.meals >= needed) {
       animal.tamedBy = person.id;
       animal.alarmedUntil = 0;
+      if (person.transportAnimalId === null && animal.species === 'donkey' && techPower(person, 'pack_animals') > 0) {
+        claimTransportAnimal(person, animal, 'pack', ctx.animalsById);
+      } else if (person.transportAnimalId === null && animal.species === 'horse' && techPower(person, 'horse_riding') > 0) {
+        claimTransportAnimal(person, animal, 'riding', ctx.animalsById);
+      }
       telemetry.count('animal_tamed');
       person.chronicle.push({
         tick: ctx.tick,

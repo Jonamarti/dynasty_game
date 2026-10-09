@@ -3,6 +3,7 @@ import { Simulation } from '../core/Simulation.ts';
 import { toCheckpointRecord, fromCheckpointRecord } from '../persistence/CheckpointRecords.ts';
 import { toExecutionRecord } from '../persistence/ExecutionRecords.ts';
 import { fromPersonRecord, toPersonRecord } from '../persistence/EntityRecords.ts';
+import { fromWorldObjectRecord, toWorldObjectRecord } from '../persistence/WorldObjectRecords.ts';
 
 function fixture(): Simulation {
   const sim = new Simulation({ seed: 'checkpoint-composition', world: { width: 48, height: 48, treeDensity: 0.1 },
@@ -87,12 +88,41 @@ describe('coordinated detached checkpoints', () => {
     expect(fromPersonRecord(record).commitment).toEqual(person.commitment);
     const legacy = wire(record);
     const root = legacy.graph.nodes[legacy.graph.root.ref];
-    root.fields = root.fields.filter(([key]: [string, unknown]) => key !== 'commitment');
-    expect(fromPersonRecord(legacy).commitment).toBeNull();
+    root.fields = root.fields.filter(([key]: [string, unknown]) => !['commitment', 'transportAnimalId', 'transportMode', 'transportCapacity', 'transportAutoClaim'].includes(key));
+    const migrated = fromPersonRecord(legacy);
+    expect(migrated.commitment).toBeNull();
+    expect(migrated.transportAnimalId).toBeNull();
+    expect(migrated.transportMode).toBeNull();
+    expect(migrated.transportCapacity).toBe(0);
+    expect(migrated.transportAutoClaim).toBe(true);
     const malformed = wire(record);
     const commitmentRef = malformed.graph.nodes[malformed.graph.root.ref].fields.find(([key]: [string, unknown]) => key === 'commitment')[1].ref;
     malformed.graph.nodes[commitmentRef].fields.find(([key]: [string, unknown]) => key === 'baselinePressure')[1] = -1;
     expect(() => fromPersonRecord(malformed)).toThrow(/commitment is malformed/);
+  });
+
+  it('rejects negative transport IDs and capacities instead of treating them as empty state', () => {
+    const sim = fixture();
+    const person = sim.player!;
+    const record = wire(toPersonRecord(person, sim.time.tick)) as any;
+
+    const badId = wire(record);
+    badId.graph.nodes[badId.graph.root.ref].fields.find(([key]: [string, unknown]) => key === 'transportAnimalId')[1] = -1;
+    expect(() => fromPersonRecord(badId)).toThrow(/transport animal id is malformed/);
+    const badCapacity = wire(record);
+    badCapacity.graph.nodes[badCapacity.graph.root.ref].fields.find(([key]: [string, unknown]) => key === 'transportCapacity')[1] = -1;
+    expect(() => fromPersonRecord(badCapacity)).toThrow(/transport capacity is malformed/);
+  });
+
+  it('migrates absent transport lease fields in legacy animal world-object records', () => {
+    const sim = fixture();
+    const legacy = wire(toWorldObjectRecord(sim)) as any;
+    const node = legacy.graph.nodes.find((entry: any) => entry.kind === 'object' && entry.prototype === 'Animal');
+    expect(node).toBeDefined();
+    node.fields = node.fields.filter(([key]: [string, unknown]) => key !== 'transportedBy' && key !== 'transportMode');
+    const restored = fromWorldObjectRecord(legacy, sim.peopleById);
+    expect(restored.animals[0]?.transportedBy).toBeNull();
+    expect(restored.animals[0]?.transportMode).toBeNull();
   });
 
   it('rejects mixed ticks, changed rules, unknown fields and allocators that would reissue identities', () => {

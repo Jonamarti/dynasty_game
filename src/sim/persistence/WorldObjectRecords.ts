@@ -99,7 +99,7 @@ function validate(state: WorldObjects, tick: number): void {
   if (state.piles.some(p => !(p instanceof ItemPile) || !(p.contents instanceof Inventory))) invalid('invalid item pile');
   if (state.corpses.some(c => !(c instanceof Corpse) || !c.person || !Number.isSafeInteger(c.person.id) ||
       !validTick(c.diedTick) || c.diedTick > tick)) invalid('invalid corpse');
-  if (state.animals.some(a => !(a instanceof Animal) || !a.def || !Number.isFinite(a.health) || !Number.isFinite(a.fed) || !(a.fedBy instanceof Set))) invalid('invalid animal');
+  if (state.animals.some(a => !(a instanceof Animal) || !a.def || !Number.isFinite(a.health) || !Number.isFinite(a.fed) || !(a.fedBy instanceof Set) || !(a.transportedBy === null || Number.isSafeInteger(a.transportedBy) && a.transportedBy > 0) || !(a.transportMode === null || a.transportMode === 'pack' || a.transportMode === 'riding'))) invalid('invalid animal');
   if (state.inscriptions.some(i => !(i instanceof Inscription) || !i.def || !validTick(i.madeTick) || i.madeTick > tick ||
       !Array.isArray(i.techs) || !(i.pending === null || typeof i.pending === 'string'))) invalid('invalid inscription');
   for (const p of state.piles) if (!validTick(p.droppedTick) || p.droppedTick > tick) invalid('pile tick exceeds snapshot tick');
@@ -138,6 +138,11 @@ export function fromWorldObjectRecord(input: unknown, peopleById?: ReadonlyMap<n
   if (!object(state) || Object.keys(state).length !== expectedKeys.length || expectedKeys.some(key => !Object.hasOwn(state, key))) invalid('unknown or missing world object arrays/maps');
   if (!object(state) || !Array.isArray(state.nodes) || !Array.isArray(state.buildings) || !Array.isArray(state.trees) ||
       !Array.isArray(state.piles) || !Array.isArray(state.corpses) || !Array.isArray(state.animals) || !Array.isArray(state.inscriptions)) invalid('missing entity arrays');
+  for (const animal of state.animals) {
+    const animalState = animal as unknown as Record<string, unknown>;
+    if (!Object.hasOwn(animalState, 'transportedBy')) animal.transportedBy = null;
+    if (!Object.hasOwn(animalState, 'transportMode')) animal.transportMode = null;
+  }
   for (const corpse of state.corpses) {
     if (!(corpse instanceof Corpse) || !corpse.person || !Number.isSafeInteger(corpse.person.id)) invalid('invalid corpse person reference');
     if (peopleById) {

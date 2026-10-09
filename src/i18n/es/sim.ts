@@ -365,4 +365,7 @@ export const ES_SIM: Record<string, string> = {
   "it is already dug": "ya está cavado",
   "planted a fruit tree": "plantó un frutal",
   "{name} migrants": "migrantes de {name}",
+  "That transport animal is no longer available": "Ese animal de transporte ya no está disponible",
+  "You need the right training and a living tamed animal": "Necesitas la técnica adecuada y un animal vivo domesticado",
+  "You have no active transport animal": "No tienes ningún animal de transporte activo",
 };

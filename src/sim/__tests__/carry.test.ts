@@ -28,6 +28,17 @@ describe('M15 phase 11c: hands and fitted containers', () => {
     expect(itemCapacityFor(carrier, config.carry, 'berries')).toBe(10);
   });
 
+  it('extends food and timber limits when a living pack animal contributes capacity', () => {
+    const carrier = person();
+    const meatWithoutAnimal = itemCapacityFor(carrier, config.carry, 'meat');
+    const woodWithoutAnimal = itemCapacityFor(carrier, config.carry, 'wood');
+    carrier.transportCapacity = 24;
+    expect(itemCapacityFor(carrier, config.carry, 'meat')).toBe(meatWithoutAnimal + 24);
+    expect(itemCapacityFor(carrier, config.carry, 'wood')).toBe(woodWithoutAnimal + 24);
+    expect(canTake(carrier, config.carry, 'meat', meatWithoutAnimal + 1)).toBe(true);
+    expect(canTake(carrier, config.carry, 'wood', woodWithoutAnimal + 1)).toBe(true);
+  });
+
   it('honours the legacy capacity only when a scenario explicitly asks for it', () => {
     const carrier = person();
     const legacy = makeConfig({ carry: { legacyPack: true } });

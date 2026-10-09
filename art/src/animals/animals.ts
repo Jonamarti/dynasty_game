@@ -1,8 +1,8 @@
 /** Deer, boar, hare, and the three hunters in profile, facing east. */
 import { at, ell, INK, limb, poly, shade, shape, smooth, stroke, type Pt } from '../lib/draw.ts';
 
-export type AnimalKind = 'deer' | 'boar' | 'hare' | 'wolf' | 'bear' | 'lynx';
-export const ANIMAL_KINDS: readonly AnimalKind[] = ['deer', 'boar', 'hare', 'wolf', 'bear', 'lynx'];
+export type AnimalKind = 'deer' | 'boar' | 'hare' | 'wolf' | 'bear' | 'lynx' | 'donkey' | 'horse';
+export const ANIMAL_KINDS: readonly AnimalKind[] = ['deer', 'boar', 'hare', 'wolf', 'bear', 'lynx', 'donkey', 'horse'];
 
 export const ANIMAL_POSES = [
   'idle', 'w0', 'w1', 'w2', 'w3',
@@ -164,6 +164,39 @@ export function paintAnimal(kind: AnimalKind, poseOrFrame: AnimalPose | number, 
     out.push(ell(19.5, 59, 2.6, 2.6, shade(col, 0.9), line));
     out.push(tuckedLegs(legs([[32, 64], [68, 64]], 20, 6.2, col, false, 11)));
   }
+  if (kind === 'donkey') {
+    const col = '#817461', belly = '#d4c4a8';
+    out.push(ell(48, 84, 21, 3, 'rgba(0,0,0,0.25)'));
+    out.push(tuckedLegs(legs([[34, 61], [61, 61]], 22, 4.4, col, true, 15)));
+    out.push(shape(smooth([[25, 54], [30, 46], [43, 43], [59, 45], [67, 51], [66, 61], [57, 65], [38, 65], [28, 61]]), col, line));
+    out.push(shape(smooth([[34, 62], [49, 63], [61, 61], [54, 59], [40, 59]]), belly));
+    out.push(breath(49, 61, '#c2a276'));
+    out.push(stroke('M27,52Q18,54 16,61', line, 1.4));
+    out.push(headPose([61, 49], headAngle([38, 52, 65, 42], [-2, 1, 3, -1], [18, 28, 22, 3]),
+      shape(poly([[57, 50], [60, 35], [67, 37], [68, 52]]), col, line)
+      + shape(smooth([[63, 39], [64, 17], [68, 12], [70, 17], [69, 40]]), shade(col, 0.86), line)
+      + shape(smooth([[69, 39], [73, 17], [77, 14], [78, 20], [73, 43]]), col, line)
+      + shape(smooth([[66, 31], [73, 27], [82, 32], [84, 39], [78, 43], [70, 41]]), col, line)
+      + eye(76, 32, 1.2, 1.3) + ell(83, 38, 1.1, 0.9, INK)));
+    out.push(tuckedLegs(legs([[32, 61], [63, 61]], 22, 4.4, col, false, 15)));
+    out.push(shape(poly([[43, 45], [47, 41], [50, 45], [53, 41], [56, 46]]), shade(col, 0.75)));
+  }
+  if (kind === 'horse') {
+    const col = '#79543a', belly = '#c9a980';
+    out.push(ell(48, 84, 22, 3, 'rgba(0,0,0,0.25)'));
+    out.push(tuckedLegs(legs([[34, 58], [61, 59]], 28, 3.8, col, true, 17)));
+    out.push(shape(smooth([[24, 51], [31, 43], [45, 42], [59, 44], [69, 51], [66, 60], [57, 63], [37, 62], [27, 58]]), col, line));
+    out.push(shape(smooth([[34, 60], [48, 61], [62, 59], [55, 57], [40, 57]]), belly));
+    out.push(breath(49, 60, '#c9a980'));
+    out.push(stroke('M28,50Q17,53 14,65', line, 1.8));
+    out.push(headPose([61, 48], headAngle([44, 58, 70, 46], [-2, 1, 3, -1], [22, 38, 28, 4]),
+      shape(poly([[56, 49], [61, 34], [67, 36], [69, 52]]), col, line)
+      + shape(smooth([[63, 38], [68, 28], [76, 28], [84, 34], [82, 40], [74, 42], [67, 42]]), col, line)
+      + shape(poly([[64, 34], [62, 25], [66, 28], [69, 24], [70, 34]]), shade(col, 0.72), line)
+      + eye(76, 33, 1.2, 1.2) + ell(83, 37, 1.1, 0.9, INK)));
+    out.push(tuckedLegs(legs([[32, 58], [63, 59]], 28, 3.8, col, false, 17)));
+    out.push(stroke('M63,43Q69,38 72,31', shade(col, 0.68), 2.4));
+  }
   if (kind === 'lynx') {
     const col = '#b69660', belly = '#ece0c4';
     out.push(ell(48, 84.5, 18, 2.8, 'rgba(0,0,0,0.25)'));
@@ -188,6 +221,6 @@ export function paintAnimal(kind: AnimalKind, poseOrFrame: AnimalPose | number, 
   // Folded legs no longer hold the torso at its standing height. Species have
   // different leg lengths; one shared drop left deer/cats floating above their
   // shadow and pushed the already crouched hare below the ground instead.
-  const sleepDrop: Record<AnimalKind, number> = { deer: 20, boar: 13, hare: 1, wolf: 17, bear: 14, lynx: 17 };
+  const sleepDrop: Record<AnimalKind, number> = { deer: 20, boar: 13, hare: 1, wolf: 17, bear: 14, lynx: 17, donkey: 18, horse: 18 };
   return activity === 'sleep' ? out[0] + `<g data-part="sleep-posture" transform="translate(0 ${sleepDrop[kind]})">${out.slice(1).join('')}</g>` : out.join('');
 }

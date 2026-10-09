@@ -29,6 +29,7 @@ import { approveMigration, canFollowMigration, knownMigrationDestinations, type 
 import { approachComarcaEdge } from './ComarcaTravel.ts';
 import { fissionMigratingParty } from './ComarcaBandFission.ts';
 import { comarcaRoute, journeyTransport, type JourneyPoint } from './Transport.ts';
+import { transportOf, transportSpeedFactorOf } from '../core/TransportAnimals.ts';
 import { capacityFor } from '../core/Carry.ts';
 import { ITEMS } from '../entities/Item.ts';
 
@@ -315,7 +316,7 @@ export class WorldState {
         this.storeTile(destinationTile);
         this.frontier.park(request.destination,destinationRecord,scoutRuntime);
         if (request.scout) this.frontier.addScout({ personId: request.actorId, source: request.source, destination: request.destination,
-          departureTick: source.time.tick, returnTick: source.time.tick+Math.max(1,Math.ceil(2*source.config.time.ticksPerDay)) });
+          departureTick: source.time.tick, returnTick: source.time.tick+Math.max(1,Math.ceil(2*source.config.time.ticksPerDay/transportSpeedFactorOf(source.peopleById.get(request.actorId)!,source.animalsById))) });
         const home = Simulation.fromCheckpointRecordWithSharedIds(sourceRecord,this.ids);
         source.parkForTransfer();
         this.installCurrent(home,this.initialGeographicStart);
@@ -346,7 +347,8 @@ export class WorldState {
     if (JSON.stringify(source)===JSON.stringify(target)) return t('You are already in that comarca');
     const route=comarcaRoute({cx:source.cx,cy:source.cy},destination,frame.mapWidth);
     const seaCells=route.slice(1).filter(point=>{ const p=this.geography.profileAt(point.cx,point.cy); return p.kind==='earth' ? !p.land : p.kind==='random' ? p.elevation<=0 : false; }).length;
-    const plan=journeyTransport({person:actor,from:source,to:destination,mapWidth:frame.mapWidth,mapHeight:frame.mapHeight,seaCells,snow:sourceSim.snowDepth>0});
+    const lease=transportOf(actor,sourceSim.animalsById);
+    const plan=journeyTransport({person:actor,from:source,to:destination,mapWidth:frame.mapWidth,mapHeight:frame.mapHeight,seaCells,snow:sourceSim.snowDepth>0,animal:lease?{mode:lease.mode,capacity:lease.capacity,speed:lease.speed}:null});
     if (!plan) return t('You do not have the transport needed for that journey');
     if (!this.destinationIsLand(destination.cx,destination.cy)) return t('That comarca is under the sea');
     const party=new Set(options.travellerIds ?? [actor.id]); party.add(actor.id);

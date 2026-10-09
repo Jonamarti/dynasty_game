@@ -3,6 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { approachComarcaEdge } from '../world/ComarcaTravel.ts';
 import type { World } from '../core/World.ts';
 import { Household } from '../entities/Household.ts';
+import { claimTransportAnimal } from '../core/TransportAnimals.ts';
 
 describe('the physical comarca approach', () => {
   const world = (walkable: (x: number, y: number) => boolean) => ({ width: 8, height: 6, isWalkable: walkable }) as World;
@@ -63,6 +64,36 @@ describe('canonical traveler ownership', () => {
     expect(destinationHousehold.feud).not.toBe(sourceArchive.feud);
     destinationHousehold.feud.set(42, 8);
     expect(sourceArchive.feud.get(42)).toBe(3);
+  });
+});
+
+describe('transport traveller preflight', () => {
+  it('rejects an animal ID collision before changing rosters, households, or cargo', () => {
+    const source = new Simulation({ seed: 'transport-transfer-source', world: { width: 48, height: 48 }, population: { bands: 1, peoplePerBand: 4 } });
+    const destination = new Simulation({ seed: 'transport-transfer-destination', world: { width: 48, height: 48 }, population: { bands: 0 } }, source.ids);
+    const traveller = source.livingPeople().find(person => !person.isChild)!;
+    const animal = source.animals.find(candidate => candidate.species === 'donkey')!;
+    const conflict = destination.animals[0]!;
+    traveller.knownTech.add('pack_animals');
+    animal.tamedBy = traveller.id;
+    animal.x = traveller.x + 1; animal.y = traveller.y;
+    expect(claimTransportAnimal(traveller, animal, 'pack', source.animalsById)).toBe(true);
+    traveller.inventory.add('meat', 7);
+    destination.animalsById.set(animal.id, conflict);
+    const sourcePeople = [...source.people];
+    const destinationPeople = [...destination.people];
+    const sourceHouseholds = [...source.households];
+    const destinationHouseholds = [...destination.households];
+    const sourceCargo = traveller.inventory.count('meat');
+    expect(() => source.transferTravellersTo(destination, [traveller.id], 'w')).toThrow(/Transport animal/);
+    expect(source.people).toEqual(sourcePeople);
+    expect(destination.people).toEqual(destinationPeople);
+    expect(source.households).toEqual(sourceHouseholds);
+    expect(destination.households).toEqual(destinationHouseholds);
+    expect(traveller.inventory.count('meat')).toBe(sourceCargo);
+    expect(source.animalsById.get(animal.id)).toBe(animal);
+    expect(traveller.transportAnimalId).toBe(animal.id);
+    expect(animal.transportedBy).toBe(traveller.id);
   });
 });
 
@@ -217,4 +248,25 @@ it('a scout who dies gives no observation and the player receives succession at 
   expect(state.current.succession!.died.worldKnowledge!.entry(ticket.destination.cx,ticket.destination.cy)).toBeUndefined();
   expect(state.current.insights.some(n=>n.text.includes('did not return'))).toBe(true);
   expect(()=>fromWorldStateRecord(JSON.parse(JSON.stringify(toWorldStateRecord(state))))).not.toThrow();
+});
+
+it('shortens scout return only with a canonical living riding horse, not knowledge alone', () => {
+  function duration(mounted: boolean) {
+    const state = new WorldState({ seed: 'horse-scout-return', world: { width: 32, height: 32 }, population: { bands: 1, peoplePerBand: 4, conceptionChance: 0 }, time: { ticksPerDay: 40, daysPerSeason: 20, startDay: 0 }, needs: { coldRate: 0 } },
+      { geography: frontierGeography(), start: { x: 40.5, y: 20.5 }, peoples: false });
+    const sim = state.current, actor = sim.possessFirst()!;
+    actor.knownTech.add('horse_riding');
+    if (mounted) {
+      const horse = sim.animals.find(animal => animal.alive && animal.species === 'horse')!;
+      expect(horse).toBeDefined();
+      horse.tamedBy = actor.id; horse.x = actor.x; horse.y = actor.y;
+      expect(sim.claimTransportAnimalFor(actor.id, horse.id, 'riding')).toBe(true);
+    }
+    expect(sim.comarcaTravel!.arrive({ person: actor, direction: 'e', scout: true })).toBeNull();
+    expect(state.commitPendingCross()).toBe(true);
+    const ticket = state.frontier.scouts[0]!;
+    return ticket.returnTick - ticket.departureTick;
+  }
+  expect(duration(false)).toBe(80);
+  expect(duration(true)).toBe(54);
 });

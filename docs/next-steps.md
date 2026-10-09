@@ -1,3 +1,5 @@
+Fase 35 en curso: navegación local, viajes terrestres y animales entregados; vela y cierre pendientes.
+
 **2026-10-09: fase 35 en curso; viajes terrestres, rastra y carro integrados.** Ticket persistente, provisiones físicas y deterioro en tránsito. Siguen animales y vela. Los pases compactos de residentes/ecología de destino y ciclo reproductivo de viajeros quedan documentados; no se afirma correspondencia LOD ni mejora económica. [Contrato](m15_phase35_journeys.md).
 
 **2026-10-09: fase 35 en curso; canoa local terminada.** La canoa física navega en agua dulce y mar resguardado con técnica y objeto. Siguen el viaje fechado, rastra/carro, animales y vela. [Contrato](m15_phase35_logboat.md). Cohortes y matriz aplazadas por AGENTS.md.

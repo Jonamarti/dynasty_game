@@ -3449,6 +3449,8 @@ envolver la latitud por error.
 
 ## Fase 35 — Llegar más lejos: transporte (M14 fase 17)
 
+**2026-10-09: animales de transporte implementados.** Asnos/caballos vivos, carga, asignación/liberación, viaje con identidad y exploración a caballo cubiertos por pruebas. Queda cerrar vela y verificación conjunta.
+
 **Detalle en `m14_plan.md` fase 17**, con su tabla (`logboat`, `sledge`,
 `pack_animals`, `horse_riding`, la velocidad de `the_wheel` y `sail`).
 

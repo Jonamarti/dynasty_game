@@ -9,32 +9,53 @@ function options(person: Person, patch: Partial<Parameters<typeof journeyTranspo
 }
 
 describe('comarca journey transport', () => {
-  it('requires wheel knowledge and cart possession for faster land travel', () => {
+  it('requires item and technology for wheels, and only shortens comarca travel', () => {
     const person = traveller();
     person.inventory.add('cart', 1); person.equipment.left = { item: 'cart', count: 1 };
     expect(journeyTransport(options(person))?.days).toBe(1);
     person.knownTech.add('the_wheel');
-    expect(journeyTransport(options(person))?.mode).toBe('cart');
     expect(journeyTransport(options(person))?.days).toBe(0.5);
     expect(journeyTransport(options(person, { to: { cx: 6, cy: 4 } }))).toBeNull();
   });
 
-  it('requires a researched, equipped sledge and adjusts travel speed for snow', () => {
+  it('requires a live animal lease and its matching practice for longer land routes', () => {
     const person = traveller();
-    person.inventory.add('sledge', 1); person.equipment.left = { item: 'sledge', count: 1 };
-    expect(journeyTransport(options(person))?.mode).toBe('foot');
-    person.knownTech.add('sledge');
-    expect(journeyTransport(options(person))?.mode).toBe('sledge');
-    expect(journeyTransport(options(person))?.days).toBe(1.25);
-    expect(journeyTransport(options(person, { snow: true }))?.days).toBe(0.8);
+    expect(journeyTransport(options(person, { to: { cx: 6, cy: 4 }, animal: { mode: 'pack', capacity: 24, speed: 1 } }))).toBeNull();
+    person.knownTech.add('pack_animals');
+    const pack = journeyTransport(options(person, { to: { cx: 6, cy: 4 }, animal: { mode: 'pack', capacity: 24, speed: 1 } }));
+    expect(pack?.maximumDistance).toBe(2);
+    expect(pack?.cargoCapacity).toBe(24);
+    expect(journeyTransport(options(person, { to: { cx: 7, cy: 4 }, animal: { mode: 'pack', capacity: 24, speed: 1 } }))).toBeNull();
   });
 
-  it('requires both logboat locks for one coastal comarca and refuses a longer sea crossing', () => {
+  it('requires a logboat and its technology for a coastal crossing', () => {
     const person = traveller();
     expect(journeyTransport(options(person, { seaCells: 1 }))).toBeNull();
     person.inventory.add('logboat', 1); person.knownTech.add('logboat');
     expect(journeyTransport(options(person, { seaCells: 1 }))?.mode).toBe('boat');
     expect(journeyTransport(options(person, { to: { cx: 6, cy: 4 }, seaCells: 2 }))).toBeNull();
+  });
+
+  it('requires an equipped, researched sledge and changes speed with snow', () => {
+    const person = traveller();
+    person.inventory.add('sledge', 1); person.equipment.left = { item: 'sledge', count: 1 };
+    expect(journeyTransport(options(person))?.mode).toBe('foot');
+    person.knownTech.add('sledge');
+    const dry = journeyTransport(options(person));
+    const snowy = journeyTransport(options(person, { snow: true }));
+    expect(dry?.mode).toBe('sledge');
+    expect(dry?.days).toBe(1.25);
+    expect(snowy?.days).toBe(0.8);
+  });
+
+  it('requires both a riding lease and riding practice for longer routes', () => {
+    const person = traveller();
+    person.knownTech.add('horse_riding');
+    expect(journeyTransport(options(person, { to: { cx: 7, cy: 4 } }))).toBeNull();
+    const ride = journeyTransport(options(person, { to: { cx: 7, cy: 4 }, animal: { mode: 'riding', capacity: 0, speed: 1.5 } }));
+    expect(ride?.mode).toBe('riding');
+    expect(ride?.maximumDistance).toBe(3);
+    expect(ride?.days).toBe(2);
   });
 
   it('chooses a deterministic short wrapped route', () => {

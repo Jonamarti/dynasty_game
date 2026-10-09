@@ -23,8 +23,11 @@ import type { IdSpace } from '../core/IdSpace.ts';
  */
 export const PREY_SPECIES = ['deer', 'boar', 'hare'] as const;
 export const PREDATOR_SPECIES = ['wolf', 'bear', 'lynx'] as const;
-export const SPECIES = [...PREY_SPECIES, ...PREDATOR_SPECIES] as const;
+/** Domestic transport stock is spawned in its own post-people pass, never in the prey pool. */
+export const TRANSPORT_SPECIES = ['donkey', 'horse'] as const;
+export const SPECIES = [...PREY_SPECIES, ...PREDATOR_SPECIES, ...TRANSPORT_SPECIES] as const;
 export type Species = (typeof SPECIES)[number];
+export type TransportMode = 'pack' | 'riding';
 
 export interface SpeciesDef {
   id: Species;
@@ -106,6 +109,18 @@ export const SPECIES_DEFS: Record<Species, SpeciesDef> = {
     meat: 14, speed: 0.32, fleeSpeed: 0.55,
     awareness: 8, evasion: 0.7, herdSize: 1, health: 22, fecundity: 0,
     predator: true, prey: ['hare'], blow: 10, defends: true,
+  },
+  donkey: {
+    id: 'donkey', label: 'Donkey',
+    meat: 20, speed: 0.22, fleeSpeed: 0.32,
+    awareness: 5, evasion: 0.2, herdSize: 2, health: 48, fecundity: 0.01,
+    predator: false, prey: [], blow: 0, defends: false,
+  },
+  horse: {
+    id: 'horse', label: 'Horse',
+    meat: 28, speed: 0.35, fleeSpeed: 0.48,
+    awareness: 6, evasion: 0.25, herdSize: 2, health: 55, fecundity: 0.015,
+    predator: false, prey: [], blow: 0, defends: false,
   },
 };
 
@@ -192,6 +207,10 @@ export class Animal {
    * `next-steps.md` and is not this pass.
    */
   tamedBy: number | null = null;
+
+  /** Reciprocal transport lease, if this tame animal carries or bears a person. */
+  transportedBy: number | null = null;
+  transportMode: TransportMode | null = null;
 
   /**
    * How many meals this animal has accepted, from anybody.

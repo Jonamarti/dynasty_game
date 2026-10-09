@@ -198,7 +198,7 @@ export const TECHS = [
   // M15 phase 40f: a plough's crop gain is paid at sowing and stored on the crop.
   'ploughshare',
   // M15 phase 35: physical transport and its journey policy ship together.
-  'sledge',
+  'sledge', 'pack_animals', 'horse_riding',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -1696,6 +1696,25 @@ export const TECH: Record<Tech, TechDef> = {
     ],
     description: 'Timber runners carry a larger load and slide faster on snowy world routes.',
   },
+  pack_animals: {
+    id: 'pack_animals', label: 'Pack animals', domain: 'beasts', web: 'domestication',
+    age: 'chalcolithic', firstKnown: 'about 4,000 BC', kind: 'practice', practisedBy: ['tame', 'haul'],
+    requires: ['herding'], difficulty: 0.55, skill: 'track', prototype: {}, maxRefinement: 2,
+    sparks: [{ needs: [{ kind: 'knows', tech: 'herding' }, { kind: 'doing', action: 'tame' }],
+      weight: 1, story: 'watched a tame animal follow and tried a load across its back' },
+      { needs: [{ kind: 'knows', tech: 'herding' }, { kind: 'saw', what: 'hands_full' }], weight: 0.7, story: 'had more to carry than two hands could hold beside a tame beast' }],
+    description: 'A tame animal carries a load beside its owner, leaving the hands and back free.',
+  },
+  horse_riding: {
+    id: 'horse_riding', label: 'Horse riding', domain: 'beasts', web: 'domestication',
+    age: 'chalcolithic', firstKnown: 'about 3,500 BC; early riding remains debated',
+    kind: 'practice', practisedBy: ['tame', 'scout'], requires: ['herding', 'taming'],
+    difficulty: 0.65, skill: 'track', prototype: {}, maxRefinement: 2,
+    sparks: [{ needs: [{ kind: 'knows', tech: 'taming' }, { kind: 'doing', action: 'tame' }],
+      weight: 1, story: 'stood beside a tame horse and wondered whether it would bear a rider' },
+      { needs: [{ kind: 'knows', tech: 'taming' }, { kind: 'doing', action: 'scout' }], weight: 0.7, story: 'returned tired from scouting and watched a horse cover the same ground easily' }],
+    description: 'A living tame horse bears its rider on longer journeys and brings a scout home sooner.',
+  },
   the_wheel: {
     id: 'the_wheel', label: 'The wheel', domain: 'timber',
     age: 'neolithic', firstKnown: 'about 3500 BC',
@@ -2750,6 +2769,14 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   sledge: {
     summary: 'A physical equipped sledge carries more and shortens snowy world journeys.',
     site: 'RECIPES.sledge; Carry.ts equipped container; world/Transport.ts journey policy',
+  },
+  pack_animals: {
+    summary: 'A living tame pack animal carries a separate load and enables two-comarca journeys.',
+    site: 'core/TransportAnimals.ts and Carry.ts; world/Transport.ts journey policy',
+  },
+  horse_riding: {
+    summary: 'A living tame horse enables three-comarca journeys and faster scouting.',
+    site: 'core/TransportAnimals.ts; world/Transport.ts and WorldState journey/scout policy',
   },
   the_wheel: {
     summary: 'A physical equipped cart carries more and halves land journey time.',

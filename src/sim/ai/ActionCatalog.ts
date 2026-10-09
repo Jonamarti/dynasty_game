@@ -852,6 +852,20 @@ function animalActions(actor: Person, animal: Animal): ActionOption[] {
         : food === null ? t('You are carrying no food to offer') : undefined,
     });
   }
+  // Transport is a deliberate assignment, not a hidden consequence of taming:
+  // the owner chooses which animal accompanies them, and which job it does.
+  const transportNear = Math.hypot(actor.x - animal.x, actor.y - animal.y) <= 2.2;
+  if (animal.tamedBy === actor.id && animal.species === 'donkey' && techPower(actor, 'pack_animals') > 0) {
+    options.push({ id: 'transport_pack', label: t('Use as a pack animal'), icon: '\u{1F9F3}', enabled: transportNear,
+      reason: transportNear ? undefined : t('Come closer to the transport animal') });
+  }
+  if (animal.tamedBy === actor.id && animal.species === 'horse' && techPower(actor, 'horse_riding') > 0) {
+    options.push({ id: 'transport_riding', label: t('Ride the horse'), icon: '\u{1F3C7}', enabled: transportNear,
+      reason: transportNear ? undefined : t('Come closer to the transport animal') });
+  }
+  if (actor.transportAnimalId === animal.id) {
+    options.push({ id: 'release_transport', label: t('Release this transport animal'), icon: '\u{1F4A8}', enabled: true });
+  }
   return options;
 }
 

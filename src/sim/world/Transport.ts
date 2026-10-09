@@ -7,7 +7,7 @@ export interface JourneyTransport {
   readonly distance: number;
   readonly days: number;
   readonly maximumDistance: number;
-  readonly mode: 'foot' | 'sledge' | 'cart' | 'boat';
+  readonly mode: 'foot' | 'sledge' | 'cart' | 'pack' | 'riding' | 'boat';
   readonly cargoCapacity: number;
   readonly crossedSea: boolean;
 }
@@ -19,6 +19,8 @@ export interface JourneyTransportOptions {
   readonly mapHeight: number;
   readonly seaCells: number;
   readonly snow: boolean;
+  readonly animalSpeed?: number;
+  readonly animal?: { readonly mode: 'pack' | 'riding'; readonly capacity: number; readonly speed: number } | null;
 }
 function equipped(person: Person, item: string): boolean {
   return Object.values(person.equipment).some(slot => slot?.item === item && slot.count > 0 && person.inventory.count(item) > 0);
@@ -32,10 +34,14 @@ export function journeyTransport(options: JourneyTransportOptions): JourneyTrans
   const crossedSea = options.seaCells > 0;
   const hasLogboat = person.inventory.count('logboat') > 0 && techPower(person, 'logboat') > 0;
   if (crossedSea && !hasLogboat) return null;
-  if (crossedSea && (options.seaCells > 1 || distance > 1)) return null;
   let maximumDistance = 1, cargoCapacity = 0, speed = 1;
   let mode: JourneyTransport['mode'] = 'foot';
-  if (crossedSea) { maximumDistance = 1; mode = 'boat'; }
+  if (options.animal?.mode === 'riding' && techPower(person, 'horse_riding') > 0) {
+    maximumDistance = 3; mode = 'riding'; speed = Math.max(speed, options.animal.speed); cargoCapacity += options.animal.capacity;
+  } else if (options.animal?.mode === 'pack' && techPower(person, 'pack_animals') > 0) {
+    maximumDistance = 2; mode = 'pack'; cargoCapacity += options.animal.capacity;
+  }
+  if (crossedSea) { maximumDistance = 1; mode = 'boat'; speed = 1; }
   if (distance > maximumDistance) return null;
   if (equipped(person, 'sledge') && techPower(person, 'sledge') > 0) {
     cargoCapacity += ITEMS.sledge?.container?.capacity ?? 0;
@@ -52,7 +58,7 @@ export function comarcaRoute(from: JourneyPoint, to: JourneyPoint, mapWidth: num
   const east = (to.cx - from.cx + mapWidth) % mapWidth;
   const west = (from.cx - to.cx + mapWidth) % mapWidth;
   const stepX = east <= west ? 1 : -1, horizontal = Math.min(east, west);
-  const result: JourneyPoint[] = [{ cx: from.cx, cy: from.cy }];
+  const result: JourneyPoint[] = [{ ...from }];
   let x = from.cx;
   for (let i = 0; i < horizontal; i++) { x = (x + stepX + mapWidth) % mapWidth; result.push({ cx: x, cy: from.cy }); }
   const stepY = to.cy < from.cy ? -1 : 1;

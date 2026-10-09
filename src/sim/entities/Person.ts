@@ -25,6 +25,7 @@ import { Beliefs } from '../ai/Beliefs.ts';
 import { PlaceMemory } from '../social/PlaceMemory.ts';
 import { armForce, newBody, poisonWork, type Body, type Condition } from './Body.ts';
 import type { IdSpace } from '../core/IdSpace.ts';
+import type { TransportMode } from './Animal.ts';
 
 /**
  * `farm` and `smith` are added ahead of the technologies that will use them.
@@ -343,6 +344,13 @@ export class Person {
   equipment: Equipment = {};
   /** Cached sum of equipped container capacities; updated by Carry helpers. */
   carryContainerCapacity = 0;
+  /** Canonical living transport animal, hydrated absent=>none in legacy person records. */
+  transportAnimalId: number | null = null;
+  transportMode: TransportMode | null = null;
+  /** Refreshed from the live reciprocal lease before carrying work. */
+  transportCapacity = 0;
+  /** A deliberate release stays released until the player or animal changes ownership. */
+  transportAutoClaim = true;
   /**
    * Arms holding a baby, 0-2. Written once a tick by `Simulation` from the
    * babies whose `carriedBy` names this person; read by both carrying-room
@@ -1015,7 +1023,7 @@ export class Person {
     // M15 phase 11c: capacity belongs to held equipment, not the abstract
     // multiplier granted by knowing a technology. Scenario code that still
     // opts into legacyPack asks Carry.capacityFor for the old formula.
-    return Math.max(1, Math.floor(10 * this.vigour * (2 - this.armsTaken) / 2 + this.carryContainerCapacity));
+    return Math.max(1, Math.floor(10 * this.vigour * (2 - this.armsTaken) / 2 + this.carryContainerCapacity + this.transportCapacity));
   }
 
   get carrying(): number {

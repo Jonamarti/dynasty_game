@@ -137,14 +137,6 @@ export class ComarcaFrontier {
         !Number.isSafeInteger(record.lastAdvancedTick) || record.lastAdvancedTick < record.departureTick || record.lastAdvancedTick > record.arrivalTick ||
         !Array.isArray(record.route) || record.route.length < 2 || !Number.isSafeInteger(record.provisions) || record.provisions < 0 || !Number.isSafeInteger(record.preservedProvisions) || record.preservedProvisions < 0 || record.preservedProvisions > record.provisions || !Number.isSafeInteger(record.cargoUnits) || record.cargoUnits < record.provisions || !Array.isArray(record.encounters) || !record.transit || typeof record.migration!=='boolean' || typeof record.playerTravelling!=='boolean' ||
         record.transit.recordType !== 'CheckpointRecord' || record.transit.version !== 1 || !edge(record.enteringEdge)) invalid('journey');
-    const transport = record.transport;
-    if (!transport || !['foot', 'sledge', 'cart', 'boat'].includes(transport.mode) ||
-        !Number.isSafeInteger(transport.distance) || transport.distance < 1 || transport.distance !== record.route.length - 1 ||
-        !Number.isFinite(transport.days) || transport.days <= 0 ||
-        !Number.isSafeInteger(transport.maximumDistance) || transport.maximumDistance < transport.distance ||
-        !Number.isFinite(transport.cargoCapacity) || transport.cargoCapacity < 0 || typeof transport.crossedSea !== 'boolean' ||
-        (transport.mode === 'boat' && !transport.crossedSea) ||
-        record.encounters.some(kind => !['storm', 'wildlife', 'settlement'].includes(kind))) invalid('journey transport');
     RNG.fromSnapshot(record.rng);
     if(record.transit.lastAdvancedTick!==record.lastAdvancedTick || record.transit.execution.time.tick!==record.lastAdvancedTick ||
        record.route[0]?.cx!==record.source.cx || record.route[0]?.cy!==record.source.cy ||
@@ -276,7 +268,7 @@ export class ComarcaFrontier {
         const route=raw.route.map((p: unknown)=>{if(!object(p)) invalid('journey route'); exact(p,['cx','cy']); return {cx:tick(p.cx,'journey cx'),cy:tick(p.cy,'journey cy')};});
         exact(raw.transport,['distance','days','maximumDistance','mode','cargoCapacity','crossedSea']);
         const transport=raw.transport as unknown as JourneyTransport;
-        if(!Number.isFinite(transport.distance)||transport.distance<1||!Number.isFinite(transport.days)||transport.days<=0||!Number.isFinite(transport.maximumDistance)||transport.maximumDistance<transport.distance||!Number.isFinite(transport.cargoCapacity)||transport.cargoCapacity<0||typeof transport.crossedSea!=='boolean'||!['foot','sledge','cart','boat'].includes(transport.mode)||(transport.mode==='boat'&&!transport.crossedSea))invalid('journey transport');
+        if(!Number.isFinite(transport.distance)||transport.distance<1||!Number.isFinite(transport.days)||transport.days<=0||!Number.isFinite(transport.maximumDistance)||transport.maximumDistance<transport.distance||!Number.isFinite(transport.cargoCapacity)||transport.cargoCapacity<0||typeof transport.crossedSea!=='boolean'||!['foot','sledge','cart','pack','riding','boat'].includes(transport.mode)||(transport.mode==='boat'&&!transport.crossedSea))invalid('journey transport');
         frontier.setJourney({recordType:'ComarcaJourneyRecord',version:1,actorId:safeId(raw.actorId,'journey actor'),travellerIds:(()=>{if(!Array.isArray(raw.travellerIds)||!raw.travellerIds.length)invalid('journey travellers');const ids=raw.travellerIds.map((id:unknown)=>safeId(id,'journey traveller'));if(new Set(ids).size!==ids.length||!ids.includes(raw.actorId as number))invalid('journey travellers');return ids;})(),source:identity(raw.source),destination:identity(raw.destination),departureTick:tick(raw.departureTick,'journey departure'),arrivalTick:tick(raw.arrivalTick,'journey arrival'),lastAdvancedTick:tick(raw.lastAdvancedTick,'journey advanced'),route,enteringEdge:raw.enteringEdge,provisions:tick(raw.provisions,'journey provisions'),preservedProvisions:tick(raw.preservedProvisions,'journey preserved provisions'),cargoUnits:tick(raw.cargoUnits,'journey cargo'),migration:raw.migration,playerTravelling:raw.playerTravelling,transport,transit:raw.transit as unknown as CheckpointRecord,rng:raw.rng as ReturnType<RNG['snapshot']>,encounters:raw.encounters.map((e:unknown)=>{if(typeof e!=='string') invalid('journey encounter'); return e;})});
       }
     }

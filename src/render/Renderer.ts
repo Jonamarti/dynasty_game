@@ -2155,6 +2155,7 @@ export class Renderer {
     const h = scale * size * 0.62;
 
     if (this.art && this.drawArtAnimal(this.art, animal, at, px, py, w, h)) {
+      if (animal.transportedBy !== null) this.drawTransportTack(px, py, w, h, animal.transportMode);
       if (animal.alarmed) {
         ctx.fillStyle = '#ffd35c';
         ctx.fillRect(px - 1, py - h / 2 - scale * 0.42, 2, scale * 0.2);
@@ -2172,6 +2173,8 @@ export class Renderer {
     // Head, offset, so the thing has a facing at a glance.
     ctx.fillRect(px + w * 0.34, py - h * 0.72, w * 0.3, h * 0.42);
 
+    if (animal.transportedBy !== null) this.drawTransportTack(px, py, w, h, animal.transportMode);
+
     // An alarmed animal is the single most useful thing to see on this map:
     // it is the difference between a stalk that is working and one that is not.
     if (animal.alarmed) {
@@ -2184,6 +2187,25 @@ export class Renderer {
       ctx.lineWidth = 2;
       ctx.strokeRect(px - w / 2 - 3, py - h / 2 - 3, w + 6, h + 6);
     }
+  }
+
+  private drawTransportTack(px: number, py: number, w: number, h: number, mode: 'pack' | 'riding' | null): void {
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.strokeStyle = '#4a3020';
+    ctx.lineWidth = Math.max(1, w * 0.045);
+    ctx.beginPath();
+    ctx.moveTo(px - w * 0.13, py - h * 0.04);
+    ctx.lineTo(px + w * 0.18, py - h * 0.02);
+    ctx.stroke();
+    if (mode === 'riding') {
+      ctx.fillStyle = '#8b5a36';
+      ctx.fillRect(px + w * 0.01, py - h * 0.19, w * 0.18, Math.max(2, h * 0.09));
+    } else {
+      ctx.fillStyle = '#d2b17e';
+      ctx.fillRect(px - w * 0.03, py - h * 0.19, w * 0.14, Math.max(2, h * 0.12));
+    }
+    ctx.restore();
   }
   /** A beast from the committed frames, facing whichever way it last moved. False if the art has no such species. */
   private drawArtAnimal(art: ArtAtlas, animal: Animal, at: Placed, px: number, py: number, w: number, h: number): boolean {
@@ -2226,7 +2248,7 @@ export class Renderer {
 }
 
 /** Drawn size in tiles, per species. A hare is not a boar. */
-const ANIMAL_SIZES: Record<string, number> = { deer: 0.55, boar: 0.6, hare: 0.3, wolf: 0.55, bear: 0.85, lynx: 0.45 };
+const ANIMAL_SIZES: Record<string, number> = { deer: 0.55, boar: 0.6, hare: 0.3, wolf: 0.55, bear: 0.85, lynx: 0.45, donkey: 0.58, horse: 0.72 };
 const ANIMAL_COLORS: Record<string, string> = {
   deer: '#b3844e',
   boar: '#6b5442',
@@ -2234,6 +2256,8 @@ const ANIMAL_COLORS: Record<string, string> = {
   wolf: '#7b7d80',
   bear: '#5a3e2b',
   lynx: '#b69660',
+  donkey: '#817461',
+  horse: '#79543a',
 };
 
 /**
