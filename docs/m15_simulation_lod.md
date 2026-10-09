@@ -502,3 +502,5 @@ Entrega 1c del 2026-10-09: cuotas finitas de comida/agua conectadas a CompactBod
 Entrega 1c: demografía conectable con LifeSystem después de sincronizar todos los cuerpos, IDs/parentesco y fecha persistidos; no se concede techo implícito. Tres pruebas pasan. Ver m15_compact_band.md; motor conjunto en integración.
 
 Entrega 1c: técnicas estacionales de PeopleKnowledge en practicantes vivos con prerequisitos individuales, pérdida de último portador, contactos explícitos y RNG/ledger JSON. Ocho pruebas pasan; motor conjunto en integración.
+
+Entrega 1c: parcelas Crop/Soil, semillas finitas y trabajo bancado; fórmula de suelo promedio y costes compartidos con ActionSystem. 27/27 pruebas agrícolas pasan; la molienda y el motor se integran separadamente.

@@ -273,6 +273,23 @@ export class Soil {
     return isGroundSpent(this.effectiveFertility(i), this.restingFertility(i));
   }
 
+  /**
+   * Judge a whole plot by its average ground, matching the detailed sowing refusal.
+   * One thin tile must not veto a field whose other ground can carry the crop.
+   */
+  isPlotSpent(indices: readonly number[]): boolean {
+    if (indices.length === 0) return true;
+    let effective = 0, resting = 0;
+    for (const i of indices) {
+      if (!Number.isSafeInteger(i) || i < 0 || i >= this.organic.length) {
+        throw new RangeError('invalid plot soil tile');
+      }
+      effective += this.effectiveFertility(i);
+      resting += this.restingFertility(i);
+    }
+    return isGroundSpent(effective / indices.length, resting / indices.length);
+  }
+
   /** Breaking the ground: burns humus, and wakes the tile up. */
   till(i: number): void {
     this.organic[i] = clamp01(this.organic[i]! - TILL_ORGANIC_COST);

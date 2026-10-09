@@ -130,3 +130,17 @@ entre personas no crean un aprendiz ficticio. Los contactos y materiales de
 la región se suministran explícitamente. RNG y KnowledgeLedger persisten;
 repetir la estación se rechaza. Ocho pruebas pasan, incluidos estados técnicos
 malformados. Hito: `artifacts/screenshots/m15-band-knowledge-2026-10-09T-01/`.
+
+## Cultivo con las reglas detalladas — 2026-10-09
+
+`CompactBandFarming` guarda parcelas reales `Crop`/`Soil`, semillas pagadas y
+trabajo parcial de siembra/cosecha. Recupera el suelo una vez por día aunque
+varias parcelas compartan su objeto. Crecimiento, fertilidad, agotamiento,
+ploughYieldFactor y rendimiento usan las fórmulas existentes. `Soil.isPlotSpent`
+es el mismo predicado por promedio que llama ahora `ActionSystem`: una baldosa
+pobre no veta una parcela sana. Los costes de siembra/cosecha se exportan desde
+`Field` para evitar dos tablas. No aparecen parcelas a partir de `arable`.
+`takeEdibleGrain` retira solo excedente tras reservar semillas; su nombre indica
+el destino, no que el grano crudo sea alimento. La molienda es un paso separado.
+Cinco pruebas nuevas más farming detallado: 27/27. Hito sin cambio de UI:
+`artifacts/screenshots/m15-band-farming-2026-10-09T-01/`.

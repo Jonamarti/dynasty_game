@@ -1,3 +1,8 @@
+## 2026-10-09 — M15 1c: cultivo compacto con Crop y Soil
+
+Las parcelas compactas usan crecimiento, fertilidad, semillas, técnica y rendimiento del modelo detallado. El trabajo de siembra/cosecha queda bancado y persiste con las parcelas y el suelo; no se regalan campos por tener terreno cultivable. Se extrae `Soil.isPlotSpent` para compartir el promedio que ya usaba la siembra detallada, corrigiendo la divergencia inicial del compacto que vetaba toda la parcela por una sola baldosa agotada. Costes de trabajo compartidos desde Field.
+
+27/27 pruebas (cinco nuevas más farming detallado). Molienda separada: el grano crudo sigue sin alimentar. Captura de hito equivalente 1/1 en `artifacts/screenshots/m15-band-farming-2026-10-09T-01/`, sin cambios de UI. Plan y contrato actualizados; no se mide mejora económica ni se lanzan cohortes/matriz pesada. Integración del motor en curso.
 ## 2026-10-09 — M15 1c: técnicas ligadas a practicantes vivos
 
 `CompactBandKnowledge` adapta `PeopleKnowledge` estacional a las personas nombradas: reconstruye población y técnicas de los vivos, conserva RNG/ledger y asigna cada adquisición a quien cumple individualmente los prerequisitos. No concede conocimiento por combinar prerrequisitos de personas diferentes, ni conserva una técnica cuando muere su último portador. Materiales, clima y contactos son entradas explícitas.
@@ -13820,6 +13825,7 @@ Nuevo: `compact-correspondence craft/delta`, diferencia de hambre 23,401,
 límite declarado ≤15. No se ha relajado el límite ni recalibrado su tabla;
 queda pendiente para M16. Recogida, alimentación y lectura pasan en esta
 repetición. La suite no está verde. Resultado: `commitment-final-tests.txt`.
+
 
 
 

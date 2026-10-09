@@ -223,3 +223,7 @@ export function harvestYield(
 
 /** Days a ripe crop will stand, for the panel and the tests. */
 export const RIPE_WINDOW_DAYS = RIPE_DAYS;
+
+/** Shared paid work costs: compact farming must not grant a sowing or harvest for free. */
+export const SOW_TICKS = 90;
+export const REAP_TICKS = 110;

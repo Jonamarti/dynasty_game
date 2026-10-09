@@ -31,9 +31,9 @@ import type { SocialSystem } from '../social/SocialSystem.ts';
 import {
   isTrap, isHeap, isHerd, isWell, isStructure, type Building,
 } from '../entities/Building.ts';
-import { SOW_SEED, SPREAD_LOAD, harvestYield } from '../entities/Field.ts';
+import { SOW_SEED, SPREAD_LOAD, SOW_TICKS, REAP_TICKS, harvestYield } from '../entities/Field.ts';
 import { activeDraftLease, availableDraftHeads, claimDraftTeam, findDraftPen, hasBusyDraftPen, reservedDraftHeads, hasSeedContainer } from './Draft.ts';
-import { isGroundSpent, COMPOST_ORGANIC } from '../core/Soil.ts';
+import { COMPOST_ORGANIC } from '../core/Soil.ts';
 import { CUT_ABOVE, CUT_BITE, CUT_FLOOR, THATCH_PER_HEIGHT } from '../core/Grass.ts';
 import { DIG_TICKS, canDigBankMud, DIG_TO, EARTH_UNIT, LIFT, PILE_TICKS, PILE_TO, TOPSOIL_ITEMS, digTool, digToolFailure, earthworkWorkRefusal, liftKind } from '../core/Earth.ts';
 import { BORROW_DEPTH, borrowTile, nearestTile, pendingTiles, spoilTile, standingFor, standingForRim, type EarthworkTile } from '../entities/Earthwork.ts';
@@ -709,8 +709,7 @@ const KNOCKOUT_TICKS = 15;
  * a longer one would be stopped for a drink, restarted from nothing and never
  * finished, which is what happened to the first version of `inscribe`.
  */
-const SOW_TICKS = 90;
-const REAP_TICKS = 110;
+
 const SPREAD_TICKS = 70;
 /** Replanned every tick, like spreading, until thirst is actually answered. */
 const DRINK_COMMIT = 6;
@@ -3858,19 +3857,11 @@ export class ActionSystem {
    * unreachable exactly where farming is worth doing.
    */
   private groundSpent(field: Building, ctx: ActionContext): boolean {
-    let worked = 0;
-    let resting = 0;
-    let tiles = 0;
+    const tiles: number[] = [];
     for (let dy = 0; dy < field.def.height; dy++) {
-      for (let dx = 0; dx < field.def.width; dx++) {
-        const i = ctx.world.index(field.x + dx, field.y + dy);
-        worked += ctx.world.soil.effectiveFertility(i);
-        resting += ctx.world.soil.restingFertility(i);
-        tiles++;
-      }
+      for (let dx = 0; dx < field.def.width; dx++) tiles.push(ctx.world.index(field.x + dx, field.y + dy));
     }
-    if (tiles === 0) return true;
-    return isGroundSpent(worked / tiles, resting / tiles);
+    return ctx.world.soil.isPlotSpent(tiles);
   }
 
   /** Breaking the ground burns humus, over every tile of the plot. */
