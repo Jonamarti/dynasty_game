@@ -1,3 +1,9 @@
+## 2026-10-09 — M15 fase 34: ecología de la comarca abandonada
+
+ComarcaEcology avanza el TileLedger físico y fechado sin ejecutar una segunda Simulation: recursos, bosque, suelo, cultivos, fauna, nieve, deterioro y ruinas por abandono. Conserva streams propios y carry de nacimientos; el IdSpace se concilia con el dueño global. La ruina a 60 años es una regla explícita de diseño, pendiente de calibración empírica. Cuatro pruebas focales pasan; la integración de viajes se verifica en la siguiente funcionalidad. [Detalle](m15_phase34_ecology.md).
+
+Capturas contemporáneas del avance: artifacts/screenshots/m15-phase34-travel-2026-10-09T-01/01-travel-controls.png y 02-viajes-es.png. Cohortes y matriz aplazadas según AGENTS.md; no se afirma mejora de economía.
+
 ## 2026-10-09 — M15 fase 34: deterioro fechado del inventario físico
 
 `ComarcaInventoryDecay` conserva escrow tipado, tick/ancla, tasa y factores de

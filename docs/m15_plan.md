@@ -3397,6 +3397,8 @@ cultura desde el principio, y el ajuste de partida del mundo (29c).
 
 ## Fase 34 — Salir de la comarca (M14 fase 16)
 
+**2026-10-09: ecología fuera del mapa implementada.** `ComarcaEcology` avanza el libro físico fechado sin ejecutar otro `Simulation.step`: recursos, bosque, suelo, cultivos, fauna, nieve y deterioro. Edificios abandonados pierden durabilidad durante 60 años (regla de diseño explícita). [Contrato y pruebas](m15_phase34_ecology.md). El cierre del viaje y su integración sigue en esta entrega.
+
 **Detalle en `m14_plan.md` fase 16.** Los bordes se cruzan (`leave_region`,
 que aquí se llama **`leave_comarca`** para no confundirlo con la región);
 el jugador migra y se lleva a quien lo siga (`follow_me`); `scout`; la IA migra
