@@ -197,6 +197,8 @@ export const TECHS = [
   'iron_tools',
   // M15 phase 40f: a plough's crop gain is paid at sowing and stored on the crop.
   'ploughshare',
+  // M15 phase 35: physical transport and its journey policy ship together.
+  'sledge',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -1682,6 +1684,18 @@ export const TECH: Record<Tech, TechDef> = {
       'A loop of cord and a pouch for a pebble, swung round the head and let ' +
       'go. Small, cheap, and it reaches further than any thrown spear.',
   },
+  sledge: {
+    id: 'sledge', label: 'Sledges', domain: 'timber', age: 'mesolithic', firstKnown: 'about 9,000 years ago',
+    kind: 'device', requires: ['carpentry', 'cordage'], difficulty: 0.4, skill: 'build',
+    prototype: { wood: 2, rope: 1 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'carpentry' }, { kind: 'holding', item: 'wood' }, { kind: 'doing', action: 'haul' }],
+        weight: 1, story: 'dragged a timber load on runners instead of lifting it on each trip' },
+      { needs: [{ kind: 'knows', tech: 'cordage' }, { kind: 'saw', what: 'hands_full' }],
+        weight: 0.7, story: 'bound a load too large for the hands and looked for a way to pull it' },
+    ],
+    description: 'Timber runners carry a larger load and slide faster on snowy world routes.',
+  },
   the_wheel: {
     id: 'the_wheel', label: 'The wheel', domain: 'timber',
     age: 'neolithic', firstKnown: 'about 3500 BC',
@@ -2733,9 +2747,13 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
     summary: 'A one-handed weapon that reaches past the spear and hunts better: cheap, poor in a fight.',
     site: 'ITEMS.sling.weapon via weaponOf in ActionSystem.doHunt; RECIPES.sling',
   },
+  sledge: {
+    summary: 'A physical equipped sledge carries more and shortens snowy world journeys.',
+    site: 'RECIPES.sledge; Carry.ts equipped container; world/Transport.ts journey policy',
+  },
   the_wheel: {
-    summary: 'A cart: what a strap and a basket carry, and a cartload more on top.',
-    site: 'the equipped cart capacity in sim/core/Carry.ts; RECIPES.cart',
+    summary: 'A physical equipped cart carries more and halves land journey time.',
+    site: 'the equipped cart capacity in sim/core/Carry.ts; RECIPES.cart; world/Transport.ts journey speed',
   },
   bread: {
     summary: 'Meal baked into bread: more nourishing than the meal it is made from, and it keeps as well.',

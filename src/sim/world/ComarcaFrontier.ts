@@ -9,6 +9,7 @@ import type { CheckpointRecord } from '../persistence/CheckpointRecords.ts';
 import type { ComarcaIdentity } from '../persistence/TileLedger.ts';
 import { COMARCAS_PER_REGION } from './WorldMap.ts';
 import type { ComarcaEdge } from './ComarcaNeighbour.ts';
+import type { JourneyPoint, JourneyTransport } from './Transport.ts';
 
 export interface PendingComarcaCross {
   readonly actorId: number;
@@ -35,9 +36,17 @@ export interface ParkedComarcaCheckpoint {
   readonly runtime?: ComarcaOffmapRuntimeRecord;
 }
 
+export interface ComarcaJourneyRecord {
+  readonly recordType: 'ComarcaJourneyRecord'; readonly version: 1;
+  readonly actorId: number; readonly travellerIds: readonly number[]; readonly source: ComarcaIdentity; readonly destination: ComarcaIdentity;
+  readonly departureTick: number; readonly arrivalTick: number; readonly lastAdvancedTick: number;
+  readonly route: readonly JourneyPoint[]; readonly enteringEdge: ComarcaEdge; readonly provisions: number; readonly preservedProvisions: number; readonly cargoUnits: number; readonly migration: boolean; readonly playerTravelling: boolean;
+  readonly transport: JourneyTransport; readonly transit: CheckpointRecord;
+  readonly rng: ReturnType<RNG['snapshot']>; readonly encounters: readonly string[];
+}
 export interface ComarcaFrontierRecord {
   readonly recordType: 'ComarcaFrontier';
-  readonly version: 4;
+  readonly version: 5;
   readonly ecologies: readonly { identity: ComarcaIdentity; streams: Pick<ComarcaEcologyRecord,'forestRng'|'wildlifeRng'|'ecologyRng'|'wildlifeOwed'> }[];
   readonly origins: readonly (readonly [number,number])[];
   readonly continuity: readonly Omit<CompactPersonRecord,'person'>[];
@@ -46,6 +55,7 @@ export interface ComarcaFrontierRecord {
   readonly pendingCross: PendingComarcaCross | null;
   readonly scouts: readonly ComarcaScoutTicket[];
   readonly memories: readonly { personId: number; identity: ComarcaIdentity; graph: ObjectGraph }[];
+  readonly journey: ComarcaJourneyRecord | null;
 }
 
 function key(identity: ComarcaIdentity): string { return JSON.stringify(identity); }
@@ -55,7 +65,7 @@ function object(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 function exact(value: Record<string, unknown>, fields: readonly string[]): void {
-  if (Object.keys(value).length !== fields.length || fields.some(field => !Object.hasOwn(value, field))) invalid('unknown or missing fields');
+  if (Object.keys(value).length !== fields.length || fields.some(field => !Object.hasOwn(value, field))) invalid(`unknown or missing fields (${Object.keys(value).join(',')}; expected ${fields.join(',')})`);
 }
 function safeId(value: unknown, field: string): number {
   if (!Number.isSafeInteger(value) || (value as number) < 1) invalid(field);
@@ -118,6 +128,37 @@ export class ComarcaFrontier {
   private readonly parkedByKey = new Map<string, ParkedComarcaCheckpoint>();
   private pending: PendingComarcaCross | null = null;
   private readonly scoutByPerson = new Map<number, ComarcaScoutTicket>();
+  private journey: ComarcaJourneyRecord | null = null;
+  get pendingJourney(): ComarcaJourneyRecord | null { return this.journey ? clone(this.journey) : null; }
+  setJourney(record: ComarcaJourneyRecord): void {
+    if (this.journey) invalid('journey already active');
+    if (record.recordType !== 'ComarcaJourneyRecord' || record.version !== 1 || !Number.isSafeInteger(record.actorId) || !Array.isArray(record.travellerIds) || !record.travellerIds.length || new Set(record.travellerIds).size !== record.travellerIds.length || !record.travellerIds.includes(record.actorId) || record.travellerIds.some(id=>!Number.isSafeInteger(id)||id<1) ||
+        !Number.isSafeInteger(record.departureTick) || !Number.isSafeInteger(record.arrivalTick) || record.arrivalTick <= record.departureTick ||
+        !Number.isSafeInteger(record.lastAdvancedTick) || record.lastAdvancedTick < record.departureTick || record.lastAdvancedTick > record.arrivalTick ||
+        !Array.isArray(record.route) || record.route.length < 2 || !Number.isSafeInteger(record.provisions) || record.provisions < 0 || !Number.isSafeInteger(record.preservedProvisions) || record.preservedProvisions < 0 || record.preservedProvisions > record.provisions || !Number.isSafeInteger(record.cargoUnits) || record.cargoUnits < record.provisions || !Array.isArray(record.encounters) || !record.transit || typeof record.migration!=='boolean' || typeof record.playerTravelling!=='boolean' ||
+        record.transit.recordType !== 'CheckpointRecord' || record.transit.version !== 1 || !edge(record.enteringEdge)) invalid('journey');
+    const transport = record.transport;
+    if (!transport || !['foot', 'sledge', 'cart', 'boat'].includes(transport.mode) ||
+        !Number.isSafeInteger(transport.distance) || transport.distance < 1 || transport.distance !== record.route.length - 1 ||
+        !Number.isFinite(transport.days) || transport.days <= 0 ||
+        !Number.isSafeInteger(transport.maximumDistance) || transport.maximumDistance < transport.distance ||
+        !Number.isFinite(transport.cargoCapacity) || transport.cargoCapacity < 0 || typeof transport.crossedSea !== 'boolean' ||
+        (transport.mode === 'boat' && !transport.crossedSea) ||
+        record.encounters.some(kind => !['storm', 'wildlife', 'settlement'].includes(kind))) invalid('journey transport');
+    RNG.fromSnapshot(record.rng);
+    if(record.transit.lastAdvancedTick!==record.lastAdvancedTick || record.transit.execution.time.tick!==record.lastAdvancedTick ||
+       record.route[0]?.cx!==record.source.cx || record.route[0]?.cy!==record.source.cy ||
+       record.route.at(-1)?.cx!==record.destination.cx || record.route.at(-1)?.cy!==record.destination.cy) invalid('journey checkpoint continuity');
+    this.journey = clone(record);
+  }
+  updateJourney(record: ComarcaJourneyRecord): void {
+    if (!this.journey || this.journey.actorId !== record.actorId || JSON.stringify(this.journey.source) !== JSON.stringify(record.source) ||
+        JSON.stringify(this.journey.travellerIds) !== JSON.stringify(record.travellerIds) || record.lastAdvancedTick < this.journey.lastAdvancedTick ||
+        record.transit.lastAdvancedTick!==record.lastAdvancedTick || record.transit.execution.time.tick!==record.lastAdvancedTick ||
+        record.arrivalTick<this.journey.arrivalTick) invalid('journey continuity');
+    this.journey = clone(record);
+  }
+  takeJourney(): ComarcaJourneyRecord | null { const value=this.journey; this.journey=null; return value ? clone(value) : null; }
 
   private readonly memoryByKey = new Map<string, { personId: number; identity: ComarcaIdentity; graph: ObjectGraph }>();
   constructor(active: ComarcaIdentity | null = null) { this.activeIdentity = active ? identity(active) : null; }
@@ -171,14 +212,14 @@ export class ComarcaFrontier {
     return due.map(clone);
   }
   toRecord(): ComarcaFrontierRecord {
-    return { recordType: 'ComarcaFrontier', version: 4, ecologies: [...this.ecologyContinuity.values()].map(clone), origins: [...this.origins].sort((a,b)=>a[0]-b[0]), continuity: [...this.compactContinuity.values()].sort((a,b)=>a.personId-b.personId).map(clone),
+    return { recordType: 'ComarcaFrontier', version: 5, ecologies: [...this.ecologyContinuity.values()].map(clone), origins: [...this.origins].sort((a,b)=>a[0]-b[0]), continuity: [...this.compactContinuity.values()].sort((a,b)=>a.personId-b.personId).map(clone),
       active: this.active, parked: [...this.parkedByKey.values()].sort((a,b) => key(a.identity).localeCompare(key(b.identity))).map(clone),
-      pendingCross: this.pendingCross, scouts: this.scouts, memories: [...this.memoryByKey.values()].map(clone) };
+      pendingCross: this.pendingCross, scouts: this.scouts, memories: [...this.memoryByKey.values()].map(clone), journey: this.pendingJourney };
   }
   static fromRecord(input: unknown): ComarcaFrontier {
     if (!object(input)) invalid('expected record');
-    if (input.version !== 1 && input.version !== 2 && input.version !== 3 && input.version !== 4) invalid('version');
-    exact(input, ['recordType','version','active','parked','pendingCross','scouts', ...(input.version >= 3 ? ['memories'] : []), ...(input.version === 4 ? ['continuity','origins','ecologies'] : [])]);
+    if (input.version !== 1 && input.version !== 2 && input.version !== 3 && input.version !== 4 && input.version !== 5) invalid('version');
+    exact(input, ['recordType','version','active','parked','pendingCross','scouts', ...(input.version >= 3 ? ['memories'] : []), ...(input.version >= 4 ? ['continuity','origins','ecologies'] : []), ...(input.version === 5 ? ['journey'] : [])]);
     if (input.recordType !== 'ComarcaFrontier' ||
         (input.active !== null && !object(input.active)) || !Array.isArray(input.parked) || !Array.isArray(input.scouts)) invalid('expected v1/v2 record');
     const frontier = new ComarcaFrontier(input.active === null ? null : identity(input.active));
@@ -211,7 +252,7 @@ export class ComarcaFrontier {
         frontier.remember(personId,at,memory);
       }
     }
-    if (input.version === 4) {
+    if (input.version >= 4) {
       if(!Array.isArray(input.ecologies)) invalid('ecology metadata');
       for(const raw of input.ecologies) { if(!object(raw)||!object(raw.streams)) invalid('ecology metadata'); exact(raw,['identity','streams']); exact(raw.streams,['forestRng','wildlifeRng','ecologyRng','wildlifeOwed']); const at=identity(raw.identity); for(const stream of ['forestRng','wildlifeRng','ecologyRng']) RNG.fromSnapshot(raw.streams[stream]); if(frontier.ecologyContinuity.has(key(at))) invalid('duplicate ecology metadata'); frontier.ecologyContinuity.set(key(at),clone(raw) as unknown as {identity:ComarcaIdentity;streams:Pick<ComarcaEcologyRecord,'forestRng'|'wildlifeRng'|'ecologyRng'|'wildlifeOwed'>}); }
       if (!Array.isArray(input.origins)) invalid('origins');
@@ -224,6 +265,19 @@ export class ComarcaFrontier {
         const id = safeId(raw.personId,'compact person'); tick(raw.lastAdvancedTick,'compact date'); tick(raw.epoch,'compact epoch'); RNG.fromSnapshot(raw.rng);
         if (frontier.compactContinuity.has(id)) invalid('duplicate compact metadata');
         frontier.compactContinuity.set(id,clone(raw) as unknown as Omit<CompactPersonRecord,'person'>);
+      }
+    }
+    if (input.version === 5) {
+      if (input.journey !== null) {
+        if (!object(input.journey)) invalid('journey');
+        const raw=input.journey;
+        exact(raw,['recordType','version','actorId','travellerIds','source','destination','departureTick','arrivalTick','lastAdvancedTick','route','enteringEdge','provisions','preservedProvisions','cargoUnits','migration','playerTravelling','transport','transit','rng','encounters']);
+        if (raw.recordType !== 'ComarcaJourneyRecord' || raw.version !== 1 || !edge(raw.enteringEdge) || !Array.isArray(raw.route) || !Array.isArray(raw.travellerIds) || !Array.isArray(raw.encounters) || typeof raw.migration!=='boolean' || typeof raw.playerTravelling!=='boolean' || !object(raw.transport) || !object(raw.transit)) invalid('journey');
+        const route=raw.route.map((p: unknown)=>{if(!object(p)) invalid('journey route'); exact(p,['cx','cy']); return {cx:tick(p.cx,'journey cx'),cy:tick(p.cy,'journey cy')};});
+        exact(raw.transport,['distance','days','maximumDistance','mode','cargoCapacity','crossedSea']);
+        const transport=raw.transport as unknown as JourneyTransport;
+        if(!Number.isFinite(transport.distance)||transport.distance<1||!Number.isFinite(transport.days)||transport.days<=0||!Number.isFinite(transport.maximumDistance)||transport.maximumDistance<transport.distance||!Number.isFinite(transport.cargoCapacity)||transport.cargoCapacity<0||typeof transport.crossedSea!=='boolean'||!['foot','sledge','cart','boat'].includes(transport.mode)||(transport.mode==='boat'&&!transport.crossedSea))invalid('journey transport');
+        frontier.setJourney({recordType:'ComarcaJourneyRecord',version:1,actorId:safeId(raw.actorId,'journey actor'),travellerIds:(()=>{if(!Array.isArray(raw.travellerIds)||!raw.travellerIds.length)invalid('journey travellers');const ids=raw.travellerIds.map((id:unknown)=>safeId(id,'journey traveller'));if(new Set(ids).size!==ids.length||!ids.includes(raw.actorId as number))invalid('journey travellers');return ids;})(),source:identity(raw.source),destination:identity(raw.destination),departureTick:tick(raw.departureTick,'journey departure'),arrivalTick:tick(raw.arrivalTick,'journey arrival'),lastAdvancedTick:tick(raw.lastAdvancedTick,'journey advanced'),route,enteringEdge:raw.enteringEdge,provisions:tick(raw.provisions,'journey provisions'),preservedProvisions:tick(raw.preservedProvisions,'journey preserved provisions'),cargoUnits:tick(raw.cargoUnits,'journey cargo'),migration:raw.migration,playerTravelling:raw.playerTravelling,transport,transit:raw.transit as unknown as CheckpointRecord,rng:raw.rng as ReturnType<RNG['snapshot']>,encounters:raw.encounters.map((e:unknown)=>{if(typeof e!=='string') invalid('journey encounter'); return e;})});
       }
     }
     return frontier;

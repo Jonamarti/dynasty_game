@@ -80,6 +80,7 @@ export class WorldMapOverlay {
   private readonly backButton: HTMLButtonElement;
   private readonly closeButton: HTMLButtonElement;
   private readonly closerButton: HTMLButtonElement;
+  private readonly journeyButton: HTMLButtonElement;
   private sim: Simulation | null = null;
   private geography: WorldGeography | null = null;
   private grid: GlobeGrid | null = null;
@@ -90,7 +91,8 @@ export class WorldMapOverlay {
   private hovered: { x: number; y: number } | null = null;
   private signature = '';
 
-  constructor(container: HTMLElement, private readonly travel?: (action: 'leave_comarca' | 'scout' | 'propose', edge: ComarcaEdge) => void) {
+  constructor(container: HTMLElement, private readonly travel?: (action: 'leave_comarca' | 'scout' | 'propose', edge: ComarcaEdge) => void,
+    private readonly journey?: (destination: { cx: number; cy: number }) => void) {
     this.root = document.createElement('div');
     this.root.className = 'worldmap';
     this.root.hidden = true;
@@ -130,6 +132,15 @@ export class WorldMapOverlay {
       journeys.appendChild(row);
     }
     q('.worldmap-side').appendChild(journeys);
+    this.journeyButton = document.createElement('button');
+    this.journeyButton.type = 'button';
+    this.journeyButton.className = 'worldmap-journey';
+    this.journeyButton.addEventListener('click', () => {
+      if (!this.picked || this.mode !== 'region' || !this.grid) return;
+      this.journey?.({ cx: this.region.x * this.grid.perRegion + this.picked.x, cy: this.region.y * this.grid.perRegion + this.picked.y });
+      this.close();
+    });
+    q('.worldmap-side').appendChild(this.journeyButton);
     this.labelButtons();
 
     this.root.addEventListener('click', event => {
@@ -200,6 +211,7 @@ export class WorldMapOverlay {
     this.backButton.textContent = '← ' + t('The world');
     this.closeButton.textContent = t('Close');
     this.closerButton.textContent = t('Look closer');
+    this.journeyButton.textContent = t('Travel to this comarca');
   }
 
   get isOpen(): boolean { return !this.root.hidden; }
@@ -305,6 +317,9 @@ export class WorldMapOverlay {
     this.signature = signature;
 
     this.root.querySelector<HTMLElement>('.worldmap-travel')!.hidden = !sim.comarcaTravel || !sim.worldFrame;
+    this.journeyButton.hidden = this.mode !== 'region' || !this.picked || !this.grid || !sim.worldFrame ||
+      !lore.at(this.region.x * this.grid.perRegion + this.picked.x, this.region.y * this.grid.perRegion + this.picked.y) ||
+      (this.picked.x + this.region.x * this.grid.perRegion === here?.cx && this.picked.y + this.region.y * this.grid.perRegion === here?.cy);
     this.title.textContent = t('The world');
     this.sub.textContent = sim.player ? t('what {name} knows of it', { name: sim.player.name }) : '';
     this.backButton.hidden = this.mode !== 'region';

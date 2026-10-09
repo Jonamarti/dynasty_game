@@ -1,0 +1,18 @@
+# M15 phase 35: comarca journeys
+
+World-map travel persists as one root-owned journey ticket. The ticket records the source and destination comarca, chosen route, travel mode, party, departure/arrival ticks, physical provisions and cargo, transport gates, encounter stream state, and a full destination checkpoint. Starting a trip stages source and destination ownership before publishing the ticket; arrival keeps the ticket until both destination and source owners can be captured and installed.
+
+The route uses wrapped Manhattan distance. Foot travel covers one comarca; a live, leased pack animal with pack-animal knowledge covers two; a leased riding horse with horse-riding knowledge covers three. A cart requires wheel knowledge and physical equipment and doubles route speed. A sledge requires sledge knowledge and physical equipment; its speed changes with snow and its container contributes cargo capacity. Sea crossings require both logboat knowledge and a physical logboat. A one-comarca coast crossing is possible by boat; longer or non-adjacent sea crossings also require sail knowledge and a physical sail.
+
+Travel advances every simulation tick through the normal needs update, nursing factors, food consumption, macro decay, and inventory spoilage. Perishable food is selected before shelf-stable food so shelf-stable stock remains available later. Death and changes to inventory are part of the checkpointed journey state. The UI reports mode, destination, departure day, remaining duration, current provisions, shelf-stable stock, cargo, and encounter outcomes. A failed departure or arrival leaves a visible refusal and does not publish partial ownership changes.
+
+Focused coverage lives in `journey-transport.test.ts`, `journey-world-state.test.ts`, and `comarca-travel.test.ts`. It exercises transport gates, route speed and range, saving/resuming a trip, rejected destinations, animal ID collisions, and adjacent scout return/death behavior. The full milestone's browser capture is recorded separately by the parent task.
+
+The existing item table has no preserved-meat or pemmican item yet. The displayed shelf-stable count is based on edible items with no spoil timer (currently including nuts); it does not claim a preservation recipe or the phase 15 preserved-food system is implemented.
+
+Transit advances the shared destination checkpoint clock, while needs, food use, spoilage, and encounter damage are applied only to the explicit travelling party. Residents and ecology in that destination checkpoint do not run their normal local simulation passes during the route, and pregnancy/lifecycle daily processing is not applied to travellers yet. This is an abstract party journey with a persisted destination checkpoint, not a full off-map simulation; those deferred passes remain a known limitation for follow-up.
+
+The default global spoilage rate is zero, so journey ticks apply a journey-only baseline spoilage rate of 1 when no positive configured rate exists; ordinary simulation spoilage remains unchanged. The shelf-stable count is therefore a meaningful comparison with perishable berries over the route.
+
+
+**Cadencia del coordinador.** Mientras haya un viaje pendiente, el consumidor debe llamar WorldState.advancePeoples después de cada step; el navegador ya lo hace. El avance de origen en bloque cruzando la llegada aún no se admite: una reproducción de nueve steps para una ruta de ocho instala tick 8, dejando un ledger de origen en tick 9 que no vuelve a cargar. Se registra en bugs y M16; no se presenta como reanudación válida de cualquier salto temporal.

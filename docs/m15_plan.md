@@ -3454,9 +3454,7 @@ envolver la latitud por error.
 
 **Qué cambia respecto al plan de origen:**
 
-- **`sledge` ya existe** desde la fase 11 como angarillas locales. Aquí gana el
-  viaje entre comarcas (más carga por persona y, en nieve, más rápido). Es el
-  mismo nodo, no un segundo.
+- **El objeto y la receta `sledge` ya existen** desde la fase 11 como angarillas locales. Faltaba el nodo previsto: aquí se añade y se conecta a la receta existente, con carga y velocidad en nieve entre comarcas.
 - **`logboat` añade el modo de paso `boat`** (fase 27): cruzar lo hondo **dentro
   de la comarca** (lagos, brazos de mar) además del viaje por la costa. Con
   `World.boatRegion` reparada por 16a.
@@ -3469,6 +3467,8 @@ envolver la latitud por error.
   ese término a la decisión de partir.
 
 **Avance 2026-10-09: canoa local integrada.** Nodo, receta, regiones propias, orden y seguridad compartida, arte y traducciones. Seis pruebas de navegación y un e2e con negativos de técnica/objeto y capturas en artifacts/screenshots/m15-phase35-logboat-2026-10-09/. Viajes fechados, animales y vela siguen en esta fase. [Contrato](m15_phase35_logboat.md).
+
+**Avance 2026-10-09: viajes, rastra y carro integrados.** Ticket fechado y persistente, consumo físico y deterioro solo de provisiones; la comida estable evita ese deterioro, sin inventar pemmican aún ausente. La rastra cambia su velocidad en nieve y el carro acorta viajes con técnica y equipo físicos. La interfaz muestra duración, existencias y encuentros. El avance de residentes/ecología de destino y el ciclo reproductivo de viajeros siguen como pendientes del modelo compacto. Animales y vela se entregan a continuación. [Contrato](m15_phase35_journeys.md).
 
 **Puerta:** un check por nodo contra el build sin el nodo; la cohorte
 `migrants` a 20 semillas.

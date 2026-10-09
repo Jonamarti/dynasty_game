@@ -361,7 +361,7 @@ export const ES_TECH: Record<string, string> = {
   "Coursed stone walls: the best roof anybody can raise with hand tools.": "Muros de piedra en hiladas: el mejor techo que se puede levantar con herramientas de mano.",
   "A woven wall daubed over: faster to raise than a mud hut, and warmer for it.": "Un muro tejido y revocado: más rápido de levantar que una choza de barro, y más cálido.",
   "Sowing timed to a tally instead of to guesswork: more off the same ground.": "Sembrar según una cuenta y no a ojo: más de la misma tierra.",
-  "A cart: what a strap and a basket carry, and a cartload more on top.": "Un carro: lo que llevan una correa y una cesta, y una carretada más encima.",
+  "A physical equipped cart carries more and halves land journey time.": "Un carro equipado y físico transporta más y reduce a la mitad el tiempo de viaje terrestre.",
   "Meal baked into bread: more nourishing than the meal it is made from, and it keeps as well.": "Harina cocida en pan: más nutritivo que la harina de la que sale, y se conserva igual.",
   "A fenced herd: meat that breeds on its own, culled instead of hunted.": "Un rebaño cercado: carne que cría sola, sacrificada en vez de cazada.",
   "A held heat that wastes less clay than an open fire: pottery for less.": "Un calor sostenido que desperdicia menos arcilla que un fuego abierto: cerámica más barata.",

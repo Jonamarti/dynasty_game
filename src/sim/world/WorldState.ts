@@ -28,6 +28,9 @@ import type { ComarcaTravelRequest } from './ComarcaTravel.ts';
 import { approveMigration, canFollowMigration, knownMigrationDestinations, type ComarcaMigrationContext, type ComarcaMigrationProposal } from './ComarcaMigration.ts';
 import { approachComarcaEdge } from './ComarcaTravel.ts';
 import { fissionMigratingParty } from './ComarcaBandFission.ts';
+import { comarcaRoute, journeyTransport, type JourneyPoint } from './Transport.ts';
+import { capacityFor } from '../core/Carry.ts';
+import { ITEMS } from '../entities/Item.ts';
 
 export interface WorldStateGeographicStart {
   geography: WorldGeography;
@@ -104,6 +107,8 @@ export class WorldState {
     if (current.ids !== this.ids) throw new RangeError('A world root must keep its global IdSpace');
     if ((this.geography.kind === 'legacyIsland') !== (geographicStart === null)) throw new RangeError('Current placement must match world geography');
     this.current = current;
+    if(geographicStart) current.worldFrame=worldFrameOf({geography:this.geography,...geographicStart.start,comarcasWide:geographicStart.comarcasWide??1,comarcasHigh:geographicStart.comarcasHigh??1});
+    else current.worldFrame=null;
     this.initialGeographicStart = retainStart(this.geography, geographicStart);
     this.frontier.setActive(frontierIdentityAt(this.geography, geographicStart));
     this.bindCurrentPolicies();
@@ -310,7 +315,7 @@ export class WorldState {
         this.storeTile(destinationTile);
         this.frontier.park(request.destination,destinationRecord,scoutRuntime);
         if (request.scout) this.frontier.addScout({ personId: request.actorId, source: request.source, destination: request.destination,
-          departureTick: source.time.tick, returnTick: source.time.tick+2*source.config.time.ticksPerDay });
+          departureTick: source.time.tick, returnTick: source.time.tick+Math.max(1,Math.ceil(2*source.config.time.ticksPerDay)) });
         const home = Simulation.fromCheckpointRecordWithSharedIds(sourceRecord,this.ids);
         source.parkForTransfer();
         this.installCurrent(home,this.initialGeographicStart);
@@ -330,8 +335,83 @@ export class WorldState {
     }
   }
 
+  /** Queue a player-selected, knowledge-backed trip through the world root. */
+  startJourney(destination: JourneyPoint, options: { actor?: Person; travellerIds?: readonly number[]; requireKnowledge?: boolean; migration?: boolean } = {}): string | null {
+    const sourceSim=this.current, actor=options.actor ?? sourceSim.player, source=this.currentIdentity(sourceSim), frame=sourceSim.worldFrame;
+    if (!actor || !source || !frame || sourceSim.peopleById.get(actor.id)!==actor || !actor.alive) return t('You cannot begin a journey right now');
+    if (this.frontier.pendingJourney || this.frontier.pendingCross) return t('A journey is already under way');
+    if (!Number.isSafeInteger(destination.cx) || !Number.isSafeInteger(destination.cy) || destination.cx<0 || destination.cy<0 || destination.cx>=frame.mapWidth || destination.cy>=frame.mapHeight) return t('That destination is outside the known world');
+    if (options.requireKnowledge !== false && !knowledgeOfWorld(actor).at(destination.cx,destination.cy)) return t('You can only travel to a place someone here knows');
+    const target=comarcaIdentityAt(this.geography,destination.cx,destination.cy);
+    if (JSON.stringify(source)===JSON.stringify(target)) return t('You are already in that comarca');
+    const route=comarcaRoute({cx:source.cx,cy:source.cy},destination,frame.mapWidth);
+    const seaCells=route.slice(1).filter(point=>{ const p=this.geography.profileAt(point.cx,point.cy); return p.kind==='earth' ? !p.land : p.kind==='random' ? p.elevation<=0 : false; }).length;
+    const plan=journeyTransport({person:actor,from:source,to:destination,mapWidth:frame.mapWidth,mapHeight:frame.mapHeight,seaCells,snow:sourceSim.snowDepth>0});
+    if (!plan) return t('You do not have the transport needed for that journey');
+    if (!this.destinationIsLand(destination.cx,destination.cy)) return t('That comarca is under the sea');
+    const party=new Set(options.travellerIds ?? [actor.id]); party.add(actor.id);
+    for(const follower of sourceSim.peopleHash.queryRadius(actor.x,actor.y,sourceSim.config.sightRadius)) {
+      if(follower.id!==actor.id&&follower.alive&&follower.bandId===actor.bandId&&follower.action==='follow_me'&&follower.targetPersonId===actor.id) party.add(follower.id);
+    }
+    let grew=true; while(grew){grew=false;for(const person of sourceSim.people)if(person.alive&&person.carriedBy!==null&&party.has(person.carriedBy)&&!party.has(person.id)){party.add(person.id);grew=true;}}
+    const ids=[...party].sort((a,b)=>a-b);
+    if (ids.some(id=>{const person=sourceSim.peopleById.get(id);return !person?.alive||person.inventory.total>capacityFor(person,sourceSim.config.carry);})) return t('The travelling party is carrying too much');
+    const stagedIds=IdSpace.fromSnapshot(this.ids.snapshot());
+    try {
+      const stagedPeoples=this.peoples?restorePeoples(this.geography,this.initialGeographicStart,this.peoples.toRecord()):null;
+      const newOrigins:[number,number][]=[];
+      const stagedSource=Simulation.fromCheckpointRecordWithSharedIds(toCheckpointRecord(sourceSim),stagedIds);
+      const destinationStart:WorldStateGeographicStart={geography:this.geography,start:{x:destination.cx+.5,y:destination.cy+.5},comarcasWide:1,comarcasHigh:1,peoples:false};
+      // A parked destination changes ownership to this ticket; otherwise this
+      // one generated simulation becomes the comarca itself and is installed
+      // after arrival. That prevents a second resource/animal/ID allocation.
+      const parkedTarget=this.frontier.parkedAt(target), parkedRuntime=this.frontier.runtimeAt(target);
+      let transit:Simulation;
+      if(parkedTarget){
+        let checkpoint=parkedRuntime?.checkpoint??parkedTarget;
+        if(checkpoint.lastAdvancedTick<sourceSim.time.tick){
+          const tile=this.tileLedger.at(target); if(!tile) throw new RangeError('Journey destination has no tile ledger');
+          const offmap=parkedRuntime?ComarcaOffmapRuntime.fromRecord(parkedRuntime):ComarcaOffmapRuntime.start(parkedTarget,tile);
+          checkpoint=offmap.advanceTo(sourceSim.time.tick,this.geography,stagedIds,id=>this.findArchivedParent(id)).checkpoint;
+        }
+        transit=Simulation.fromCheckpointRecordWithSharedIds(checkpoint,stagedIds);
+      } else {
+        transit=new Simulation({...sourceSim.config,population:{...sourceSim.config.population,bands:0}},stagedIds,{geography:this.geography,...destinationStart.start,comarcasWide:1,comarcasHigh:1});
+        transit.time.tick=sourceSim.time.tick;
+        this.materializeResidents(transit,target,stagedPeoples,newOrigins);
+      }
+      // The transit checkpoint must start on the same global tick as its source;
+      // otherwise transfer rejects the trip and saving mixes two calendars.
+      transit.time.tick=sourceSim.time.tick;
+      const routeBefore=route.at(-2)!;
+      const enteringEdge:ComarcaEdge=destination.cy<routeBefore.cy?'s':destination.cy>routeBefore.cy?'n':
+        (destination.cx-routeBefore.cx+frame.mapWidth)%frame.mapWidth===1?'w':'e';
+      stagedSource.transferTravellersTo(transit,ids,enteringEdge);
+      for(const id of ids){const traveller=transit.peopleById.get(id)!;traveller.placeMemory=this.frontier.memoryAt(id,target)??new PlaceMemory(transit.world.width,transit.world.height,48);}
+      const tpd=sourceSim.config.time.ticksPerDay, duration=Math.max(1,Math.ceil(plan.days*tpd));
+      const arrivalTick=sourceSim.time.tick+duration;
+      const provisions=ids.reduce((sum,id)=>sum+[...(transit.peopleById.get(id)?.inventory.entries()??[])].reduce((n,[item,count])=>n+(ITEMS[item]?.nutrition>0?count:0),0),0);
+      const preservedProvisions=ids.reduce((sum,id)=>sum+[...(transit.peopleById.get(id)?.inventory.entries()??[])].reduce((n,[item,count])=>n+(ITEMS[item]?.nutrition>0&&ITEMS[item]?.spoilTicks===0?count:0),0),0);
+      const cargoUnits=ids.reduce((sum,id)=>sum+(transit.peopleById.get(id)?.inventory.total??0),0);
+      const transitRecord=toCheckpointRecord(transit);
+      const journey={recordType:'ComarcaJourneyRecord' as const,version:1 as const,actorId:actor.id,travellerIds:ids,source,destination:target,departureTick:sourceSim.time.tick,arrivalTick,lastAdvancedTick:sourceSim.time.tick,route,enteringEdge,provisions,preservedProvisions,cargoUnits,migration:options.migration??false,playerTravelling:ids.includes(sourceSim.player?.id??-1),transport:plan,transit:transitRecord,rng:new RNG(`journey:${sourceSim.config.seed}:${actor.id}:${source.cx},${source.cy}:${destination.cx},${destination.cy}:${sourceSim.time.tick}`).snapshot(),encounters:[]};
+      const sourceRecord=toCheckpointRecord(stagedSource);
+      this.ids.restore(stagedIds.snapshot());
+      if(stagedPeoples) Object.defineProperty(this,'peoples',{value:stagedPeoples});
+      for(const [id,peopleId] of newOrigins) this.frontier.noteMaterialized(id,peopleId);
+      this.frontier.setJourney(journey);
+      if(parkedTarget) this.frontier.unpark(target);
+      sourceSim.parkForTransfer(); this.installCurrent(Simulation.fromCheckpointRecordWithSharedIds(sourceRecord,this.ids),this.initialGeographicStart);
+      return null;
+    } catch { return t('That journey could not be prepared safely'); }
+  }
+
+  /** During a journey, call after every current.step(): batching across arrival
+   * currently leaves the parked source ahead of the installed destination clock.
+   * The browser uses this per-tick contract; batch handoff is tracked for M16. */
   advancePeoples(): void {
     const tick = this.current.time.tick;
+    this.advanceJourney(tick);
     if (this.peoples && tick % this.current.config.time.ticksPerDay === 0) this.peoples.advanceTo(tick);
     if (tick % this.current.config.time.ticksPerDay === 0) this.advanceParkedTo(tick);
     this.returnScouts(tick);
@@ -339,11 +419,82 @@ export class WorldState {
     if (tick % this.current.config.time.ticksPerDay === 0) { this.reconcileFamilyLinks(); this.reconcileMacroResidents(); }
   }
 
+  private advanceJourney(tick:number): void {
+    const journey=this.frontier.pendingJourney; if(!journey) return;
+    if(tick<=journey.lastAdvancedTick){if(journey.lastAdvancedTick>=journey.arrivalTick)this.arriveJourney(journey);return;}
+    const stagedIds=IdSpace.fromSnapshot(this.ids.snapshot());
+    const transit=Simulation.fromCheckpointRecordWithSharedIds(journey.transit,stagedIds);
+    const tpd=transit.config.time.ticksPerDay, rng=RNG.fromSnapshot(journey.rng), encounters=[...journey.encounters];
+    let arrivalTick=journey.arrivalTick, advanced=journey.lastAdvancedTick;
+    // Do not collapse elapsed time into one needs update: food choice, spoilage,
+    // death and daily effects must be identical across save/resume boundaries.
+    while(advanced<tick && advanced<arrivalTick) {
+      const next=advanced+1;
+      transit.advanceJourneyTick(journey.travellerIds,next);
+      advanced=next;
+      if(next%tpd===0&&next<arrivalTick){
+        const event=rng.next();
+        if(event<0.04){encounters.push('storm');arrivalTick+=tpd;}
+        else if(event<0.08){encounters.push('wildlife');const actor=transit.peopleById.get(journey.actorId);if(actor?.alive){actor.health-=5;if(actor.health<=0)actor.die('injury');}}
+        else if(event<0.13) encounters.push('settlement');
+      }
+    }
+    const provisions=journey.travellerIds.reduce((sum,id)=>sum+[...(transit.peopleById.get(id)?.inventory.entries()??[])].reduce((n,[item,count])=>n+(ITEMS[item]?.nutrition>0?count:0),0),0);
+    const preservedProvisions=journey.travellerIds.reduce((sum,id)=>sum+[...(transit.peopleById.get(id)?.inventory.entries()??[])].reduce((n,[item,count])=>n+(ITEMS[item]?.nutrition>0&&ITEMS[item]?.spoilTicks===0?count:0),0),0);
+    const cargoUnits=journey.travellerIds.reduce((sum,id)=>sum+(transit.peopleById.get(id)?.inventory.total??0),0);
+    const updated={...journey,arrivalTick,lastAdvancedTick:advanced,provisions,preservedProvisions,cargoUnits,transit:toCheckpointRecord(transit),rng:rng.snapshot(),encounters};
+    this.frontier.updateJourney(updated);
+    if(advanced>=arrivalTick) this.arriveJourney(updated);
+  }
+
+  private arriveJourney(journey:import('./ComarcaFrontier.ts').ComarcaJourneyRecord): void {
+    const source=this.current, destinationStart:WorldStateGeographicStart={geography:this.geography,start:{x:journey.destination.cx+.5,y:journey.destination.cy+.5},comarcasWide:1,comarcasHigh:1,peoples:false};
+    const stagedIds=IdSpace.fromSnapshot(this.ids.snapshot());
+    try {
+      // Stage every owner and record first. The old ticket remains valid unless
+      // all destination, source and UI-active checkpoint captures succeed.
+      const transit=Simulation.fromCheckpointRecordWithSharedIds(journey.transit,stagedIds);
+      transit.worldFrame=worldFrameOf({geography:this.geography,...destinationStart.start,comarcasWide:1,comarcasHigh:1});
+      const dead=transit.people.filter(p=>journey.travellerIds.includes(p.id)&&!p.alive);
+      const living=journey.travellerIds.filter(id=>transit.peopleById.get(id)?.alive);
+      const stagedSource=journey.migration?Simulation.fromCheckpointRecordWithSharedIds(toCheckpointRecord(source),stagedIds):null;
+      if(journey.migration&&living.length&&stagedSource) fissionMigratingParty(stagedSource,transit,living);
+      for(const person of dead) if(person.isPlayer){transit.player=person;transit.succession={died:person,heir:findHeir(person,transit.peopleById)};}
+      for(const id of living){const person=transit.peopleById.get(id)!;person.placeMemory=this.frontier.memoryAt(id,journey.destination)??new PlaceMemory(transit.world.width,transit.world.height,48);(person.worldKnowledge??=new WorldKnowledge()).see(journey.destination.cx,journey.destination.cy,transit.time.day);}
+      transit.insights.push({personId:living[0]??journey.actorId,text:t('{name} completed a journey', {name:transit.peopleById.get(journey.actorId)?.name??t('a traveller')}),kind:'gain'});
+      const destinationRecord=toCheckpointRecord(transit);
+      const destinationTile=new TileLedger().capture({geography:this.geography,current:transit,initialGeographicStart:destinationStart} as WorldState);
+      const destinationRuntime=ComarcaOffmapRuntime.rebase(destinationRecord,destinationTile,null,this.frontier.compactState()).toRecord();
+      const committedSource=stagedSource??source;
+      const sourceRecord=journey.playerTravelling?toCheckpointRecord(committedSource):null;
+      const sourceTile=journey.playerTravelling?this.tileLedger.capture({geography:this.geography,current:committedSource,initialGeographicStart:this.initialGeographicStart} as WorldState):null;
+      const sourceRuntime=sourceRecord&&sourceTile?ComarcaOffmapRuntime.start(sourceRecord,sourceTile,this.frontier.compactState(),this.frontier.ecologyState(journey.source)).toRecord():null;
+      // Commit only after both sides and their persisted forms are ready.
+      // Hydrate the UI owner with the root's canonical allocator, never the staging clone.
+      this.ids.restore(stagedIds.snapshot());
+      const executable=journey.playerTravelling?Simulation.fromCheckpointRecordWithSharedIds(destinationRecord,this.ids):null;
+      if(executable) executable.worldFrame=worldFrameOf({geography:this.geography,...destinationStart.start,comarcasWide:1,comarcasHigh:1});
+      this.storeTile(destinationTile);
+      this.frontier.park(journey.destination,destinationRecord,destinationRuntime);
+      if(journey.playerTravelling&&sourceRecord&&sourceTile&&sourceRuntime){
+        this.storeTile(sourceTile); this.frontier.park(journey.source,sourceRecord,sourceRuntime);
+        source.parkForTransfer(); this.frontier.unpark(journey.destination); this.frontier.setActive(journey.destination);
+        this.installCurrent(executable!,destinationStart);
+      }
+      this.frontier.takeJourney();
+    } catch {
+      // Leave the serialized journey authoritative so a transient arrival error can retry.
+      source.lastRefusal=t('Arrival could not be completed safely');
+    }
+  }
+
   private findArchivedParent(id:number): Person|null {
     const here=this.current.peopleById.get(id); if(here) return here;
-    for(const parked of this.frontier.toRecord().parked) for(const raw of parked.checkpoint.roster.people) {
+    const record=this.frontier.toRecord();
+    for(const parked of record.parked) for(const raw of parked.checkpoint.roster.people) {
       const person=fromPersonRecord(raw); if(person.id===id) return person;
     }
+    if(record.journey) for(const raw of record.journey.transit.roster.people){const person=fromPersonRecord(raw);if(person.id===id)return person;}
     return null;
   }
   /** IDs are global kin links. Foreign parents retain their child list without acquiring a second body owner. */
@@ -351,11 +502,15 @@ export class WorldState {
     const parked=this.frontier.toRecord().parked;
     const archive=new Map(this.current.peopleById);
     const locals=parked.map(slot=>({slot,people:slot.checkpoint.roster.people.map(fromPersonRecord)}));
+    const journey=this.frontier.pendingJourney;
+    const travellers=journey?journey.transit.roster.people.map(fromPersonRecord):[];
+    if(journey) for(const person of travellers) archive.set(person.id,person);
     for(const local of locals) for(const person of local.people) archive.set(person.id,person);
     const changed=new Set<number>();
     for(const child of archive.values()) for(const id of [child.motherId,child.fatherId]) {
       const parent=id===null?null:archive.get(id); if(parent && !parent.childIds.includes(child.id)) {parent.childIds.push(child.id); changed.add(parent.id);}
     }
+    if(journey&&travellers.some(p=>changed.has(p.id))){const transit=Simulation.fromCheckpointRecordWithSharedIds(journey.transit,this.ids);for(const person of travellers){const live=transit.peopleById.get(person.id);if(live)live.childIds=[...person.childIds];}this.frontier.updateJourney({...journey,transit:toCheckpointRecord(transit)});}
     for(const {slot,people} of locals) {
       if(!people.some(p=>changed.has(p.id))) continue;
       const checkpoint={...slot.checkpoint,roster:{...slot.checkpoint.roster,people:people.map(p=>toPersonRecord(p,slot.checkpoint.lastAdvancedTick))}};
@@ -366,7 +521,8 @@ export class WorldState {
   private reconcileMacroResidents(): void {
     if(!this.peoples) return;
     const origins=new Map(this.frontier.materializedOrigins());
-    const people=[...this.current.peopleById.values(),...this.frontier.toRecord().parked.flatMap(s=>s.checkpoint.roster.people.map(fromPersonRecord))];
+    const root=this.frontier.toRecord();
+    const people=[...this.current.peopleById.values(),...root.parked.flatMap(s=>s.checkpoint.roster.people.map(fromPersonRecord)),...(root.journey?root.journey.transit.roster.people.map(fromPersonRecord):[])];
     // A named newborn is another head held outside its mother's original cohort.
     for(const child of people) if(!origins.has(child.id) && child.motherId!==null && origins.has(child.motherId)) {
       const origin=origins.get(child.motherId)!; origins.set(child.id,origin); this.frontier.noteMaterialized(child.id,origin);
@@ -499,6 +655,17 @@ export class WorldState {
       if (geography.kind === 'legacyIsland' || JSON.stringify(parked.identity) !== JSON.stringify(comarcaIdentityAt(geography, parked.identity.cx, parked.identity.cy))) {
         throw new RangeError('Parked checkpoint geography does not match its world root');
       }
+    }
+    const journey = frontier.pendingJourney;
+    if (journey) {
+      if (geography.kind === 'legacyIsland' || JSON.stringify(journey.source) !== JSON.stringify(active) || JSON.stringify(journey.destination) !== JSON.stringify(comarcaIdentityAt(geography, journey.destination.cx, journey.destination.cy)) || journey.lastAdvancedTick !== current.time.tick || journey.arrivalTick < current.time.tick || frontier.parkedAt(journey.destination)) throw new RangeError('Journey ownership or date does not match its world root');
+      const transitPeople = journey.transit.roster.people.map(record => fromPersonRecord(record));
+      const transitIds = new Set(transitPeople.map(person => person.id));
+      if (journey.travellerIds.some(id => !transitIds.has(id) || current.peopleById.has(id)) || (journey.playerTravelling ? current.player !== null || !transitPeople.some(person => person.isPlayer) : current.player !== null && journey.travellerIds.includes(current.player.id))) throw new RangeError('Journey party ownership does not match its world root');
+      const ownedIds = new Set<number>(current.people.map(person => person.id));
+      for (const parked of frontier.toRecord().parked) for (const record of parked.checkpoint.roster.people) { const person=fromPersonRecord(record); if (ownedIds.has(person.id)) throw new RangeError('Duplicate person owner in world root'); ownedIds.add(person.id); }
+      for (const person of transitPeople) { if (ownedIds.has(person.id)) throw new RangeError('Duplicate person owner in world root'); ownedIds.add(person.id); }
+      if (!transitIds.has(journey.actorId)) throw new RangeError('Journey actor is absent from its transit checkpoint');
     }
     const state = Object.create(WorldState.prototype) as WorldState;
     Object.defineProperties(state, {

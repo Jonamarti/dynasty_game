@@ -1,3 +1,13 @@
+## M15 fase 35: avance de origen en bloque cruza el reloj de llegada — 2026-10-09
+
+Reproducción corta: ruta de ocho ticks, nueve step de origen y un único advancePeoples instalan el destino en tick 8 con el ledger del origen en tick 9; serializeSave rechaza la fecha. Mientras se viaja, advancePeoples debe ejecutarse después de cada tick, como hace main. Sigue pendiente admitir lotes que crucen la llegada sin retroceder el reloj ni simular dos propietarios. Se difiere a M16 según la prioridad de cierre de M15; la prueba de reanudación cubre el flujo por tick del juego, no este uso en bloque.
+
+## M15 fase 35: límites del tránsito abstracto — 2026-10-09
+
+El ticket conserva un destino canónico y avanza necesidades/consumo/deterioro de la partida, pero sus residentes y ecología no ejecutan los pases compactos mientras se viaja. Tampoco aplica LifeSystem.daily (embarazo, nacimiento y ciclo reproductivo) ni el flujo completo de lactancia durante la ruta. Las rutas largas necesitan integrar esos pases sin duplicar cuerpos, stock ni RNG. El parser y el guardado parcial cubren propiedad y reloj del ticket; esto no es evidencia de correspondencia LOD anual.
+
+La tabla actual aún no contiene pemmican, carne seca ni los nodos de conservación de fase 15. La UI llama comida estable a los comestibles sin temporizador de deterioro, como avellanas. El deterioro se activa solo en provisiones de tránsito; el escenario normal conserva spoilRate cero. Cohortes migrants de veinte semillas y matriz diferidas por AGENTS.md.
+
 ## M15 fase 34: actualización de cierre funcional — 2026-10-09
 
 Los pendientes históricos de cruce/coordinador, libro abandonado y residentes compactos de esta página se resolvieron en esta entrega: [viaje](m15_phase34_travel.md), [runtime físico](m15_phase34_offmap_runtime.md). La raíz mantiene una autoridad ejecutable, retira el motor anterior y conserva personas/objetos al reentrar; un explorador muerto no aporta observaciones. La fixture v1 detectada en la suite se corrigió quitando frontier del formato histórico y sus diez pruebas pasan.

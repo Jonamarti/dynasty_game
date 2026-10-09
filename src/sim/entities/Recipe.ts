@@ -541,7 +541,7 @@ export const RECIPES: Record<string, RecipeDef> = {
   },
   sledge: {
     id: 'sledge', label: 'Sledge', icon: '\u{1F6F7}',
-    tech: 'carpentry', skill: 'build', workTicks: 150,
+    tech: 'sledge', skill: 'build', workTicks: 150,
     ingredients: { wood: 2, rope: 2 }, output: { sledge: 1 }, keep: 1,
   },
   // `bread`, mechanism 4's fourth station. Meal in, bread out, one for one —

@@ -303,7 +303,20 @@ const worldMap = new WorldMapOverlay(document.body, (action, edge) => {
   if (!sim.order(actor, action, { edge, ...(action === 'propose' ? { recipeId: 'migration' } : {}) })) {
     renderer.floaters.push(actor.x, actor.y, sim.lastRefusal ?? t('There is no way across'), { color: '#ff8c82', boxed: true });
   }
+}, destination => {
+  const actor = sim.player;
+  if (!actor) return;
+  const refusal = worldState.startJourney(destination);
+  if (refusal) renderer.floaters.push(actor.x, actor.y, refusal, { color: '#ff8c82', boxed: true });
+  else syncActiveSimulation();
 });
+
+// Journey progress stays visible while the travelling player has left the active comarca.
+const journeyStatus = document.createElement('aside');
+journeyStatus.className = 'journey-status';
+journeyStatus.hidden = true;
+journeyStatus.setAttribute('aria-live', 'polite');
+document.body.appendChild(journeyStatus);
 
 /**
  * Whether anything was on screen at the instant Escape was pressed.
@@ -897,6 +910,12 @@ function handleItemAction(
 }
 
 function possess(person: Person): void {
+  if (worldState.frontier.pendingJourney?.playerTravelling) {
+    const refusal = t('You cannot take control of someone else during your journey');
+    sim.lastRefusal = refusal;
+    renderer.floaters.push(person.x, person.y, refusal, { color: '#ff8c82', boxed: true });
+    return;
+  }
   sim.possess(person);
   selected = { kind: 'person', person };
   renderer.floaters.push(person.x, person.y, t('you are now {name}', { name: person.name }), {
@@ -2459,6 +2478,25 @@ let accumulator = 0;
  */
 let alpha = 1;
 
+function syncActiveSimulation(): void {
+  if (sim === worldState.current) return;
+  // A globe callback can replace the root owner outside the fixed-step loop.
+  // Refresh before the next step so the parked simulation never receives a tick.
+  sim = worldState.current;
+  renderer.setSim(sim);
+  newGame.setSim(sim);
+  player = sim.player;
+  selected = player ? { kind: 'person', person: player } : null;
+  commanding = null;
+  buildMode = false; craftMode = false;
+  renderer.commandedId = null; renderer.buildGhost = null;
+  renderer.floaters.clear(); lastActions.clear(); lastEventId = sim.social.recent.at(-1)?.id ?? 0;
+  radial.close(); picker.close(); worldMap.close();
+  if (player) camera.snapTo(player.x, player.y);
+  lastDesignCount = -1; lastRecipeCount = -1;
+  hud.renderBuildBar(sim, false); hud.renderCraftBar(sim, player, false);
+}
+
 function readIntent(): { dx: number; dy: number } | null {
   let dx = 0;
   let dy = 0;
@@ -2470,6 +2508,7 @@ function readIntent(): { dx: number; dy: number } | null {
 }
 
 function frame(now: number): void {
+  syncActiveSimulation();
   const delta = Math.min((now - lastTime) / 1000, 0.25);
   lastTime = now;
 
@@ -2488,21 +2527,7 @@ function frame(now: number): void {
       sim.step();
       // The rest of the world (phase 33a): a no-op between game days and on the classic island, which has no map.
       worldState.advancePeoples();
-      if (sim !== worldState.current) {
-        sim = worldState.current;
-        renderer.setSim(sim);
-        newGame.setSim(sim);
-        player = sim.player;
-        selected = player ? { kind: 'person', person: player } : null;
-        commanding = null;
-        buildMode = false; craftMode = false;
-        renderer.commandedId = null; renderer.buildGhost = null;
-        renderer.floaters.clear(); lastActions.clear(); lastEventId = sim.social.recent.at(-1)?.id ?? 0;
-        radial.close(); picker.close(); worldMap.close();
-        if (player) camera.snapTo(player.x, player.y);
-        lastDesignCount = -1; lastRecipeCount = -1;
-        hud.renderBuildBar(sim, false); hud.renderCraftBar(sim, player, false);
-      }
+      syncActiveSimulation();
       // Inside the loop, not outside it: with the speed slider up this runs
       // several times a frame, and the previous position worth drawing from is
       // the one before the *last* step.
@@ -2546,6 +2571,20 @@ function frame(now: number): void {
   familyTree.update(sim);
   tribeGraph.update(sim);
   worldMap.update(sim);
+  const journey = worldState.frontier.pendingJourney;
+  journeyStatus.hidden = !journey;
+  if (journey) {
+    const ticksPerDay = worldState.current.config.time.ticksPerDay;
+    const encounterText = journey.encounters.length ? journey.encounters.map(kind => { switch (kind) { case 'wildlife': return t('Wildlife encounter'); case 'storm': return t('Storm delay'); default: return t('Settlement sighted'); } }).join(', ') : t('No encounters');
+    const journeyMode = (() => { switch (journey.transport.mode) { case 'foot': return t('On foot'); case 'sledge': return t('By sledge'); case 'cart': return t('By cart'); case 'boat': return t('By boat'); } })();
+    const journeyState = worldState.current.time.tick >= journey.arrivalTick ? (worldState.current.lastRefusal ? t('Arrival delayed: {reason}', { reason: worldState.current.lastRefusal }) : t('Arriving')) : t('Travelling');
+    journeyStatus.textContent = t('{status}: {mode} journey to {x}, {y}; departs day {day}; {provisions} provisions ({preserved} shelf-stable); {cargo} cargo; {encounters}; {remaining} days remaining', {
+      status: journeyState, mode: journeyMode, x: journey.destination.cx + 1, y: journey.destination.cy + 1,
+      day: worldState.current.config.time.startDay + Math.floor(journey.departureTick / ticksPerDay),
+      provisions: journey.provisions, preserved: journey.preservedProvisions, cargo: journey.cargoUnits, encounters: encounterText,
+      remaining: Math.max(0, (journey.arrivalTick - worldState.current.time.tick) / ticksPerDay).toFixed(1),
+    });
+  }
   reportInterruptions();
   reportWatched();
   reportHelpCalls();

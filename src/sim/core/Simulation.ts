@@ -66,7 +66,7 @@ import {
 import { earthworkTiles, slopeAcross } from '../entities/Earthwork.ts';
 import { accrueUnits } from './Progress.ts';
 import { decayMood } from './Mood.ts';
-import { consumeFood, decayMacroBalance, decayMacroTarget } from './Macros.ts';
+import { appealOf, bestFoodFor, consumeFood, decayMacroBalance, decayMacroTarget, hydrationOf } from './Macros.ts';
 import { assailantOf, isHeld } from '../social/Defence.ts';
 import { wouldInvestigate, noticeBloodied, INVESTIGATION_DAYS } from '../social/Investigation.ts';
 import { knowledgeOfPerson, corpseIdentity } from '../social/Knowledge.ts';
@@ -5399,6 +5399,57 @@ export class Simulation {
     if (living.length === 0) return null;
     return this.possess(living[0]!);
   }
+  /**
+   * Advance only the named travellers through the ordinary needs clock. The
+   * comarca motor is deliberately not stepped: that would run wildlife,
+   * spawning and AI while the people are represented by an abstract route.
+   * Running each tick here keeps saved/resumed journeys equivalent to one
+   * uninterrupted trip, including real food consumption and daily spoilage.
+   */
+  advanceJourneyTick(travellerIds: readonly number[], tick: number): void {
+    this.assertExecutionAuthority();
+    if (!Number.isSafeInteger(tick) || tick !== this.time.tick + 1) throw new RangeError('Journey ticks must be contiguous');
+    const travellers = travellerIds.map(id => this.peopleById.get(id)).filter((person): person is Person => !!person && person.alive);
+    this.time.advance();
+    for (const person of travellers) person.action = 'walk';
+    const nurslingFactor = nurslingHungerFactor(this.config.childhood.feedsPerDay,
+      this.config.time.ticksPerDay, this.config.needs.hungerRate);
+    this.needsSystem.update(travellers, this.time, [], undefined, {
+      hungerFactor: person => isLactating(person, this.peopleById, this.config.childhood)
+        ? 1 + this.config.childhood.lactationHunger
+        : isNursling(person, this.config.childhood) ? nurslingFactor : 1,
+      babyInArms: person => isBabyInArms(person, this.config.childhood),
+    });
+    for (const person of travellers) {
+      person.age += 1 / this.config.time.ticksPerDay;
+      // Reuse the same meal path as ordinary orders and the inventory panel;
+      // this preserves macros, hydration, illness, beliefs and physical stock.
+      if (person.needs.hunger >= 45 || person.needs.thirst >= 55) {
+        // Use perishable stock before preserved rations so a long route does not spoil food while eating the shelf-stable reserve first.
+        // Thirst alone must never spend dry nuts as if they were drinking water.
+        const hungry = person.needs.hunger >= 45;
+        const entries = [...person.inventory.entries()].filter(([item]) =>
+          hungry || hydrationOf(item, this.world.waterKind !== undefined) > 0);
+        const perishable = entries.filter(([item]) => (ITEMS[item]?.nutrition ?? 0) > 0 && (ITEMS[item]?.spoilTicks ?? 0) > 0);
+        const candidates = perishable.length ? perishable : entries;
+        let food: string | null = null, best = 0;
+        for (const [item] of candidates) { const appeal = appealOf(person, item, undefined, this.config.motivation.cravings, this.config.motivation.beliefChoice); if (appeal > best) { best = appeal; food = item; } }
+        if (!food && hungry) food = bestFoodFor(person, undefined, this.config.motivation.cravings, this.config.motivation.beliefChoice);
+        if (food) consumeFood(person, food, this.time.tick, this.config.motivation.cravings,
+          this.healthRng, this.world.waterKind !== undefined);
+      }
+    }
+    if (this.time.tick % this.config.time.ticksPerDay === 0) {
+      for (const person of travellers) if (person.alive) { decayMacroBalance(person); decayMacroTarget(person); }
+      // Phase 17d enables spoilage only for provisions in transit. The detailed
+      // economy still keeps its configured zero rate until phase 15 is measured;
+      // travelling must not make fresh food keep indefinitely by inheriting it.
+      const journeySpoilRate = this.config.needs.spoilRate > 0 ? this.config.needs.spoilRate : 1;
+      for (const person of travellers) if (person.alive)
+        person.inventory.spoil(this.config.time.ticksPerDay * journeySpoilRate, () => 1);
+    }
+  }
+
   // -------------------------------------------------------------------------
   // The step
   // -------------------------------------------------------------------------

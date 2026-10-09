@@ -230,7 +230,7 @@ export const ITEMS: ItemArt[] = [
   ['rope', 'Cuerda', 'cordage', () =>
     [19, 13, 7].map(r => `<ellipse cx="32" cy="34" rx="${r + 4}" ry="${r}" fill="none" stroke="${CORD}" stroke-width="3.6"/><ellipse cx="32" cy="34" rx="${r + 4}" ry="${r}" fill="none" stroke="#8f7a4c" stroke-width="3.6" stroke-dasharray="1.6 3"/>`).join('')
     + stroke('M50,40Q58,52 48,58', CORD, 3.2)],
-  ['sledge', 'Trineo', 'carpentry', () =>
+  ['sledge', 'Trineo', 'sledge', () =>
     stroke('M6,50Q4,50 6,46L58,46', WOOD, 3.6) + stroke('M6,58Q2,58 6,54L58,54', WOOD, 3.6)
     + shape(poly([[10, 36], [54, 36], [58, 46], [6, 46]]), '#a67c4c', WOOD_D)
     + stroke('M16,36L14,46M28,36L28,46M40,36L42,46', WOOD_D, 1)
