@@ -48,7 +48,10 @@ architecture. This section describes planned work, not a shipped optimization.
 its pure daily ledger caps explicit labor/rates by one comarca's seasonal
 resource potential, consumes production and finite stores, and records overflow
 loss and unmet demand. Its strict v1 JSON codec preserves dates and bounded
-stocks. Harvest rates have no defaults: potential is not a measured worker yield.
+stocks. `CompactBandCalendar` settles each elapsed day once on the real clock,
+using the preceding tick for its season; its composed JSON record preserves
+partial-day saves, and failed supply reads leave clock and stock unchanged.
+Harvest rates have no defaults: potential is not a measured worker yield.
 It is not wired into Simulation, CompactBody intake or off-map transitions;
 agriculture, demography and knowledge integration remain pending. See
 [m15_compact_band.md](m15_compact_band.md).

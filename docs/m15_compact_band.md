@@ -44,3 +44,50 @@ demografía y técnicas, aplicar las modificaciones de `TileLedger` y medir
 de este presupuesto; conectarlos sin ese límite duplicaría la comida.
 Las cohortes, `century`/`generations` y la matriz pesada se difieren por
 `AGENTS.md`; esta entrega no afirma mejora de supervivencia ni calibración.
+
+## Calendario y guardados a mitad de jornada
+
+`CompactBandCalendar` es el dueño del reloj y del ledger de una banda.
+Liquida una sola vez cada frontera diaria atravesada, en orden, con el
+calendario real (`TimeManager`, incluido `startDay`). La fecha del ledger
+es la frontera final de la jornada; su estación se lee en `tick - 1`:
+el primer día de verano acaba de terminar la producción de primavera.
+Las llamadas que no completan una jornada solo adelantan el reloj, sin
+producir, consumir ni volver a tirar nada.
+
+El lector de oferta recibe fecha, estación y ticks inicial/final. Debe ser
+puro y leer la población, trabajo y tasas que corresponden a esa fecha,
+no el estado del mundo al final de una llamada larga. El driver valida
+todas las jornadas antes de cambiar el estado vivo. Si el lector falla,
+el reloj y las reservas quedan como antes y una repetición no duplica
+retiradas. Las llamadas reentrantes se rechazan. Este rollback cubre solo
+el estado propio del calendario, no efectos externos de un lector impuro.
+
+El registro JSON v1 compone el snapshot del calendario y el ledger. Rechaza
+fechas que no coincidan, versiones desconocidas y campos extra. El stock
+no se expone por referencia. El guardado a mitad de día conserva el tick
+parcial; al restaurarlo solo se liquida al llegar a la frontera siguiente.
+Avanzar por trozos y guardar/cargar produce los mismos informes y estado
+que avanzar de una vez. Cinco pruebas cubren estos contratos, incluido
+un negativo de estación: usar el día entrante adelantaría la oferta de verano.
+
+Hitos visuales, sin cambio de UI: las dos giras se guardan por separado en
+`artifacts/screenshots/m15-compact-band-food-2026-10-09T-01/` y
+`artifacts/screenshots/m15-compact-band-calendar-2026-10-09T-01/`.
+
+## Verificación conjunta — 2026-10-09
+
+- TypeScript limpio; 15/15 pruebas nuevas (10 ledger, 5 calendario).
+- Techo de potencial eliminado temporalmente: cuatro pruebas iniciales fallan;
+  restaurado, vuelven a pasar. Estación de medianoche leída en `boundary`
+  en vez de `boundary - 1`: dos pruebas fallan; restaurado, 15/15 pasan.
+- Suite completa: 221 archivos; 1.681 pasan, 1 omitida y 2 fallos heredados.
+  Correspondencia craft/delta: diferencia de hambre 23,401 frente a ≤15;
+  difusión tecnológica: 0,81 frente a <0,6. Son exactamente las cifras
+  registradas al cerrar `m15_brain_cost.md`; no se relajaron tolerancias.
+- `sim:check` de una semilla: 2/147 fallos, dieta y rendimiento, como al empezar.
+- Dos giras 1/1 cada una, 13 capturas por hito. No cambia la UI del producto.
+- Cohortes y matriz pesada diferidas; no hay resultado económico calibrado.
+
+Los logs de verificación están en `artifacts/m15-compact-band-tests-20261009.log`
+y `artifacts/m15-compact-band-simcheck-20261009.log` (artefactos locales ignorados).

@@ -1,3 +1,10 @@
+## 2026-10-09 — M15 paso 1c: calendario de reservas compacto
+
+Segunda funcionalidad: `CompactBandCalendar` liquida días completos con `TimeManager` y lee la estación del día terminado, conserva el tick parcial en JSON y rechaza fechas incoherentes. Las jornadas se preparan antes de confirmar el reloj y el stock: un fallo del lector puro de oferta permite repetir sin duplicar comida ni retiradas; protección de reentrancia y snapshots independientes. Sin RNG, UI ni integración en `Simulation`.
+
+Verificación conjunta final: TypeScript limpio; 15/15 pruebas nuevas. Control mutante de medianoche (`boundary` en vez de `boundary - 1`) detectado por dos pruebas; restauración seguida de 15/15 focales. Suite completa: 221 archivos, 1.681 pruebas pasan, 1 omitida y 2 fallos heredados sin cambios: `compact-correspondence` craft/delta (23,401 puntos de hambre frente a ≤15) y `people-knowledge` difusión (0,81 frente a <0,6), ya registrados en `m15_brain_cost.md`. El chequeo de una semilla conserva dieta y rendimiento (2/147); la suite global no está verde y no se cambian aserciones ni parámetros.
+
+Segunda gira 1/1; 13 capturas nuevas en `artifacts/screenshots/m15-compact-band-calendar-2026-10-09T-01/`, conservando el hito anterior. Docs de plan, contrato, arquitectura y próximos pasos actualizadas. 1c continúa abierto: faltan reparto finito a los cuerpos, agricultura, demografía, conocimiento y territorio; las tasas por trabajador necesitan medición antes de activar el compacto. Cohortes y matriz pesada diferidas por AGENTS.md. Los cambios previos de `notes_for_m15.txt` y `debug.log` quedan fuera de ambos commits.
 ## 2026-10-09 — M15 paso 1c: contabilidad de comida de banda
 
 Primera funcionalidad del siguiente paso del orden revisado de LOD: `CompactBandFood` liquida una jornada de una banda en una comarca sin inventar tasas de cosecha. Cada fuente queda limitada por las jornadas disponibles, sus requisitos tecnológicos y el potencial estacional del perfil; consume la producción y después las reservas, almacena hasta capacidad y devuelve pérdidas y déficit fechados. Código puro y codec JSON v1 estricto, sin RNG ni cambio de la simulación detallada.
