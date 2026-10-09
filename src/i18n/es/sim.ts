@@ -363,4 +363,5 @@ export const ES_SIM: Record<string, string> = {
   "finished {thing}": "terminó {thing}",
   "it is already dug": "ya está cavado",
   "planted a fruit tree": "plantó un frutal",
+  "{name} migrants": "migrantes de {name}",
 };

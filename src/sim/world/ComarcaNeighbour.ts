@@ -11,7 +11,7 @@ export type ComarcaEdge = 'n' | 's' | 'e' | 'w';
  * comarca past the pole to migrate into.
  */
 export function neighbourComarca(
-  frame: WorldFrame,
+  frame: Pick<WorldFrame, 'mapWidth' | 'mapHeight'>,
   cx: number,
   cy: number,
   dir: ComarcaEdge,
@@ -50,3 +50,4 @@ export function edgeOfTile(map: EdgeMap, x: number, y: number): ComarcaEdge | nu
   if (x === map.width - 1) return 'e';
   return null;
 }
+

@@ -51,6 +51,7 @@ import { ITEMS } from '../entities/Item.ts';
 import { statusPressure } from '../ai/Status.ts';
 import { sensitivity } from '../ai/Temperament.ts';
 import type { MotivationConfig } from '../core/Config.ts';
+import { approveMigration, canFollowMigration, chooseMigrationReason, knownMigrationDestinations, scoutDirection, type ComarcaMigrationContext, type MigrationReason } from '../world/ComarcaMigration.ts';
 
 /**
  * How large a faction against somebody has to be before the band acts on it.
@@ -415,6 +416,8 @@ export interface BandContext {
    * *that* it is there, the hash says which bush.
    */
   nodeHash: SpatialHash<ResourceNode>;
+  /** Geographic migration policy supplied only by the active frontier coordinator. */
+  migration?: ComarcaMigrationContext;
 }
 
 export class BandSystem {
@@ -441,6 +444,7 @@ export class BandSystem {
 
   /** First day of sustained local food exhaustion, by band. */
   private readonly foodFailureSince = new Map<number, number>();
+
 
   /** Last day each band reckoned with a plot against its king, M15 phase 39c. */
   private readonly coupConsidered = new Map<number, number>();
@@ -493,6 +497,7 @@ export class BandSystem {
 
       this.chooseChief(band, members, ctx);
       if (!band.outcast) this.considerRelocation(band, members, ctx);
+      this.considerComarcaMigration(band, members, ctx);
       this.assignJobs(band, members, ctx);
       this.considerExile(band, members, ctx);
       this.considerRebellion(band, members, ctx);
@@ -608,6 +613,70 @@ export class BandSystem {
     }
   }
 
+  /**
+   * Proposes an inter-comarca move only from the band's own pressures and the
+   * actor's own world map. Materialisation belongs to the frontier coordinator;
+   * this system never edits band membership, camp coordinates or inventories.
+   */
+  private considerComarcaMigration(band: Band, members: Person[], ctx: BandContext): void {
+    const policy = ctx.migration;
+    if (!policy || members.some(person => person.order === 'leave_comarca' || person.order === 'scout' ||
+        (person.order === 'propose' && person.targetRecipe === 'migration'))) return;
+    const adults = members.filter(person => !person.isChild && person.captiveOf === null);
+    if (adults.length === 0) return;
+
+    const averageChronicHunger = adults.reduce((sum, person) => sum + (person.chronic.hunger ?? 0), 0) / adults.length;
+    const reasons: MigrationReason[] = [];
+    if (!policy.hasFreshWater) reasons.push('no_fresh_water');
+    if (averageChronicHunger >= RELOCATION_HUNGER_PRESSURE) reasons.push('sustained_hunger');
+    if (policy.hostileStrongerNeighbour(band)) reasons.push('hostile_stronger_neighbour');
+    const capacity = policy.capacityRationsPerDay;
+    if (capacity !== null && Number.isFinite(capacity) && capacity >= 0 && members.length > capacity) {
+      reasons.push('overpopulation');
+    }
+    if (band.outcast) reasons.push('exile');
+
+    const reason = chooseMigrationReason(reasons);
+    if (!reason) return;
+    const chiefId = this.chiefByBand.get(band.id);
+    const proposer = adults.find(person => person.id === chiefId && person.order === null) ??
+      [...adults].filter(person => person.order === null).sort((a, b) => {
+        const pa = Math.max(a.chronic.hunger ?? 0, a.chronic.thirst ?? 0, a.chronic.safety ?? 0);
+        const pb = Math.max(b.chronic.hunger ?? 0, b.chronic.thirst ?? 0, b.chronic.safety ?? 0);
+        return pb - pa || a.id - b.id;
+      })[0];
+    if (!proposer) return;
+
+    const canEnter = policy.canEnter ?? (() => true);
+    const destinations = knownMigrationDestinations(proposer, policy.origin, policy.frame, canEnter);
+    if (destinations.length === 0) {
+      policy.onScoutNeeded?.(proposer.id, scoutDirection(policy.origin, policy.frame, canEnter));
+      telemetry.count('comarca_migration_needs_scout');
+      return;
+    }
+
+    const approval = approveMigration(proposer, members, reason, ctx.relationships);
+    telemetry.count('comarca_migration_proposed');
+    telemetry.count(approval.approved ? 'comarca_migration_approved' : 'comarca_migration_rejected');
+    if (!approval.approved) {
+      return;
+    }
+
+    const supporters = new Set(approval.supporterIds);
+    const followerIds = [proposer.id, ...adults
+      .filter(person => supporters.has(person.id) && canFollowMigration(proposer, person, ctx.relationships, reason))
+      .map(person => person.id)
+      .filter(id => id !== proposer.id)];
+    const destination = destinations[0]!;
+    policy.onProposal({
+      reason,
+      bandId: band.id,
+      actorId: proposer.id,
+      direction: destination.direction,
+      destination: { cx: destination.cx, cy: destination.cy },
+      followerIds,
+    });
+  }
   private bestKnownFoodPlace(proposer: Person, band: Band, ctx: BandContext): { x: number; y: number } | null {
     const waters = proposer.placeMemory.records('water');
     let best: { x: number; y: number; score: number } | null = null;
@@ -2309,3 +2378,6 @@ export class BandSystem {
     }
   }
 }
+
+
+

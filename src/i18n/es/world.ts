@@ -35,4 +35,12 @@ export const ES_WORLD: Record<string, string> = {
   "desert": "desierto",
   "savanna": "sabana",
   "tropical forest": "selva tropical",
+  "That traveller is no longer here": "Ese viajero ya no está aquí",
+  "There is no comarca in that direction": "No hay ninguna comarca en esa dirección",
+  "The neighbouring comarca is under the sea": "La comarca vecina está bajo el mar",
+  "That comarca is still being settled": "Esa comarca todavía se está asentando",
+  "A member of the travelling party is no longer here": "Un miembro del grupo viajero ya no está aquí",
+  "That crossing cannot be prepared right now": "No se puede preparar ese cruce ahora",
+  "That crossing expired before it could be completed": "Ese cruce caducó antes de completarse",
+  "That crossing could not be completed safely": "No se pudo completar ese cruce con seguridad",
 };

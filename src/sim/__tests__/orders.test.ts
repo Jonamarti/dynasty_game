@@ -978,6 +978,12 @@ describe('the price of an order aimed at somebody else\'s property', () => {
     }
   });
 
+  it('prices migration by the commitment it asks from the follower', () => {
+    expect(orderCost('scout')).toBe(orderCost('hunt'));
+    expect(orderCost('follow_me')).toBe(orderCost('court'));
+    expect(orderCost('leave_comarca')).toBe(orderCost('steal'));
+    expect(orderCost('leave_comarca')).toBeLessThan(orderCost('attack'));
+  });
   it('does not make sabotage dearer for being aimed at what it is only ever aimed at', () => {
     // A floor rather than an addition. `sabotage` already costs more than the
     // foreign-property floor, and there is no such thing as sabotaging your
@@ -1039,3 +1045,5 @@ describe("an order that reaches the player's character", () => {
     expect(sim.insights.some(n => n.text.includes('sent you to'))).toBe(false);
   });
 });
+
+

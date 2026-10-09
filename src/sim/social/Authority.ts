@@ -105,6 +105,12 @@ const ORDER_COST: Record<string, number> = {
   // more of them than telling them to go and lie down, and unlike `ponder` it
   // does not hand them a problem to solve.
   reflect: 0.05,
+  // Scouting has the risk of a long hunt; following is as costly as committing
+  // to courtship, and choosing to leave one's own comarca is as final as theft.
+  // These are ordering anchors, not a newly calibrated probability scale.
+  scout: 0.35,
+  follow_me: 0.6,
+  leave_comarca: 0.75,
   discuss: 0.2,
   prototype: 0.3,
   sleep: 0.1,
@@ -458,3 +464,5 @@ export function menaceOver(leader: Person, subordinate: Person, tick: number): S
     chance, because: reasons.join(', '),
   };
 }
+
+

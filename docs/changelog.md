@@ -1,3 +1,7 @@
+## 2026-10-09 — M15 fase 34: deliberación y fisión migratoria
+
+BandSystem ofrece migración por falta de agua, hambre sostenida, amenaza, exceso de población o destierro, con prioridad fija y destinos del mapa personal. Sin un vecino conocido pide scout. El consenso usa necesidad específica; sed no veta la salida que busca agua. Una partida parcial aprobada crea una hija con ID global y conserva humanos, parentesco, cultura y hogares. Nueve pruebas focales pasan; el control de fisión opera sobre rosters reales y no sustituye una cohorte. [Contrato](m15_phase34_migration_policy.md). Capturas contemporáneas: artifacts/screenshots/m15-phase34-travel-2026-10-09T-02/. Cohortes y matriz diferidas por AGENTS.md.
+
 ## 2026-10-09 — M15 fase 34: identidades compartidas entre bandas compactas
 
 CompactBandRuntime puede hidratarse con el IdSpace, archivo de personas/hogares y grafo de relaciones del coordinador. Evita que dos bandas fuera del mapa asignen el mismo ID a nacimientos simultáneos. Siete pruebas focales pasan, incluido el control de dos nacimientos en una misma medianoche. [Contrato](m15_phase34_shared_runtime.md). Sin cambio visual propio; registro contemporáneo en artifacts/screenshots/m15-phase34-travel-2026-10-09T-02/. Cohortes y matriz aplazadas por AGENTS.md.
