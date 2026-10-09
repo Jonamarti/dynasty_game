@@ -1,3 +1,8 @@
+## 2026-10-09 — M15 1c: demografía de personas compactas
+
+`CompactBandLife` comparte las reglas de edad, embarazo, concepción y muerte con `LifeSystem`. Primero deben alcanzar el mismo tick todos los cuerpos; un ledger impide liquidar dos veces el día. Los nacimientos conservan padres, hogar, parentesco, crónicas traducidas e IDs únicos. Cada persona usa su stream propio y la concepción exige techo explícito, sin el antiguo atajo de suponer que todo hogar lo tiene.
+
+3/3 pruebas nuevas; junto con conocimiento, 11/11 pasan. Typecheck limpio en las verificaciones focales. Captura equivalente de hito 1/1 en `artifacts/screenshots/m15-band-life-2026-10-09T-01/`, sin cambio de UI. Motor de banda en integración; no se declara correspondencia demográfica calibrada. Cohortes y matriz pesada diferidas; los fallos heredados se mantienen separados.
 ## 2026-10-09 — M15 1c: ingesta finita ligada al cuerpo
 
 `CompactBandIntake` limita el alivio real de hambre y sed por cuotas explícitas de cada persona. Evita que la tabla de ingesta alimente por encima de lo producido; agua ausente significa sed, y agua ilimitada exige una fuente declarada. Callback opcional en `CompactBody`, con peticiones y respuestas validadas; sin callback mantiene el comportamiento anterior. JSON estricto conserva consumos y rechaza reiniciar el mismo día.
@@ -13810,4 +13815,5 @@ Nuevo: `compact-correspondence craft/delta`, diferencia de hambre 23,401,
 límite declarado ≤15. No se ha relajado el límite ni recalibrado su tabla;
 queda pendiente para M16. Recogida, alimentación y lectura pasan en esta
 repetición. La suite no está verde. Resultado: `commitment-final-tests.txt`.
+
 

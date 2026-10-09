@@ -105,3 +105,16 @@ rechaza; el registro JSON conserva cuotas y consumos a mitad de jornada. Sin
 callback se conserva el comportamiento anterior del cuerpo compacto.
 Pruebas focales de ingesta y cuerpos: 20/20; typecheck limpio. Hito visual sin
 cambio de UI: `artifacts/screenshots/m15-band-intake-2026-10-09T-01/`.
+
+## Demografía con identidades y parentesco — 2026-10-09
+
+`advanceCompactBandLife` ejecuta `LifeSystem.daily` después de que todos los
+cuerpos alcanzan la frontera diaria. Cada persona usa su stream persistido;
+no se vuelve a envejecer la misma fecha. La comprobación exige los objetos
+canónicos de `peopleById` y los IDs originales. Los muertos siguen en el archivo.
+Los nacimientos reciben IDs de `IdSpace`, nombre con las mismas tablas,
+parentesco, hogar, relaciones, crónica traducida y stream compacto derivado.
+La concepción necesita la lectura real de `roofTonight` suministrada por el
+llamante; no se inventa un techo a partir de pertenecer a un hogar.
+Tres pruebas cubren nacimiento, sincronización y conservación por JSON.
+Hito sin cambio de UI: `artifacts/screenshots/m15-band-life-2026-10-09T-01/`.

@@ -498,3 +498,5 @@ mixto medido; las antiguas estimaciones de microsegundos no son un benchmark.
 **Avance del 2026-10-09 (1c, calendario del ledger).** `CompactBandCalendar` lleva reloj y reservas de una banda, liquida una vez por día completo usando la estación del día transcurrido, guarda/carga a mitad de jornada y no cambia nada si el lector puro de oferta falla. Cinco pruebas cubren cortes, JSON, fechas, estación y reentrancia. No activa el compacto en `Simulation`; queda la integración de ingesta, demografía, técnicas y territorio de §0.3. Hito visual independiente en `artifacts/screenshots/m15-compact-band-calendar-2026-10-09T-01/`. [Contrato](m15_compact_band.md).
 
 Entrega 1c del 2026-10-09: cuotas finitas de comida/agua conectadas a CompactBody, con checkpoint parcial y prohibición de reabrir el día. Contrato: m15_compact_band.md. El motor conjunto sigue en curso.
+
+Entrega 1c: demografía conectable con LifeSystem después de sincronizar todos los cuerpos, IDs/parentesco y fecha persistidos; no se concede techo implícito. Tres pruebas pasan. Ver m15_compact_band.md; motor conjunto en integración.
