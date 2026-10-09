@@ -1822,6 +1822,19 @@ se aparta`; `m15: muebles`; `m15: dormir mejor en casa, y el confort`;
 **Dos plantas:** fuera de M15 (la nota dice «cuando llegue, lo pensamos»); ver
 «Fuera de M15».
 
+**Defensas del campamento (propuesta sin implementar, 2026-10-09):** el
+propietario pidió una empalizada de madera previa a `city_walls` (fase 38),
+aviso escalonado a intrusos, construcción autónoma por necesidad de
+protección, un impulso de seguridad que no llegue al máximo si hay enemigos
+dentro del perímetro, y un bono mayor por perímetro cerrado (anillo completo,
+o apoyado en agua o montaña). Diseño, lo que ya existe (`mood.security`, el
+trabajo `guard`, el aviso que ya escala de la palabra al golpe) y lo que
+falta de verdad, en [m15_phase16_defense.md](m15_phase16_defense.md). No
+tocar hasta retomar esta fase; **16b (los muros de casa) hay que
+re-verificarla contra el código antes de nada**, porque el cierre de la fase
+38 encontró que no está implementada a pesar de lo que dice este documento
+más arriba.
+
 ## Fase 17 — El arte: personas pre-renderizadas por capas (nota 6; decisión 9)
 
 **Avance del 2026-10-03 (fabricación).** Cuatro poses `m0`–`m3` con mano de
