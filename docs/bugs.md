@@ -4636,3 +4636,24 @@ sobre el stock presente. El coordinador de frontera debe ordenar esos eventos,
 reconciliar el ledger de raciones y conservar una sola autoridad. Este avance
 no cubre deterioro de edificios ni regeneración ecológica de TileLedger.
 Ver `m15_phase34_decay.md`; no se declara cruce o mejora económica.
+
+## Compacto de raciones: `RangeError` aparcando una comarca con `peoplePerBand` alto (2026-10-09, encontrado al investigar la rama m15/frontier-npc-bug)
+
+Reproducido con `frontierGeography()`, `population:{bands:1,peoplePerBand:6}`,
+`seed:'repro-scout-cross'`: tras un `leave_comarca` o `scout` normal (sin
+relación con el arreglo de esta rama) que deja la comarca de origen aparcada,
+avanzar el compacto unos 80 ticks lanza
+`RangeError: compact ration callback returned relief outside its request` en
+`CompactBody.advance` (`src/sim/compact/CompactAdvance.ts:134`), llamado desde
+`ComarcaOffmapRuntime.onTick` → `ComarcaEcology.advanceTo` →
+`ComarcaOffmapRuntime.advanceTo` → `WorldState.advanceParkedTo`. No depende de
+`scout` frente a `leave_comarca` — se confirmó el mismo fallo cruzando con
+`leave_comarca` puro bajo la misma semilla/población, así que no es parte del
+arreglo de "el jugador explorador desaparece" de esta rama (`WorldState.
+commitPendingCross`, ver `docs/changelog.md` 2026-10-09). Parece depender de
+la composición concreta de la banda que queda aparcada (quién se queda, cuánta
+sed/hambre tenía al partir) más que de un error determinista simple; no se ha
+aislado todavía qué combinación de `requestedHunger`/`requestedThirst` y el
+callback de ración del coordinador produce un valor fuera de rango. No arreglado
+aquí — queda para quien retome el guard de retorno único / reconciliación de
+raciones ya anotado arriba en este archivo para la fase 34.

@@ -1,3 +1,61 @@
+## 2026-10-09 — arreglo: explorar con el personaje controlado ya no lo hace desaparecer
+
+El propietario reportó que, al pulsar "Explorar hacia el {dirección}" en el
+globo (la etiqueta española de `scout`, `src/i18n/es/frontier-actions.ts`),
+su personaje dejaba de existir por completo: nada seleccionado, mapa del
+mundo en negro sin "estás aquí", teclas de tribu/familia/árbol tecnológico
+sin efecto.
+
+Causa real: `WorldMapOverlay` siempre ordena `sim.player` (main.ts línea
+~322); nunca deja elegir a un subordinado. `scout` fue diseñado y cerrado en
+la fase 34 (`m15_phase34_travel.md`) para un explorador enviado mientras el
+jugador sigue jugando en casa: `WorldState.commitPendingCross` aparcaba al
+viajero en el runtime compacto del destino, retrasaba su conocimiento hasta
+un regreso fechado dos días después y mantenía el origen como motor actual.
+Aplicado al propio jugador (el único caso real que el globo permite), eso
+dejaba `sim.player` a `null` durante toda la espera: selección perdida,
+`knowledgeOfWorld(null)` en el globo (mapa negro) y ninguna tecla con un
+jugador al que aplicarse — exactamente lo reportado.
+
+Arreglo en `WorldState.commitPendingCross` (`src/sim/world/WorldState.ts`):
+cuando el viajero incluye al jugador en control (`playerTravelled`), el
+cruce se instala de inmediato como un `leave_comarca` normal — el jugador
+llega jugable por el borde opuesto, su conocimiento de la comarca se marca
+como visto, y no se crea ningún ticket de regreso — en vez del aparcado con
+conocimiento retrasado. Un `scout` genuino, nunca el jugador (por ejemplo uno
+elegido autónomamente por `BandSystem.considerComarcaMigration` antes de
+proponer una migración), conserva el comportamiento cerrado en la fase 34.
+`scout.isPlayer` en `WorldState.returnScouts` queda solo como compatibilidad
+con una partida guardada antes de este arreglo.
+
+Pruebas: `comarca-travel.test.ts` añade una prueba de regresión (falla contra
+el build anterior: el jugador queda aparcado con `current.peopleById.has(id)`
+falso y ningún ticket por el que recuperarlo de inmediato) y ajusta tres
+pruebas de `scout` que usaban `possessFirst()` por comodidad para que el
+explorador sea un NPC genuino en vez del jugador, preservando lo que ya
+probaban. `e2e/comarca-travel.spec.ts` añade una cuarta prueba con el
+coordinador real: ordena `scout` sobre el jugador, completa el cruce físico
+y comprueba que `sim.player`, el HUD y el globo sobreviven intactos.
+
+Versión 0.15.8-alpha. `npm run typecheck` limpio. `npm test` (secuencial):
+1.886 pruebas aprobadas, una omitida, el mismo fallo heredado de difusión
+(`people-knowledge`, 0,68 frente a <0,6; sin relación con este arreglo).
+`npm run sim:check` de una semilla: 2/147 fallan (`cravings-steer-the-diet`,
+`perf-budget`), la misma base conocida. `npm run e2e`: 133/133 aprobadas,
+incluidas las cuatro de `comarca-travel.spec.ts`. Captura nueva de la llegada
+tras explorar: `artifacts/screenshots/m15-phase34-travel-2026-10-09T19-29-19-736Z/04-scout-arrival.png`.
+No se lanzaron cohortes,
+`century`/`generations` ni `sim:check:all`, según indica AGENTS.md mientras
+M15 sigue abierto.
+
+Encontrado y no arreglado aquí (ver `docs/bugs.md`): al investigar, cruzar
+`leave_comarca` o `scout` (sin relación con el jugador) con
+`peoplePerBand:6` sobre `frontierGeography()` y dejar la comarca aparcada
+avanzar ~80 ticks lanza `RangeError: compact ration callback returned relief
+outside its request` en `CompactBody.advance`. Reproducido también sin tocar
+nada de este arreglo, así que es un bug preexistente de fase 34, no una
+regresión de esta rama.
+
 ## 2026-10-09 — M15 fase 36: cierre y verificación conjunta
 
 Noticias, casas rivales, caravanas e incursiones quedan reunidas con contratos, persistencia v5 y capturas cronológicas. Versión 0.15.7-alpha. Typecheck pasa; el índice final suma 1.885 pruebas aprobadas, una omitida y el fallo heredado de difusión (0,68 frente a <0,6). Simcheck mantiene dieta/rendimiento: 2/147 fallan. La pasada general de E2E aprobó 132/132; tras el arreglo de memoria y la pausa del fixture de captura, la focal aprueba 5/5. Dos timeouts previos de screenshot se conservan en el informe, sin describirlos como aprobados.

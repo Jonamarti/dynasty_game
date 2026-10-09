@@ -19,3 +19,35 @@ La presentación incluye controles persistentes para salir, explorar y proponer 
 Capturas nuevas de controles ingleses, controles españoles y llegada real: artifacts/screenshots/m15-phase34-travel-2026-10-09T-04/. Revisada visualmente la pantalla en español. La spec forma parte de npm run e2e y genera una carpeta fechada nueva por defecto, para no sobreescribir hitos anteriores. main cambia la referencia de motor solo después del commit de WorldState y limpia selección/modos/caches antes de dibujar la nueva comarca.
 
 Cierre: [informe de verificación](m15_phase34_verification_20261009.md). Gira final y capturas de la funcionalidad en artifacts/screenshots/m15-phase34-close-2026-10-09T-05/.
+
+## Aviso posterior al cierre — 2026-10-09, rama m15/frontier-npc-bug
+
+Esta fase cerró con "si era el jugador, el hogar recibe su archivo y la
+sucesión" como comportamiento intencional y probado para `scout`. El
+propietario reportó por separado ese mismo comportamiento como un bug: al
+pulsar "Explorar hacia el {dirección}" en el globo (la etiqueta española de
+`scout`, ver `src/i18n/es/frontier-actions.ts`), su personaje dejaba de
+existir por completo — nada seleccionado, mapa del mundo en negro sin "estás
+aquí", teclas de tribu/familia/árbol tecnológico sin efecto — durante los dos
+días de ida y vuelta que esta fase diseñó deliberadamente, sin ningún aviso en
+pantalla de que volvería.
+
+La causa: `WorldMapOverlay` siempre ordena `sim.player` (main.ts), nunca un
+subordinado — el globo no ofrece elegir a otra persona para explorar. El
+mecanismo de `scout` que esta fase cerró fue pensado para un explorador
+enviado *mientras el jugador sigue jugando en casa*; aplicado al propio
+personaje controlado, no queda nadie a quien pilotar durante la espera, y la
+UI (selección, HUD, globo) se degrada exactamente como un personaje
+inexistente, igual que si lo describiera el propietario.
+
+Arreglo en `WorldState.commitPendingCross` (ver `docs/changelog.md` y
+`comarca-travel.test.ts`): cuando el viajero que se marcha es el jugador en
+control, el cruce se instala de inmediato como `leave_comarca` — el jugador
+aparece jugable en el borde opuesto, su conocimiento de la comarca se marca
+como visto, y no se crea ningún ticket de regreso — en vez de aparcarlo con
+conocimiento retrasado y un regreso forzado. Un `scout` genuino (nunca el
+jugador, por ejemplo uno elegido por `BandSystem.considerComarcaMigration` vía
+`onScoutNeeded` antes de proponer una migración) conserva el comportamiento
+que esta fase cerró, sin cambios. `scout.isPlayer` en `WorldState.returnScouts`
+queda como compatibilidad con una partida guardada antes de este arreglo; un
+ticket nuevo ya no puede nombrar al jugador vivo.
