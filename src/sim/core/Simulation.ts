@@ -124,6 +124,9 @@ import { createLocalGeography, type LocalGeographySource } from '../world/LocalG
 import type { WorldGeography } from '../world/WorldGeography.ts';
 import { geographicResourceAvailable } from '../world/GeographicResources.ts';
 import { stepMark } from './StepProbe.ts';
+import { approachComarcaEdge, type ComarcaTravel } from '../world/ComarcaTravel.ts';
+import { edgeOfTile, type ComarcaEdge } from '../world/ComarcaNeighbour.ts';
+import type { ComarcaMigrationContext } from '../world/ComarcaMigration.ts';
 import { comarcaResourceProfile, PROFILE_SPAN, type ComarcaResourceProfile } from '../world/ResourceProfile.ts';
 import {
   berryHabitat, flintHabitat, grainHabitat, hillOreHabitat, goldHabitat, herdHabitat, predatorHabitat,
@@ -376,6 +379,11 @@ export class Simulation {
   private comarcaProfile: ComarcaResourceProfile | null = null;
   /** See `WorldFrame`. Set by construction, or by `WorldState.fromRestored`. */
   worldFrame: WorldFrame | null = null;
+  /** Bound by WorldState; checkpoints retain requests, not callbacks. */
+  comarcaParent?: (id: number) => Person | null;
+  comarcaTravel: ComarcaTravel | null = null;
+  /** Dynamic policy supplied by WorldState; callbacks are reconstructed after restore. */
+  comarcaMigration: (() => ComarcaMigrationContext | null) | null = null;
   private localGeography: LocalGeographySource | null;
   readonly rng!: RNG;
   readonly world!: World;
@@ -890,11 +898,18 @@ export class Simulation {
     return resumeParkedSimulation(handle, (record, ids) => Simulation.fromCheckpointRecordWithIds(record, ids));
   }
 
+  static fromCheckpointRecordWithSharedIds(input: unknown, sharedIds: IdSpace): Simulation {
+    return Simulation.fromCheckpointRecordWithIds(input, sharedIds);
+  }
+
   private static fromCheckpointRecordWithIds(input: unknown, sharedIds?: IdSpace): Simulation {
     const state = hydrateCheckpointRecord(input);
     // Live transfers retain the world's allocator object. That matters when a
     // world-level owner has reserved IDs while this comarca was parked.
-    if (sharedIds) (state as { ids: IdSpace }).ids = sharedIds;
+    if (sharedIds) {
+      sharedIds.restore(state.ids.snapshot());
+      (state as { ids: IdSpace }).ids = sharedIds;
+    }
     // Keep the restoration-only constructor argument out of the public TypeScript
     // signature. The token is module-private and the regular constructor remains
     // the only way callers can request generated worlds.
@@ -906,6 +921,116 @@ export class Simulation {
     assertExecutionOwner(this);
     const checkpoint = toCheckpointRecord(this);
     return parkExecutionOwner(this, checkpoint, this.ids);
+  }
+
+  /**
+   * Move an explicit, living party into another comarca owner at a boundary.
+   * The caller has already staged geography and place-specific memories. Shared
+   * identity allocation is mandatory so a later birth cannot reuse either side's IDs.
+   */
+  transferTravellersTo(destination: Simulation, travellerIds: readonly number[], entry: ComarcaEdge): Person[] {
+    if (destination === this || destination.ids !== this.ids) throw new RangeError('Comarca transfer must share one world IdSpace');
+    if (destination.time.tick !== this.time.tick) throw new RangeError('Comarca transfer clocks must meet at the boundary');
+    if (!['n','e','s','w'].includes(entry)) throw new RangeError('Invalid destination edge');
+    const ids = [...travellerIds];
+    if (ids.length === 0 || new Set(ids).size !== ids.length || ids.some(id => !Number.isSafeInteger(id) || id < 1)) {
+      throw new RangeError('A travel party needs unique canonical person IDs');
+    }
+    const travellers = ids.map(id => {
+      const person = this.peopleById.get(id);
+      if (!person || !person.alive || !this.people.includes(person)) throw new RangeError(`Traveller ${id} is not alive and active in the source`);
+      if (destination.peopleById.has(id)) throw new RangeError(`Traveller ${id} already belongs to the destination`);
+      return person;
+    }).sort((a,b) => a.id - b.id);
+    if (travellers.some(person => destination.peopleById.has(person.id))) throw new RangeError('A traveller already belongs to the destination');
+    if (destination.player && travellers.some(person => person.isPlayer)) throw new RangeError('Destination already has a player character');
+
+    const travellerSet = new Set(travellers.map(person => person.id));
+    const householdMoves: { source: Household; destination: Household; members: Person[]; removeSource: boolean; merge: boolean }[] = [];
+    const householdIds = new Set<number>();
+    for (const person of travellers) if (person.householdId !== null) householdIds.add(person.householdId);
+    for (const householdId of [...householdIds].sort((a,b) => a-b)) {
+      const household = this.householdsById.get(householdId);
+      if (!household) throw new RangeError(`Traveller household ${householdId} is not canonical`);
+      const members = travellers.filter(person => person.householdId === householdId);
+      const existing = destination.householdsById.get(householdId);
+      const movedHousehold = existing ?? copyHouseholdForTravel(household, members.map(member => member.id));
+      // Keep an empty origin record as the archive of this dynasty and its old
+      // home. A returning family can merge into it instead of forgetting where
+      // it lived when the first crossing removed the whole roster.
+      householdMoves.push({ source: household, destination: movedHousehold, members, removeSource: false, merge: existing !== undefined });
+    }
+    // Parse and validate every transfer prerequisite before changing either roster.
+    const missingBands = [...new Set(travellers.map(person => person.bandId))]
+      .filter(id => !destination.bands.some(band => band.id === id)).sort((a,b) => a-b);
+    const sourceBands = new Map(this.bands.filter(band => missingBands.includes(band.id)).map(band => [band.id, band]));
+    if (missingBands.some(id => !sourceBands.has(id))) throw new RangeError('Traveller band is not retained');
+    const copiedBands = new Map(missingBands.map(id => [id, structuredClone(sourceBands.get(id)!)]));
+    const arrivalSlots = comarcaEntrySlots(destination.world, entry, travellers.length);
+    if (!arrivalSlots) throw new RangeError('No walkable arrival slots at the destination edge');
+    for (const bandId of missingBands) {
+      const band = copiedBands.get(bandId)!;
+      destination.bands.push(band);
+      (destination as unknown as { normsByBand: Map<number, unknown> }).normsByBand.set(bandId, band.norms);
+      (destination as unknown as { strangerRegardByBand: Map<number, number> }).strangerRegardByBand.set(bandId, band.strangerRegard);
+      copyBandLedgers(this, destination, bandId);
+    }
+    for (const move of householdMoves) {
+      if (!move.merge) {
+        if (move.removeSource) {
+          this.households = this.households.filter(household => household !== move.source);
+          this.householdsById.delete(move.source.id);
+        } else {
+          for (const member of move.members) move.source.remove(member.id);
+          if (!move.source.memberIds.includes(move.source.headId)) move.source.headId = move.source.memberIds[0] ?? move.source.headId;
+        }
+        move.destination.homeBuildingId = null;
+        destination.households.push(move.destination);
+        destination.householdsById.set(move.destination.id, move.destination);
+      } else {
+        for (const member of move.members) {
+          if (!move.destination.memberIds.includes(member.id)) move.destination.add(member.id);
+          move.source.remove(member.id);
+        }
+        if (move.members.some(member => member.id === move.source.headId)) move.destination.headId = move.source.headId;
+        if (!move.source.memberIds.includes(move.source.headId)) move.source.headId = move.source.memberIds[0] ?? move.source.headId;
+      }
+      for (const member of move.members) member.householdId = move.destination.id;
+    }
+    for (let index = 0; index < travellers.length; index++) {
+      const person = travellers[index]!;
+      this.peopleHash.remove(person);
+      person.clearTarget();
+      person.order = null;
+      person.action = 'idle';
+      person.x = arrivalSlots[index]!.x;
+      person.y = arrivalSlots[index]!.y;
+
+      this.peopleById.delete(person.id);
+      destination.peopleById.set(person.id, person);
+      destination.people.push(person);
+      if (person.alive) destination.peopleHash.insert(person);
+    }
+    this.people = this.people.filter(person => !travellerSet.has(person.id));
+    // A camp cannot retain a chief whose body now belongs to another comarca.
+    for(const band of this.bands) if(band.chiefId!==null && travellerSet.has(band.chiefId)) {
+      band.chiefId=null; band.chiefSince=null; this.bandSystem.chiefByBand.delete(band.id);
+    }
+    for (const bandId of missingBands) {
+      const movedBand = destination.bands.find(band => band.id === bandId)!;
+      const members = travellers.filter(person => person.bandId === bandId);
+      movedBand.homeX = members.reduce((sum, person) => sum + person.x, 0) / members.length;
+      movedBand.homeY = members.reduce((sum, person) => sum + person.y, 0) / members.length;
+      movedBand.claimedCells = new Set();
+      movedBand.chiefId = null; movedBand.chiefSince = null;
+      destination.bandSystem.chiefByBand.delete(bandId);
+      destination.templeByBand.delete(bandId);
+    }
+    // Empty source household records remain as local history: their homeBuildingId
+    // is meaningful when the same family returns from another comarca.
+    mergeSocialState(this, destination);
+    movePersonLedgers(this, destination, travellerSet);
+    return travellers;
   }
 
   /** Atomically replace this owner with a reconstructed executable copy. */
@@ -3904,6 +4029,7 @@ export class Simulation {
     action: string,
     target: {
       x?: number; y?: number;
+      edge?: ComarcaEdge;
       nodeId?: number; personId?: number; buildingId?: number; treeId?: number;
       animalId?: number;
       /** Which entry of `RECIPES` a `craft` is for. */
@@ -3966,6 +4092,25 @@ export class Simulation {
       telemetry.count('order_too_heavy_with_child');
       this.lastRefusal = t('she is too heavy with child for that');
       return false;
+    }
+
+    // An edge order names a direction, not a point in another Simulation. All
+    // preflight runs before clearTarget so a refused trip preserves the old job.
+    if (action === 'leave_comarca' || action === 'scout' || (action === 'propose' && target.recipeId === 'migration')) {
+      const edge = target.edge ?? (target.x !== undefined && target.y !== undefined
+        ? edgeOfTile(this.world, Math.floor(target.x), Math.floor(target.y)) : null);
+      if (!edge || !this.comarcaTravel) { this.lastRefusal = t('This island has no neighbouring comarca'); return false; }
+      const reason = this.comarcaTravel.refusal(person, edge, action === 'scout');
+      if (reason) { this.lastRefusal = reason; return false; }
+      const point = approachComarcaEdge(this.world, person, edge);
+      if (!point) { this.lastRefusal = t('There is no walkable route to that edge'); return false; }
+      target = { ...target, ...point, edge };
+    }
+    if (action === 'follow_me') {
+      const leader = target.personId === undefined ? null : this.peopleById.get(target.personId);
+      if (!leader?.alive || leader.id === person.id || leader.bandId !== person.bandId) {
+        this.lastRefusal = t('You can only follow a living member of your band'); return false;
+      }
     }
 
     // A new order supersedes whatever was set aside. Doing this here rather
@@ -5450,6 +5595,7 @@ export class Simulation {
         householdsById: this.householdsById,
         sightings: this.sightings,
         nodeHash: this.nodeHash,
+        migration: this.comarcaMigration?.() ?? undefined,
       });
 
       this.refreshTemples();
@@ -5504,6 +5650,7 @@ export class Simulation {
       for (const corpse of gone) this.removeCorpse(corpse);
 
       this.lifeSystem.daily(this.people, {
+        parentArchive: this.comarcaParent,
         rng: this.lifeRng,
         population: this.config.population,
         tick: this.time.tick,
@@ -5694,6 +5841,7 @@ export class Simulation {
         this.requestTerritoryPermission(person, owner),
       inscribe: (form: InscriptionForm, x: number, y: number, author: Person) =>
         this.placeInscription(form, x, y, author),
+      comarcaTravel: this.comarcaTravel ?? undefined,
       onStopped: (person: Person, action: string, reason: string) =>
         this.noteStop(person, action, reason),
       chiefByBand: this.bandSystem.chiefByBand,
@@ -6515,3 +6663,92 @@ export class Simulation {
 }
 
 export { telemetry };
+
+function copyHouseholdForTravel(source: Household, memberIds: number[]): Household {
+  const next = Object.assign(Object.create(Object.getPrototypeOf(source)), source) as Household;
+  next.memberIds = [...memberIds].sort((a,b) => a-b);
+  next.homeBuildingId = null;
+  // These class maps were copied by reference, so mutating a split copy changed its source.
+  (next as { feud: Map<number, number> }).feud = new Map(source.feud);
+  (next as { feudSuspects: Map<number, number> }).feudSuspects = new Map(source.feudSuspects);
+  return next;
+}
+
+function copyBandLedgers(source: Simulation, destination: Simulation, bandId: number): void {
+  const from = source as unknown as Record<string, any>, to = destination as unknown as Record<string, any>;
+  const regard = from.strangerRegardByBand.get(bandId);
+  const destinationBand = destination.bands.find(band => band.id === bandId);
+  if (destinationBand) to.normsByBand.set(bandId, destinationBand.norms);
+  if (regard !== undefined) to.strangerRegardByBand.set(bandId, regard);
+  for (const key of ['raidConsidered','foodFailureSince','coupConsidered','tributePaid'] as const) {
+    const value = source.bandSystem[key].get(bandId);
+    if (value !== undefined) destination.bandSystem[key].set(bandId, structuredClone(value));
+  }
+  // Temples and chiefs belong to the source comarca and are rebound there.
+}
+
+function mergeSocialState(source: Simulation, destination: Simulation): void {
+  for (const [viewer, row] of source.relationships.snapshot()) for (const [subject, relationship] of row) {
+    Object.assign(destination.relationships.edge(viewer, subject), relationship);
+  }
+  const existingRelations = destination.bandRelations.snapshot();
+  const relationKeys = new Set(existingRelations.edges.map(([key]) => key));
+  for (const [key, value] of source.bandRelations.snapshot().edges) {
+    if (relationKeys.has(key)) continue;
+    const [a,b] = key.split(':').map(Number);
+    destination.bandRelations.add(a!, b!, value);
+  }
+  const stanceKeys = new Set(existingRelations.stances.map(([key]) => key));
+  for (const [key, stance] of source.bandRelations.snapshot().stances) {
+    if (stanceKeys.has(key)) continue;
+    const [a,b] = key.split(':').map(Number);
+    destination.bandRelations.setStance(a!, b!, stance.kind, stance.since, stance.overlord);
+  }
+  const recentIds = new Set(destination.social.recent.map(event => event.id));
+  for (const event of source.social.recent) if (!recentIds.has(event.id)) destination.social.recent.push(structuredClone(event));
+  if (destination.social.recent.length > 200) destination.social.recent.splice(0, destination.social.recent.length - 200);
+  const sourcePrivate = source as unknown as Record<string, any>, destPrivate = destination as unknown as Record<string, any>;
+  for (const eventId of sourcePrivate.feudEvents as Set<number>) destPrivate.feudEvents.add(eventId);
+  for (const [key,value] of sourcePrivate.territoryPermissions as Map<string, number>) {
+    if (!destPrivate.territoryPermissions.has(key)) destPrivate.territoryPermissions.set(key, value);
+  }
+  for (const kind of ['knownTech','recordedTech','rememberedTech','recordsInHand'] as const) {
+    for (const item of source[kind]) destination[kind].add(item);
+  }
+}
+
+function movePersonLedgers(source: Simulation, destination: Simulation, travellerIds: ReadonlySet<number>): void {
+  if (source.player && travellerIds.has(source.player.id)) {
+    if (destination.player) throw new RangeError('Destination already has a player');
+    destination.player = source.player;
+    source.player = null;
+  }
+  if (source.succession && (travellerIds.has(source.succession.died.id) || (source.succession.heir && travellerIds.has(source.succession.heir.id)))) {
+    destination.succession = source.succession;
+    source.succession = null;
+  }
+  const take = <T>(from: T[], to: T[], predicate: (value: T) => boolean) => {
+    const moved = from.filter(predicate);
+    for (let i = from.length - 1; i >= 0; i--) if (predicate(from[i]!)) from.splice(i, 1);
+    to.push(...moved);
+  };
+  take(source.interruptions, destination.interruptions, item => travellerIds.has(item.personId));
+  take(source.insights, destination.insights, item => travellerIds.has(item.personId));
+  take(source.helpCalls, destination.helpCalls, item => travellerIds.has(item.callerId));
+  take(source.watchedUses, destination.watchedUses, item => travellerIds.has(item.personId) || (!!item.use.seen && travellerIds.has(item.use.seen.id)));
+  take(source.pendingVerdicts, destination.pendingVerdicts, item => travellerIds.has(item.plaintiffId) || travellerIds.has(item.accusedId));
+  for (const [tech, personId] of source.techHolders) if (travellerIds.has(personId)) destination.techHolders.set(tech, personId);
+}
+
+function comarcaEntrySlots(world: World, edge: ComarcaEdge, count: number): { x: number; y: number }[] | null {
+  const slots: { x: number; y: number }[] = [];
+  const horizontal = edge === 'n' || edge === 's';
+  const span = horizontal ? world.width : world.height;
+  const fixed = edge === 'n' ? 1 : edge === 's' ? world.height - 2 : edge === 'w' ? 1 : world.width - 2;
+  for (let along = 1; along < span - 1 && slots.length < count; along++) {
+    const x = horizontal ? along : fixed;
+    const y = horizontal ? fixed : along;
+    if (world.isWalkable(x, y)) slots.push({ x: x + 0.5, y: y + 0.5 });
+  }
+  return slots.length === count ? slots : null;
+}

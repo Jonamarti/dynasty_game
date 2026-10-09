@@ -780,3 +780,7 @@ transfer still receives the detailed full daily inventory sweep. Production
 and intake remain partial intervals. Consumed/arriving stock must be applied
 chronologically by the future authority coordinator; no correspondence is
 claimed across unobserved changes. See [m15_phase34_decay.md](m15_phase34_decay.md).
+
+### Frontera de comarca activa — M15 fase 34, 2026-10-09
+
+WorldState mantiene un único Simulation ejecutable y un IdSpace global. En una llegada valida propietarios preparados, registra el origen en TileLedger, retira la autoridad vieja y publica la nueva. Fuera del mapa hay registros y ComarcaOffmapRuntime: cuerpos compactos y ecología física, nunca otro step detallado. El reloj global liquida las comarcas antes de reentrar. WorldStateRecord v4 incorpora ComarcaFrontier v4; versiones anteriores siguen cargando. Las memorias locales se separan por comarca y las identidades/relaciones familiares son mundiales. Las cohortes macro descuentan sus residentes materializados, que conservan cuerpos e IDs fuera de la región. Los exploradores pasan dos días compactos y solo su retorno comunica observaciones. Ver m15_phase34_travel.md y m15_phase34_offmap_runtime.md.

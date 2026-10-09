@@ -5,6 +5,7 @@
  * appears in two files is an error `i18n.test.ts` reports, because which of
  * the two wins would depend on the order of the imports below.
  */
+import { ES_FRONTIER_ACTIONS } from './frontier-actions.ts';
 import { ES_ACTIONS } from './actions.ts';
 import { ES_DATA } from './data.ts';
 import { ES_HUD } from './hud.ts';
@@ -15,6 +16,7 @@ import { ES_UI } from './ui.ts';
 import { ES_WORLD } from './world.ts';
 
 export const ES_TABLES: Record<string, Record<string, string>> = {
+  frontierActions: ES_FRONTIER_ACTIONS,
   actions: ES_ACTIONS,
   data: ES_DATA,
   hud: ES_HUD,

@@ -19,6 +19,24 @@ export const MIGRATION_REASON_PRIORITY: readonly MigrationReason[] = [
   'exile',
 ];
 
+export interface LocalMigrationPressures {
+  noFreshWater?: boolean;
+  sustainedHunger?: boolean;
+  hostileStrongerNeighbour?: boolean;
+  overpopulation?: boolean;
+  exile?: boolean;
+}
+
+/** Shared presence-to-reason mapping for AI and player proposals. */
+export function chooseLocalMigrationReason(pressure: LocalMigrationPressures): MigrationReason | null {
+  const present: MigrationReason[] = [];
+  if (pressure.noFreshWater) present.push('no_fresh_water');
+  if (pressure.sustainedHunger) present.push('sustained_hunger');
+  if (pressure.hostileStrongerNeighbour) present.push('hostile_stronger_neighbour');
+  if (pressure.overpopulation) present.push('overpopulation');
+  if (pressure.exile) present.push('exile');
+  return chooseMigrationReason(present);
+}
 /** The strongest present reason wins; input iteration order cannot change it. */
 export function chooseMigrationReason(present: Iterable<MigrationReason>): MigrationReason | null {
   const reasons = new Set(present);

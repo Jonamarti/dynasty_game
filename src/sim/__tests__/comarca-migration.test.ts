@@ -200,7 +200,7 @@ describe('comarca migration policy', () => {
       const geography = frontierGeography();
       const state = new WorldState({ seed: `migration-cross-${migration}`, world: { width: 64, height: 48 },
         population: { bands: 1, peoplePerBand: 6 } },
-      { geography, start: { x: 40, y: 20 }, comarcasWide: 1, comarcasHigh: 1, peoples: false });
+      { geography, start: { x: 40.5, y: 20.5 }, comarcasWide: 1, comarcasHigh: 1, peoples: false });
       const source = state.current;
       const parentBand = source.bands[0]!;
       const party = source.livingPeople().filter(person => person.bandId === parentBand.id && !person.isChild).slice(0, 2);

@@ -100,15 +100,17 @@ describe('WorldState JSON envelope', () => {
     const record = JSON.parse(JSON.stringify(toWorldStateRecord(state)));
     const restored = fromWorldStateRecord(record);
     expect(restored.tileLedger.toRecord()).toEqual(state.tileLedger.toRecord());
+    expect(restored.frontier.active).toEqual(record.frontier.active);
     record.tileLedger.entries[0].terrain.tiles.fertility[0] = 0;
     expect(restored.tileLedger.at(entry.identity)).toEqual(entry);
-    for (const version of [1, 2]) {
+    for (const version of [1, 2, 3]) {
       const old = JSON.parse(JSON.stringify(toWorldStateRecord(state)));
       old.version = version;
-      delete old.tileLedger;
+      delete old.frontier;
+      if (version < 3) delete old.tileLedger;
       if (version === 1) delete old.peoples;
       const migrated = fromWorldStateRecord(old);
-      expect(migrated.tileLedger.toRecord().entries).toEqual([]);
+      expect(migrated.tileLedger.toRecord().entries).toHaveLength(version === 3 ? 1 : 0);
       expect(toCheckpointRecord(migrated.current)).toEqual(toCheckpointRecord(state.current));
     }
   });

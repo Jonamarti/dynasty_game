@@ -1,4 +1,6 @@
 import { canUseRaft } from '../core/Raft.ts';
+import { edgeOfTile } from '../world/ComarcaNeighbour.ts';
+import type { ComarcaTravel } from '../world/ComarcaTravel.ts';
 /**
  * Executes whatever action was chosen: walk there, then do the thing.
  *
@@ -101,6 +103,7 @@ import { swimRefusal, swimRouteRefusal } from '../core/Swimming.ts';
 import { canWork } from '../knowledge/Ore.ts';
 
 export interface ActionContext {
+  comarcaTravel?: ComarcaTravel;
   world: World;
   movement: MovementSystem;
   nodesById: Map<number, ResourceNode>;
@@ -763,6 +766,9 @@ export class ActionSystem {
       case 'eat': this.doEat(person, ctx); break;
       case 'ask_water': this.doAskWater(person, ctx); break;
       case 'explore': this.doExplore(person, ctx); break;
+      case 'leave_comarca':
+      case 'scout': this.doComarcaTravel(person, ctx); break;
+      case 'follow_me': this.doFollowMigration(person, ctx); break;
       case 'bring_food': this.doBringFood(person, ctx); break;
       case 'forage':
       case 'gather': this.doHarvest(person, ctx); break;
@@ -1202,6 +1208,51 @@ export class ActionSystem {
       telemetry.count('bring_food_arrived');
       this.finish(person);
     }
+  }
+
+  private doComarcaTravel(person: Person, ctx: ActionContext): void {
+    if (!ctx.comarcaTravel || person.targetX === null || person.targetY === null) {
+      this.abandon(person, t('This island has no neighbouring comarca'), ctx); return;
+    }
+    const direction = edgeOfTile(ctx.world, Math.floor(person.targetX), Math.floor(person.targetY));
+    if (!direction) { this.abandon(person, t('There is no walkable route to that edge'), ctx); return; }
+    const answers: LethalNeed = person.needs.thirst > person.needs.hunger ? 'thirst' : 'hunger';
+    const stop = this.interruption(person, ctx, { ignoreLaden: true, answers });
+    if (stop) { this.stop(person, stop, ctx, 'comarca_travel_'); return; }
+    if (!this.travel(person, ctx, answers)) return;
+    const scout = person.action === 'scout';
+    // Only people who actually agreed and have arrived accompany the traveller.
+    // The root validates this explicit party again before changing authority.
+    const travellerIds = [person.id];
+    if (!scout) {
+      const arrived = new Set(ctx.peopleHash.queryRadius(person.x, person.y, 2).map(p => p.id));
+      // Explicit order membership is not a nearest-person search. Wait for accepted
+      // companions instead of silently leaving them behind at the boundary.
+      for (const follower of ctx.peopleById.values()) {
+        if (follower.alive && follower.order === 'follow_me' && follower.targetPersonId === person.id &&
+            follower.bandId === person.bandId && !arrived.has(follower.id)) return;
+      }
+    }
+    if (!scout) for (const follower of ctx.peopleHash.queryRadius(person.x, person.y, 2)) {
+      if (follower.alive && follower.order === 'follow_me' && follower.targetPersonId === person.id &&
+          follower.bandId === person.bandId) travellerIds.push(follower.id);
+      if (follower.alive && follower.carriedBy === person.id) travellerIds.push(follower.id);
+    }
+    const reason = ctx.comarcaTravel.arrive({ person, direction, scout, migration: person.targetRecipe === 'migration', travellerIds: [...new Set(travellerIds)].sort((a,b) => a-b) });
+    if (reason) { this.abandon(person, reason, ctx); return; }
+    this.finish(person);
+  }
+
+  private doFollowMigration(person: Person, ctx: ActionContext): void {
+    const leader = person.targetPersonId === null ? null : ctx.peopleById.get(person.targetPersonId);
+    if (!leader?.alive || leader.bandId !== person.bandId) {
+      this.abandon(person, t('The person you were following is no longer here'), ctx); return;
+    }
+    const answers: LethalNeed = person.needs.thirst > person.needs.hunger ? 'thirst' : 'hunger';
+    const stop = this.interruption(person, ctx, { ignoreLaden: true, answers });
+    if (stop) { this.stop(person, stop, ctx, 'follow_migration_'); return; }
+    person.targetX = leader.x; person.targetY = leader.y;
+    if (person.distanceTo(leader) > 1) this.travel(person, ctx, answers);
   }
 
   private doExplore(person: Person, ctx: ActionContext): void {
@@ -4061,6 +4112,26 @@ export class ActionSystem {
 
   /** The sponsor asks one nearby bandmate to join this named project. */
   private doPropose(person: Person, ctx: ActionContext): void {
+    if (person.targetRecipe === 'migration') {
+      const direction = person.targetX === null || person.targetY === null ? null
+        : edgeOfTile(ctx.world, Math.floor(person.targetX), Math.floor(person.targetY));
+      if (!direction || !ctx.comarcaTravel?.propose) {
+        this.abandon(person, t('There is nobody to discuss this migration with'), ctx); return;
+      }
+      const answers: LethalNeed = person.needs.thirst > person.needs.hunger ? 'thirst' : 'hunger';
+      const stop = this.interruption(person, ctx, { ignoreLaden: true, answers });
+      if (stop) { this.stop(person, stop, ctx, 'migration_proposal_'); return; }
+      // Discussion banks its elapsed time on the person, like the other social
+      // proposals, and cannot outrun urgent interruptions.
+      if (person.actionTimer <= 0) { person.actionTimer = 40; person.workedTicks = 0; }
+      if (++person.workedTicks < 40) { person.actionTimer = Math.max(1, 40 - person.workedTicks); return; }
+      const reason = ctx.comarcaTravel.propose(person, direction);
+      if (reason) this.abandon(person, reason, ctx);
+      // An approved discussion changes the current order to leave_comarca;
+      // finishing here would erase that newly agreed trip.
+      else if (person.action === 'propose') this.finishSocial(person, ctx.tick);
+      return;
+    }
     const listener = this.approach(person, ctx);
     if (!listener) return;
     const site = person.targetBuildingId === null

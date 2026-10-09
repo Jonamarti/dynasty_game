@@ -3443,14 +3443,7 @@ necesite aún saber qué hay al otro lado. Nueve pruebas en
 `comarca-neighbour.test.ts`, incluida un control negativo explícito contra
 envolver la latitud por error.
 
-**Todavía no construido** (queda para las siguientes entregas de 34):
-`leave_comarca` como acción real de personaje, la decisión de banda que
-replica el patrón de `BandSystem.considerRelocation` (fase 9) para el salto
-entre comarcas, `follow_me`, `scout`, la migración de IA por la jerarquía de
-motivos del plan de origen, y qué le pasa de verdad a la comarca vecina al
-cruzar (hoy solo existe una `Simulation` detallada a la vez; materializarla
-de verdad es un salto de complejidad mayor que esta pieza, ver
-`docs/bugs.md`). Sin cambios de UI en esta entrega: no hace falta captura.
+**Implementación reunida el 2026-10-09.** Los verbos, la propuesta y el consenso, la fisión, el cambio de comarca, la exploración con regreso o muerte y el runtime del libro se ejercitan en el coordinador real. El control corto de sequía incluye su negativo sin motivo del agua; la cohorte con mapa y correspondencia económica se difieren por AGENTS.md al trabajo de calibración. [Contrato y verificación](m15_phase34_travel.md).
 
 ## Fase 35 — Llegar más lejos: transporte (M14 fase 17)
 
@@ -4272,3 +4265,7 @@ no hay cruce jugable ni cierre de fase 34.
 ## Avance del 2026-10-09 — Fase 34, residentes compactos con bienes físicos
 
 ComarcaOffmapRuntime avanza la comarca aparcada sin otro motor detallado: cuerpos, trabajo, consumo finito, demografía y conocimiento, junto con la ecología del libro. La primera jornada puede ser parcial y se guarda su progreso. Cinco pruebas de política/runtime pasan; el consumo se descuenta antes del alivio. Reglas de diseño y límites de calibración en [contrato](m15_phase34_offmap_runtime.md). El coordinador de viaje se entrega en el siguiente commit.
+
+## Avance del 2026-10-09 — Fase 34, coordinador de frontera
+
+Cruce físico con seguidores, regreso de exploradores a los dos días, reentrada desde el libro y demografía de residentes activados. Se retira la autoridad antigua y se conservan IDs, parentesco, artículos, memorias por comarca y streams. Trece pruebas de viaje, cinco de runtime, diez de migración y cinco de raíz pasan en controles focalizados; ecología añade cuatro. Una prueba antigua de raíz v1 se actualiza para omitir frontier, que esa versión nunca contenía. El cierre de presentación registra sus capturas y la verificación conjunta final.

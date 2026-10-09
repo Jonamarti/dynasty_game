@@ -80,3 +80,7 @@ reductor detached con reloj diario, carry y conservación explícita por fuente.
 [Contrato](m15_phase34_decay.md). No avanza fauna, bosques, nodos, edificios o
 terreno de TileLedger. La secuencia real de retiradas y producción deberá
 intercalarse con cada barrida bajo una sola autoridad; frontera aún abierta.
+
+## Activación real — 2026-10-09
+
+El libro ya tiene coordinador: WorldState aparca un ComarcaOffmapRuntime y materializa la vecina con una sola autoridad ejecutable. La raíz v4 persiste ComarcaFrontier v4, solicitudes, exploradores, memorias locales, origen de cohortes y continuidad personal/ecológica. Las notas anteriores describen entregas históricas, no la situación actual. [Contrato de viaje y controles](m15_phase34_travel.md), [runtime físico](m15_phase34_offmap_runtime.md).

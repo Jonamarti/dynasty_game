@@ -133,6 +133,8 @@ describe('saving the whole game (phase 33c)', () => {
     envelope.world.version = 1;
     delete envelope.world.peoples;
     delete envelope.world.tileLedger;
+    // v1 predates both the comarca book and the frontier envelope.
+    delete envelope.world.frontier;
     const loaded = deserializeSave(JSON.stringify(envelope));
     expect(loaded.peoples).toBeNull();
   });
