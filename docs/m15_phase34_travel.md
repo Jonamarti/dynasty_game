@@ -17,3 +17,5 @@ La presentación incluye controles persistentes para salir, explorar y proponer 
 ## Presentación final — 2026-10-09
 
 Capturas nuevas de controles ingleses, controles españoles y llegada real: artifacts/screenshots/m15-phase34-travel-2026-10-09T-04/. Revisada visualmente la pantalla en español. La spec forma parte de npm run e2e y genera una carpeta fechada nueva por defecto, para no sobreescribir hitos anteriores. main cambia la referencia de motor solo después del commit de WorldState y limpia selección/modos/caches antes de dibujar la nueva comarca.
+
+Cierre: [informe de verificación](m15_phase34_verification_20261009.md). Gira final y capturas de la funcionalidad en artifacts/screenshots/m15-phase34-close-2026-10-09T-05/.

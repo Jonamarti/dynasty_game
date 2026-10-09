@@ -3397,6 +3397,8 @@ cultura desde el principio, y el ajuste de partida del mundo (29c).
 
 ## Fase 34 — Salir de la comarca (M14 fase 16)
 
+**Cerrada funcionalmente — 2026-10-09.** Viaje, seguimiento, exploración, migración y libro persistente activados. [Verificación completa y límites](m15_phase34_verification_20261009.md). Continúa fase 35; correspondencia económica y cohortes aplazadas quedan en LOD/M16.
+
 **2026-10-09: política diaria, consenso y fisión.** Motivos priorizados, destinos propios conocidos, exploración cuando falta conocimiento y consenso con presión específica. Una emigración aprobada parcial crea una banda hija; viajar individualmente conserva pertenencia. Control corto de fisión conserva población y parentesco, sin afirmar resultado de cohorte. [Contrato](m15_phase34_migration_policy.md).
 
 **2026-10-09: asignador compartido al hidratar bandas.** `CompactBandRuntime.fromRecord` admite estado canónico del coordinador para que nacimientos simultáneos de dos bandas no reutilicen IDs. Siete pruebas de integración pasan; el control nuevo comprueba ambos hijos en el archivo compartido. [Contrato](m15_phase34_shared_runtime.md).
