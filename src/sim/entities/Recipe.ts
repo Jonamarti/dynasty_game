@@ -84,6 +84,8 @@ export const RECIPES: Record<string, RecipeDef> = {
   // Kept at zero: a raft is made for a journey, not a new universal AI tax.
   raft: { id: 'raft', label: 'Reed raft', icon: '🛶', tech: 'cordage', skill: 'build',
     workTicks: 120, ingredients: { thatch: 6, sticks: 2, rope: 1 }, output: { raft: 1 }, keep: 0 },
+  sail: { id: 'sail', label: 'Sail', icon: '⛵', tech: 'sail', skill: 'build',
+    workTicks: 100, ingredients: { cloth: 3, rope: 2, sticks: 2 }, output: { sail: 1 }, keep: 0 },
   logboat: { id: 'logboat', label: 'Logboat', icon: '🛶', tech: 'logboat', skill: 'build',
     workTicks: 120, ingredients: { wood: 4, rope: 2 }, output: { logboat: 1 }, keep: 0 },
   handaxe: {

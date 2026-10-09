@@ -2591,7 +2591,7 @@ function frame(now: number): void {
   if (journey) {
     const ticksPerDay = worldState.current.config.time.ticksPerDay;
     const encounterText = journey.encounters.length ? journey.encounters.map(kind => { switch (kind) { case 'wildlife': return t('Wildlife encounter'); case 'storm': return t('Storm delay'); default: return t('Settlement sighted'); } }).join(', ') : t('No encounters');
-    const journeyMode = (() => { switch (journey.transport.mode) { case 'foot': return t('On foot'); case 'sledge': return t('By sledge'); case 'cart': return t('By cart'); case 'pack': return t('With a pack animal'); case 'riding': return t('On horseback'); case 'boat': return t('By boat');  } })();
+    const journeyMode = (() => { switch (journey.transport.mode) { case 'foot': return t('On foot'); case 'sledge': return t('By sledge'); case 'cart': return t('By cart'); case 'pack': return t('With a pack animal'); case 'riding': return t('On horseback'); case 'boat': return t('By boat'); case 'sail': return t('Under sail'); } })();
     const journeyState = worldState.current.time.tick >= journey.arrivalTick ? (worldState.current.lastRefusal ? t('Arrival delayed: {reason}', { reason: worldState.current.lastRefusal }) : t('Arriving')) : t('Travelling');
     journeyStatus.textContent = t('{status}: {mode} journey to {x}, {y}; departs day {day}; {provisions} provisions ({preserved} shelf-stable); {cargo} cargo; {encounters}; {remaining} days remaining', {
       status: journeyState, mode: journeyMode, x: journey.destination.cx + 1, y: journey.destination.cy + 1,

@@ -28,12 +28,14 @@ describe('comarca journey transport', () => {
     expect(journeyTransport(options(person, { to: { cx: 7, cy: 4 }, animal: { mode: 'pack', capacity: 24, speed: 1 } }))).toBeNull();
   });
 
-  it('requires a logboat and its technology for a coastal crossing', () => {
+  it('requires logboat for a coast and both sail gates beyond the coast', () => {
     const person = traveller();
     expect(journeyTransport(options(person, { seaCells: 1 }))).toBeNull();
     person.inventory.add('logboat', 1); person.knownTech.add('logboat');
     expect(journeyTransport(options(person, { seaCells: 1 }))?.mode).toBe('boat');
     expect(journeyTransport(options(person, { to: { cx: 6, cy: 4 }, seaCells: 2 }))).toBeNull();
+    person.inventory.add('sail', 1); person.knownTech.add('sail');
+    expect(journeyTransport(options(person, { to: { cx: 6, cy: 4 }, seaCells: 2 }))?.mode).toBe('sail');
   });
 
   it('requires an equipped, researched sledge and changes speed with snow', () => {
@@ -48,14 +50,16 @@ describe('comarca journey transport', () => {
     expect(snowy?.days).toBe(0.8);
   });
 
-  it('requires both a riding lease and riding practice for longer routes', () => {
+  it('requires both the riding lease and both sail gates', () => {
     const person = traveller();
     person.knownTech.add('horse_riding');
     expect(journeyTransport(options(person, { to: { cx: 7, cy: 4 } }))).toBeNull();
-    const ride = journeyTransport(options(person, { to: { cx: 7, cy: 4 }, animal: { mode: 'riding', capacity: 0, speed: 1.5 } }));
-    expect(ride?.mode).toBe('riding');
-    expect(ride?.maximumDistance).toBe(3);
-    expect(ride?.days).toBe(2);
+    expect(journeyTransport(options(person, { to: { cx: 7, cy: 4 }, animal: { mode: 'riding', capacity: 0, speed: 1.5 } }))?.maximumDistance).toBe(3);
+    person.inventory.add('logboat', 1); person.knownTech.add('logboat');
+    person.inventory.add('sail', 1);
+    expect(journeyTransport(options(person, { to: { cx: 8, cy: 4 }, seaCells: 2 }))).toBeNull();
+    person.knownTech.add('sail');
+    expect(journeyTransport(options(person, { to: { cx: 8, cy: 4 }, seaCells: 2 }))?.mode).toBe('sail');
   });
 
   it('chooses a deterministic short wrapped route', () => {

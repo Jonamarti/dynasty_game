@@ -198,7 +198,7 @@ export const TECHS = [
   // M15 phase 40f: a plough's crop gain is paid at sowing and stored on the crop.
   'ploughshare',
   // M15 phase 35: physical transport and its journey policy ship together.
-  'sledge', 'pack_animals', 'horse_riding',
+  'sledge', 'pack_animals', 'horse_riding', 'sail',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -1715,6 +1715,15 @@ export const TECH: Record<Tech, TechDef> = {
       { needs: [{ kind: 'knows', tech: 'taming' }, { kind: 'doing', action: 'scout' }], weight: 0.7, story: 'returned tired from scouting and watched a horse cover the same ground easily' }],
     description: 'A living tame horse bears its rider on longer journeys and brings a scout home sooner.',
   },
+  sail: {
+    id: 'sail', label: 'Sailing', domain: 'water', age: 'bronze', firstKnown: 'about 3,500 BC',
+    kind: 'device', requires: ['weaving', 'logboat'], difficulty: 0.6, skill: 'build',
+    prototype: { cloth: 2, rope: 1 }, maxRefinement: 2,
+    sparks: [{ needs: [{ kind: 'knows', tech: 'logboat' }, { kind: 'holding', item: 'cloth' }],
+      weight: 1, story: 'held a woven cloth in the wind above a boat and felt it pull' },
+      { needs: [{ kind: 'knows', tech: 'logboat' }, { kind: 'doing', action: 'boat' }], weight: 0.7, story: 'paddled against a wind that could have carried the boat the other way' }],
+    description: 'A woven sail and a physical boat turn wind into a passage between distant coasts.',
+  },
   the_wheel: {
     id: 'the_wheel', label: 'The wheel', domain: 'timber',
     age: 'neolithic', firstKnown: 'about 3500 BC',
@@ -2777,6 +2786,10 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   horse_riding: {
     summary: 'A living tame horse enables three-comarca journeys and faster scouting.',
     site: 'core/TransportAnimals.ts; world/Transport.ts and WorldState journey/scout policy',
+  },
+  sail: {
+    summary: 'A physical sail fitted to a logboat enables sea routes between distant coasts.',
+    site: 'RECIPES.sail; world/Transport.ts and WorldState journey routes',
   },
   the_wheel: {
     summary: 'A physical equipped cart carries more and halves land journey time.',

@@ -1,3 +1,7 @@
+## 2026-10-09 — M15 fase 35: vela y rutas marítimas largas
+
+La vela es una receta y un objeto físicos. Requiere tejido y canoa; el plan marítimo exige además una canoa en el inventario y ambas prácticas. Solo esa combinación abre rutas por mar no contiguas y su velocidad; las negativas separan técnica de posesión. Arte generado y etiquetas traducidas. Captura revisada: artifacts/screenshots/m15-phase35-sail-2026-10-09/01-long-sea-journey.png. E2E de las cuatro puertas pasa. La versión aislada pasa typecheck y 76/76 pruebas focales en cuatro ficheros. [Contrato](m15_phase35_journeys.md). No se mide economía ni correspondencia anual; cohorts/matriz diferidas.
+
 ## 2026-10-09 — M15 fase 35: asnos de carga y caballos de monta
 
 Animales individuales y técnica se necesitan juntos. Una asignación recíproca añade 24 unidades de carga para el asno o reduce el tiempo de viaje/exploración con un caballo; la marcha local mantiene su velocidad. El menú permite asignar y liberar, y liberar impide la reasignación automática. Se conservan identidades al viajar y se rechazan colisiones antes de mover hogares o inventarios. Generación propia derivada de semilla sin alterar PREY_SPECIES, forks o spawnRng. Migración y lectores canónicos prueban muerte, pérdida de dueño y distancia. [Contrato](m15_phase35_animals.md). Capturas: artifacts/screenshots/m15-phase35-animals-clear-2026-10-09/. Cohortes diferidas por AGENTS.md; ninguna mejora económica medida. Versión aislada: typecheck y 101/101 pruebas focales en ocho ficheros pasan. Verificación conjunta final pendiente.
