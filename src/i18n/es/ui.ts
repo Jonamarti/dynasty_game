@@ -307,4 +307,5 @@ export const ES_UI: Record<string, string> = {
   'No nearby merchant knows that route and owns trade goods': 'Ningún mercader cercano conoce esa ruta y tiene mercancías',
   'The merchant does not know a trading people there': 'El mercader no conoce un pueblo con el que comerciar allí',
   'That caravan could not be prepared safely': 'No se pudo preparar esa caravana de forma segura',
+  'That raid could not be prepared safely': 'No se pudo preparar esa incursión de forma segura',
 };

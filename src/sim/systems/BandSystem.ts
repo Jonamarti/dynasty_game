@@ -44,6 +44,7 @@ import { conspiracyAgainst, warParty } from '../social/Factions.ts';
 import type { BandRelations } from '../social/BandRelations.ts';
 import { t } from '../../i18n/i18n.ts';
 import type { Sightings } from '../social/Fear.ts';
+import type { JourneyPoint } from '../world/Transport.ts';
 import { fearOf } from '../social/Fear.ts';
 import { MAP_CELL } from '../social/BandMaps.ts';
 import { isFoodKind, RESOURCE_KINDS, type ResourceNode, type ResourceKind } from '../entities/ResourceNode.ts';
@@ -385,7 +386,12 @@ export interface BandContext {
   abandonSite: (building: Building) => void;
   /** Issues an order subject to a compliance roll. Returns whether it stuck. */
   command: (leader: Person, subordinate: Person, action: string,
-    target: { buildingId?: number; nodeId?: number; itemId?: string; count?: number }) => boolean;
+    target: { buildingId?: number; nodeId?: number; itemId?: string; count?: number },
+    options?: { consentOnly?: boolean }) => boolean;
+  /** A remote raid destination must already be known to this person. */
+  knownRaidDestination?: (actor: Person, victimBandId: number) => JourneyPoint | null;
+  /** Queues a party for root-level dispatch after this simulation step. */
+  queueRemoteRaid?: (request: { leaderId: number; partyIds: number[]; victimBandId: number; destination: JourneyPoint; plunder: boolean }) => boolean;
   /** Each band's temple store today, M15 phase 38b. */
   templeOf: (bandId: number) => Building | null;
   /** Anybody, living or dead, by id — a late king's house and children, M15 phase 38b. */
@@ -2066,14 +2072,14 @@ export class BandSystem {
       this.considerNeedRaid(band, members, chief, ctx, outcastBandId);
       return;
     }
+    const instigator = this.pickRaidInstigator(members, chief, victimId, ctx);
+    if (!instigator) return;
     const target = this.raidTarget(band, victimId, worst > RAID_FURY, ctx);
-    if (!target) {
+    const remoteDestination = target ? null : ctx.knownRaidDestination?.(instigator, victimId) ?? null;
+    if (!target && !remoteDestination) {
       telemetry.count('raid_nothing_in_reach');
       return;
     }
-
-    const instigator = this.pickRaidInstigator(members, chief, victimId, ctx);
-    if (!instigator) return;
 
     // From here on the chief has genuinely weighed it, so the brooding clock
     // starts whether or not anybody ends up going. See `RAID_INTERVAL`.
@@ -2096,16 +2102,22 @@ export class BandSystem {
     // about them. What is *in* the granary is not consulted and must not be:
     // it is a granary from the outside, and `doTake` finds out on arrival,
     // abandoning with `store_empty` if the answer is nothing.
-    const plunder = worst > RAID_FURY && target.def.storage >= RAID_GRANARY;
+    const plunder = target
+      ? worst > RAID_FURY && target.def.storage >= RAID_GRANARY
+      : worst > RAID_FURY;
     const verb = plunder ? 'take' : 'sabotage';
     telemetry.count('raid_called');
     telemetry.count(plunder ? 'raid_for_plunder' : 'raid_for_damage');
 
     let joined = 0;
+    const remoteParty = [leader];
     for (const member of party) {
       if (!this.fitForOrders(leader, member)) continue;
-      if (ctx.command(leader, member, verb, { buildingId: target.id })) {
+      if (remoteDestination
+        ? ctx.command(leader, member, 'attack', {}, { consentOnly: true })
+        : ctx.command(leader, member, verb, { buildingId: target!.id })) {
         joined++;
+        if (remoteDestination) remoteParty.push(member);
         // M11 phase 15d: a raid is where captives come from. For a day, the
         // victims are people to take, not only a store to empty — see
         // `Person.raidingBandId` and `Brain`'s "Taking captives".
@@ -2118,13 +2130,32 @@ export class BandSystem {
     telemetry.count('raid_joined', joined);
     if (joined === 0) telemetry.count('raid_refused_outright');
 
+    if (remoteDestination) {
+      if (!ctx.queueRemoteRaid?.({
+        leaderId: leader.id,
+        partyIds: remoteParty.map(person => person.id),
+        victimBandId: victimId,
+        destination: remoteDestination,
+        plunder,
+      })) {
+        telemetry.count('raid_remote_dispatch_refused');
+        return;
+      }
+      this.recordRaid(leader, victimId, joined, plunder, ctx);
+      return;
+    }
+
     // The chief goes with them, and goes even when nobody answered. Being
     // left to walk into a rival camp alone is the price of calling something
     // your band would not follow you into, and it is the one that makes a
     // chief's standing worth having — `command` has already cost them three
     // regard from every person who said no.
-    ctx.command(leader, leader, verb, { buildingId: target.id });
+    ctx.command(leader, leader, verb, { buildingId: target!.id });
 
+    this.recordRaid(leader, victimId, joined, plunder, ctx);
+  }
+
+  private recordRaid(leader: Person, victimId: number, joined: number, plunder: boolean, ctx: BandContext): void {
     const victim = this.bandName(victimId);
     const behind = joined === 1
       ? t('one man behind him')

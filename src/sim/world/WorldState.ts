@@ -1,3 +1,4 @@
+import { knownRaidDestination, orderArrivingRaid, resolveCaravanInterception } from './WorldRaids.ts';
 import { techPower, TECHS } from '../knowledge/Tech.ts';
 import { WorldTrafficCoordinator, type WorldTrafficRecord } from './WorldTrafficCoordinator.ts';
 import { fromHouseholdRecord,fromPersonRecord,toPersonRecord } from '../persistence/EntityRecords.ts';
@@ -75,6 +76,7 @@ export class WorldState {
   readonly tileLedger = new TileLedger();
   readonly frontier: ComarcaFrontier;
   readonly traffic = new WorldTrafficCoordinator();
+  private pendingWorldRaids: {leaderId:number;partyIds:number[];victimBandId:number;destination:JourneyPoint;plunder:boolean}[] = [];
   /** Original placement, kept by the root even though Simulation consumes it only during construction. */
   initialGeographicStart: (WorldStateGeographicStart & { comarcasWide: number; comarcasHigh: number }) | null;
   /**
@@ -131,6 +133,8 @@ export class WorldState {
       propose: (person, direction) => this.proposeMigration(simulation, person, direction),
     };
     simulation.comarcaMigration = () => this.migrationContextFor(simulation);
+    simulation.worldRaidDestination = (actor,victim) => origin && this.geography.kind!=='legacyIsland' ? knownRaidDestination(actor,victim,origin,this.geography.map.width,(cx,cy)=>this.destinationIsLand(cx,cy)) : null;
+    simulation.queueWorldRaid = request => { if(this.pendingWorldRaids.some(raid=>raid.partyIds.some(id=>request.partyIds.includes(id)))) return false; this.pendingWorldRaids.push({...request,partyIds:[...request.partyIds]}); return true; };
   }
 
   /** A player can commission a nearby merchant, using that merchant's real goods and route knowledge. */
@@ -435,12 +439,64 @@ export class WorldState {
     const tick = this.current.time.tick;
     this.advanceJourney(tick);
     this.traffic.processCamps(this,tick);
-    for(const arrival of this.traffic.advance(this,tick)) if(arrival.kind==='caravan') this.traffic.orderCampTrade(this,arrival.caravanId);
+    for(const arrival of this.traffic.advance(this,tick)) {
+      if(arrival.event.kind==='raid-opportunity') this.resolveTrafficInterception(arrival.caravanId,arrival.at,arrival.actorId);
+      if(arrival.kind==='raid' && arrival.event.kind!=='raid-opportunity' && JSON.stringify(arrival.at)===JSON.stringify(this.frontier.active) && arrival.victimBandId!==null) orderArrivingRaid(this.current,arrival.partyIds,arrival.victimBandId);
+      if(arrival.kind==='caravan') this.traffic.orderCampTrade(this,arrival.caravanId);
+    }
+    for(const raid of this.pendingWorldRaids.splice(0)) {
+      try { this.traffic.dispatchParty(this,{kind:'raid',actorId:raid.leaderId,travellerIds:raid.partyIds,destination:comarcaIdentityAt(this.geography,raid.destination.cx,raid.destination.cy),destinationBandId:raid.victimBandId,victimBandId:raid.victimBandId}); }
+      catch { this.current.lastRefusal=t('That raid could not be prepared safely'); }
+    }
     if (this.peoples && tick % this.current.config.time.ticksPerDay === 0) this.peoples.advanceTo(tick);
     if (tick % this.current.config.time.ticksPerDay === 0) this.advanceParkedTo(tick);
     this.returnScouts(tick);
     this.commitPendingCross();
     if (tick % this.current.config.time.ticksPerDay === 0) { this.reconcileFamilyLinks(); this.reconcileMacroResidents(); this.reconcileReturnedKnowledge(); }
+  }
+
+  private resolveTrafficInterception(caravanId:number,at:ComarcaIdentity,actorId:number):void {
+    const active=JSON.stringify(at)===JSON.stringify(this.frontier.active);
+    const parked=this.frontier.parkedAt(at);
+    if(!active&&!parked){this.traffic.resolveRaid(this,caravanId,()=>{});return;}
+    const stagedIds=IdSpace.fromSnapshot(this.ids.snapshot());
+    let checkpoint=active?toCheckpointRecord(this.current):parked!;
+    if(!active&&checkpoint.lastAdvancedTick<this.current.time.tick){
+      const tile=this.tileLedger.at(at);
+      if(!tile){this.traffic.resolveRaid(this,caravanId,()=>{});return;}
+      const prior=this.frontier.runtimeAt(at);
+      const runtime=prior?ComarcaOffmapRuntime.fromRecord(prior):ComarcaOffmapRuntime.start(checkpoint,tile);
+      checkpoint=runtime.advanceTo(this.current.time.tick,this.geography,stagedIds,id=>this.findArchivedParent(id)).checkpoint;
+    }
+    const owner=Simulation.fromCheckpointRecordWithSharedIds(checkpoint,stagedIds);
+    this.configureTrafficContacts(owner,at);
+    const remaining: import('./WorldCaravans.ts').CaravanGoods[]=[];
+    let record:ReturnType<typeof toCheckpointRecord>|null=null;
+    let stagedTile:ReturnType<TileLedger['capture']>|null=null;
+    let stagedRuntime:ReturnType<ComarcaOffmapRuntime['toRecord']>|null=null;
+    // Capture both owners and their compact revision before acknowledging the
+    // warning. A failed preparation must leave the cargo escrow authoritative.
+    this.traffic.resolveRaid(this,caravanId,(convoy,event)=>{
+      remaining.push(...resolveCaravanInterception(owner,convoy,event,actorId));
+      convoy.ids.restore(stagedIds.snapshot());
+      record=toCheckpointRecord(owner);
+      if(!active){
+        const placement:WorldStateGeographicStart={geography:this.geography,start:{x:at.cx+.5,y:at.cy+.5},comarcasWide:1,comarcasHigh:1};
+        const tile=new TileLedger().capture({geography:this.geography,current:owner,initialGeographicStart:placement} as WorldState);
+        const old=this.tileLedger.at(at);
+        stagedTile={...tile,revision:Math.max(tile.revision,(old?.revision??0)+1)};
+        stagedRuntime=ComarcaOffmapRuntime.rebase(record,stagedTile,this.frontier.runtimeAt(at),this.frontier.compactState()).toRecord();
+      }
+    },remaining);
+    if(!record)return;
+    this.ids.restore(stagedIds.snapshot());
+    if(active){
+      this.current.parkForTransfer();
+      this.installCurrent(Simulation.fromCheckpointRecordWithSharedIds(record,this.ids),this.initialGeographicStart);
+    }else{
+      this.tileLedger.update(stagedTile!);
+      this.frontier.park(at,record,stagedRuntime!);
+    }
   }
 
   private advanceJourney(tick:number): void {
@@ -757,6 +813,7 @@ export class WorldState {
       _current: { value: current, writable: true, enumerable: false },
       tileLedger: { value: tileLedger, enumerable: true },
       frontier: { value: frontier, enumerable: true },
+      pendingWorldRaids: { value: [], writable: true },
       traffic: { value: trafficRecord ? WorldTrafficCoordinator.fromRecord(trafficRecord) : new WorldTrafficCoordinator(), enumerable: true },
       initialGeographicStart: { value: retainStart(geography, geographicStart), writable: true, enumerable: true },
       peoples: { value: restorePeoples(geography, geographicStart, peoplesRecord), writable: true, enumerable: true },

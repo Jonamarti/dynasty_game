@@ -3470,11 +3470,13 @@ El ticket abstracto guarda partida, destino canónico, fechas, carga, comida, st
 
 ## Fase 36 — Noticias, comercio y caravanas (M14 fase 18)
 
-**Avance 2026-10-09, 36a.** Noticias personales con origen y procedencia; un viaje real prueba que solo un relato transmite el robo al pasajero. Archivo del culpable resuelto sin modificarlo. 20/20 pruebas focales pasan. Ver [contrato](m15_phase36_news.md). 36d en curso; verificación conjunta pendiente.
+**Avance 2026-10-09, 36a.** Noticias personales con origen y procedencia; un viaje real prueba que solo un relato transmite el robo al pasajero. Archivo del culpable resuelto sin modificarlo. 20/20 pruebas focales pasan. Ver [contrato](m15_phase36_news.md). 36d implementada; verificación conjunta pendiente.
 
 **Avance 2026-10-09, 36e.** Botón de casas rivales, archivo mundial filtrado por Knowledge y memoria familiar llevada al regresar. E2E integrado pasa 1/1 y captura en artifacts/screenshots/m15-phase36-rival-integrated-2026-10-09/. [Contrato](m15_phase36_rival.md).
 
 **Avance 2026-10-09, 36b–c.** Trade ya existía y exige marking; el trueque lee baseValue. Caravanas físicas, guardado v5, campamento, noticias de mercader y regreso automático; residentes macro retirados una sola vez y técnicas llevadas de vuelta al origen. Pruebas de existencias, muerte y corrupción cubren el motor. [Contrato](m15_phase36_traffic.md). UI en artifacts/screenshots/m15-phase36-caravans-2026-10-09/. Matriz y cohortes diferidas; sin afirmar producción de estaño ni mejora económica.
+
+**Avance 2026-10-09, 36d.** La banda propone una ruta solo desde una enemistad y un destino conocido, con aprobación y seguidores reales. Se transfiere después del step; llegada por el borde y órdenes de saqueo/captura habituales. Asaltar una caravana exige un atacante físico y solo roba lo que puede cargar; testigos y víctima guardan el hecho. 35/35 pruebas focales, incluida llegada desde comarca aparcada con guardado a mitad de camino. [Contrato](m15_phase36_raids.md). Sin cambios nuevos de UI.
 
 **Detalle en `m14_plan.md` fase 18.** Las noticias viajan con la gente;
 `trade` (el nodo de M8.2 que nunca llegó a `TECHS`, práctica neolítica que

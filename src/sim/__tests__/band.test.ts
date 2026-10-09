@@ -16,6 +16,8 @@ import { PROTOTYPE_AT, PROTOTYPE_POWER, REFINEMENT_STEP } from '../knowledge/Syn
 import { telemetry } from '../core/Telemetry.ts';
 import type { Person } from '../entities/Person.ts';
 import type { Building } from '../entities/Building.ts';
+import { WorldKnowledge } from '../social/WorldKnowledge.ts';
+import { knownRaidDestination } from '../world/WorldRaids.ts';
 
 const SMALL = {
   seed: 'rebellion',
@@ -730,6 +732,29 @@ describe('raids', () => {
     expect(telemetry.get('raid_proposed') - proposed).toBeGreaterThan(0);
     expect(telemetry.get('raid_approved') - approved).toBeGreaterThan(0);
     expect(chief.chronicle.some(entry => entry.text.includes('raid'))).toBe(true);
+  });
+
+  it('queues a cross-comarca raid only from the instigator\'s known people and preserves quorum', () => {
+    telemetry.enable();
+    const { sim, raiders, victim, chief, site } = feud('raid-known-comarca');
+    site.durability = 0; // No local target; this exercises only the globe route.
+    armBand(sim, chief, raiders.id);
+    sim.bandRelations.add(raiders.id, victim.id, -100);
+    for (const person of sim.people.filter(person => person.bandId === raiders.id)) {
+      person.worldKnowledge = new WorldKnowledge();
+      person.worldKnowledge.see(1, 0, sim.time.day);
+      person.worldKnowledge.meet(1, 0, victim.id, sim.time.day);
+    }
+    const requests: { leaderId: number; partyIds: number[]; victimBandId: number; destination: { cx: number; cy: number }; plunder: boolean }[] = [];
+    sim.worldRaidDestination = (actor, victimBandId) =>
+      knownRaidDestination(actor, victimBandId, { cx: 0, cy: 0 }, 5, () => true);
+    sim.queueWorldRaid = request => { requests.push(request); return true; };
+
+    expect(raidsOver(sim, 4)).toBeGreaterThan(0);
+    expect(requests.length).toBeGreaterThan(0);
+    expect(requests[0]).toMatchObject({ victimBandId: victim.id, destination: { cx: 1, cy: 0 } });
+    expect(requests[0]!.partyIds.length).toBeGreaterThanOrEqual(2);
+    expect(new Set(requests[0]!.partyIds).size).toBe(requests[0]!.partyIds.length);
   });
 
   it('will not send one against a band it has no quarrel with', () => {

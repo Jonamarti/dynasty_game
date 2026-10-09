@@ -384,6 +384,9 @@ export class Simulation {
   /** Bound by WorldState; checkpoints retain requests, not callbacks. */
   comarcaParent?: (id: number) => Person | null;
   comarcaTravel: ComarcaTravel | null = null;
+  /** World-root callbacks; destinations are per-person known and dispatch is deferred until after step(). */
+  worldRaidDestination?: (actor: Person, victimBandId: number) => { cx: number; cy: number } | null;
+  queueWorldRaid?: (request: { leaderId: number; partyIds: number[]; victimBandId: number; destination: { cx: number; cy: number }; plunder: boolean }) => boolean;
   /** Dynamic policy supplied by WorldState; callbacks are reconstructed after restore. */
   comarcaMigration: (() => ComarcaMigrationContext | null) | null = null;
   private localGeography: LocalGeographySource | null;
@@ -2223,7 +2226,8 @@ export class Simulation {
     leader: Person,
     subordinate: Person,
     action: string,
-    target: Parameters<Simulation['order']>[2] = {}
+    target: Parameters<Simulation['order']>[2] = {},
+    options: { consentOnly?: boolean } = {},
   ): boolean {
     this.assertExecutionAuthority();
     this.assertCanonical(this.peopleById, leader, 'person');
@@ -2248,7 +2252,7 @@ export class Simulation {
       leader.captiveOf === null) {
       telemetry.count('captive_order_obeyed');
       subordinate.mood.add('purpose', -2, 'forced labour', this.time.tick);
-      return this.order(subordinate, action, target);
+      return options.consentOnly ? true : this.order(subordinate, action, target);
     }
 
     const standing = this.standing(leader, subordinate, action,
@@ -2305,7 +2309,7 @@ export class Simulation {
       // what carries a practice toward `TRIES_TO_TEST`.
       leader.noteDid('preside');
     }
-    return this.order(subordinate, action, target);
+    return options.consentOnly ? true : this.order(subordinate, action, target);
   }
 
   /**
@@ -5732,8 +5736,10 @@ export class Simulation {
         sameRegion: (ax, ay, bx, by) => this.world.sameRegion(ax, ay, bx, by),
         territoryOwnerAt: (x, y) => this.territoryOwnerAt(x, y),
         abandonSite: site => this.removeBuilding(site),
-        command: (leader, subordinate, action, target) =>
-          this.command(leader, subordinate, action, target),
+        command: (leader, subordinate, action, target, options) =>
+          this.command(leader, subordinate, action, target, options),
+        knownRaidDestination: this.worldRaidDestination,
+        queueRemoteRaid: this.queueWorldRaid,
         templeOf: bandId => this.templeOf(bandId),
         personById: id => this.peopleById.get(id),
         declare: (chief, otherBandId, kind) => this.declare(chief, otherBandId, kind),
