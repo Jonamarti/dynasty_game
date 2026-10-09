@@ -1,3 +1,4 @@
+import type { WorldTrafficRecord } from '../world/WorldTrafficCoordinator.ts';
 /** JSON envelope for a world root: macro geography and placement beside the
  * existing independent Simulation checkpoint. Earth rasters are embedded so a
  * saved world remains usable offline when its atlas asset is unavailable. */
@@ -15,8 +16,9 @@ import { TileLedger, type TileLedgerRecord } from './TileLedger.ts';
 
 export interface WorldStateRecord {
   readonly recordType: 'WorldStateRecord';
-  /** v3 adds comarca revisions; v4 adds the persistent frontier; v1/v2 load with an empty book. v1 also lacks peoples. */
-  readonly version: 4;
+  /** v5 adds canonical traffic; v4 adds the frontier; v3 adds comarca revisions. Older versions restore empty traffic. */
+  readonly version: 5;
+  readonly traffic: WorldTrafficRecord;
   readonly tileLedger: TileLedgerRecord;
   readonly frontier: ComarcaFrontierRecord;
   readonly geography: GeographyRecord;
@@ -131,7 +133,8 @@ export function toWorldStateRecord(state: WorldState): WorldStateRecord {
   assertWorldTileLedger(state.tileLedger, state.geography, state.current);
   const start = state.initialGeographicStart;
   const record: WorldStateRecord = {
-    recordType: 'WorldStateRecord', version: 4,
+    recordType: 'WorldStateRecord', version: 5,
+    traffic: state.traffic.toRecord(),
     tileLedger: state.tileLedger.toRecord(),
     frontier: state.frontier.toRecord(),
     geography: geographyRecord(state.geography),
@@ -148,14 +151,15 @@ export function toWorldStateRecord(state: WorldState): WorldStateRecord {
 /** Restore a detached macro-map and its independent live Simulation checkpoint. */
 export function fromWorldStateRecord(input: unknown): WorldState {
   if (!object(input)) invalid('expected object');
-  if (input.recordType !== 'WorldStateRecord' || (input.version !== 1 && input.version !== 2 && input.version !== 3 && input.version !== 4)) invalid('expected WorldStateRecord v1, v2, v3 or v4');
+  if (input.recordType !== 'WorldStateRecord' || (input.version !== 1 && input.version !== 2 && input.version !== 3 && input.version !== 4 && input.version !== 5)) invalid('expected WorldStateRecord v1 through v5');
   exact(input, input.version === 1
     ? ['recordType', 'version', 'geography', 'start', 'simulation']
     : input.version === 2
       ? ['recordType', 'version', 'geography', 'start', 'simulation', 'peoples']
       : input.version === 3
         ? ['recordType', 'version', 'geography', 'start', 'simulation', 'peoples', 'tileLedger']
-        : ['recordType', 'version', 'geography', 'start', 'simulation', 'peoples', 'tileLedger', 'frontier']);
+        : input.version === 4 ? ['recordType', 'version', 'geography', 'start', 'simulation', 'peoples', 'tileLedger', 'frontier']
+        : ['recordType', 'version', 'geography', 'start', 'simulation', 'peoples', 'tileLedger', 'frontier', 'traffic']);
   const geography = parseGeography(input.geography);
   let start: WorldStateGeographicStart | null = null;
   if (input.start !== null) {
@@ -177,5 +181,5 @@ export function fromWorldStateRecord(input: unknown): WorldState {
   const tileLedger = input.version >= 3 ? TileLedger.fromRecord(input.tileLedger) : new TileLedger();
   if (peoples !== null && !object(peoples)) invalid('peoples');
   if (peoples !== null && start === null) invalid('peoples need a map to stand on');
-  return WorldState.fromRestored(current, geography, start, peoples as PeopleWorldRecord | null, tileLedger, input.version === 4 ? input.frontier as ComarcaFrontierRecord : undefined);
+  return WorldState.fromRestored(current, geography, start, peoples as PeopleWorldRecord | null, tileLedger, input.version >= 4 ? input.frontier as ComarcaFrontierRecord : undefined, input.version === 5 ? input.traffic as WorldTrafficRecord : undefined);
 }

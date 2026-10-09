@@ -933,6 +933,15 @@ export class Simulation {
    * identity allocation is mandatory so a later birth cannot reuse either side's IDs.
    */
   transferTravellersTo(destination: Simulation, travellerIds: readonly number[], entry: ComarcaEdge): Person[] {
+    return this.transferPeopleTo(destination, travellerIds, entry, true);
+  }
+
+  /** Preserve canonical corpse ownership when a travelling person dies in transit. */
+  transferDeadTravellersTo(destination: Simulation, travellerIds: readonly number[], entry: ComarcaEdge): Person[] {
+    return this.transferPeopleTo(destination, travellerIds, entry, false);
+  }
+
+  private transferPeopleTo(destination: Simulation, travellerIds: readonly number[], entry: ComarcaEdge, living: boolean): Person[] {
     if (destination === this || destination.ids !== this.ids) throw new RangeError('Comarca transfer must share one world IdSpace');
     if (destination.time.tick !== this.time.tick) throw new RangeError('Comarca transfer clocks must meet at the boundary');
     if (!['n','e','s','w'].includes(entry)) throw new RangeError('Invalid destination edge');
@@ -942,7 +951,7 @@ export class Simulation {
     }
     const travellers = ids.map(id => {
       const person = this.peopleById.get(id);
-      if (!person || !person.alive || !this.people.includes(person)) throw new RangeError(`Traveller ${id} is not alive and active in the source`);
+      if (!person || person.alive !== living || !this.people.includes(person)) throw new RangeError(`Traveller ${id} is not ${living ? 'alive' : 'dead'} and active in the source`);
       if (destination.peopleById.has(id)) throw new RangeError(`Traveller ${id} already belongs to the destination`);
       return person;
     }).sort((a,b) => a.id - b.id);

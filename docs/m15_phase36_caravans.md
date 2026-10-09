@@ -1,0 +1,11 @@
+# M15 phase 36c — persistent caravan scheduler
+
+`WorldCaravans` owns only in-transit state: canonical traveler and escort IDs, a display-name snapshot supplied from real people, source/destination identities, coordinate routes, departure/arrival dates, optional camp stops, and physical cargo escrow. It does not create people or maintain a second copy of comarca stock.
+
+Root integration calls `schedule()` after assembling a party from its canonical owner, then debits source inventories in the departure transaction. `advanceTo(tick, relationLookup)` emits one due transaction per route at a time. Each event remains byte-for-byte available across calls and JSON restoration until `ack(eventId)` succeeds. The root applies departures, materialization, arrivals, combat, or returns before acknowledging. `replaceCargo()` records the actual remaining escrow after daily consumption, raid loss, or merchant inventory reconciliation. Arrival/return receipts may pass `cargoAfter` to `ack()`.
+
+`cargoBaseValue()` reads `ItemDef.baseValue`. `exchangeCaravanGoods()` operates on two caller-owned `Inventory` instances: it preflights both stock balances and the value ceiling, transfers the item stacks in both directions, and reports actual exchanged values. The helper does not create a market ledger. An arrival event carries gross cargo value and a bounded standing/contact intent; root applies it only when real trade materializes. War or standing at or below −60 yields a `raid-opportunity` event for the root combat hook; the scheduler does not invent combat outcomes.
+
+Camps are date-stamped route stops. The root may materialize a party at a local edge when the stop or destination is active. Return routes are explicit reverse legs scheduled after the outbound arrival. The person IDs remain references only, so the root must retain exactly one canonical owner in its parked checkpoint/traffic records.
+
+Focused tests cover save/replay, ordered event acknowledgements, camp/resume/return, hostile hooks, invalid parties/routes, value-based barter, and total inventory-unit conservation. The WorldTrafficCoordinator binds this scheduler to actual canonical people, camp barter, return routes and the v5 root save; see m15_phase36_traffic.md.

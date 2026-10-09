@@ -1,3 +1,7 @@
+## 2026-10-09 — M15 fase 36b–c: caravanas con personas y existencias reales
+
+El mapa permite encargar una ruta conocida a un mercader cercano. Su partida tiene un solo propietario; mercancías, cadáveres y provisiones se conservan entre origen, tránsito, campamento y regreso. El trueque físico difunde un relato seleccionado por contacto de mercader; las técnicas regresan con un portador real. Guardado raíz v5 y lectores v1–v4, con rechazos de propietarios/calendarios/allocadores corruptos. Captura: artifacts/screenshots/m15-phase36-caravans-2026-10-09/01-known-comarca-caravan-control.png. E2E del botón real y traslado pasa 2/2; captura adicional revisada en artifacts/screenshots/m15-phase36-caravan-real-2026-10-09T-02/02-named-merchant-departure.png. Versión 0.15.4-alpha. [Contrato](m15_phase36_traffic.md). Typecheck y pruebas focales pasan; verificación conjunta en curso. Cohortes/matriz diferidas; no se mide mejora económica.
+
 ## 2026-10-09 — M15 fase 36e: casas rivales entre comarcas
 
 La vista conserva casas y nombres conocidos tras viajar y filtra datos privados con Knowledge. Un regreso fusiona la memoria de enemistades llevada por el hogar sin sumar dos veces la historia previa. Prueba de regreso pasa; E2E del botón y archivo pasa 1/1. Captura revisada: artifacts/screenshots/m15-phase36-rival-integrated-2026-10-09/01-rival-from-origin-archive.png. Versión 0.15.3-alpha. [Contrato](m15_phase36_rival.md). Verificación conjunta pendiente.

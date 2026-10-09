@@ -178,6 +178,15 @@ export class Memory {
     return { bad, good };
   }
 
+  /** Best unshared story of one deed kind, for systems that select an actual event before a contact. */
+  bestGossipOfType(type: EventType, listener: Memory): MemoryEntry | null {
+    let best: MemoryEntry | null = null;
+    for (const entry of this.entries) {
+      if (entry.type !== type || listener.has(entry.eventId) || entry.salience < 0.15) continue;
+      if (!best || entry.salience > best.salience) best = entry;
+    }
+    return best;
+  }
   bestGossipFor(listener: Memory): MemoryEntry | null {
     let best: MemoryEntry | null = null;
     for (const entry of this.entries) {

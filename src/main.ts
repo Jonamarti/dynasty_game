@@ -331,6 +331,10 @@ const worldMap = new WorldMapOverlay(document.body, (action, edge) => {
   const refusal = worldState.startJourney(destination);
   if (refusal) renderer.floaters.push(actor.x, actor.y, refusal, { color: '#ff8c82', boxed: true });
   else syncActiveSimulation();
+}, destination => {
+  const refusal=worldState.dispatchCaravanForPlayer(destination);
+  if(!refusal) syncActiveSimulation(true);
+  return refusal;
 });
 
 // Journey progress stays visible while the travelling player has left the active comarca.
@@ -2517,7 +2521,7 @@ let accumulator = 0;
  */
 let alpha = 1;
 
-function syncActiveSimulation(): void {
+function syncActiveSimulation(keepWorldMap = false): void {
   if (sim === worldState.current) return;
   // A globe callback can replace the root owner outside the fixed-step loop.
   // Refresh before the next step so the parked simulation never receives a tick.
@@ -2530,7 +2534,10 @@ function syncActiveSimulation(): void {
   buildMode = false; craftMode = false;
   renderer.commandedId = null; renderer.buildGhost = null;
   renderer.floaters.clear(); lastActions.clear(); lastEventId = sim.social.recent.at(-1)?.id ?? 0;
-  radial.close(); picker.close(); worldMap.close();
+  radial.close(); picker.close();
+  // Commissioning replaces an owner in the same comarca. Keep its selected
+  // destination on screen so the dispatch result remains visible.
+  if(keepWorldMap) worldMap.update(sim); else worldMap.close();
   if (player) camera.snapTo(player.x, player.y);
   lastDesignCount = -1; lastRecipeCount = -1;
   hud.renderBuildBar(sim, false); hud.renderCraftBar(sim, player, false);

@@ -34,7 +34,7 @@ import { t } from '../../i18n/i18n.ts';
 import { frighten, opennessOf } from './Fear.ts';
 import { noteMischief, partiality, STRANGER_REGARD_MEAN, type Culture } from './Restraint.ts';
 import type { IdSpace } from '../core/IdSpace.ts';
-import { WorldNews } from './WorldNews.ts';
+import { WorldNews, type NewsChannel } from './WorldNews.ts';
 
 export interface LifeEvent {
   tick: number;
@@ -950,7 +950,7 @@ export class SocialSystem {
    */
   tellStory(
     teller: Person, listener: Person, story: MemoryEntry, peopleById: Map<number, Person>,
-    atTick: number = story.tick
+    atTick: number = story.tick, channelOverride?: NewsChannel
   ): void {
     this.mutationGuard([teller, listener]);
     // A story can outlive its subject in the active roster: travelers leave a
@@ -988,9 +988,9 @@ export class SocialSystem {
       // in the teller's bag wait for the conversation that actually tells them.
       if (story.type === 'theft' && story.originComarca && teller.worldNews) {
         (listener.worldNews ??= new WorldNews());
-        const channel = teller.spouseId === listener.id || listener.spouseId === teller.id
+        const channel = channelOverride ?? (teller.spouseId === listener.id || listener.spouseId === teller.id
           ? 'spouse'
-          : teller.captiveOf !== null || listener.captiveOf !== null ? 'captive' : 'conversation';
+          : teller.captiveOf !== null || listener.captiveOf !== null ? 'captive' : 'conversation');
         teller.worldNews.tellEventTo(listener.worldNews, teller.id, story.eventId,
           story.originComarca.cx, story.originComarca.cy, channel, atTick);
       }

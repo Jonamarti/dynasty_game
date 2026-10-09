@@ -205,6 +205,34 @@ describe('real frontier ownership and scout return',()=>{
     expect(restored.current.peopleById.get(id)!.name).toBe(actor.name);
     expect(restored.frontier.toRecord().parked.flatMap(p=>p.checkpoint.roster.people.map(fromPersonRecord)).some(p=>p.id===id)).toBe(false);
   });
+  it('returns carried techniques to their macro people only after a named resident is back in its home region',()=>{
+    const state=new WorldState({seed:'frontier-gates',world:{width:32,height:32},population:{bands:1,peoplePerBand:4,conceptionChance:0},time:{ticksPerDay:120,daysPerSeason:20,startDay:0},needs:{coldRate:0}},
+      {geography:frontierGeography(),start:{x:49.5,y:20.5}});
+    const founder=state.current.possessFirst()!;
+    const cross=(id:number,direction:'e'|'w')=>{
+      const person=state.current.peopleById.get(id)!;
+      expect(state.current.comarcaTravel!.arrive({person,direction,scout:false,travellerIds:[id]})).toBeNull();
+      if(!state.commitPendingCross()){let guard=0;while(state.frontier.pendingJourney&&guard++<500){state.current.step();state.advancePeoples();}expect(state.frontier.pendingJourney).toBeNull();}
+    };
+    cross(founder.id,'e');
+    const societyId=[...state.peoples!.sim.peoples.values()].find(p=>p.away>0)!.id;
+    const society=()=>state.peoples!.sim.peoples.get(societyId)!;
+    const carrier=[...state.current.people].find(p=>p.id!==founder.id&&state.frontier.materializedOrigins().get(p.id)===societyId)!;
+    const learned=TECHS.find(tech=>!society().techs.has(tech)&&!carrier.knownTech.has(tech)&&TECH[tech].requires.every(required=>carrier.knownTech.has(required)))!;
+    expect(learned).toBeDefined();
+    carrier.knownTech.add(learned);
+    state.current.possess(carrier);
+    cross(carrier.id,'w');
+    for(let i=0;i<120;i++){state.current.step();state.advancePeoples();}
+    expect(society().techs.has(learned)).toBe(false);
+    cross(carrier.id,'e');
+    const untilNextDay=120-(state.current.time.tick%120||0);
+    for(let i=0;i<untilNextDay;i++){state.current.step();state.advancePeoples();}
+    const ownerPeople=[...state.current.people,...state.frontier.toRecord().parked.flatMap(slot=>slot.checkpoint.roster.people.map(fromPersonRecord))];
+    expect(ownerPeople.find(person=>person.id===carrier.id)?.knownTech.has(learned)).toBe(true);
+    expect(state.frontier.materializedOrigins().get(carrier.id)).toBe(societyId);
+    expect(society().techs.has(learned)).toBe(true);
+  });
   it('keeps the home current until a dated scout returns with actual knowledge, including a partial-day save',()=>{
     const state=root(),actor=state.current.possessFirst()!,id=actor.id,origin=state.frontier.active!;
     actor.worldKnowledge=new WorldKnowledge(); actor.worldKnowledge.see(origin.cx,origin.cy,0);
@@ -230,6 +258,7 @@ import { toCheckpointRecord } from '../persistence/CheckpointRecords.ts';
 import { ComarcaOffmapRuntime } from '../world/ComarcaOffmapRuntime.ts';
 import type { Person } from '../entities/Person.ts';
 import { type BandContext } from '../systems/BandSystem.ts';
+import { TECH, TECHS } from '../knowledge/Tech.ts';
 
 describe('frontier demography and drought gates',()=>{
   const config={seed:'frontier-gates',world:{width:32,height:32},population:{bands:1,peoplePerBand:4,conceptionChance:0},time:{ticksPerDay:120,daysPerSeason:20,startDay:0},needs:{coldRate:0}};

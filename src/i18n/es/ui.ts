@@ -303,4 +303,8 @@ export const ES_UI: Record<string, string> = {
   "Known people: {names}": "Personas conocidas: {names}",
   "No names from this household are known to you.": "No conoces el nombre de nadie de esta casa.",
   "Your family remembers an open feud.": "Tu familia recuerda una enemistad abierta.",
+  'Choose a known destination for the caravan': 'Elige un destino conocido para la caravana',
+  'No nearby merchant knows that route and owns trade goods': 'Ningún mercader cercano conoce esa ruta y tiene mercancías',
+  'The merchant does not know a trading people there': 'El mercader no conoce un pueblo con el que comerciar allí',
+  'That caravan could not be prepared safely': 'No se pudo preparar esa caravana de forma segura',
 };

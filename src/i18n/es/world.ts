@@ -8,6 +8,8 @@ export const ES_WORLD: Record<string, string> = {
   "{n} places known": "{n} lugares conocidos",
   "Look closer": "Mirar de cerca",
   "Travel to this comarca": "Viajar a esta comarca",
+  "Send a caravan here": "Enviar una caravana aquí",
+  "A caravan has been sent.": "Se ha enviado una caravana.",
   "Travelling": "En camino",
   "Arriving": "Llegando",
   "Arrival delayed: {reason}": "Llegada retrasada: {reason}",

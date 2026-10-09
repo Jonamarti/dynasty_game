@@ -81,6 +81,8 @@ export class WorldMapOverlay {
   private readonly closeButton: HTMLButtonElement;
   private readonly closerButton: HTMLButtonElement;
   private readonly journeyButton: HTMLButtonElement;
+  private readonly caravanButton: HTMLButtonElement;
+  private caravanStatus: string | null = null;
   private sim: Simulation | null = null;
   private geography: WorldGeography | null = null;
   private grid: GlobeGrid | null = null;
@@ -92,7 +94,8 @@ export class WorldMapOverlay {
   private signature = '';
 
   constructor(container: HTMLElement, private readonly travel?: (action: 'leave_comarca' | 'scout' | 'propose', edge: ComarcaEdge) => void,
-    private readonly journey?: (destination: { cx: number; cy: number }) => void) {
+    private readonly journey?: (destination: { cx: number; cy: number }) => void,
+    private readonly dispatchCaravan?: (destination: { cx: number; cy: number }) => string | null) {
     this.root = document.createElement('div');
     this.root.className = 'worldmap';
     this.root.hidden = true;
@@ -141,6 +144,17 @@ export class WorldMapOverlay {
       this.close();
     });
     q('.worldmap-side').appendChild(this.journeyButton);
+    this.caravanButton = document.createElement('button');
+    this.caravanButton.type = 'button';
+    this.caravanButton.className = 'worldmap-caravan';
+    this.caravanButton.addEventListener('click', () => {
+      const destination = this.pickedDestination();
+      if (!destination || !this.dispatchCaravan) return;
+      this.caravanStatus = this.dispatchCaravan(destination) ?? t('A caravan has been sent.');
+      this.signature = '';
+      this.render();
+    });
+    q('.worldmap-side').appendChild(this.caravanButton);
     this.labelButtons();
 
     this.root.addEventListener('click', event => {
@@ -174,6 +188,7 @@ export class WorldMapOverlay {
         return;
       }
       this.picked = cell;
+      this.caravanStatus = null;
       this.signature = '';
       this.render();
     });
@@ -212,6 +227,7 @@ export class WorldMapOverlay {
     this.closeButton.textContent = t('Close');
     this.closerButton.textContent = t('Look closer');
     this.journeyButton.textContent = t('Travel to this comarca');
+    this.caravanButton.textContent = t('Send a caravan here');
   }
 
   get isOpen(): boolean { return !this.root.hidden; }
@@ -224,6 +240,7 @@ export class WorldMapOverlay {
     this.mode = 'world';
     this.picked = null;
     this.hovered = null;
+    this.caravanStatus = null;
     this.signature = '';
     this.root.hidden = false;
     this.render();
@@ -317,6 +334,7 @@ export class WorldMapOverlay {
     this.signature = signature;
 
     this.root.querySelector<HTMLElement>('.worldmap-travel')!.hidden = !sim.comarcaTravel || !sim.worldFrame;
+    this.caravanButton.hidden = !this.dispatchCaravan || !this.pickedDestination();
     this.journeyButton.hidden = this.mode !== 'region' || !this.picked || !this.grid || !sim.worldFrame ||
       !lore.at(this.region.x * this.grid.perRegion + this.picked.x, this.region.y * this.grid.perRegion + this.picked.y) ||
       (this.picked.x + this.region.x * this.grid.perRegion === here?.cx && this.picked.y + this.region.y * this.grid.perRegion === here?.cy);
@@ -458,6 +476,14 @@ export class WorldMapOverlay {
 
   // --- the card -----------------------------------------------------------
 
+  private pickedDestination(): { cx: number; cy: number } | null {
+    if (this.mode !== 'region' || !this.picked || !this.grid || !this.sim) return null;
+    const cx = this.region.x * this.grid.perRegion + this.picked.x;
+    const cy = this.region.y * this.grid.perRegion + this.picked.y;
+    if (!this.lore().at(cx, cy)) return null;
+    const here = this.sim.player ? this.sim.comarcaAtTile(this.sim.player.x, this.sim.player.y) : null;
+    return here?.cx === cx && here.cy === cy ? null : { cx, cy };
+  }
   private bandName(bandId: number): string {
     return this.sim?.bands.find(band => band.id === bandId)?.name ?? t('another people');
   }
@@ -531,6 +557,7 @@ export class WorldMapOverlay {
         rows.push(this.line(t('{name}, last seen {when}', { name: this.bandName(bandId), when: ago(sim.time.day, day) })));
       }
     }
+    if (this.caravanStatus) rows.push(this.line(this.caravanStatus, this.caravanStatus === t('A caravan has been sent.') ? 'is-here' : 'is-dim'));
     this.card.replaceChildren(...rows);
   }
 }

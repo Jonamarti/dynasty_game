@@ -1,3 +1,5 @@
+import { techPower, TECHS } from '../knowledge/Tech.ts';
+import { WorldTrafficCoordinator, type WorldTrafficRecord } from './WorldTrafficCoordinator.ts';
 import { fromHouseholdRecord,fromPersonRecord,toPersonRecord } from '../persistence/EntityRecords.ts';
 import { findHeir } from '../systems/LifeSystem.ts';
 import { knowledgeOfWorld } from '../social/Knowledge.ts';
@@ -72,6 +74,7 @@ export class WorldState {
   /** Detached comarca revisions survive root saves; this book activates no off-map motor. */
   readonly tileLedger = new TileLedger();
   readonly frontier: ComarcaFrontier;
+  readonly traffic = new WorldTrafficCoordinator();
   /** Original placement, kept by the root even though Simulation consumes it only during construction. */
   initialGeographicStart: (WorldStateGeographicStart & { comarcasWide: number; comarcasHigh: number }) | null;
   /**
@@ -128,6 +131,20 @@ export class WorldState {
       propose: (person, direction) => this.proposeMigration(simulation, person, direction),
     };
     simulation.comarcaMigration = () => this.migrationContextFor(simulation);
+  }
+
+  /** A player can commission a nearby merchant, using that merchant's real goods and route knowledge. */
+  dispatchCaravanForPlayer(destination: JourneyPoint): string | null {
+    const sim=this.current,player=sim.player;
+    if(!player || !knowledgeOfWorld(player).at(destination.cx,destination.cy)) return t('Choose a known destination for the caravan');
+    const merchant=sim.peopleHash.findNearest(player.x,player.y,sim.config.sightRadius,p=>p.alive&&!p.isPlayer&&p.bandId===player.bandId&&techPower(p,'trade')>0&&!!knowledgeOfWorld(p).at(destination.cx,destination.cy)&&[...p.inventory.entries()].some(([item,count])=>count>0&&ITEMS[item]?.nutrition===0));
+    if(!merchant) return t('No nearby merchant knows that route and owns trade goods');
+    const lore=knowledgeOfWorld(merchant).at(destination.cx,destination.cy);
+    const bandId=lore?.peoples[0]?.bandId;
+    if(bandId===undefined) return t('The merchant does not know a trading people there');
+    const cargoOffer=[...merchant.inventory.entries()].filter(([item,count])=>count>0&&ITEMS[item]?.nutrition===0).map(([itemId,count])=>({itemId,count}));
+    try { this.traffic.dispatchCaravan(this,{merchantId:merchant.id,destination,destinationBandId:bandId,cargoOffer}); return null; }
+    catch { return t('That caravan could not be prepared safely'); }
   }
 
   private currentIdentity(simulation: Simulation): ComarcaIdentity | null {
@@ -417,11 +434,13 @@ export class WorldState {
   advancePeoples(): void {
     const tick = this.current.time.tick;
     this.advanceJourney(tick);
+    this.traffic.processCamps(this,tick);
+    for(const arrival of this.traffic.advance(this,tick)) if(arrival.kind==='caravan') this.traffic.orderCampTrade(this,arrival.caravanId);
     if (this.peoples && tick % this.current.config.time.ticksPerDay === 0) this.peoples.advanceTo(tick);
     if (tick % this.current.config.time.ticksPerDay === 0) this.advanceParkedTo(tick);
     this.returnScouts(tick);
     this.commitPendingCross();
-    if (tick % this.current.config.time.ticksPerDay === 0) { this.reconcileFamilyLinks(); this.reconcileMacroResidents(); }
+    if (tick % this.current.config.time.ticksPerDay === 0) { this.reconcileFamilyLinks(); this.reconcileMacroResidents(); this.reconcileReturnedKnowledge(); }
   }
 
   private advanceJourney(tick:number): void {
@@ -500,6 +519,7 @@ export class WorldState {
       const person=fromPersonRecord(raw); if(person.id===id) return person;
     }
     if(record.journey) for(const raw of record.journey.transit.roster.people){const person=fromPersonRecord(raw);if(person.id===id)return person;}
+    for(const ticket of this.traffic.partyRecords) if(ticket.party) for(const raw of ticket.party.roster.people){const person=fromPersonRecord(raw);if(person.id===id)return person;}
     return null;
   }
   /** Named archives are resolved across owners; callers still apply Knowledge. */
@@ -508,6 +528,7 @@ export class WorldState {
     const root = this.frontier.toRecord();
     for (const parked of root.parked) for (const raw of parked.checkpoint.roster.people) { const person = fromPersonRecord(raw); people.set(person.id, person); }
     if (root.journey) for (const raw of root.journey.transit.roster.people) { const person = fromPersonRecord(raw); people.set(person.id, person); }
+    for(const ticket of this.traffic.partyRecords) if(ticket.party) for(const raw of ticket.party.roster.people){const person=fromPersonRecord(raw);people.set(person.id,person);}
     for (const person of this.current.peopleById.values()) people.set(person.id, person);
     return people;
   }
@@ -518,6 +539,7 @@ export class WorldState {
     const fragments = this.frontier.toRecord().parked.flatMap(slot => slot.checkpoint.roster.households.map(fromHouseholdRecord));
     const journey = this.frontier.pendingJourney;
     if (journey) fragments.push(...journey.transit.roster.households.map(fromHouseholdRecord));
+    for(const ticket of this.traffic.partyRecords) if(ticket.party) fragments.push(...ticket.party.roster.households.map(fromHouseholdRecord));
     fragments.push(...this.current.households);
     for (const household of fragments) {
       const previous = houses.get(household.id);
@@ -553,7 +575,7 @@ export class WorldState {
     if(!this.peoples) return;
     const origins=new Map(this.frontier.materializedOrigins());
     const root=this.frontier.toRecord();
-    const people=[...this.current.peopleById.values(),...root.parked.flatMap(s=>s.checkpoint.roster.people.map(fromPersonRecord)),...(root.journey?root.journey.transit.roster.people.map(fromPersonRecord):[])];
+    const people=[...this.current.peopleById.values(),...root.parked.flatMap(s=>s.checkpoint.roster.people.map(fromPersonRecord)),...(root.journey?root.journey.transit.roster.people.map(fromPersonRecord):[]),...this.traffic.partyRecords.flatMap(ticket=>ticket.party?.roster.people.map(fromPersonRecord)??[])];
     // A named newborn is another head held outside its mother's original cohort.
     for(const child of people) if(!origins.has(child.id) && child.motherId!==null && origins.has(child.motherId)) {
       const origin=origins.get(child.motherId)!; origins.set(child.id,origin); this.frontier.noteMaterialized(child.id,origin);
@@ -561,6 +583,22 @@ export class WorldState {
     const held=new Map<number,number>(); for(const person of people) { const origin=origins.get(person.id); if(person.alive&&origin!==undefined) held.set(origin,(held.get(origin)??0)+1); }
     for(const origin of new Set(origins.values())) { const society=this.peoples.sim.peoples.get(origin); if(society) society.away=held.get(origin)??0; }
   }
+  /** Techniques reach a macro people only with a named carrier back in its home region. */
+  private reconcileReturnedKnowledge():void {
+    if(!this.peoples)return;
+    const grid=gridFromGeography(this.geography);if(!grid)return;
+    const origins=new Map(this.frontier.materializedOrigins());
+    const owners=[...(this.frontier.active?[{at:this.frontier.active,people:this.current.people}]:[]),...this.frontier.toRecord().parked.map(slot=>({at:slot.identity,people:slot.checkpoint.roster.people.map(fromPersonRecord)}))];
+    for(const owner of owners){
+      const region=regionOfStart(grid,{x:owner.at.cx+.5,y:owner.at.cy+.5});
+      for(const person of owner.people){
+        const origin=origins.get(person.id);if(!person.alive||origin===undefined||this.peoples.regionOfPeople.get(origin)!==region)continue;
+        const society=this.peoples.sim.peoples.get(origin);if(!society)continue;
+        let changed=true;while(changed){changed=false;for(const tech of TECHS)if(person.knownTech.has(tech)&&!society.techs.has(tech)&&society.techs.prerequisitesHeld(tech)){society.techs.add(tech);changed=true;}}
+      }
+    }
+  }
+
   private storeTile(entry: import('../persistence/TileLedger.ts').TileLedgerEntry): void {
     const old = this.tileLedger.at(entry.identity);
     this.tileLedger.update({ ...entry, revision: Math.max(entry.revision,(old?.revision ?? 0)+1) });
@@ -622,6 +660,20 @@ export class WorldState {
       this.frontier.takeDueScouts(ticket.returnTick);
     }
   }
+  /** Off-map contacts resolve a foreign storyteller's subject without changing its owner. */
+  configureTrafficContacts(simulation:Simulation,at:ComarcaIdentity):void {
+    simulation.social.worldOrigin={cx:at.cx,cy:at.cy};
+    simulation.social.worldPersonById=id=>simulation.peopleById.get(id)??this.findArchivedParent(id)??undefined;
+  }
+
+  /** Stage named macro residents once; the caller commits this only after arrival records are valid. */
+  prepareTrafficResidents(destination: Simulation, at: ComarcaIdentity): () => void {
+    const staged=this.peoples?restorePeoples(this.geography,this.initialGeographicStart,this.peoples.toRecord()):null;
+    const origins:[number,number][]=[];
+    this.materializeResidents(destination,at,staged,origins);
+    return () => { if(staged) Object.defineProperty(this,'peoples',{value:staged}); for(const [id,peopleId] of origins)this.frontier.noteMaterialized(id,peopleId); };
+  }
+
   private materializeResidents(destination: Simulation, at: ComarcaIdentity, peoples: PeopleWorld | null, origins: [number,number][]): void {
     if (!peoples) return;
     const grid = gridFromGeography(this.geography)!;
@@ -658,7 +710,7 @@ export class WorldState {
   /** Join an independently restored Simulation checkpoint to its world root. */
   static fromRestored(current: Simulation, geography: WorldGeography,
     geographicStart: WorldStateGeographicStart | null, peoplesRecord: PeopleWorldRecord | null = null,
-    tileLedger = new TileLedger(), frontierRecord?: ComarcaFrontierRecord): WorldState {
+    tileLedger = new TileLedger(), frontierRecord?: ComarcaFrontierRecord, trafficRecord?: WorldTrafficRecord): WorldState {
     // The JSON reader is not the only caller of this public assembly path.
     // A classic checkpoint cannot acquire a salt coast merely by attaching
     // macro metadata. Geographic water provenance must come from its terrain.
@@ -705,9 +757,26 @@ export class WorldState {
       _current: { value: current, writable: true, enumerable: false },
       tileLedger: { value: tileLedger, enumerable: true },
       frontier: { value: frontier, enumerable: true },
+      traffic: { value: trafficRecord ? WorldTrafficCoordinator.fromRecord(trafficRecord) : new WorldTrafficCoordinator(), enumerable: true },
       initialGeographicStart: { value: retainStart(geography, geographicStart), writable: true, enumerable: true },
       peoples: { value: restorePeoples(geography, geographicStart, peoplesRecord), writable: true, enumerable: true },
     });
+    if(trafficRecord && trafficRecord.tick > current.time.tick) throw new RangeError('Traffic clock exceeds root clock');
+    const schedules=state.traffic.caravans;
+    for(const ticket of state.traffic.partyRecords) {
+      const schedule=schedules.get(ticket.caravanId);
+      if(geography.kind==='legacyIsland' || [ticket.source,ticket.destination].some(at=>JSON.stringify(at)!==JSON.stringify(comarcaIdentityAt(geography,at.cx,at.cy)))) throw new RangeError('Traffic geography does not match world root');
+      if(!schedule || JSON.stringify(schedule.source)!==JSON.stringify(ticket.source) || JSON.stringify(schedule.destination)!==JSON.stringify(ticket.destination) || JSON.stringify(schedule.route)!==JSON.stringify(ticket.route) || !schedule.travellers.some(person=>person.personId===ticket.actorId)) throw new RangeError('Traffic schedule differs from party');
+      if(ticket.lastAdvancedTick>current.time.tick) throw new RangeError('Traffic party exceeds root clock');
+      if(ticket.party) {
+        if(ticket.party.lastAdvancedTick!==ticket.lastAdvancedTick) throw new RangeError('Traffic party checkpoint clock differs');
+        const detached=Simulation.fromCheckpointRecord(ticket.party),rootIds=current.ids.snapshot(),partyIds=detached.ids.snapshot();
+        for(const kind of Object.keys(rootIds.next) as (keyof typeof rootIds.next)[]) if(rootIds.next[kind]<partyIds.next[kind]) throw new RangeError('Traffic allocator exceeds root allocator');
+        for(const kind of ['band','herd'] as const) if(partyIds.groups[kind].occupied.some(id=>!rootIds.groups[kind].occupied.includes(id))) throw new RangeError('Traffic group allocator exceeds root allocator');
+        if(!ticket.travellerIds.includes(ticket.actorId)) throw new RangeError('Traffic actor is absent from party');
+      }
+    }
+    state.traffic.validateOwners(state);
     state.bindCurrentPolicies();
     return state;
   }

@@ -1,3 +1,9 @@
+## 2026-10-09 — M15 fase 36: límites conservados para M16
+
+El tráfico conserva personas y mercancías físicas entre propietarios detallados, compactos y residentes retirados del nivel macro. No convierte el excedente abstracto de PeopleSim en inventarios de estaño, herramientas o sal: falta producción y contabilidad macro por objeto para crear caravanas desde pueblos nunca materializados. Las rutas de comercio actuales requieren un mercader nombrado y mercancías realmente poseídas. El aprendizaje vuelve a su sociedad con ese portador al regresar a su región; no se publica mientras viaja. La prueba de estaño mide conservación del trueque, no producción ni una mejora económica. Cohortes y matriz quedan diferidas por AGENTS.md.
+
+El tránsito de tráfico usa el mismo avance de necesidades de fase 35; siguen pendientes sus límites de ciclo reproductivo y ecología en viaje. La fusión de enemistades al regresar usa el máximo para no duplicar historia compartida y no establece un nuevo modelo de reconciliación o decadencia.
+
 ## M15 fase 35: avance de origen en bloque cruza el reloj de llegada — 2026-10-09
 
 Reproducción corta: ruta de ocho ticks, nueve step de origen y un único advancePeoples instalan el destino en tick 8 con el ledger del origen en tick 9; serializeSave rechaza la fecha. Mientras se viaja, advancePeoples debe ejecutarse después de cada tick, como hace main. Sigue pendiente admitir lotes que crucen la llegada sin retroceder el reloj ni simular dos propietarios. Se difiere a M16 según la prioridad de cierre de M15; la prueba de reanudación cubre el flujo por tick del juego, no este uso en bloque.
