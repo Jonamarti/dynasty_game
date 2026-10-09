@@ -1,4 +1,4 @@
-import { fromPersonRecord,toPersonRecord } from '../persistence/EntityRecords.ts';
+import { fromHouseholdRecord,fromPersonRecord,toPersonRecord } from '../persistence/EntityRecords.ts';
 import { findHeir } from '../systems/LifeSystem.ts';
 import { knowledgeOfWorld } from '../social/Knowledge.ts';
 import { ComarcaOffmapRuntime } from './ComarcaOffmapRuntime.ts';
@@ -502,6 +502,32 @@ export class WorldState {
     if(record.journey) for(const raw of record.journey.transit.roster.people){const person=fromPersonRecord(raw);if(person.id===id)return person;}
     return null;
   }
+  /** Named archives are resolved across owners; callers still apply Knowledge. */
+  worldPeople(): ReadonlyMap<number, Person> {
+    const people = new Map<number, Person>();
+    const root = this.frontier.toRecord();
+    for (const parked of root.parked) for (const raw of parked.checkpoint.roster.people) { const person = fromPersonRecord(raw); people.set(person.id, person); }
+    if (root.journey) for (const raw of root.journey.transit.roster.people) { const person = fromPersonRecord(raw); people.set(person.id, person); }
+    for (const person of this.current.peopleById.values()) people.set(person.id, person);
+    return people;
+  }
+
+  /** A split family has one identity and fragments of its roster in each owner. */
+  worldHouseholds(): ReadonlyMap<number, Household> {
+    const houses = new Map<number, Household>();
+    const fragments = this.frontier.toRecord().parked.flatMap(slot => slot.checkpoint.roster.households.map(fromHouseholdRecord));
+    const journey = this.frontier.pendingJourney;
+    if (journey) fragments.push(...journey.transit.roster.households.map(fromHouseholdRecord));
+    fragments.push(...this.current.households);
+    for (const household of fragments) {
+      const previous = houses.get(household.id);
+      const copy = Object.assign(Object.create(Household.prototype), household) as Household;
+      copy.memberIds = [...new Set([...(previous?.memberIds ?? []), ...household.memberIds])];
+      houses.set(copy.id, copy);
+    }
+    return houses;
+  }
+
   /** IDs are global kin links. Foreign parents retain their child list without acquiring a second body owner. */
   private reconcileFamilyLinks(): void {
     const parked=this.frontier.toRecord().parked;

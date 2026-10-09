@@ -31,6 +31,8 @@ import { SuccessionOverlay } from './ui/Succession.ts';
 import { TechWebOverlay } from './ui/TechWeb.ts';
 import { WorldMapOverlay } from './ui/WorldMapView.ts';
 import { FamilyTreeOverlay } from './ui/FamilyTree.ts';
+import { RivalHouseOverlay } from './ui/RivalHouseView.ts';
+import './ui/RivalHouseView.css';
 import { TribeGraphOverlay } from './ui/TribeGraph.ts';
 import { PauseMenu } from './ui/PauseMenu.ts';
 import { SettingsOverlay } from './ui/Settings.ts';
@@ -305,6 +307,17 @@ const techWeb = new TechWebOverlay(document.body);
 // them, so opening a second cannot leave two stacked on screen at once.
 const familyTree = new FamilyTreeOverlay(document.body);
 const tribeGraph = new TribeGraphOverlay(document.body);
+const rivalHouses = new RivalHouseOverlay(document.body);
+const rivalButton = document.createElement('button');
+rivalButton.type = 'button';
+rivalButton.className = 'rivalhouses-trigger';
+rivalButton.dataset.rivalHouses = '';
+rivalButton.textContent = t('Rival households');
+rivalButton.addEventListener('click', () => openGraph('rivals', sim.player));
+document.body.appendChild(rivalButton);
+function rivalContext() { return { observer: sim.player!, householdsById: worldState.worldHouseholds(), peopleById: worldState.worldPeople(), relationships: sim.relationships }; }
+let rivalRefreshedAt = 0;
+
 // The globe: the fourth full-screen overlay, behind the same single door.
 const worldMap = new WorldMapOverlay(document.body, (action, edge) => {
   const actor = sim.player;
@@ -346,7 +359,7 @@ window.addEventListener('keydown', event => {
 
 /** True while any of the three full-screen graphs is open. */
 function graphOpen(): boolean {
-  return techWeb.isOpen || familyTree.isOpen || tribeGraph.isOpen || worldMap.isOpen;
+  return techWeb.isOpen || familyTree.isOpen || tribeGraph.isOpen || worldMap.isOpen || rivalHouses.isOpen;
 }
 
 /**
@@ -357,7 +370,8 @@ function graphOpen(): boolean {
  * the tech web was already up would otherwise leave both in the DOM, one
  * painted over the other.
  */
-function openGraph(which: 'tech' | 'family' | 'tribe' | 'globe', subject: Person | null): void {
+function openGraph(which: 'tech' | 'family' | 'tribe' | 'globe' | 'rivals', subject: Person | null): void {
+  if (which !== 'rivals' && rivalHouses.isOpen) rivalHouses.close();
   if (which !== 'globe' && worldMap.isOpen) worldMap.close();
   if (which !== 'tech' && techWeb.isOpen) techWeb.close();
   if (which !== 'family' && familyTree.isOpen) familyTree.close();
@@ -367,6 +381,7 @@ function openGraph(which: 'tech' | 'family' | 'tribe' | 'globe', subject: Person
   if (which === 'tribe') tribeGraph.toggle(sim, subject);
   // The globe is the player's own character's knowledge, whoever is selected.
   if (which === 'globe') worldMap.toggle(sim, worldState.geography);
+  if (which === 'rivals' && sim.player) { if (rivalHouses.isOpen) rivalHouses.close(); else rivalHouses.open(rivalContext()); }
 }
 
 // On the body for the same reason as the radial menu: the HUD rebuilds its own
@@ -2595,6 +2610,9 @@ function frame(now: number): void {
   familyTree.update(sim);
   tribeGraph.update(sim);
   worldMap.update(sim);
+  rivalButton.hidden = !sim.player;
+  rivalButton.textContent = t('Rival households');
+  if (rivalHouses.isOpen && sim.player && now - rivalRefreshedAt >= 250) { rivalHouses.update(rivalContext()); rivalRefreshedAt = now; }
   const journey = worldState.frontier.pendingJourney;
   journeyStatus.hidden = !journey;
   if (journey) {

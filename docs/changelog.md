@@ -1,3 +1,7 @@
+## 2026-10-09 — M15 fase 36e: casas rivales entre comarcas
+
+La vista conserva casas y nombres conocidos tras viajar y filtra datos privados con Knowledge. Un regreso fusiona la memoria de enemistades llevada por el hogar sin sumar dos veces la historia previa. Prueba de regreso pasa; E2E del botón y archivo pasa 1/1. Captura revisada: artifacts/screenshots/m15-phase36-rival-integrated-2026-10-09/01-rival-from-origin-archive.png. Versión 0.15.3-alpha. [Contrato](m15_phase36_rival.md). Verificación conjunta pendiente.
+
 ## 2026-10-09 — M15 fase 36a: noticias transportadas por personas
 
 Los robos conservan comarca, testigo, fuente y confianza en el registro personal. Viajar no difunde noticias: un relato real las entrega después de cruzar, aunque el culpable permanezca archivado en origen. Guardado y viaje ejercitados: 20/20 pruebas focales pasan. Versión 0.15.2-alpha. [Contrato](m15_phase36_news.md). Verificación conjunta pendiente; no cambia UI.

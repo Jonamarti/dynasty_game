@@ -67,6 +67,51 @@ describe('canonical traveler ownership', () => {
   });
 });
 
+describe('household history on a return crossing', () => {
+  it('merges carried rivalries into the returning family without rewriting either archive or another house', () => {
+    const home = new Simulation({ seed: 'return-household-feud-home', world: { width: 32, height: 32 }, population: { bands: 1, peoplePerBand: 6 } });
+    const away = new Simulation({ seed: 'return-household-feud-away', world: { width: 32, height: 32 }, population: { bands: 0 } }, home.ids);
+    for (const sim of [home, away]) { sim.world.walkable.fill(1); sim.world.biome.fill(2); sim.world.elevation.fill(1); }
+    const traveller = home.livingPeople()[0]!;
+    const household = home.householdsById.get(traveller.householdId!)!;
+    const rival = home.households.find(candidate => candidate.id !== household.id)!;
+    const oldSuspect = rival.headId;
+    const carriedSuspect = rival.memberIds.find(id => id !== oldSuspect) ?? oldSuspect;
+    const newRivalId = 900_001;
+    const oldScore = 20;
+
+    household.feud.set(rival.id, oldScore);
+    household.feudSuspects.set(rival.id, oldSuspect);
+    rival.feud.set(900_002, 8);
+    rival.feudSuspects.set(900_002, rival.headId);
+
+    home.transferTravellersTo(away, [traveller.id], 'w');
+    const carried = away.householdsById.get(household.id)!;
+    expect(carried).not.toBe(household);
+    expect(carried.feud).not.toBe(household.feud);
+    carried.feud.set(rival.id, 55);
+    carried.feudSuspects.set(rival.id, carriedSuspect);
+    carried.feud.set(newRivalId, 35);
+    carried.feudSuspects.set(newRivalId, carriedSuspect);
+
+    away.transferTravellersTo(home, [traveller.id], 'e');
+
+    const returned = home.householdsById.get(household.id)!;
+    expect(returned).toBe(household);
+    expect(returned.feud.get(rival.id)).toBe(55);
+    expect(returned.feudSuspects.get(rival.id)).toBe(carriedSuspect);
+    expect(returned.feud.get(newRivalId)).toBe(35);
+    expect(returned.feudSuspects.get(newRivalId)).toBe(carriedSuspect);
+    // Merging changes the active home record, but never the carried source
+    // snapshot or a different household's ledger.
+    expect(carried.feud.get(rival.id)).toBe(55);
+    expect(carried.feud.has(newRivalId)).toBe(true);
+    expect(rival.feud.get(900_002)).toBe(8);
+    expect(rival.feud.has(newRivalId)).toBe(false);
+    expect(rival.feudSuspects.get(900_002)).toBe(rival.headId);
+  });
+});
+
 describe('transport traveller preflight', () => {
   it('rejects an animal ID collision before changing rosters, households, or cargo', () => {
     const source = new Simulation({ seed: 'transport-transfer-source', world: { width: 48, height: 48 }, population: { bands: 1, peoplePerBand: 4 } });

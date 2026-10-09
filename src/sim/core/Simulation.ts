@@ -998,6 +998,12 @@ export class Simulation {
         destination.households.push(move.destination);
         destination.householdsById.set(move.destination.id, move.destination);
       } else {
+        // The same family can have met new rivals while away. The returning
+        // fragment carries that memory; dropping it here made a feud vanish
+        // exactly when the family came home. Merge only this household's ledger
+        // into its existing destination record, leaving the origin archive and
+        // every other household untouched.
+        mergeHouseholdFeudHistory(move.destination, move.source);
         for (const member of move.members) {
           if (!move.destination.memberIds.includes(member.id)) move.destination.add(member.id);
           move.source.remove(member.id);
@@ -6823,6 +6829,27 @@ export class Simulation {
 }
 
 export { telemetry };
+
+/**
+ * Reconcile the family memory carried home with its older comarca record.
+ * Feud weights begin as copies at departure, so max keeps both sides' later
+ * discoveries without double-counting the shared pre-split grievance.
+ */
+function mergeHouseholdFeudHistory(destination: Household, carried: Household): void {
+  if (destination === carried) return;
+  for (const [rivalId, carriedWeight] of carried.feud) {
+    const previousWeight = destination.feud.get(rivalId);
+    const carriedIsAtLeastAsStrong = previousWeight === undefined || carriedWeight >= previousWeight;
+    if (previousWeight === undefined || carriedWeight > previousWeight) {
+      destination.feud.set(rivalId, carriedWeight);
+    }
+    const carriedSuspect = carried.feudSuspects.get(rivalId);
+    if (carriedSuspect !== undefined &&
+        (carriedIsAtLeastAsStrong || !destination.feudSuspects.has(rivalId))) {
+      destination.feudSuspects.set(rivalId, carriedSuspect);
+    }
+  }
+}
 
 function copyHouseholdForTravel(source: Household, memberIds: number[]): Household {
   const next = Object.assign(Object.create(Object.getPrototypeOf(source)), source) as Household;

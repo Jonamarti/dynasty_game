@@ -297,4 +297,10 @@ export const ES_UI: Record<string, string> = {
   "assault": "una agresión",
   "killed": "mató a",
   "raised": "levantó",
+  "Rival households": "Casas rivales",
+  "A rival household": "Una casa rival",
+  "Your household has no recorded rival houses.": "Tu casa no tiene casas rivales registradas.",
+  "Known people: {names}": "Personas conocidas: {names}",
+  "No names from this household are known to you.": "No conoces el nombre de nadie de esta casa.",
+  "Your family remembers an open feud.": "Tu familia recuerda una enemistad abierta.",
 };

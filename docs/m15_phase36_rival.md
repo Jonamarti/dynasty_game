@@ -1,0 +1,15 @@
+# M15 fase 36e: continuidad de casas rivales en la vista
+
+**2026-10-09.** La vista recoge las casas que la casa del jugador conserva en su libro `Household.feud`; ese libro y `feudSuspects` ya pertenecen a `HouseholdRecord`. No se añadió un segundo codec. El contexto UI acepta los mapas canónicos que resuelve `WorldState` para personas y hogares activos, en tránsito o archivados, así el identificador de la casa enemistada sigue resolviendo al cambiar de comarca.
+
+El proyector muestra la relación abierta que recuerda la familia. Cada nombre de una persona pasa por `knowledgeOfPerson` del observador; una casa sin nombres conocidos conserva una etiqueta genérica. No muestra apellido de `Household`, riqueza, domicilio, carácter, ni miembros desconocidos de la casa rival. Tampoco consulta el libro de enemistad del rival: el panel representa lo que queda en el libro de la propia familia.
+
+`RivalHouseOverlay` ofrece `open(context)`, `update(context)` y `close()`. La llamada de actualización puede ocurrir en cada frame; un digest evita volver a construir el DOM mientras su contenido no cambie. El CSS suplementario vive en `src/ui/RivalHouseView.css`; la integración añade el botón y los estilos globales.
+
+La prueba focal comprueba el velo de nombres, los nombres permitidos por Knowledge, la identidad tras serializar el `HouseholdRecord` existente, el libro archivado cuando la entidad rival no está disponible momentáneamente y la exclusión de enemistades ajenas. El E2E abre la vista desde el botón del juego tras un viaje a otra comarca y comprueba que la casa y el miembro nombrado siguen resolviéndose desde el archivo de origen. Captura: `artifacts/screenshots/m15-phase36-rival-integrated-2026-10-09/01-rival-from-origin-archive.png`.
+
+Al regresar a una comarca con un fragmento de la misma casa, `Simulation.transferTravellersTo` reconcilia cada enemistad con el peso máximo entre el registro local y el que trae el grupo. Al partir, ambos lados heredan el mismo peso; sumarlo duplicaría la historia compartida. Se adopta el sospechoso del grupo cuando su peso es igual o mayor, y nunca se escribe en el libro de la casa rival ni en el fragmento fuente. La prueba sale, añade un agravio y una sospecha, vuelve, y comprueba tanto el registro activo fusionado como las copias ajenas intactas.
+
+El modelo actual no fecha ni degrada el peso de una enemistad: se cierra por los caminos explícitos existentes (amends, gift o trade). Sin IDs de eventos por agravio, dos ramas no pueden sumar con precisión los hechos nuevos ocurridos en ambas; max conserva el historial más fuerte sin duplicar lo heredado. No se introduce una regla nueva de decaimiento en esta entrega.
+
+La continuidad resuelve datos históricos; no activa una simulación completa fuera de la comarca ni autoriza a mostrar estados privados que el personaje no haya aprendido.

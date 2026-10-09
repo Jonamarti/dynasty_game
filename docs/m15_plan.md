@@ -3470,7 +3470,9 @@ El ticket abstracto guarda partida, destino canónico, fechas, carga, comida, st
 
 ## Fase 36 — Noticias, comercio y caravanas (M14 fase 18)
 
-**Avance 2026-10-09, 36a.** Noticias personales con origen y procedencia; un viaje real prueba que solo un relato transmite el robo al pasajero. Archivo del culpable resuelto sin modificarlo. 20/20 pruebas focales pasan. Ver [contrato](m15_phase36_news.md). 36c–e en curso; verificación conjunta pendiente.
+**Avance 2026-10-09, 36a.** Noticias personales con origen y procedencia; un viaje real prueba que solo un relato transmite el robo al pasajero. Archivo del culpable resuelto sin modificarlo. 20/20 pruebas focales pasan. Ver [contrato](m15_phase36_news.md). 36c–d en curso; verificación conjunta pendiente.
+
+**Avance 2026-10-09, 36e.** Botón de casas rivales, archivo mundial filtrado por Knowledge y memoria familiar llevada al regresar. E2E integrado pasa 1/1 y captura en artifacts/screenshots/m15-phase36-rival-integrated-2026-10-09/. [Contrato](m15_phase36_rival.md).
 
 **Detalle en `m14_plan.md` fase 18.** Las noticias viajan con la gente;
 `trade` (el nodo de M8.2 que nunca llegó a `TECHS`, práctica neolítica que
