@@ -44,6 +44,14 @@ export interface CompactBodyEnv {
   readonly buildings?: readonly Building[];
   readonly hooks?: NeedsHooks;
   /**
+   * Optional finite-band intake. The measured plan's relief is only a request; this callback returns what
+   * the band can actually supply. Without it, the existing CompactIntake path remains unchanged.
+   */
+  readonly ration?: (compact: CompactPerson, tick: number, requestedHungerRelief: number, requestedThirstRelief: number) => {
+    readonly hunger: number;
+    readonly thirst: number;
+  };
+  /**
    * Eating and drinking from measured rates (CompactIntake.ts). Without it the body
    * is the closed one of the first commit: needs only climb. `capacity` is the band's
    * aggregate capacity for this person (how often a hungry day brings nothing), read by
@@ -113,9 +121,22 @@ export class CompactBody {
         }
       }
       this.system.update(people, this.clock, buildings, undefined, this.env.hooks);
-      if (intake && person.alive && compact.intake) {
-        // Relief in proportion to this tick's nominal drift (not the observed change: a need
-        // pinned at 100 does not rise, and must still be able to come back down).
+      if (person.alive && this.env.ration) {
+        // The measured plan asks for relief; the band's daily ledger decides how much resource exists.
+        // With no measured intake configured there is no request, so the callback cannot create food.
+        const hungerDrift = this.env.needs.hungerRate * (this.env.hooks?.hungerFactor?.(person) ?? 1);
+        const thirstDrift = thirstDriftPerTick(this.env.needs, person.action, this.clock.temperature);
+        const requestedHunger = intake && compact.intake ? compact.intake.hunger * hungerDrift : 0;
+        const requestedThirst = intake && compact.intake ? compact.intake.thirst * thirstDrift : 0;
+        const relief = this.env.ration(compact, tick, requestedHunger, requestedThirst);
+        if (!relief || !Number.isFinite(relief.hunger) || relief.hunger < 0 || relief.hunger > requestedHunger ||
+            !Number.isFinite(relief.thirst) || relief.thirst < 0 || relief.thirst > requestedThirst) {
+          throw new RangeError('compact ration callback returned relief outside its request');
+        }
+        person.needs.hunger = Math.max(0, person.needs.hunger - relief.hunger);
+        person.needs.thirst = Math.max(0, person.needs.thirst - relief.thirst);
+      } else if (intake && person.alive && compact.intake) {
+        // Keep the phase-32b measured intake path exactly when no finite-band callback is installed.
         const hungerDrift = this.env.needs.hungerRate * (this.env.hooks?.hungerFactor?.(person) ?? 1);
         const thirstDrift = thirstDriftPerTick(this.env.needs, person.action, this.clock.temperature);
         person.needs.hunger = Math.max(0, person.needs.hunger - compact.intake.hunger * hungerDrift);

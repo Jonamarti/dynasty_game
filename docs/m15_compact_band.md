@@ -91,3 +91,17 @@ Hitos visuales, sin cambio de UI: las dos giras se guardan por separado en
 
 Los logs de verificación están en `artifacts/m15-compact-band-tests-20261009.log`
 y `artifacts/m15-compact-band-simcheck-20261009.log` (artefactos locales ignorados).
+
+## Ingesta finita de personas — 2026-10-09
+
+`CompactBandIntake` reparte presupuestos explícitos de comida y agua entre IDs
+reales. `CompactBody` pide el alivio de su tabla medida después de actualizar
+necesidades; el callback devuelve como máximo esa petición y la cuota restante.
+Sin comida aumenta el hambre; sin una fuente de agua aumenta la sed. Una fuente
+ilimitada necesita declaración explícita. No se concede alivio sin `IntakeModel`.
+
+La fecha es `floor((tick - 1) / ticksPerDay)`. Abrir de nuevo el mismo día se
+rechaza; el registro JSON conserva cuotas y consumos a mitad de jornada. Sin
+callback se conserva el comportamiento anterior del cuerpo compacto.
+Pruebas focales de ingesta y cuerpos: 20/20; typecheck limpio. Hito visual sin
+cambio de UI: `artifacts/screenshots/m15-band-intake-2026-10-09T-01/`.

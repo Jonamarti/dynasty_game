@@ -1,3 +1,8 @@
+## 2026-10-09 — M15 1c: ingesta finita ligada al cuerpo
+
+`CompactBandIntake` limita el alivio real de hambre y sed por cuotas explícitas de cada persona. Evita que la tabla de ingesta alimente por encima de lo producido; agua ausente significa sed, y agua ilimitada exige una fuente declarada. Callback opcional en `CompactBody`, con peticiones y respuestas validadas; sin callback mantiene el comportamiento anterior. JSON estricto conserva consumos y rechaza reiniciar el mismo día.
+
+20/20 pruebas focales (cuerpo, ingesta medida y cuotas) y typecheck limpio. Hito `artifacts/screenshots/m15-band-intake-2026-10-09T-01/`, sin cambio de UI. Plan/contrato actualizados; integración global de 1c en curso. Cohortes y matriz pesada diferidas por AGENTS.md, sin afirmar mejora económica. Los fallos heredados de correspondencia, difusión, dieta y rendimiento siguen registrados por separado.
 ## 2026-10-09 — M15 paso 1c: calendario de reservas compacto
 
 Segunda funcionalidad: `CompactBandCalendar` liquida días completos con `TimeManager` y lee la estación del día terminado, conserva el tick parcial en JSON y rechaza fechas incoherentes. Las jornadas se preparan antes de confirmar el reloj y el stock: un fallo del lector puro de oferta permite repetir sin duplicar comida ni retiradas; protección de reentrancia y snapshots independientes. Sin RNG, UI ni integración en `Simulation`.
@@ -13805,3 +13810,4 @@ Nuevo: `compact-correspondence craft/delta`, diferencia de hambre 23,401,
 límite declarado ≤15. No se ha relajado el límite ni recalibrado su tabla;
 queda pendiente para M16. Recogida, alimentación y lectura pasan en esta
 repetición. La suite no está verde. Resultado: `commitment-final-tests.txt`.
+
