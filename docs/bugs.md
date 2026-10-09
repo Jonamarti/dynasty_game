@@ -4546,3 +4546,24 @@ conserva los cuantiles de ración `qf` de `MEASURED_RATES` (alpha/beta/gamma,
 exacta la nueva distribución de ingesta. Esto es un supuesto identificado,
 no una causa demostrada del diferencial de 23,401; la medición posterior a B
 corresponde a M16 y queda diferida.
+
+### 2026-10-09 — Ingesta de banda: límites antes de activar el puente
+
+El motor 1c está implementado y mantiene presupuestos finitos, pero el informe
+`m15_compact_food_rates_20261009.json` es una sola semilla de primavera/verano,
+sin técnicas iniciales. Los rendimientos son por trabajo productivo y excluyen
+viaje/búsqueda; cinco presas no calibran caza estacional. No extrapolar esas
+tasas ni la fuente de agua a todas las comarcas. La ingesta infantil necesita
+medición propia: sus puntos de hambre usan el reloj de tomas de Nursing y no
+son una observación de comida sólida retirada. No se ha medido todavía una
+conversión/flujo de leche compacto con correspondencia detallada; usar los
+factores familiares compartidos no demuestra esa equivalencia. Requiere la
+puerta de paso 4 antes de activar el compacto general, sin relajar tolerancias.
+
+El puente de fase 34 tampoco existe todavía: un runtime nuevo inicia en frontera
+diaria; su snapshot sí conserva cualquier tick posterior. La transferencia
+inicial parcial, stock materializado, perfiles corregidos por TileLedger y
+propiedad exclusiva son obligaciones del coordinador, no efectos de crear el
+motor. Políticas externas (oferta, agua, edificios, contactos, IntakeModel) deben
+restaurarse equivalentes; sus closures no se serializan. El stock agregado no
+puede coexistir con sus objetos de origen. No se afirma mejora económica.

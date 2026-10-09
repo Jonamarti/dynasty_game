@@ -17,3 +17,14 @@
   individuos domésticos con especie, sexo/edad y animación de yunta.
 
 Detalle funcional y resultados: [m15_phase40_iron.md](m15_phase40_iron.md).
+
+### 2026-10-09 — Tras implementar el motor compacto de banda
+
+Medición corta reproducible: `tools/compact-food-rates.ts`, informe
+`m15_compact_food_rates_20261009.json`: raciones por jornada productiva, no por
+habitante ni por jornada con viaje. Conserva n/a estacional y contexto real;
+no usarla como pronóstico por bioma. Calibración pendiente de LOD paso 4:
+reservas/ingesta, flujo de leche (el reloj de hambre infantil no mide calorías
+retiradas), agua y fuentes por estación, con negativos contra el detallado.
+Las cohortes y matriz pesada permanecen diferidas hasta autorización expresa;
+los fallos craft/delta y difusión ya documentados no se convierten en pases.

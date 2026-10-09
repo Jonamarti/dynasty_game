@@ -89,4 +89,75 @@ describe('compact band life', () => {
     w.roster[0]!.lastAdvancedTick = 0;
     expect(() => advanceCompactBandLife(w.roster, w.ctx)).toThrow(/not advanced/);
   });
+  it('does not conceive by a spouse who already died in the same boundary, and retains the dead archive record', () => {
+    const w = world();
+    w.mother.pregnant = false;
+    w.mother.gestationLeft = 0;
+    w.mother.pregnantBy = null;
+    w.father.die('hunger');
+    const ctx = { ...w.ctx, population: { ...w.ctx.population, conceptionChance: 1 } };
+    const result = advanceCompactBandLife(w.roster, ctx);
+    expect(w.mother.pregnant).toBe(false);
+    expect(result.newborns).toHaveLength(0);
+    expect(result.events).toHaveLength(0); // the body advance owns the death event
+    expect(ctx.peopleById.get(w.father.id)).toBe(w.father);
+    expect(w.father.alive).toBe(false);
+  });
+
+  it('keeps the shared-roof conception gate and resumes conception after hunger clears', () => {
+    const roofless = world();
+    roofless.mother.pregnant = false;
+    roofless.mother.gestationLeft = 0;
+    roofless.mother.pregnantBy = null;
+    const certain = { ...roofless.ctx, population: { ...roofless.ctx.population, conceptionChance: 1 }, roofTonight: new Map() };
+    advanceCompactBandLife(roofless.roster, certain);
+    expect(roofless.mother.pregnant).toBe(false);
+
+    const recovering = world();
+    recovering.mother.pregnant = false;
+    recovering.mother.gestationLeft = 0;
+    recovering.mother.pregnantBy = null;
+    recovering.mother.needs.hunger = 140;
+    const ctx = { ...recovering.ctx, population: { ...recovering.ctx.population, conceptionChance: 1 } };
+    const hungry = advanceCompactBandLife(recovering.roster, ctx);
+    expect(recovering.mother.pregnant).toBe(false);
+
+    recovering.mother.needs.hunger = 0;
+    const nextRoster = recovering.roster.map(compact => ({ ...compact, lastAdvancedTick: 2 }));
+    const next = advanceCompactBandLife(nextRoster, {
+      ...ctx, ledger: hungry.ledger, tick: 2, day: 2,
+    });
+    expect(recovering.mother.pregnant).toBe(true);
+    expect(recovering.mother.pregnantBy).toBe(recovering.father.id);
+    expect(next.newborns).toHaveLength(0);
+  });
+
+  it('records real old-age deaths for both spouses and keeps them in the canonical person archive', () => {
+    const w = world();
+    w.mother.sex = 'male';
+    w.mother.pregnant = false;
+    w.mother.gestationLeft = 0;
+    w.mother.pregnantBy = null;
+    w.father.sex = 'male';
+    for (const person of [w.mother, w.father]) {
+      person.age = 60 * person.daysPerYear;
+      person.lifespanDays = 30 * person.daysPerYear;
+      person.health = 40;
+    }
+    const deathStream = (personId: number): RNG => {
+      for (let n = 0; ; n++) {
+        const seed = 'compact-life-death-' + personId + '-' + n;
+        if (new RNG(seed).next() < 0.5) return new RNG(seed);
+      }
+    };
+    const roster = w.roster.map(compact => ({ ...compact, rng: deathStream(compact.person.id) }));
+    const result = advanceCompactBandLife(roster, w.ctx);
+    expect(w.mother.alive).toBe(false);
+    expect(w.father.alive).toBe(false);
+    expect(result.events.map(event => [event.kind, event.subjectId, event.data.cause])).toEqual([
+      ['death', w.mother.id, 'old age'], ['death', w.father.id, 'old age'],
+    ]);
+    expect(w.ctx.peopleById.get(w.mother.id)).toBe(w.mother);
+    expect(w.ctx.peopleById.get(w.father.id)).toBe(w.father);
+  });
 });

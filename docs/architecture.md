@@ -1,6 +1,6 @@
 # Architecture
 
-Current as of 2026-10-07 (M15 continental water, geographic root records and iron blooms). No runtime
+Current as of 2026-10-09 (M15 off-map compact band engine). No runtime
 dependencies, Vite + a 2D canvas.
 
 ## Layout
@@ -27,35 +27,39 @@ tools/          simcheck (library) + headless / scenarios / seeds / why (CLIs);
 e2e/            Playwright smoke tests and screenshot tour
 ```
 
-## Planned simulation LOD — owner's decision, 2026-10-03
+## Simulation LOD — revised owner decision, 2026-10-08
 
-The current step still executes all living NPCs. Fog is not simulation LOD.
-The approved design limits full AI/actions to the selected NPC's vision and
-keeps everyone outside it evolving through compact individual/band records or
-aggregate peoples. The same rule applies to friendly and rival bands; observing
-one member must not activate the whole band. Selection is passed to simulation
-as an explicit focus id, independently of camera/rendering and without granting
-private knowledge. The scope, transition invariants, world evolution, calibration
-and implementation order live in [m15_simulation_lod.md](m15_simulation_lod.md).
+Every person inside the active map remains detailed; other bands may think less
+frequently. Camera and fog do not select simulation authority. Compact bands
+belong outside the active map. The revised order and transition invariants are
+in [m15_simulation_lod.md](m15_simulation_lod.md), section 0; it supersedes the
+older vision-radius design below that section.
 
-High simulation speeds may reduce drawing/HUD frame rate. All tiers keep the
-simulation clock, events and seeded RNG independent of presentation cadence.
-The benchmark must separate visible individuals, compact records and peoples;
-the previous 300 fully simulated humans measure the current cost, not the target
-architecture. This section describes planned work, not a shipped optimization.
+`compact/CompactBandRuntime.ts` implements the detached step-1c band engine.
+It advances the same named people through shared NeedsSystem and LifeSystem,
+with finite per-person food/water quotas, actual-day food settlement, and
+seasonal PeopleKnowledge assigned to living practitioners. Dead people remain
+in the canonical archive; births retain kin, household and stable ID allocation.
+`CompactBandProduction` shares one comarca's source ceilings across bands.
+`CompactBandFarming` uses real Crop/Soil; finite grain becomes food only through
+`CompactBandProcessing` and the existing groats recipe. Daily work across food,
+fields and milling cannot exceed the living adults' available ticks.
 
-`compact/CompactBandFood.ts` is the first revised step-1c economy component:
-its pure daily ledger caps explicit labor/rates by one comarca's seasonal
-resource potential, consumes production and finite stores, and records overflow
-loss and unmet demand. Its strict v1 JSON codec preserves dates and bounded
-stocks. `CompactBandCalendar` settles each elapsed day once on the real clock,
-using the preceding tick for its season; its composed JSON record preserves
-partial-day saves, and failed supply reads leave clock and stock unchanged.
-Harvest rates have no defaults: potential is not a measured worker yield.
-It is not wired into Simulation, CompactBody intake or off-map transitions;
-agriculture, demography and knowledge integration remain pending. See
-[m15_compact_band.md](m15_compact_band.md).
+The composed JSON snapshot owns roster/streams, canonical archives, kin/homes,
+IDs, life/knowledge ledgers, food/intake, fields/soil, milling progress and the
+pending day. Initial ownership starts at a daily boundary; subsequent saves
+may be at any tick. Clock/needs/demographic settings and seed must match after
+restore. External land, water, buildings, measured intake model and deterministic
+policy functions are supplied by the coordinator; they must be equivalent on
+restore. Food potential is not a worker yield and no harvest rate is inferred.
+`CompactFoodRateWatch` supplies short, opt-in observations without RNG draws;
+its current single-seed sample is not seasonal forecasting calibration.
 
+Simulation does not call this engine yet. Off-map authority transfer,
+TileLedger corrections and return-to-map materialisation are step 2/phase 34;
+this engine must not be run on a roster still owned by detailed Simulation.
+The final correspondence gate remains open (step 4), with inherited measured
+failures recorded separately. See [m15_compact_band.md](m15_compact_band.md).
 Phase 28 now has inert JSON graph snapshots in `persistence/EntityRecords.ts`.
 They preserve entity-owned state, class methods and internal aliases without
 constructors, ID allocation or RNG draws; the known belief callback is rebound

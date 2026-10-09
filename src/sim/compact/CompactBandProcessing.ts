@@ -37,10 +37,9 @@ export class CompactBandProcessing {
       day, grainConsumed, mealsProduced, nutritionProduced: mealsProduced * ITEMS.meal!.nutrition, workUsed, reason,
     });
     if (this.grain < recipe.ingredients.grain!) return report('no_grain');
-    const owners = new Set(people.filter(p => p.alive).map(p => p.bandId));
-    if (!buildings.some(b => b.complete && !b.ruined && b.def.id === recipe.station && owners.has(b.ownerBandId))) return report('no_station');
     const worker = [...people].filter(p => p.alive && p.years >= ADULT_YEARS && techPower(p, recipe.tech) > 0).sort((a, b) => a.id - b.id)[0];
     if (!worker) return report('no_practitioner');
+    if (!buildings.some(b => b.complete && !b.ruined && b.def.id === recipe.station && b.ownerBandId === worker.bandId)) return report('no_station');
     // Bank on the named practitioner: changing workers cannot turn a novice's hours into a master's batch.
     let banked = this.progress.get(worker.id) ?? 0;
     let remaining = workTicks;
@@ -76,4 +75,3 @@ export class CompactBandProcessing {
     return model;
   }
 }
-

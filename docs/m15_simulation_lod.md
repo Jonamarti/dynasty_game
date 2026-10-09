@@ -217,7 +217,7 @@ del paso. Análisis por funciones y plan en dos entregas (arreglos exactos de la
 búsqueda de recursos y la regla de compromiso del propietario) en
 [m15_brain_cost.md](m15_brain_cost.md).
 
-**Avance del paso 1 (2026-10-08).** 1a y 1b hechos; el 1c (modelo compacto) sigue pendiente. Ver el «Avance»
+**Avance del paso 1 (2026-10-09).** 1a y 1b hechos; implementación funcional del motor 1c reunida. Su activación por frontera corresponde al paso 2 y la puerta empírica/calibración al paso 4. Ver el «Avance»
 del §0.2: el mapa del globo es una comarca y el generador sigue al perfil.
 
 **Avance del paso 0 (2026-10-08).** Hecho: (A) el perfil atribuye todo el paso
@@ -510,3 +510,6 @@ Entrega 1c: procesamiento groats con receta/coste real, molino/practicante/ingre
 Entrega 1c: CompactBandProduction liquida bandas de una misma comarca con techo compartido por fuente, trabajo/técnicas, reparto explícito y fechas únicas. 7/7 pruebas pasan. El coordinador de borde agrupará por comarca en paso 2.
 
 Instrumento 1c: nutrición retirada/ticks productivos por fuente y CLI de una semilla corta, informe m15_compact_food_rates_20261009.json. No-efecto determinista comprobado; 15/15 focales pasan. Rates descriptivas, sin coeficientes por defecto ni calibración estacional; puerta de correspondencia pendiente de paso 4.
+
+
+**Cierre de implementación de 1c — 2026-10-09.** CompactBandRuntime compone ingesta finita, todos los cuerpos antes de LifeSystem, PeopleKnowledge por estación, campo/suelo y molienda reales, reserva del consumo aplicado, pérdidas y déficit visible en informes; mano de obra, techs e identidades limitadas al roster canónico. JSON guarda cuota/oferta pendiente, día parcial, archivos/parentesco/IDs/streams, cultivos, molino, configuraciones y fecha inicial tardía. Preparación del día transaccional; nuevas pruebas cubren origen tardío, fallos del allocator, muerte mid-day y cultivo/molienda/restore. No se activa Simulation ni se declara calibrada la puerta lod-matches-detail: frontera/TileLedger paso 2, correspondencia y leche/agua/estaciones paso 4. Ver contrato m15_compact_band.md y hallazgos bugs.md; cohortes y matriz pesada diferidas. Hito final: artifacts/screenshots/m15-band-runtime-2026-10-09T-01/.

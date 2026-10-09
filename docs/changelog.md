@@ -1,3 +1,12 @@
+## 2026-10-09 — M15 1c: motor integrado de banda fuera del mapa
+
+`CompactBandRuntime` reúne cuerpos con cuotas finitas, vida diaria sincronizada, conocimiento estacional, parcelas/suelo reales y molienda de grano. Cada jornada se prepara sobre clones antes de validar políticas y cuotas: un rechazo no practica habilidades ni gasta semillas gratis. La liquidación cobra lo aplicado a los cuerpos, conserva el presupuesto sin usar en reservas y registra demanda prevista, déficit y pérdidas. Limita conjuntamente trabajo de comida/campo/molino a los adultos vivos, técnicas a sus portadores vivos y población al roster real. Necesidades familiares usan los predicados y factores detallados; hambre cero de los tests no produce NaN. Molienda exige un molino de la banda del practicante, no el de un invitado.
+
+El JSON integral conserva personas/archivo canónico, hogares, relaciones, IDs, streams, calendario, alimento/cuotas, cultivo/suelo, molienda, vida/conocimiento y oferta pendiente. Guarda inicio tardío, valida configuraciones y estaciones, y restaura una muerte a mitad del día sin borrar su cuota previa. Pruebas cubren nacimiento/envejecimiento, muerte real de sed/hambre, falta de molino, cultivo a molienda y alimento con guardado parcial, rollback del asignador, límites de labor/técnicas y snapshots corruptos.
+
+Verificación final estable: TypeScript limpio; 73/73 pruebas de los doce módulos 1c. Suite completa: 231 archivos, 1.740 pasan, una omitida y solo dos fallos heredados: craft/delta (diferencia de hambre 23,401 frente a ≤15) y difusión (0,81 frente a <0,6). La primera pasada durante integración tenía además dos casos nuevos fallidos (presupuesto laboral del fixture agrícola y carga tardía); corregidos y repetida la suite completa, desaparecen. No se relajaron tolerancias. `sim:check` de una semilla mantiene dieta y rendimiento, 2/147 fallos heredados. Logs finales: `artifacts/m15-band-phase-final-tests-20261009.log` y `artifacts/m15-band-phase-simcheck-20261009.log`.
+
+Gira final 1/1, trece capturas nuevas en `artifacts/screenshots/m15-band-runtime-2026-10-09T-01/`; imagen de arranque revisada. No cambia la UI. Docs de contrato, arquitectura, plan, próximos pasos, bugs y M16 actualizadas. Implementación funcional del paso 1c reunida; Simulation aún no activa el motor. Sigue paso 2/fase 34: autoridad, primera jornada parcial, materialización del stock y perfil corregido por TileLedger. La correspondencia empírica, estaciones/agua y flujo de leche siguen pendientes del paso 4; la medición corta no los calibra. Cohortes y matriz pesada diferidas por AGENTS.md, sin declarar mejora económica. Cambios previos del usuario en `notes_for_m15.txt` y `debug.log` quedan fuera.
 ## 2026-10-09 — M15 1c: observar cosecha por fuente sin alterar el mundo
 
 Contadores optativos en ActionSystem registran nutrición retirada y ticks productivos de recolección, pesca y caza. El reporte `CompactFoodRateWatch` convierte nutrición a raciones, conserva cobertura n/a, contexto climático/técnico y exposición de todas las edades. La CLI `tools/compact-food-rates.ts` reproduce una semilla corta; resultado guardado en `m15_compact_food_rates_20261009.json`. Los eventos de pesca son eventos, no unidades; la carne gross yield se distingue de lo realmente llevado.
@@ -13840,10 +13849,3 @@ Nuevo: `compact-correspondence craft/delta`, diferencia de hambre 23,401,
 límite declarado ≤15. No se ha relajado el límite ni recalibrado su tabla;
 queda pendiente para M16. Recogida, alimentación y lectura pasan en esta
 repetición. La suite no está verde. Resultado: `commitment-final-tests.txt`.
-
-
-
-
-
-
-

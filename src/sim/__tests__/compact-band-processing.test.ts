@@ -15,6 +15,17 @@ function fixture() {
 }
 const wire = <T>(x: T): T => JSON.parse(JSON.stringify(x));
 describe('compact grain processing', () => {
+  it('does not borrow another band station merely because its owner is present', () => {
+    const { p, quern } = fixture();
+    const guest = new Person('Guest', 0, 0, 1, new RNG('guest'), 360, new IdSpace());
+    guest.age = 30 * 360;
+    quern.ownerBandId = 1;
+    const mill = new CompactBandProcessing(0, 3);
+    expect(mill.advanceDay(1, 999, [p, guest], [quern]).reason).toBe('no_station');
+    expect(mill.grainStock).toBe(3);
+    p.knownTech.delete('grinding');
+    expect(mill.advanceDay(2, 999, [p], [quern]).reason).toBe('no_practitioner');
+  });
   it('uses real ingredients, skill cost and output nutrition rather than feeding raw grain', () => {
     const { p, quern } = fixture();
     const mill = new CompactBandProcessing(0, 6);

@@ -1,8 +1,8 @@
 # M15 paso 1c — Economía de banda fuera del mapa
 
 2026-10-09. Orden vigente: [m15_simulation_lod.md](m15_simulation_lod.md),
-§0.5, revisión del propietario del 2026-10-08. Esta entrega empieza 1c;
-no cierra el modelo compacto ni activa la salida del mapa de fase 34.
+§0.5, revisión del propietario del 2026-10-08. Entrega funcional del motor 1c;
+no activa la salida del mapa de fase 34 ni declara calibrada la correspondencia.
 
 ## Contabilidad diaria
 
@@ -28,7 +28,7 @@ pérdida + reservas finales`. El déficit es `demanda - consumido`.
 El estado y los resultados son nuevos objetos; ningún argumento se modifica.
 El registro JSON v1 conserva fecha, reservas y capacidad y rechaza corrupción.
 
-## Límites de esta entrega
+## Límites de las entregas iniciales (food/calendar)
 
 La contabilidad no avanza cuerpos, concede técnicas, construye almacenes ni
 registra personas en una `Simulation`. La autoridad de personas sigue en
@@ -38,7 +38,7 @@ Los campos cultivados necesitan su propia producción medida; `arable` y
 `cultivable` no dicen cuántas raciones se cosechan. No hay agricultura inferida.
 La pérdida del excedente sin espacio no es deterioro del stock almacenado.
 
-Sigue pendiente conectar el déficit a ingesta finita de los cuerpos, avanzar
+En aquellas primeras entregas faltaba conectar el déficit a ingesta finita de los cuerpos, avanzar
 demografía y técnicas, aplicar las modificaciones de `TileLedger` y medir
 `lod-matches-detail`. El `IntakeModel` antiguo no puede alimentar por encima
 de este presupuesto; conectarlos sin ese límite duplicaría la comida.
@@ -75,7 +75,7 @@ Hitos visuales, sin cambio de UI: las dos giras se guardan por separado en
 `artifacts/screenshots/m15-compact-band-food-2026-10-09T-01/` y
 `artifacts/screenshots/m15-compact-band-calendar-2026-10-09T-01/`.
 
-## Verificación conjunta — 2026-10-09
+## Verificación de food/calendar antes del motor — 2026-10-09
 
 - TypeScript limpio; 15/15 pruebas nuevas (10 ledger, 5 calendario).
 - Techo de potencial eliminado temporalmente: cuatro pruebas iniciales fallan;
@@ -194,3 +194,84 @@ invierno y técnicas iniciales no están cubiertos. `n/a` conserva esa ausencia.
 No se convierte este informe en coeficientes estacionales ni en un pronóstico.
 Quince pruebas focales incluyen conversión, overflow y mundo idéntico con/sin
 telemetry. Hito: `artifacts/screenshots/m15-band-food-rates-2026-10-09T-01/`.
+
+
+## Motor conjunto y contrato de coordinación — 2026-10-09
+
+`CompactBandRuntime` compone el paso 1c fuera de `Simulation`. Tiene una banda,
+las personas canónicas y un calendario. Por jornada prepara una sola oferta,
+reserva cuotas finitas, avanza todos los cuerpos en orden estable de ID,
+liquida el consumo efectivamente aplicado y ejecuta vida diaria después de
+sincronizar todos los cuerpos. Al cerrar estación avanza PeopleKnowledge una
+vez; devuelve eventos de conocimiento además de los de muerte/nacimiento.
+
+El presupuesto inicial usa el ledger de comida para limitar cuotas. A medianoche
+se liquida contra `foodUsed / RATION_NUTRITION`: lo que nadie usó permanece en
+reserva, y el excedente de producción se guarda o se registra como pérdida.
+`plannedDemand` y `unmetDemand` conservan la demanda original junto al consumo
+real. La cuota pagada mide alivio solicitado, no nutrición absorbida después
+del clamp del cuerpo; una persona saciada puede desperdiciar parte de ella.
+
+Campos y molienda se preparan sobre clones. Solo tras validar la oferta y las
+cuotas se confirman semillas, trabajo y práctica de habilidades. Un fallo del
+planificador puro permite repetir sin practicar gratis ni gastar dos veces.
+El presupuesto combinado de jornadas de comida y ticks de campo/molienda no
+supera los adultos vivos; la oferta debe declarar la población real y técnicas
+que todavía sostiene alguien vivo. El hambre y la sed llegan a NeedsSystem y
+matan realmente, sin reducción automática de población por fórmula.
+
+El snapshot incluye personas, archivo canónico, hogares, relaciones, IDs,
+streams, calendario, reservas/cuotas, conocimiento/vida, cultivos/suelo,
+molienda y oferta pendiente. Valida fechas, versiones, configuraciones,
+semilla, IDs y la única copia canónica de cada persona. Las cuotas de alguien
+que murió durante la jornada permanecen guardadas; el muerto no las consume.
+`startTick` permite comenzar en una frontera diaria tardía sin fingir que ese
+motor ya había avanzado la partida desde cero. El ledger de conocimiento se
+inicializa con la última estación global completada, no con una fecha local.
+
+Las políticas se suministran explícitamente: perfil corregido, tasas medidas,
+reparto, agua, trabajo, edificios y contactos. Deben ser deterministas/puras y
+leer el roster que recibe el callback; una closure que retenga personas viejas
+tras restore no cumple el contrato. La tabla de IntakeModel y estos servicios
+externos deben ser equivalentes al restaurar. No hay producción por omitir una
+tasa, fuentes de agua inventadas, campos creados de `arable` ni técnicas globales.
+El stock inicial debe haber sido extraído de sus inventarios físicos por el
+coordinador: estos rations no representan además una segunda pila de objetos.
+
+El coordinador de paso 2 reunirá bandas por comarca antes de llamar producción,
+corregirá el perfil con TileLedger y transferirá autoridad/materiales una sola
+vez. La creación de un runtime nuevo necesita frontera diaria; el puente tendrá
+que resolver la primera jornada parcial sin regalar un día de producción.
+Los guardados posteriores ya admiten cualquier tick. Este motor detached no
+puede ejecutarse a la vez que Simulation sobre las mismas personas.
+
+Implementación funcional de 1c reunida. La puerta empírica `lod-matches-detail`
+y la calibración estacional de oferta siguen en paso 4; la medición corta no
+resuelve esos requisitos. No se declara mejora económica. Las cohortes y la
+matriz pesada se difieren según AGENTS.md.
+
+Los factores familiares de NeedsSystem se suministran por defecto desde
+`CompactBandNeeds`: predicados vivos de lactancia, reloj de hambre infantil y
+fatiga de bebé en brazos. El nacimiento/defunción cambia la lectura del mapa
+canónico inmediatamente; no se guarda una bandera de leche que sobreviva a su
+bebé. Los tests con hungerRate cero mantienen drift cero sin `0 * Infinity`.
+Esto comparte el reloj fisiológico, pero **no calibra un flujo de leche** ni
+su conversión a presupuesto material: la correspondencia infantil se conserva
+como hallazgo pendiente en bugs/M16 y la puerta del paso 4.
+
+
+## Verificación final del motor — 2026-10-09
+
+- TypeScript limpio; conjunto 1c: 73/73 en doce archivos.
+- Suite final completa: 231 archivos, 1.740 pasan, una omitida y dos fallos
+  heredados (craft/delta: hambre 23,401 >15; difusión: 0,81 ≥0,6).
+  La pasada anterior durante integración tenía dos fallos nuevos; corregidos,
+  se repitió la suite completa sobre el estado estable. No quedan esos fallos.
+- `sim:check` una semilla: dieta y rendimiento siguen fallando (2/147), como
+  al empezar. n/a no se interpreta como pase y no se cambian umbrales.
+- Gira final 1/1; trece capturas en
+  `artifacts/screenshots/m15-band-runtime-2026-10-09T-01/`, sin cambio de UI.
+- Logs: `artifacts/m15-band-phase-final-tests-20261009.log` y
+  `artifacts/m15-band-phase-simcheck-20261009.log` (locales ignorados).
+- Cohortes/matriz pesada diferidas. No se declara mejora económica ni puerta
+  de correspondencia calibrada; las obligaciones de paso 2/4 están arriba.
