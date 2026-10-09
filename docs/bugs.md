@@ -4584,3 +4584,13 @@ se compara todavía el IdSpace raíz contra IDs de todas las comarcas guardadas.
 Esos registros son historia inerte, no entidades ejecutadas: el coordinador
 deberá comprobar/reservar identidades antes de insertarlas y validar identidad
 del contenido geográfico si se admiten atlas modificados bajo el mismo ID.
+
+## M15 fase 34: raciones agregadas y bienes tipados (2026-10-09)
+
+El escrow físico conserva alimentos/materiales/carry, pero CompactBandRuntime
+sigue guardando reservas como raciones agregadas. Para regresar debe descontar
+consumos del portfolio tipado mediante una política explícita, sin recrear
+objetos genéricos que pierdan nutrición/hidratación. El escrow no avanza la
+pudrición fuera del mapa. Su guard de retorno único es local a un packet; una
+copia JSON reutilizable requiere deduplicación en la autoridad persistida del
+coordinador. No conectar ambos saldos como si fueran dos reservas de comida.

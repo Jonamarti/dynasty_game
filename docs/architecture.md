@@ -756,3 +756,10 @@ limited by elapsed ownership. Calendar v2 retains `dayStartTick` and reads v1;
 runtime v1 derives duration from `startTick` and the pending period. Policies
 supply already interval-specific demand, work and water. They cannot override
 the derived duration. See [m15_phase34_partial_day.md](m15_phase34_partial_day.md).
+
+`ComarcaInventoryTransfer` escrows explicitly named physical inventories with
+item types, Map order, fractional spoilage carry and cache versions. It consumes
+explicit quantities via `Inventory.remove` and restores once to empty sources,
+after validating all destinations. Its JSON copies have no global authority;
+the coordinator must deduplicate persisted transfers and reconcile typed stock
+with the compact ration ledger. See [m15_phase34_inventory.md](m15_phase34_inventory.md).

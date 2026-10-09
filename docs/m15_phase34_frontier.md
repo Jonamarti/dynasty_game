@@ -33,3 +33,37 @@ Prueba focal: `npm.cmd test -- --run src/sim/__tests__/tile-ledger.test.ts --max
 Typecheck integrado limpio. Libro, raíz y guardados: 20/20 focales.
 `WorldStateRecord` v3 persiste el libro; v1/v2 migran con libro vacío.
 La raíz rechaza identidad ajena y fecha futura o discordante con el calendario.
+
+## Puentes entregados junto al libro — 2026-10-09
+
+- [Primera jornada parcial](m15_phase34_partial_day.md): límites de duración,
+  calendario v2 y guardado de cuotas sin renovación.
+- [Inventarios físicos](m15_phase34_inventory.md): escrow tipado, carry y
+  retorno prevalidado; JSON es dato independiente, no un lease de autoridad.
+
+Estas tres funcionalidades preparan la frontera. Para habilitar `leave_comarca`
+quedan coordinación de autoridad, stock consumido tipado, perfil corregido,
+archivo canónico global e IDs reservados, población del destino/materialización,
+y deterioro de lo que quedó. Follow_me, scout y decisiones propuestas de banda
+siguen pendientes; `drought`/fisión no se declaran aprobados ni n/a como pase.
+
+## Verificación conjunta final de los puentes de fase 34 — 2026-10-09
+
+TypeScript limpio. Focales: libro/raíz 20/20, jornada parcial 42/42 e
+inventarios 11/11 (73 en total). Suite completa estable: 233 archivos,
+1.765 pruebas pasan, una omitida y dos fallos heredados intactos:
+`compact-correspondence` craft/delta (hambre 23,401 frente a <=15) y
+`people-knowledge` difusión (0,81 frente a <0,6). Ningún fallo nuevo.
+La suite no está verde; no se cambian umbrales. La primera pasada arrancó
+antes de integrar la raíz y cargó dos pruebas nuevas contra módulos viejos
+cacheados; esas dos fallas de integración desaparecen en focales y en la
+suite final sobre código estable.
+
+La semilla única mantiene dieta y rendimiento, 2/147. Tres giras de hito
+pasan 1/1 cada una y dejan 39 capturas nuevas; imágenes de arranque revisadas.
+No hay cambio de UI ni se declara cruce jugable o mejora económica. No se
+lanzaron cohortes, century/generations ni sim:check:all. Logs locales:
+`artifacts/m15-frontier-final-tests-20261009.log`,
+`artifacts/m15-frontier-final-typecheck-20261009.log` y
+`artifacts/m15-frontier-final-simcheck-20261009.log`.
+Cambios previos del usuario en notes_for_m15.txt y debug.log quedan fuera.

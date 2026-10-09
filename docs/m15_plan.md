@@ -4226,3 +4226,15 @@ sin reiniciar cuotas al recargar. 42/42 focales y TypeScript limpio.
 Gira 1/1, trece capturas sin UI nueva:
 `artifacts/screenshots/m15-frontier-partial-day-2026-10-09T-01/`.
 [Contrato](m15_phase34_partial_day.md). Sigue conectar el cruce y autoridad.
+
+## Avance del 2026-10-09 — Fase 34, transferencia física de inventarios
+
+`ComarcaInventoryTransfer` extrae solo fuentes nombradas por el coordinador,
+conserva los tipos/carry y valida todas las fuentes antes de vaciar alguna.
+Consume cantidades explícitas con Inventory.remove y retorna una vez a destinos
+vacíos, con rollback por validación previa y versiones de caché monotónicas.
+JSON preserva inventarios, pero no otorga autoridad global a copias persistidas.
+11/11 focales; TypeScript limpio. Gira 1/1, trece capturas sin UI nueva:
+`artifacts/screenshots/m15-frontier-inventory-2026-10-09T-01/`.
+[Contrato](m15_phase34_inventory.md). Queda conciliar stock tipado con raciones
+consumidas por runtime y activar autoridad/materialización/cruce.

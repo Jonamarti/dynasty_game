@@ -483,6 +483,49 @@ export class Inventory {
   entries(): [string, number][] {
     return [...this.stacks.entries()];
   }
+  /** M15 phase 34: escrow moves stacks with their fractional spoilage carry. */
+  transferSnapshot(): InventoryTransferState {
+    const fields = Object.keys(this).sort();
+    if (fields.length !== 3 || fields[0] !== 'spoilage' || fields[1] !== 'stacks' || fields[2] !== 'version' ||
+        !(this.stacks instanceof Map) || !(this.spoilage instanceof Map)) {
+      throw new TypeError('Inventory transfer fields do not match the supported state');
+    }
+    return validateInventoryTransferState({ version: this.version, stacks: [...this.stacks.entries()], spoilage: [...this.spoilage.entries()] });
+  }
+
+  /** Check a prepared extraction without changing either contents or cache generation. */
+  assertCanTakeTransferState(expected: InventoryTransferState): void {
+    const clean = validateInventoryTransferState(expected);
+    if (!sameInventoryTransferState(this.transferSnapshot(), clean)) throw new RangeError('inventory changed before transfer');
+    if ((this.stacks.size !== 0 || this.spoilage.size !== 0) && this.version >= Number.MAX_SAFE_INTEGER) {
+      throw new RangeError('inventory version cannot advance for transfer');
+    }
+  }
+
+  /** Empty this inventory only if it still has the state the caller inspected. */
+  takeTransferState(expected: InventoryTransferState): void {
+    this.assertCanTakeTransferState(expected);
+    if (this.stacks.size === 0 && this.spoilage.size === 0) return;
+    this.stacks.clear();
+    this.spoilage.clear();
+    this.version++;
+  }
+
+  /** Check a prepared restoration without changing this inventory. */
+  assertCanRestoreTransferState(state: InventoryTransferState): void {
+    const clean = validateInventoryTransferState(state);
+    if (this.stacks.size !== 0 || this.spoilage.size !== 0) throw new RangeError('inventory transfer destination is not empty');
+    if (Math.max(this.version, clean.version) >= Number.MAX_SAFE_INTEGER) throw new RangeError('inventory version cannot advance for transfer');
+  }
+
+  /** Restore escrow only into a truly empty destination; bump the cache generation. */
+  restoreTransferState(state: InventoryTransferState): void {
+    const clean = validateInventoryTransferState(state);
+    this.assertCanRestoreTransferState(clean);
+    this.stacks = new Map(clean.stacks);
+    this.spoilage = new Map(clean.spoilage);
+    this.version = Math.max(this.version, clean.version) + 1;
+  }
 
   /**
    * Accumulated fractional loss, for perishable ids only.
@@ -566,4 +609,41 @@ export class Inventory {
     }
     return best;
   }
+}
+
+export interface InventoryTransferState {
+  readonly version: number;
+  readonly stacks: readonly (readonly [string, number])[];
+  readonly spoilage: readonly (readonly [string, number])[];
+}
+
+export function validateInventoryTransferState(value: unknown): InventoryTransferState {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new TypeError('inventory transfer state must be an object');
+  const state = value as Partial<InventoryTransferState>;
+  if (Object.keys(value).length !== 3 || !Object.hasOwn(value, 'version') || !Object.hasOwn(value, 'stacks') || !Object.hasOwn(value, 'spoilage')) {
+    throw new TypeError('inventory transfer state has unknown or missing fields');
+  }
+  if (!Number.isSafeInteger(state.version) || state.version! < 0) throw new RangeError('inventory transfer version must be a non-negative safe integer');
+  const rows = (input: unknown, label: string): [string, number][] => {
+    if (!Array.isArray(input)) throw new TypeError(`inventory transfer ${label} must be an array`);
+    const seen = new Set<string>();
+    const out: [string, number][] = [];
+    for (const row of input) {
+      if (!Array.isArray(row) || row.length !== 2 || typeof row[0] !== 'string' || !row[0] || !Number.isFinite(row[1]) || row[1] < 0) {
+        throw new RangeError(`inventory transfer ${label} contains an invalid entry`);
+      }
+      if (seen.has(row[0])) throw new RangeError(`inventory transfer ${label} contains a duplicate item`);
+      seen.add(row[0]);
+      if (label === 'stacks' && row[1] <= 0) throw new RangeError('inventory transfer stacks must be positive');
+      out.push([row[0], row[1]]);
+    }
+    return out;
+  };
+  return { version: state.version!, stacks: rows(state.stacks, 'stacks'), spoilage: rows(state.spoilage, 'spoilage') };
+}
+
+function sameInventoryTransferState(a: InventoryTransferState, b: InventoryTransferState): boolean {
+  const equalRows = (left: readonly (readonly [string, number])[], right: readonly (readonly [string, number])[]) =>
+    left.length === right.length && left.every((row, i) => row[0] === right[i]![0] && row[1] === right[i]![1]);
+  return a.version === b.version && equalRows(a.stacks, b.stacks) && equalRows(a.spoilage, b.spoilage);
 }

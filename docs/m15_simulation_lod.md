@@ -526,3 +526,9 @@ recibir personas en cualquier tick sin regalar una jornada de producción o
 trabajo. Ancla e intervalo persisten y se validan al restaurar; demanda/cuotas
 se suministran para el tiempo restante. No hay activación del cruce todavía.
 [Contrato](m15_phase34_partial_day.md).
+
+**Avance del paso 2 (2026-10-09, inventarios físicos).** Escrow tipado con
+fuentes explícitas, extracción/retorno prevalidados, consumo sin perder carry,
+y JSON con resolver de fuentes. Falta conciliarlo con el saldo agregado de
+raciones y deduplicar transferencias mediante autoridad del coordinador.
+[Contrato](m15_phase34_inventory.md). La fase de cruce sigue abierta.

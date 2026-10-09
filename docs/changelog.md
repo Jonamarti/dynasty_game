@@ -13888,3 +13888,40 @@ Semilla única conserva fallos heredados de dieta/rendimiento. La suite global
 estable se informa al final de la integración. Cohortes/matriz diferidas.
 No activa cruces, no inventa cosechas ni declara calibración económica.
 Contrato: `m15_phase34_partial_day.md`.
+
+## 2026-10-09 — M15 fase 34: inventarios físicos con tipos y carry
+
+`ComarcaInventoryTransfer` extrae fuentes explícitas tras validación conjunta,
+conserva itemId/count, orden Map y pudrición pendiente mediante el codec de
+grafo de Inventory. Consume unidades con el mismo remove del detallado y
+retorna una vez a inventarios vacíos, avanzando la versión que usa la caché UI.
+Prevalida versiones/nutrición agregadas para que un error tardío no deje una
+transferencia parcial. JSON valida fuentes, alias y estado; no reclama autoridad
+global de copias. No aplana grano/materiales ni convierte raciones en comida inventada.
+
+11/11 focales; TypeScript limpio. Gira 1/1, trece capturas en
+`artifacts/screenshots/m15-frontier-inventory-2026-10-09T-01/`, UI sin cambios.
+Quedan stock agregado vs portfolio, deduplicación persistida, avance de
+pudrición y coordinador de cruce; fase 34 abierta. Cohortes/matriz diferidas.
+Contrato: `m15_phase34_inventory.md`.
+
+## Verificación conjunta final de los puentes de fase 34 — 2026-10-09
+
+TypeScript limpio. Focales: libro/raíz 20/20, jornada parcial 42/42 e
+inventarios 11/11 (73 en total). Suite completa estable: 233 archivos,
+1.765 pruebas pasan, una omitida y dos fallos heredados intactos:
+`compact-correspondence` craft/delta (hambre 23,401 frente a <=15) y
+`people-knowledge` difusión (0,81 frente a <0,6). Ningún fallo nuevo.
+La suite no está verde; no se cambian umbrales. La primera pasada arrancó
+antes de integrar la raíz y cargó dos pruebas nuevas contra módulos viejos
+cacheados; esas dos fallas de integración desaparecen en focales y en la
+suite final sobre código estable.
+
+La semilla única mantiene dieta y rendimiento, 2/147. Tres giras de hito
+pasan 1/1 cada una y dejan 39 capturas nuevas; imágenes de arranque revisadas.
+No hay cambio de UI ni se declara cruce jugable o mejora económica. No se
+lanzaron cohortes, century/generations ni sim:check:all. Logs locales:
+`artifacts/m15-frontier-final-tests-20261009.log`,
+`artifacts/m15-frontier-final-typecheck-20261009.log` y
+`artifacts/m15-frontier-final-simcheck-20261009.log`.
+Cambios previos del usuario en notes_for_m15.txt y debug.log quedan fuera.

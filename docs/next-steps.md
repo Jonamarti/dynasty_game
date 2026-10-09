@@ -1591,3 +1591,9 @@ materialización y cruce jugable. Fase abierta; cohortes diferidas.
 medianoche para iniciar compacto; computa solo el tramo restante y lo conserva
 al guardar. Sigue coordinación de autoridad, stock tipado y materialización.
 [Contrato](m15_phase34_partial_day.md). Fase abierta; sin cohortes.
+
+**2026-10-09: fase 34 — inventarios físicos transferibles.** Escrow preserva
+tipos y pudrición pendiente; libro y primer día parcial están entregados.
+Siguiente: coordinador de autoridad, reparto material tras consumo compacto,
+perfil corregido y materialización antes de leave_comarca/follow_me/scout.
+[Contrato](m15_phase34_inventory.md). Puertas drought/fisión todavía pendientes.
