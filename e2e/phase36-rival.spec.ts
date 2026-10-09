@@ -56,6 +56,10 @@ test('rival-house view resolves a known enemy from the source comarca archive af
   await page.getByRole('button', { name: 'Resume' }).click();
   await expect.poll(() => page.evaluate(() => { const d = (window as any).__dynasty; return d.sim === d.worldState.current; }), { timeout: 5_000 }).toBe(true);
 
+  // Four-tick fixture days accelerate travel; pause once the new owner is visible
+  // so repeated world updates cannot starve Chromium's milestone capture.
+  await page.getByRole('button', { name: 'Pause' }).click();
+
   const archive = await page.evaluate(({ ownId, rivalId, rivalPersonId }) => {
     const d = (window as any).__dynasty, households = d.worldState.worldHouseholds(), people = d.worldState.worldPeople();
     const own = households.get(ownId), rival = households.get(rivalId);

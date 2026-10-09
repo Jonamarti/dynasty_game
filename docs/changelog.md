@@ -1,3 +1,7 @@
+## 2026-10-09 — M15 fase 36e: captura con el fixture detenido
+
+Dos pasadas focales alcanzaron las aserciones de casas rivales, pero agotaron 60 segundos al capturar con días artificiales de cuatro ticks y el mundo en marcha. El E2E pausa después de sincronizar el nuevo propietario; conserva las comprobaciones de viaje, memoria y privacidad. Versión 0.15.7-alpha. Los timeouts se conservan en el informe final. Con la pausa pasan 5/5 E2E focales; captura revisada: artifacts/screenshots/m15-phase36-final-2026-10-09T-05/01-rival-from-origin-archive.png.
+
 ## 2026-10-09 — M15 fase 36a: relato retenido con los 48 recuerdos ocupados
 
 La memoria puede aceptar un robo nuevo sustituyendo un recuerdo débil, sin aumentar su tamaño. La entrega de WorldNews detecta ahora el evento nuevo retenido; antes perdía esa noticia. Regresión comprobada en el código roto y 7/7 pruebas focales pasan tras el arreglo; typecheck pasa. Se conserva la métrica histórica rumor_spread para evitar alterar el informe clásico. Versión 0.15.6-alpha. [Contrato](m15_phase36_news.md). Sin cambio de UI.

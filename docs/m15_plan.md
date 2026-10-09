@@ -3470,7 +3470,11 @@ El ticket abstracto guarda partida, destino canónico, fechas, carga, comida, st
 
 ## Fase 36 — Noticias, comercio y caravanas (M14 fase 18)
 
-**Avance 2026-10-09, 36a.** Noticias personales con origen y procedencia; un viaje real prueba que solo un relato transmite el robo al pasajero. Archivo del culpable resuelto sin modificarlo. 20/20 pruebas focales pasan. Ver [contrato](m15_phase36_news.md). 36d implementada; verificación conjunta pendiente.
+**Cierre funcional 2026-10-09.** Entregados 36a–e y el arreglo medido de memoria llena en cinco commits funcionales, con guardado v5, pruebas y capturas de ambas pantallas. [Informe de verificación](m15_phase36_verification_20261009.md). Las caravanas transportan inventarios físicos de mercaderes nombrados; el excedente agregado de PeopleSim no genera artículos. Ese límite y la integración demográfica/ecológica de tránsito quedan en bugs/M16; no se declara calibración económica. La siguiente fase pendiente es 41, con cohortes/matriz pesada diferidas por AGENTS.md.
+
+**Avance 2026-10-09, 36a.** Noticias personales con origen y procedencia; un viaje real prueba que solo un relato transmite el robo al pasajero. Archivo del culpable resuelto sin modificarlo. 20/20 pruebas focales pasan. Ver [contrato](m15_phase36_news.md). 36d implementada; verificación conjunta registrada en el informe de cierre.
+
+**Captura estable 2026-10-09.** El fixture de casas rivales pausa tras sincronizar el propietario para capturar sin seguir adelantando días de cuatro ticks; dos timeouts de captura quedan registrados.
 
 **Corrección medida 2026-10-09, noticias con memoria llena.** Una noticia retenida por sustitución también entra en WorldNews aunque el tamaño siga en 48. La regresión falla antes y pasa después; no cambia la métrica histórica rumor_spread.
 
