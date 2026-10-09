@@ -11,7 +11,7 @@ test('the main menu shows the package version and checked-out commit', async ({ 
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto('/?seed=version-menu&lang=es');
 
-  const label = page.locator('.worldpicker-version');
+  const label = page.locator('.game-version');
   await expect(label).toBeVisible({ timeout: 30_000 });
   await expect(label).toHaveText(`v${version} (${commit})`);
   const box = await label.boundingBox();
@@ -19,4 +19,13 @@ test('the main menu shows the package version and checked-out commit', async ({ 
   expect(box!.x + box!.width).toBeGreaterThan(1200);
   expect(box!.y + box!.height).toBeGreaterThan(750);
   await page.screenshot({ path: shots + '/01-version-in-main-menu-es.png' });
+});
+
+test('the version label survives into the in-game screen', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto('/?seed=version-ingame&skipIntro=1&lang=es');
+
+  const label = page.locator('.game-version');
+  await expect(label).toBeVisible({ timeout: 30_000 });
+  await expect(label).toHaveText(`v${version} (${commit})`);
 });

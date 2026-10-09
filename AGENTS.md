@@ -151,6 +151,43 @@ before a hover lands on it, so the panel never responds and nothing throws.
 
 ---
 
+## Versioning
+
+**The game stays in alpha until the project owner says otherwise.** This is a
+standing instruction from the owner, not a judgment call an agent gets to
+make — "feature complete," "stable," or "ready for testers" are not triggers
+for leaving alpha. `package.json`'s `version` field is the single source of
+truth: `GAME_VERSION_LABEL` (`src/ui/GameVersion.ts`) formats it with the
+checked-out commit (`v0.15.28-alpha (a1b2c3)`) and the label is mounted once,
+directly on `document.body` in `main.ts` (`.game-version` in `src/style.css`),
+pinned to the bottom-right corner on every screen — the main menu and every
+in-game screen alike, not just the world picker. Don't recreate it inside an
+overlay's own root: anything appended there inherits that overlay's `[hidden]`
+and disappears the moment the overlay closes, which is exactly how it was
+missing from every screen but the main menu before M15 phase closed this gap.
+
+**Format while in alpha: `0.<milestone>.<count>-alpha`**, e.g. `0.15.28-alpha`.
+The middle number tracks the milestone (`15` for M15); the last number is a
+running count of accumulated changes inside that milestone, not a semantic
+patch level — bump it by one in every commit that changes game behaviour
+(an `m15:` phase, a fix, a tuning pass), so the number on screen says how much
+has shipped since the milestone opened, not whether anything is "stable."
+Docs-only or tooling-only commits don't need the bump. Reset the count to `0`
+and bump the milestone number, in the same commit as the milestone's first
+change, when work on the next milestone begins.
+
+**Never remove `-alpha`, never write a `1.0.0` or bare `x.y.z` version, and
+never call any build "beta" in the UI label, a commit message or the
+changelog**, unless the owner has explicitly said to move out of alpha. SemVer
+reserves `0.x.y` for exactly this project's situation: the game's core
+mechanics and content are still being decided, not just balanced, regardless
+of how finished a given milestone feels. If a milestone's completion makes you
+think the project is beta-ready, say that in the commit message or
+`docs/next-steps.md` and let the owner decide — do not change the version
+string to express that opinion yourself.
+
+---
+
 ## Verifying your work
 
 **Commit every functional change separately.** Use a `m15:` prefix for M15 work,

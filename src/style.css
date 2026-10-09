@@ -2265,8 +2265,11 @@ html, body, #app {
 .worldpicker { z-index: 43; }
 .worldpicker[hidden] { display: none; }
 
-.worldpicker-version {
+/* Build identity, pinned on the body so it survives every overlay's own
+   subtree churn and shows on the main menu and every in-game screen alike. */
+.game-version {
   position: fixed;
+  z-index: 50;
   right: max(12px, env(safe-area-inset-right));
   bottom: max(10px, env(safe-area-inset-bottom));
   color: var(--text-dim);

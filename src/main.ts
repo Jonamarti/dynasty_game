@@ -15,6 +15,7 @@ import { earthWorldGeography, randomWorldGeography, type EarthWorldGeography } f
 import { loadWorldAtlas } from './sim/world/WorldAtlas.ts';
 import { findNearestStart, findStartInRegion, findWateredGlobeStart, localWorldConfig, type StartPlace } from './sim/world/StartPlace.ts';
 import { WorldPicker } from './ui/WorldPicker.ts';
+import { GAME_VERSION_LABEL } from './ui/GameVersion.ts';
 import { Camera } from './render/Camera.ts';
 import { Renderer, hitRadiusOf, nodeIsHidden, GRAB_MARGIN, PICK_RANGE, type HitTarget } from './render/Renderer.ts';
 import { ArtAtlas } from './render/ArtAtlas.ts';
@@ -263,6 +264,14 @@ let craftMode = false;
 let activeDesign: BuildingDef | null = null;
 /** R has turned the active design to run north-south (M15 phase 26c). */
 let buildTurned = false;
+
+// Build identity, pinned on the body (not inside the world picker's own root,
+// which is `[hidden]` outside the main menu) so it reads from the main menu
+// through every in-game screen without being erased when an overlay hides.
+const versionLabel = document.createElement('div');
+versionLabel.className = 'game-version';
+versionLabel.textContent = GAME_VERSION_LABEL;
+document.body.appendChild(versionLabel);
 
 // Attached to the body, not to #hud: the HUD rebuilds its own subtree, and a
 // menu living inside it was silently erased the moment the HUD re-rendered.
