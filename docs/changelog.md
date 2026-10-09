@@ -1,3 +1,8 @@
+## 2026-10-09 — M15 1c: varias bandas comparten una oferta finita
+
+`CompactBandProduction` distribuye el potencial estacional de una comarca entre sus bandas por trabajo elegible y tasas explícitas. La suma de recolección, pesca y caza no puede superar el perfil compartido. Se comprueban prerequisitos, fechas/estación y duplicados; el resultado ordenado es independiente del orden de entrada y cada reserva conserva su ledger propio.
+
+7/7 pruebas nuevas; conjunto de cuatro módulos 28/28 pasa. Typecheck limpio. Captura equivalente 1/1 en `artifacts/screenshots/m15-band-production-2026-10-09T-01/`, sin UI nueva. Contrato y plan actualizados. El coordinador del paso 2 deberá agrupar por comarca antes de resolver oferta; no se activa aún el cruce del borde. Cohortes y matriz pesada diferidas, sin afirmar calibración ni mejora económica.
 ## 2026-10-09 — M15 1c: molienda finita y comida procesada
 
 El cultivo produce grano crudo (nutrición cero). `CompactBandProcessing` lo transforma con la receta detallada de groats: consume tres granos, exige molienda y molino completo propio, paga coste de habilidad y produce una harina con la nutrición de ITEMS. Banca las horas por practicante, practica tras terminar, persiste grano/progreso y devuelve razones explícitas cuando no puede trabajar. `CompactBandFood` contabiliza esta nutrición suplementaria separada de la oferta silvestre; no cambia los rendimientos ni regala grano.
@@ -13830,6 +13835,7 @@ Nuevo: `compact-correspondence craft/delta`, diferencia de hambre 23,401,
 límite declarado ≤15. No se ha relajado el límite ni recalibrado su tabla;
 queda pendiente para M16. Recogida, alimentación y lectura pasan en esta
 repetición. La suite no está verde. Resultado: `commitment-final-tests.txt`.
+
 
 
 

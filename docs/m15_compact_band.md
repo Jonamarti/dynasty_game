@@ -159,3 +159,18 @@ con el mismo almacenamiento, déficit y conservación. El perfil de arbustos no
 limita una cosecha que ya pagó semillas y trabajo. Cuatro pruebas de molienda
 más dos de comida suplementaria; conjunto de cuatro módulos: 28/28 pasan.
 Hito: `artifacts/screenshots/m15-band-processing-2026-10-09T-01/`.
+
+## Oferta compartida por comarca — 2026-10-09
+
+`advanceCompactBandProductionDay` liquida juntas las bandas que ocupan una
+misma comarca. Por fuente suma trabajo elegible, reparte proporcionalmente
+el menor de ese trabajo y el potencial, y llama al ledger de cada banda.
+La suma no puede gastar dos veces la reposición de un arbusto, banco o manada.
+El reparto es una política explícita; no modifica las tasas de rendimiento.
+Bandas sin trabajadores o sin prerequisitos no reciben producción. Todos los
+ledgers deben cerrar la misma fecha/estación; IDs duplicados se rechazan.
+El orden de entrada no cambia los resultados y los argumentos no se mutan.
+Siete pruebas pasan. El motor de una banda recibe este resultado mediante
+su política de oferta; el coordinador del borde deberá reunir todas las
+bandas de cada comarca antes de repartir, como parte del paso 2.
+Hito: `artifacts/screenshots/m15-band-production-2026-10-09T-01/`.

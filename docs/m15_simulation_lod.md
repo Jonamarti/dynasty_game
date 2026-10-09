@@ -506,3 +506,5 @@ Entrega 1c: técnicas estacionales de PeopleKnowledge en practicantes vivos con 
 Entrega 1c: parcelas Crop/Soil, semillas finitas y trabajo bancado; fórmula de suelo promedio y costes compartidos con ActionSystem. 27/27 pruebas agrícolas pasan; la molienda y el motor se integran separadamente.
 
 Entrega 1c: procesamiento groats con receta/coste real, molino/practicante/ingredientes, progreso por persona y comida suplementaria conservada en el ledger. Grano crudo sigue con nutrición cero. 28/28 del conjunto focal pasan; integración del motor en curso.
+
+Entrega 1c: CompactBandProduction liquida bandas de una misma comarca con techo compartido por fuente, trabajo/técnicas, reparto explícito y fechas únicas. 7/7 pruebas pasan. El coordinador de borde agrupará por comarca en paso 2.
