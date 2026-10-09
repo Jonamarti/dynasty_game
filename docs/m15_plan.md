@@ -4238,3 +4238,13 @@ JSON preserva inventarios, pero no otorga autoridad global a copias persistidas.
 `artifacts/screenshots/m15-frontier-inventory-2026-10-09T-01/`.
 [Contrato](m15_phase34_inventory.md). Queda conciliar stock tipado con raciones
 consumidas por runtime y activar autoridad/materialización/cruce.
+
+## Avance del 2026-10-09 — Fase 34, raciones retiradas del stock tipado
+
+El escrow puede retirar una demanda de raciones mediante una prioridad completa
+explícita de fuentes/alimentos, preservando tipos, materiales y carry. Devuelve
+retiradas, nutrición y déficit, con validación e incrementos de versión previos
+a cualquier mutación. El informe diario debe conciliar `withdrawn` con estas
+reservas, porque `consumed` incluye la producción comida ese día.
+[Contrato y límites](m15_phase34_rations.md). Sigue conectar la producción
+almacenada, el consumo parcial y el coordinador de autoridad; fase 34 abierta.

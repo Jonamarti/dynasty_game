@@ -532,3 +532,9 @@ fuentes explícitas, extracción/retorno prevalidados, consumo sin perder carry,
 y JSON con resolver de fuentes. Falta conciliarlo con el saldo agregado de
 raciones y deduplicar transferencias mediante autoridad del coordinador.
 [Contrato](m15_phase34_inventory.md). La fase de cruce sigue abierta.
+
+**Avance del paso 2 (2026-10-09, raciones físicas).** El escrow admite retiradas
+por prioridad completa explícita, preservando alimentos tipados, materiales y
+carry. Las pruebas concilian la retirada del ledger con el saldo físico.
+[Contrato](m15_phase34_rations.md). No activa Simulation; producción almacenada,
+consumo parcial y autoridad/materialización continúan pendientes.

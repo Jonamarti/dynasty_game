@@ -67,3 +67,10 @@ lanzaron cohortes, century/generations ni sim:check:all. Logs locales:
 `artifacts/m15-frontier-final-typecheck-20261009.log` y
 `artifacts/m15-frontier-final-simcheck-20261009.log`.
 Cambios previos del usuario en notes_for_m15.txt y debug.log quedan fuera.
+
+**Avance 2026-10-09 (retirada física de raciones).** El escrow ahora convierte
+una demanda en cantidades de alimentos ya existentes por prioridad explícita,
+sin alterar materiales/carry. La retirada de reservas corresponde a `withdrawn`
+del reporte compacto; la producción consumida no se vuelve a cobrar. Contrato
+en [m15_phase34_rations.md](m15_phase34_rations.md). Sigue el coordinador de
+stock producido, consumo parcial y autoridad/materialización; fase 34 abierta.

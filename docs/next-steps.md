@@ -1,3 +1,9 @@
+**2026-10-09: fase 34, retirada física de raciones.** El escrow descuenta
+alimentos por prioridad explícita con validación atómica, preserva los materiales
+y carry y devuelve el déficit. El puente debe retirar `withdrawn` del ledger,
+no la producción ya consumida. Sigue materializar producción/almacenamiento,
+liquidar jornadas incompletas y conectar autoridad/cruce.
+[Contrato](m15_phase34_rations.md). Cohortes y matriz diferidas durante M15.
 **2026-10-09: implementación funcional del LOD paso 1c reunida.** El motor detached de banda conecta comida/agua finitas con cuerpos reales, demografía, técnicas estacionales, cultivo/molienda, oferta compartida por comarca y snapshots completos con jornada parcial. Guarda cuotas de quien murió a mitad del día, devuelve comida no consumida, limita mano de obra/técnicas y conserva identidad/parentesco/streams. [Contrato y verificaciones](m15_compact_band.md).
 
 Sigue **paso 2 / fase 34: cruce del borde y TileLedger**. El puente debe transferir autoridad una vez, extraer existencias físicas para evitar doble conteo, agrupar bandas por comarca, corregir el perfil y resolver la primera jornada parcial; el runtime nuevo parte de frontera diaria y sus guardados posteriores admiten cualquier tick. Simulation todavía no lo llama. **Calibración y puerta lod-matches-detail pendientes del paso 4**: el muestreo corto de cosecha no calibra estaciones ni alimentación infantil/agua, y las dos aserciones heredadas de correspondencia/difusión siguen sin relajarse. Cohortes y matriz pesada diferidas por AGENTS.md.

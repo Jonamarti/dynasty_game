@@ -4594,3 +4594,12 @@ objetos genéricos que pierdan nutrición/hidratación. El escrow no avanza la
 pudrición fuera del mapa. Su guard de retorno único es local a un packet; una
 copia JSON reutilizable requiere deduplicación en la autoridad persistida del
 coordinador. No conectar ambos saldos como si fueran dos reservas de comida.
+
+## Conciliación parcial entregada — 2026-10-09
+
+La retirada tipada ya existe en `ComarcaInventoryTransfer.consumeRations` y
+pruebas concilian `withdrawn` del ledger con reservas físicas. Esto no cubre
+producción almacenada ni retiradas reales a mitad del día, hidratación/macros,
+veneno o propiedad. El coordinador debe secuenciar consumos y deterioro en sus
+ticks y reconciliar ambos saldos sin duplicarlos antes de activar la frontera.
+Ver `m15_phase34_rations.md`. La fase 34 permanece abierta.

@@ -17,3 +17,10 @@ The versioned JSON codec stores the typed escrow graphs and stable source IDs. `
 This is a physical inventory handoff only. It does not scan resource nodes, infer ownership, advance spoilage time, or connect to `CompactBandRuntime`. That runtime currently stores food as aggregate rations, which cannot reconstruct item types, hydration, or carry after compact consumption. A later bridge must reconcile its aggregate daily use against this typed portfolio before returning materialized stock; this module deliberately supplies no ration-to-item allocation rule or harvest rate.
 
 The focused tests cover conservation through JSON round-trip, carry preservation including orphan carry, source alias and stale-state rejection, occupied destinations, local double restore, source resolution failures, corrupt graphs, cache-version overflow, and finite nutrition validation.
+## Conciliación física de raciones — 2026-10-09
+
+`consumeRations` proporciona la retirada tipada con prioridad completa explícita,
+validación atómica y déficit real. El informe diario debe cobrar `withdrawn`
+a las reservas anteriores, mientras `consumed` también incluye producción.
+[Contrato](m15_phase34_rations.md). Sigue enlazar autoridad, reservas, producción
+almacenada y consumo durante una jornada parcial; no se activa `leave_comarca`.

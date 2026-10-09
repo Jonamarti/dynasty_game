@@ -1,3 +1,28 @@
+## 2026-10-09 — M15 fase 34: retirar raciones del escrow físico
+
+`ComarcaInventoryTransfer.consumeRations` descuenta reservas de alimentos
+con una prioridad completa explícita. Valida toda la política antes de mutar,
+prepara todos los incrementos de versión y conserva materiales y carry de
+pudrición. Devuelve cantidades tipadas, nutrición consumida y déficit real;
+el redondeo no permite cobrar comida que no se pueda retirar del stack.
+La integración focal concilia `CompactBandFoodDayReport.withdrawn` con el saldo
+físico y comprueba el retorno por JSON. No se cobra `consumed`, que también
+incluye producción consumida. [Contrato](m15_phase34_rations.md).
+
+TypeScript limpio; 19/19 focales (11 existentes + 8 nuevas). Control contra
+HEAD antes de la API: fallan las cinco pruebas iniciales que la requieren;
+restaurada la implementación, pasan las ocho finales. Gira 1/1, trece capturas
+nuevas revisadas en `artifacts/screenshots/m15-frontier-rations-2026-10-09T-01/`.
+Logs `artifacts/m15-frontier-rations-{typecheck,tests,shots}-20261009.log`.
+La suite completa y la semilla final se registran al terminar la siguiente
+funcionalidad; los fallos previos de correspondencia/difusión y dieta/rendimiento
+siguen separados. No se declara verde una suite fallida ni mejora económica.
+
+Fase 34 abierta: faltan producción almacenada con tipos, consumo parcial y
+coordinador global de autoridad/materialización/cruce. No cambia la UI ni se
+activa Simulation. Plan, próximos pasos, arquitectura y contratos actualizados.
+Cohortes y matriz pesada diferidas por AGENTS.md. Cambios previos del usuario
+en notes_for_m15.txt y debug.log quedan fuera del commit.
 ## 2026-10-09 — M15 1c: motor integrado de banda fuera del mapa
 
 `CompactBandRuntime` reúne cuerpos con cuotas finitas, vida diaria sincronizada, conocimiento estacional, parcelas/suelo reales y molienda de grano. Cada jornada se prepara sobre clones antes de validar políticas y cuotas: un rechazo no practica habilidades ni gasta semillas gratis. La liquidación cobra lo aplicado a los cuerpos, conserva el presupuesto sin usar en reservas y registra demanda prevista, déficit y pérdidas. Limita conjuntamente trabajo de comida/campo/molino a los adultos vivos, técnicas a sus portadores vivos y población al roster real. Necesidades familiares usan los predicados y factores detallados; hambre cero de los tests no produce NaN. Molienda exige un molino de la banda del practicante, no el de un invitado.

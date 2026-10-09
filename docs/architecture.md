@@ -763,3 +763,11 @@ explicit quantities via `Inventory.remove` and restores once to empty sources,
 after validating all destinations. Its JSON copies have no global authority;
 the coordinator must deduplicate persisted transfers and reconcile typed stock
 with the compact ration ledger. See [m15_phase34_inventory.md](m15_phase34_inventory.md).
+
+`ComarcaInventoryTransfer.consumeRations` now withdraws a finite demand from
+explicitly ordered typed food stacks, preflighting the entire policy and cache
+increments. It preserves materials and spoilage carry and reports actual
+nutrition/shortfall. The compact ledger's `withdrawn`, rather than total
+`consumed`, is the charge against pre-existing stock. Stored production and
+mid-day consumption still need the frontier coordinator; this API does not
+activate off-map ownership. See [m15_phase34_rations.md](m15_phase34_rations.md).

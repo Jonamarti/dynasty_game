@@ -1,7 +1,7 @@
 /**
  * M15 phase 34: one-shot escrow for caller-selected physical inventories.
  * It preserves item identities and Inventory's exact spoilage carry. It does
- * not bridge the compact runtime's aggregate ration stock.
+ * not itself wire the compact runtime's aggregate ration stock.
  */
 import { Inventory, ITEMS, validateInventoryTransferState, type InventoryTransferState } from '../entities/Item.ts';
 import { RATION_NUTRITION } from './ResourceProfile.ts';
@@ -26,6 +26,27 @@ interface EscrowSource {
   readonly escrow: Inventory;
 }
 
+export interface ComarcaInventoryRationPriority {
+  readonly sourceId: string;
+  readonly itemId: string;
+}
+
+export interface ComarcaInventoryRationRemoval {
+  readonly sourceId: string;
+  readonly itemId: string;
+  /** Inventory item count removed; fractional counts follow Inventory.remove. */
+  readonly count: number;
+  readonly nutrition: number;
+}
+
+export interface ComarcaInventoryRationReport {
+  readonly requestedRations: number;
+  readonly consumedRations: number;
+  readonly consumedNutrition: number;
+  readonly unmetRations: number;
+  readonly removals: readonly ComarcaInventoryRationRemoval[];
+}
+
 // EntityRecords normally registers this prototype when its codec is imported.
 // Registering it here keeps this narrower codec independently usable as well.
 registerGraphPrototype('Inventory', Inventory);
@@ -45,6 +66,13 @@ function validateInventory(inventory: Inventory): InventoryTransferState {
   for (const [id] of state.spoilage) if (!Object.hasOwn(ITEMS, id)) fail(`unknown spoilage item ${id}`);
   if (!Number.isFinite(RATION_NUTRITION) || RATION_NUTRITION <= 0 || !Number.isFinite(nutrition / RATION_NUTRITION)) fail('ration total is not finite');
   return state;
+}
+function nextDownPositive(value: number): number {
+  if (value <= 0) return 0;
+  const bits = new DataView(new ArrayBuffer(8));
+  bits.setFloat64(0, value);
+  bits.setBigUint64(0, bits.getBigUint64(0) - 1n);
+  return bits.getFloat64(0);
 }
 function totalNutrition(inventories: readonly Inventory[]): number {
   let total = 0;
@@ -117,6 +145,98 @@ export class ComarcaInventoryTransfer {
       throw new RangeError('inventory version cannot advance for transfer consumption');
     }
     return source.escrow.remove(itemId, count);
+  }
+
+  /**
+   * Withdraw a finite ration demand from explicitly ordered edible stacks.
+   * Every edible stack in escrow must appear exactly once in `priority`, so a
+   * caller cannot accidentally get an implicit fallback order. All validation
+   * and version increments are checked before the first stack is changed.
+   */
+  consumeRations(rations: number, priority: readonly ComarcaInventoryRationPriority[]): ComarcaInventoryRationReport {
+    this.assertOpen();
+    if (!Number.isFinite(rations) || rations < 0) throw new RangeError('ration demand must be finite and non-negative');
+    if (!Array.isArray(priority)) throw new TypeError('ration priority must be an array');
+
+    const sourceById = new Map(this.sources.map(source => [source.sourceId, source]));
+    const seen = new Set<string>();
+    const ordered: { source: EscrowSource; itemId: string; nutrition: number }[] = [];
+    for (const row of priority) {
+      if (!row || typeof row !== 'object' || !validSourceId(row.sourceId) || typeof row.itemId !== 'string' || !row.itemId) {
+        throw new TypeError('ration priority rows require a source id and item id');
+      }
+      const key = `${row.sourceId}\u0000${row.itemId}`;
+      if (seen.has(key)) throw new RangeError(`duplicate ration priority ${row.sourceId}/${row.itemId}`);
+      const source = sourceById.get(row.sourceId);
+      if (!source) throw new RangeError(`unknown transfer source ${row.sourceId}`);
+      if (!Object.hasOwn(ITEMS, row.itemId)) throw new RangeError(`unknown ration priority item ${row.itemId}`);
+      const item = ITEMS[row.itemId]!;
+      if (!Number.isFinite(item.nutrition) || item.nutrition <= 0) {
+        throw new RangeError(`ration priority item ${row.itemId} is not edible`);
+      }
+      seen.add(key);
+      ordered.push({ source, itemId: row.itemId, nutrition: item.nutrition });
+    }
+
+    // Refuse a partial policy: even an item omitted near the end must not make
+    // the earlier selections consume stock before the omission is discovered.
+    for (const source of this.sources) {
+      for (const [itemId, count] of validateInventory(source.escrow).stacks) {
+        if (count > 0 && ITEMS[itemId]!.nutrition > 0 && !seen.has(`${source.sourceId}\u0000${itemId}`)) {
+          throw new RangeError(`ration priority is missing ${source.sourceId}/${itemId}`);
+        }
+      }
+    }
+
+    const requestedNutrition = rations * RATION_NUTRITION;
+    if (!Number.isFinite(requestedNutrition)) throw new RangeError('ration demand nutrition is not finite');
+    let consumedNutrition = 0;
+    const planned: ComarcaInventoryRationRemoval[] = [];
+    const removalsPerSource = new Map<EscrowSource, number>();
+    for (const row of ordered) {
+      const remainingNutrition = Math.max(0, requestedNutrition - consumedNutrition);
+      if (remainingNutrition <= 0) break;
+      const available = row.source.escrow.count(row.itemId);
+      if (available <= 0) continue;
+      let count = Math.min(available, remainingNutrition / row.nutrition);
+      if (!Number.isFinite(count) || count <= 0) continue;
+      let nutrition = count * row.nutrition;
+      // Floating division followed by multiplication can round above the demand.
+      // Step down only in that case; report the nutrition actually removed.
+      while (nutrition > remainingNutrition && count > 0) {
+        count = nextDownPositive(count);
+        nutrition = count * row.nutrition;
+      }
+      if (count <= 0 || (count < available && available - count === available)) continue;
+      if (!Number.isFinite(nutrition) || !Number.isFinite(consumedNutrition + nutrition)) {
+        throw new RangeError('ration consumption nutrition is not finite');
+      }
+      planned.push({ sourceId: row.source.sourceId, itemId: row.itemId, count, nutrition });
+      removalsPerSource.set(row.source, (removalsPerSource.get(row.source) ?? 0) + 1);
+      consumedNutrition += nutrition;
+    }
+
+    for (const [source, count] of removalsPerSource) {
+      const state = validateInventory(source.escrow);
+      if (state.version > Number.MAX_SAFE_INTEGER - count) {
+        throw new RangeError('inventory version cannot advance for ration consumption');
+      }
+    }
+
+    for (const removal of planned) {
+      const source = sourceById.get(removal.sourceId)!;
+      const taken = source.escrow.remove(removal.itemId, removal.count);
+      if (taken !== removal.count) throw new RangeError('inventory changed during ration consumption');
+    }
+
+    const consumedRations = consumedNutrition / RATION_NUTRITION;
+    return {
+      requestedRations: rations,
+      consumedRations,
+      consumedNutrition,
+      unmetRations: Math.max(0, rations - consumedRations),
+      removals: planned,
+    };
   }
 
   /**
