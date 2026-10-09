@@ -980,10 +980,13 @@ export class SocialSystem {
     };
 
     const before = listener.memory.size;
+    const alreadyRemembered = listener.memory.has(story.eventId);
     this.absorb(listener, event, actor, false, confidence, teller.id,
       story.targetId === null ? null : peopleById.get(story.targetId)?.bandId ?? story.victimBandId);
-    if (listener.memory.size > before) {
-      telemetry.count('rumor_spread');
+    if (listener.memory.size > before) telemetry.count('rumor_spread');
+    // A full ledger can retain this story by evicting a faint memory without
+    // changing its size. Forward news based on the retained event, not growth.
+    if (!alreadyRemembered && listener.memory.has(story.eventId)) {
       // A normal conversation passes the selected theft only; unrelated stories
       // in the teller's bag wait for the conversation that actually tells them.
       if (story.type === 'theft' && story.originComarca && teller.worldNews) {

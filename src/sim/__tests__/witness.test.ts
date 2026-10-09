@@ -105,6 +105,36 @@ describe('a deed records who saw it', () => {
     expect(listener!.worldNews!.has(unrelated.id, 3, 5)).toBe(false);
   });
 
+  it('forwards world news when a full listener memory evicts an older entry', () => {
+    const [actor, victim, witness, listener] = people();
+    actor!.x = 50; actor!.y = 50;
+    victim!.x = 52; victim!.y = 50;
+    witness!.x = 51; witness!.y = 51;
+    listener!.x = 100; listener!.y = 100;
+    const { social, hash } = world([actor!, victim!, witness!, listener!]);
+    social.worldOrigin = { cx: 7, cy: 4 };
+    const theft = social.emit('theft', actor!, victim!, 0.5, 1000, hash, SIGHT);
+    const story = witness!.memory.all().find(entry => entry.eventId === theft.id)!;
+
+    // Fill the bounded memory with faint hearsay. The new theft is retained by
+    // evicting the least salient entry, so size alone cannot signal success.
+    for (let i = 0; i < 48; i++) {
+      listener!.memory.record({
+        id: 10_000 + i, type: 'gift', actorId: actor!.id, targetId: null, victimBandId: null,
+        x: 0, y: 0, tick: i, magnitude: 0, witnesses: 0,
+      }, false, 0.2, actor!.id);
+    }
+    expect(listener!.memory.size).toBe(48);
+
+    social.tellStory(witness!, listener!, story, new Map([[actor!.id, actor!], [victim!.id, victim!]]), 1001);
+
+    expect(listener!.memory.size).toBe(48);
+    expect(listener!.memory.has(theft.id)).toBe(true);
+    expect([...listener!.worldNews!.entries()]).toMatchObject([{
+      eventId: theft.id, originCx: 7, originCy: 4, firsthand: false, sourceId: witness!.id,
+    }]);
+  });
+
   it('ignores the actor and the victim however close they are', () => {
     // The two people in the deed stand on each other's toes, and that is not
     // two witnesses. A deed between a couple by the fire is still a secret

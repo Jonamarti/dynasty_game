@@ -1,3 +1,7 @@
+## 2026-10-09 — M15 fase 36a: relato retenido con los 48 recuerdos ocupados
+
+La memoria puede aceptar un robo nuevo sustituyendo un recuerdo débil, sin aumentar su tamaño. La entrega de WorldNews detecta ahora el evento nuevo retenido; antes perdía esa noticia. Regresión comprobada en el código roto y 7/7 pruebas focales pasan tras el arreglo; typecheck pasa. Se conserva la métrica histórica rumor_spread para evitar alterar el informe clásico. Versión 0.15.6-alpha. [Contrato](m15_phase36_news.md). Sin cambio de UI.
+
 ## 2026-10-09 — M15 fase 36d: incursiones y asaltos físicos entre comarcas
 
 Las enemistades pueden preparar una partida contra una comarca conocida con aprobación y quorum habituales. El propietario raíz la despacha tras el step y entrega identidades reales por el borde; las órdenes locales hacen el saqueo y las capturas. Un aviso hostil de caravana necesita un atacante real: conserva carga no robada y registra testigos y víctima, sin noticia mundial. Ambos propietarios y sus registros se preparan antes de reconocer el resultado. 35/35 pruebas focales pasan, incluida incursión entrante y guardado parcial. Versión 0.15.5-alpha. [Contrato](m15_phase36_raids.md). Sin UI nueva; verificación conjunta final en curso.
