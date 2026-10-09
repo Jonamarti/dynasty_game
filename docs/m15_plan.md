@@ -3449,31 +3449,20 @@ envolver la latitud por error.
 
 ## Fase 35 — Llegar más lejos: transporte (M14 fase 17)
 
-**2026-10-09: animales de transporte implementados.** Asnos/caballos vivos, carga, asignación/liberación, viaje con identidad y exploración a caballo cubiertos por pruebas. Vela física y ruta marítima larga implementadas; queda el informe de verificación conjunta.
+**Implementación funcional cerrada el 2026-10-09.** Canoa local, viajes fechados con provisiones, rastra/carro, asnos/caballos vivos y vela tienen efectos físicos, guardado, pruebas negativas y capturas. [Contrato](m15_phase35_transport.md) y [verificación](m15_phase35_verification_20261009.md). La siguiente fase funcional es 36: noticias, caravanas e incursiones (trade ya existe).
 
-**Detalle en `m14_plan.md` fase 17**, con su tabla (`logboat`, `sledge`,
-`pack_animals`, `horse_riding`, la velocidad de `the_wheel` y `sail`).
+| Medio | Efecto y puerta física |
+|---|---|
+| logboat | Receta de canoa; técnica + objeto permiten aguas dulces profundas y mar resguardado dentro de la comarca, además de costa adyacente. Usa PassMode logboat y su región; la balsa mantiene agua dulce. |
+| sledge | El objeto/receta de fase 11 recibieron el nodo que faltaba (carpintería + cordelería). Equipado añade carga y acelera el viaje con nieve. |
+| pack_animals | Asno vivo, domesticado y asignado recíprocamente + práctica: carga separada de 24 unidades y alcance de dos comarcas. |
+| horse_riding | Caballo vivo asignado + práctica: alcance de tres comarcas y 1,5 veces velocidad de viaje/exploración; no modifica la marcha local. |
+| the_wheel | Carro físico equipado + rueda: reduce a la mitad el tiempo terrestre entre comarcas. |
+| sail | Vela fabricada (tejido + canoa), canoa física y ambas prácticas: rutas marítimas no contiguas. |
 
-**Qué cambia respecto al plan de origen:**
+El ticket abstracto guarda partida, destino canónico, fechas, carga, comida, stream y encuentros. Consume/deteriora provisiones durante la ruta; bayas frente a avellanas prueban conservación y guardado parcial. Las afirmaciones anteriores de que fase 15 ya entregó pemmican/preserving y deterioro global activo no describían la tabla actual: no existen esos artículos y spoilRate sigue cero fuera de tránsito. Conservación manufacturada y su término económico del consenso siguen retenidos hasta medir suministro/costes; se documenta la diferencia.
 
-- **El objeto y la receta `sledge` ya existen** desde la fase 11 como angarillas locales. Faltaba el nodo previsto: aquí se añade y se conecta a la receta existente, con carga y velocidad en nieve entre comarcas.
-- **`logboat` añade el modo de paso `boat`** (fase 27): cruzar lo hondo **dentro
-  de la comarca** (lagos, brazos de mar) además del viaje por la costa. Con
-  `World.boatRegion` reparada por 16a.
-- `pack_animals` y `horse_riding` son nodos de la sub-red Doma; un animal de
-  carga es un contenedor más (la tabla de 11c) que va a pie al lado.
-- **17d cambia de sentido.** M14 quería reencender la descomposición para las
-  provisiones del viaje; ya está encendida desde la fase 15. Aquí solo se mide
-  que las provisiones del viaje se hagan con comida conservada (el pemmican
-  de 15b, sobre todo), y se añade
-  ese término a la decisión de partir.
-
-**Avance 2026-10-09: canoa local integrada.** Nodo, receta, regiones propias, orden y seguridad compartida, arte y traducciones. Seis pruebas de navegación y un e2e con negativos de técnica/objeto y capturas en artifacts/screenshots/m15-phase35-logboat-2026-10-09/. Viajes fechados, animales y vela siguen en esta fase. [Contrato](m15_phase35_logboat.md).
-
-**Avance 2026-10-09: viajes, rastra y carro integrados.** Ticket fechado y persistente, consumo físico y deterioro solo de provisiones; la comida estable evita ese deterioro, sin inventar pemmican aún ausente. La rastra cambia su velocidad en nieve y el carro acorta viajes con técnica y equipo físicos. La interfaz muestra duración, existencias y encuentros. El avance de residentes/ecología de destino y el ciclo reproductivo de viajeros siguen como pendientes del modelo compacto. Animales y vela se entregan a continuación. [Contrato](m15_phase35_journeys.md).
-
-**Puerta:** un check por nodo contra el build sin el nodo; la cohorte
-`migrants` a 20 semillas.
+**Límites explícitos:** residentes/ecología de destino y ciclo diario reproductivo completo de viajeros pendientes de integración LOD. El consumidor llama advancePeoples después de cada step mientras hay ticket; los lotes que crucen la llegada siguen pendientes y están reproducidos en bugs/M16. Las pruebas por nodo incluyen negativas de técnica/objeto o lease, no se calibran pesos por una semilla. Cohorte migrants de veinte semillas, matriz sim:check:all y puerta anual lod-matches-detail diferidas por AGENTS.md; no se afirma mejora económica.
 
 ---
 

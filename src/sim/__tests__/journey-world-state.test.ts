@@ -54,6 +54,11 @@ function tick(state: WorldState): void { state.current.step(); state.advancePeop
     save.world.frontier.journey.transport.days = 1;
     save.world.frontier.journey.transport.mode = 'teleport';
     expect(() => deserializeSave(JSON.stringify(save))).toThrow(/corrupt/i);
+    const dateSave = JSON.parse(serializeSave(state, 10)) as { world: { frontier: { journey: { lastAdvancedTick: number; transit: { lastAdvancedTick: number; execution: { time: { tick: number } } } } } } };
+    dateSave.world.frontier.journey.lastAdvancedTick++;
+    dateSave.world.frontier.journey.transit.lastAdvancedTick++;
+    dateSave.world.frontier.journey.transit.execution.time.tick++;
+    expect(() => deserializeSave(JSON.stringify(dateSave))).toThrow(/corrupt/i);
     expect(actor.alive).toBe(true);
   });
 

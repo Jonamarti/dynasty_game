@@ -1,3 +1,7 @@
+## 2026-10-09 — M15 fase 35: cierre funcional y verificación
+
+Cuatro entregas separadas completan canoa, viajes provisionados/rastra/carro, animales y vela. Typecheck pasa; suite completa estable: 1.848 pasan, solo falla difusión heredada y una omitida. Los controles finales de viaje/encuentros pasan 16/16. sim:check mantiene los dos fallos conocidos de 147, sin relajar límites. E2E general: 126/128 pasan; los dos fallos y las cuatro nuevas se repiten con servidor fresco, 8/8 pasan. Capturas nuevas revisadas en artifacts/screenshots/m15-phase35-final-2026-10-09T-02/, preservando las históricas. Se actualiza el plan y se señala fase 36. Límites de reloj en bloque, residentes/ecología/reproducción en tránsito y conservación manufacturada en bugs/M16; cohortes/matriz/calibración diferidas. [Informe y comandos](m15_phase35_verification_20261009.md).
+
 ## 2026-10-09 — M15 fase 35: vela y rutas marítimas largas
 
 La vela es una receta y un objeto físicos. Requiere tejido y canoa; el plan marítimo exige además una canoa en el inventario y ambas prácticas. Solo esa combinación abre rutas por mar no contiguas y su velocidad; las negativas separan técnica de posesión. Arte generado y etiquetas traducidas. Captura revisada: artifacts/screenshots/m15-phase35-sail-2026-10-09/01-long-sea-journey.png. E2E de las cuatro puertas pasa. La versión aislada pasa typecheck y 76/76 pruebas focales en cuatro ficheros. [Contrato](m15_phase35_journeys.md). No se mide economía ni correspondencia anual; cohorts/matriz diferidas.

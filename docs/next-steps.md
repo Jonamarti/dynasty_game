@@ -1,10 +1,4 @@
-Implementación funcional de fase 35 reunida: canoa, rastra/carro, asno/caballo y vela. Verificación conjunta final en curso.
-
-Fase 35 en curso: navegación local, viajes terrestres y animales entregados; vela y cierre pendientes.
-
-**2026-10-09: fase 35 en curso; viajes terrestres, rastra y carro integrados.** Ticket persistente, provisiones físicas y deterioro en tránsito. Siguen animales y vela. Los pases compactos de residentes/ecología de destino y ciclo reproductivo de viajeros quedan documentados; no se afirma correspondencia LOD ni mejora económica. [Contrato](m15_phase35_journeys.md).
-
-**2026-10-09: fase 35 en curso; canoa local terminada.** La canoa física navega en agua dulce y mar resguardado con técnica y objeto. Siguen el viaje fechado, rastra/carro, animales y vela. [Contrato](m15_phase35_logboat.md). Cohortes y matriz aplazadas por AGENTS.md.
+**2026-10-09: fase 35 cerrada funcionalmente.** Canoa, viajes fechados, rastra/carro, asnos/caballos vivos y vela entregados en cuatro commits con docs/pruebas/capturas. Siguiente fase: **36, noticias y caravanas**; el nodo trade ya existe, faltan noticias, caravanas, incursiones y continuidad de casa rival. [Contrato](m15_phase35_transport.md) y [verificación](m15_phase35_verification_20261009.md). Conservación manufacturada, lotes de reloj que crucen una llegada y pases LOD/demografía de tránsito quedan registrados; cohorts/matriz y calibración anual continúan diferidas. Las notas que siguen son históricas.
 
 **2026-10-09: implementación de fase 34 reunida.** Ya se puede salir por un borde, llevar seguidores aceptados, proponer una migración, explorar y volver dos días después. WorldState mantiene una autoridad detallada y avanza cuerpos/ecología físicos fuera del mapa; reentrar conserva IDs, existencias y memorias. La interfaz y la llegada real tienen capturas en artifacts/screenshots/m15-phase34-travel-2026-10-09T-04/. El control corto de sequía y su negativo, la fisión y la conservación de cohortes pasan. Ver [contrato](m15_phase34_travel.md). La siguiente fase funcional es **35, transporte**. La puerta empírica lod-matches-detail, la economía agrícola/artesanal fuera del mapa y los costes de avance largo siguen en LOD/calibración; no se declara una mejora de supervivencia. Las notas de entregas anteriores debajo son históricas.
 
