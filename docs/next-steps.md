@@ -1,3 +1,5 @@
+**2026-10-09: implementación de fase 34 reunida.** Ya se puede salir por un borde, llevar seguidores aceptados, proponer una migración, explorar y volver dos días después. WorldState mantiene una autoridad detallada y avanza cuerpos/ecología físicos fuera del mapa; reentrar conserva IDs, existencias y memorias. La interfaz y la llegada real tienen capturas en artifacts/screenshots/m15-phase34-travel-2026-10-09T-04/. El control corto de sequía y su negativo, la fisión y la conservación de cohortes pasan. Ver [contrato](m15_phase34_travel.md). La siguiente fase funcional es **35, transporte**. La puerta empírica lod-matches-detail, la economía agrícola/artesanal fuera del mapa y los costes de avance largo siguen en LOD/calibración; no se declara una mejora de supervivencia. Las notas de entregas anteriores debajo son históricas.
+
 **2026-10-09: fase 34, deterioro físico fechado.** Barridas de medianoche del
 escrow con carry, conservación explícita y snapshots independientes. Tasa cero
 conserva contenido; todos los barridos se validan antes de publicar. Sigue

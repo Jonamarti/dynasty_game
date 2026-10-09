@@ -2124,7 +2124,7 @@ html, body, #app {
 }
 .worldmap-head b { font-size: 15px; }
 .worldmap-sub { color: var(--text-dim); font-size: 12px; }
-.worldmap-back, .worldmap-close, .worldmap-closer {
+.worldmap-back, .worldmap-close, .worldmap-closer, .worldmap-travel button {
   padding: 6px 12px;
   min-height: 32px;
   font: inherit;
@@ -2139,7 +2139,7 @@ html, body, #app {
 .worldmap-back { margin-left: auto; }
 .worldmap-back[hidden] + .worldmap-close { margin-left: auto; }
 .worldmap-back[hidden], .worldmap-closer[hidden], .worldmap-canvas[hidden] { display: none; }
-.worldmap-back:hover, .worldmap-close:hover, .worldmap-closer:hover { color: var(--text); border-color: var(--accent); }
+.worldmap-back:hover, .worldmap-close:hover, .worldmap-closer:hover, .worldmap-travel button:hover { color: var(--text); border-color: var(--accent); }
 
 .worldmap-body {
   display: flex;
@@ -2304,3 +2304,8 @@ html, body, #app {
   .worldmap-side, .worldpicker-side { flex: 0 0 auto; }
   .worldmap-closer { width: 100%; min-height: 40px; }
 }
+
+.worldmap-travel { display: grid; gap: 6px; margin-top: 16px; }
+.worldmap-travel[hidden] { display: none; }
+.worldmap-travel > div { display: flex; flex-wrap: wrap; gap: 4px; }
+.worldmap-travel button { font-size: 11px; padding: 6px; }

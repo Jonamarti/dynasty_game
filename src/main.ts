@@ -297,7 +297,13 @@ const techWeb = new TechWebOverlay(document.body);
 const familyTree = new FamilyTreeOverlay(document.body);
 const tribeGraph = new TribeGraphOverlay(document.body);
 // The globe: the fourth full-screen overlay, behind the same single door.
-const worldMap = new WorldMapOverlay(document.body);
+const worldMap = new WorldMapOverlay(document.body, (action, edge) => {
+  const actor = sim.player;
+  if (!actor) return;
+  if (!sim.order(actor, action, { edge, ...(action === 'propose' ? { recipeId: 'migration' } : {}) })) {
+    renderer.floaters.push(actor.x, actor.y, sim.lastRefusal ?? t('There is no way across'), { color: '#ff8c82', boxed: true });
+  }
+});
 
 /**
  * Whether anything was on screen at the instant Escape was pressed.
@@ -1852,6 +1858,11 @@ function issue(
   actor: Person, option: ActionOption, target: ActionTarget, screenX: number, screenY: number
 ): void {
   const actionId = option.id;
+  if (actionId === 'follow_me' && target.person) {
+    const accepted = sim.command(actor, target.person, 'follow_me', { personId: actor.id });
+    if (!accepted) renderer.floaters.push(target.person.x, target.person.y, sim.lastRefusal ?? t('The request was refused'), { color: '#ff8c82', boxed: true });
+    return;
+  }
   if (actionId === 'possess' && target.person) {
     possess(target.person);
     return;
@@ -2477,6 +2488,21 @@ function frame(now: number): void {
       sim.step();
       // The rest of the world (phase 33a): a no-op between game days and on the classic island, which has no map.
       worldState.advancePeoples();
+      if (sim !== worldState.current) {
+        sim = worldState.current;
+        renderer.setSim(sim);
+        newGame.setSim(sim);
+        player = sim.player;
+        selected = player ? { kind: 'person', person: player } : null;
+        commanding = null;
+        buildMode = false; craftMode = false;
+        renderer.commandedId = null; renderer.buildGhost = null;
+        renderer.floaters.clear(); lastActions.clear(); lastEventId = sim.social.recent.at(-1)?.id ?? 0;
+        radial.close(); picker.close(); worldMap.close();
+        if (player) camera.snapTo(player.x, player.y);
+        lastDesignCount = -1; lastRecipeCount = -1;
+        hud.renderBuildBar(sim, false); hud.renderCraftBar(sim, player, false);
+      }
       // Inside the loop, not outside it: with the speed slider up this runs
       // several times a frame, and the previous position worth drawing from is
       // the one before the *last* step.
@@ -2567,3 +2593,4 @@ if (import.meta.env.DEV) {
 }
 
 requestAnimationFrame(frame);
+

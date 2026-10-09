@@ -614,6 +614,9 @@ function personActions(actor: Person, other: Person, ctx: CatalogContext): Actio
   // putting in front of the player.
   const hurt = other.health < 100;
   return [
+    ...(other.id !== actor.id && other.alive && other.bandId === actor.bandId ? [{
+      id: 'follow_me', label: t('Follow me'), icon: '↗', enabled: true,
+    }] : []),
     ...(techPower(actor, 'herbalism') > 0 ? [{
       id: 'tend',
       label: t('Tend {name}', { name: other.name }),

@@ -25,6 +25,7 @@
  * in place. Pointer events, not mouse events, so a finger and a mouse are the
  * same code; nothing needs hovering to be reached.
  */
+import type { ComarcaEdge } from '../sim/world/ComarcaNeighbour.ts';
 import type { Simulation } from '../sim/core/Simulation.ts';
 import type { WorldGeography } from '../sim/world/WorldGeography.ts';
 import { globeGridOf, worldTerrainOf, type GlobeGrid, type WorldTerrain } from '../sim/world/WorldTerrain.ts';
@@ -89,7 +90,7 @@ export class WorldMapOverlay {
   private hovered: { x: number; y: number } | null = null;
   private signature = '';
 
-  constructor(container: HTMLElement) {
+  constructor(container: HTMLElement, private readonly travel?: (action: 'leave_comarca' | 'scout' | 'propose', edge: ComarcaEdge) => void) {
     this.root = document.createElement('div');
     this.root.className = 'worldmap';
     this.root.hidden = true;
@@ -115,6 +116,20 @@ export class WorldMapOverlay {
     this.backButton = q<HTMLButtonElement>('.worldmap-back');
     this.closeButton = q<HTMLButtonElement>('.worldmap-close');
     this.closerButton = q<HTMLButtonElement>('.worldmap-closer');
+    const journeys = document.createElement('div');
+    journeys.className = 'worldmap-travel';
+    // Persistent controls survive the map digest redraw, so a hover or tap is never detached.
+    for (const edge of ['n', 'e', 's', 'w'] as const) {
+      const row = document.createElement('div');
+      for (const action of ['leave_comarca', 'scout', 'propose'] as const) {
+        const button = document.createElement('button');
+        button.type = 'button'; button.dataset.travel = action; button.dataset.edge = edge;
+        button.addEventListener('click', () => { this.travel?.(action, edge); this.close(); });
+        row.appendChild(button);
+      }
+      journeys.appendChild(row);
+    }
+    q('.worldmap-side').appendChild(journeys);
     this.labelButtons();
 
     this.root.addEventListener('click', event => {
@@ -175,6 +190,13 @@ export class WorldMapOverlay {
   }
 
   private labelButtons(): void {
+    const directions = { n: t('north'), e: t('east'), s: t('south'), w: t('west') };
+    for (const button of this.root.querySelectorAll<HTMLButtonElement>('[data-travel]')) {
+      const direction = directions[button.dataset.edge as ComarcaEdge];
+      button.textContent = button.dataset.travel === 'scout' ? t('Scout {direction}', { direction })
+        : button.dataset.travel === 'propose' ? t('Propose moving {direction}', { direction })
+          : t('Leave to the {direction}', { direction });
+    }
     this.backButton.textContent = '← ' + t('The world');
     this.closeButton.textContent = t('Close');
     this.closerButton.textContent = t('Look closer');
@@ -282,6 +304,7 @@ export class WorldMapOverlay {
     if (signature === this.signature) return;
     this.signature = signature;
 
+    this.root.querySelector<HTMLElement>('.worldmap-travel')!.hidden = !sim.comarcaTravel || !sim.worldFrame;
     this.title.textContent = t('The world');
     this.sub.textContent = sim.player ? t('what {name} knows of it', { name: sim.player.name }) : '';
     this.backButton.hidden = this.mode !== 'region';

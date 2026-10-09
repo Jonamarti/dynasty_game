@@ -28,3 +28,7 @@ reservas/ingesta, flujo de leche (el reloj de hambre infantil no mide calorías
 retiradas), agua y fuentes por estación, con negativos contra el detallado.
 Las cohortes y matriz pesada permanecen diferidas hasta autorización expresa;
 los fallos craft/delta y difusión ya documentados no se convierten en pases.
+
+### 2026-10-09 — Tras cerrar la implementación de frontera (fase 34)
+
+ComarcaOffmapRuntime alimenta desde artículos realmente debitados y trabajo sobre nodos, comparte demografía y conocimiento y conserva JSON parcial. Medir correspondencia por estación y agua antes de calibrar el 25 % de trabajo, buffer de dos días y cuotas iguales. Integrar trabajo agrícola, procesamiento y construcción fuera del mapa con los ledgers ya existentes; los cultivos actuales sí envejecen. La fauna sigue un calendario por tick para respetar su stagger; medir y reducir el coste de varias comarcas/años en el paso de LOD, sin convertir la observación de una pose en FPS. Ejecutar la cohorte con mapa de fission-happens y la puerta anual de sequía solo cuando se autoricen esas mediciones. Los controles cortos de mecanismo pasan; no sustituyen esas cohortes. Mantener las dos aserciones heredadas de correspondencia/difusión y los fallos craving/perf visibles hasta investigar su causa.

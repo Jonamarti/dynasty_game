@@ -544,3 +544,5 @@ barridas diarias al escrow y persiste carry, preservación y ancla, sin converti
 varios días en una sola pérdida proporcional. [Contrato](m15_phase34_decay.md).
 La secuencia de consumo/producción en ticks pertenece al coordinador futuro;
 no activa Simulation ni sustituye la corrección ecológica de TileLedger.
+
+**Activación de frontera — 2026-10-09.** El paso 2 ya cambia propietarios en WorldState: el único Simulation detallado se retira, la comarca anterior queda en TileLedger y ComarcaOffmapRuntime ejecuta cuerpos compactos sobre sus bienes físicos. El retorno avanza primero al reloj global. No se han activado compactos dentro del mapa; permanecen fuera de this.people. La calibración y correspondencia del paso 4 y el trabajo agrícola/artesanal compacto quedan explícitamente pendientes, como documenta m15_phase34_offmap_runtime.md.

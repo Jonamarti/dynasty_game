@@ -13,3 +13,7 @@ La deliberación diaria conserva la prioridad agua, hambre sostenida, vecino con
 Pruebas: comarca-travel.test.ts verifica bordes, negativas visibles, esperas/interrupciones, autoridad retirada, reentrada, JSON parcial, exploración viva/muerta, conservación de cohortes, parentesco y el control corto the-thirsty-leave con agua como negativo. comarca-migration.test.ts comprueba la fisión real. Son controles deterministas de mecanismo; la cohorte con mapa y la calibración económica se aplazan por AGENTS.md.
 
 La presentación incluye controles persistentes para salir, explorar y proponer por cada borde, el pedido Seguidme y todos los textos en inglés/español. main actualiza motor, renderer, mapa, cámara, selección, menús y caches al cambiar de propietario. e2e/comarca-travel.spec.ts incluye dos pruebas de controles y una llegada con el coordinador real; su fixture solo completa el paseo hasta el borde. Capturas iniciales en artifacts/screenshots/m15-phase34-travel-2026-10-09T-01 y T-02; primera llegada real en T-03. La verificación final registra una nueva revisión sin sobrescribirlas.
+
+## Presentación final — 2026-10-09
+
+Capturas nuevas de controles ingleses, controles españoles y llegada real: artifacts/screenshots/m15-phase34-travel-2026-10-09T-04/. Revisada visualmente la pantalla en español. La spec forma parte de npm run e2e y genera una carpeta fechada nueva por defecto, para no sobreescribir hitos anteriores. main cambia la referencia de motor solo después del commit de WorldState y limpia selección/modos/caches antes de dibujar la nueva comarca.
