@@ -784,3 +784,7 @@ claimed across unobserved changes. See [m15_phase34_decay.md](m15_phase34_decay.
 ### Frontera de comarca activa — M15 fase 34, 2026-10-09
 
 WorldState mantiene un único Simulation ejecutable y un IdSpace global. En una llegada valida propietarios preparados, registra el origen en TileLedger, retira la autoridad vieja y publica la nueva. Fuera del mapa hay registros y ComarcaOffmapRuntime: cuerpos compactos y ecología física, nunca otro step detallado. El reloj global liquida las comarcas antes de reentrar. WorldStateRecord v4 incorpora ComarcaFrontier v4; versiones anteriores siguen cargando. Las memorias locales se separan por comarca y las identidades/relaciones familiares son mundiales. Las cohortes macro descuentan sus residentes materializados, que conservan cuerpos e IDs fuera de la región. Los exploradores pasan dos días compactos y solo su retorno comunica observaciones. Ver m15_phase34_travel.md y m15_phase34_offmap_runtime.md.
+
+## Canoa física — M15 fase 35, 2026-10-09
+
+World conserva el modo boat de balsa dulce y añade logboat con regiones propias para mar resguardado. Raft.ts resuelve técnica, objeto y seguridad del medio para órdenes, movimiento, necesidades e interrupciones. aboardBoat es una observación pública del movimiento que evita leer inventarios privados desde el renderer. Ver m15_phase35_logboat.md.

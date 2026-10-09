@@ -1,4 +1,4 @@
-import { canUseRaft } from '../core/Raft.ts';
+import { canUseBoat, canUseLogboat, canUseRaft } from '../core/Raft.ts';
 /**
  * Every verb in the game, and when it applies.
  *
@@ -1117,8 +1117,13 @@ function groundActions(
   const walkable = ctx.world.isWalkable(target.x, target.y);
   const sameLand = walkable && ctx.world.sameRegion(actor.x, actor.y, target.x, target.y);
   const swimLink = walkable && !sameLand && ctx.world.sameSwimRegion(actor.x, actor.y, target.x, target.y);
-  const raftLink = canUseRaft(actor) && ctx.world.sameBoatRegion(actor.x, actor.y, target.x, target.y);
-  const swimProblem = swimLink && !raftLink
+  const raftRoute = ctx.world.sameBoatRegion(actor.x, actor.y, target.x, target.y);
+  const logboatRoute = ctx.world.sameLogboatRegion(actor.x, actor.y, target.x, target.y);
+  const raftLink = canUseRaft(actor) && raftRoute;
+  const logboatLink = canUseLogboat(actor) && logboatRoute;
+  const boatLink = raftLink || logboatLink;
+  const boatRoute = raftRoute || logboatRoute;
+  const swimProblem = swimLink && !boatLink
     ? swimRouteRefusal(actor, ctx.drownAt ?? 85) : null;
   const options: ActionOption[] = [
     ...(walkable ? putDownOptions(ctx, 'here') : []),
@@ -1126,10 +1131,10 @@ function groundActions(
       id: 'goto',
       label: t('Walk here'),
       icon: '\u{1F45F}',
-      enabled: walkable && (sameLand || raftLink || (swimLink && swimProblem === null)),
+      enabled: walkable && (sameLand || boatLink || (swimLink && swimProblem === null)),
       reason: !walkable ? t('You cannot walk there')
         : swimProblem ? swimRefusalText(swimProblem)
-          : sameLand || raftLink || swimLink ? undefined : t('There is no way across'),
+          : sameLand || boatLink || swimLink ? undefined : t('There is no way across'),
     },
     // M11 phase 15d: the way out, for a captive — and the road home, for one
     // who has already slipped away. Offered without asking who is watching:
@@ -1172,11 +1177,18 @@ function groundActions(
       reason: refusal ? swimRefusalText(refusal) : undefined,
     });
   }
-  if ((walkable || ctx.world.isBoatTile(target.x, target.y)) &&
-      ctx.world.sameBoatRegion(actor.x, actor.y, target.x, target.y) && !sameLand) {
-    options.push({ id: 'boat', label: t('Travel by reed raft'), icon: '🛶',
-      enabled: canUseRaft(actor),
-      reason: canUseRaft(actor) ? undefined : t('A reed raft and cordage knowledge are needed') });
+  if ((walkable || ctx.world.isBoatTile(target.x, target.y) || ctx.world.isLogboatTile(target.x, target.y)) &&
+      boatRoute && !sameLand) {
+    const needsLogboat = logboatRoute && !raftRoute;
+    const logboat = canUseLogboat(actor) || needsLogboat || actor.inventory.has('logboat');
+    const reason = canUseBoat(actor) && (raftLink || logboatLink) ? undefined
+      : needsLogboat && actor.inventory.has('logboat') ? t('You need logboat knowledge to use it')
+        : !needsLogboat && actor.inventory.has('raft') ? t('You need cordage knowledge to use the reed raft')
+          : actor.inventory.has('logboat') ? t('You need logboat knowledge to use it')
+            : needsLogboat ? t('A logboat and logboat knowledge are needed')
+              : t('A reed raft and cordage knowledge are needed');
+    options.push({ id: 'boat', label: t(logboat ? 'Travel by logboat' : 'Travel by reed raft'), icon: '🛶',
+      enabled: canUseBoat(actor) && (raftLink || logboatLink), reason });
   }
   // M15 phase 23b: thatch from the standing grass. Offered on the ground it
   // stands on, because the grass is a layer and not a thing with a menu of its

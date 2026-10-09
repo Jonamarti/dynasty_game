@@ -1,4 +1,4 @@
-import { canUseRaft } from '../core/Raft.ts';
+import { canUseBoat, sameBoatRouteFor } from '../core/Raft.ts';
 import { edgeOfTile } from '../world/ComarcaNeighbour.ts';
 import type { ComarcaTravel } from '../world/ComarcaTravel.ts';
 /**
@@ -269,7 +269,7 @@ export interface ActionContext {
   /** The nearest water's edge reachable from a point, for `drag`. */
   nearestShore: (x: number, y: number) => { x: number; y: number } | null;
   /** Nearest dry freshwater bank connected by raft, for a retreat. */
-  nearestBoatShore?: (x: number, y: number) => { x: number; y: number } | null;
+  nearestBoatShore?: (person: Person, x: number, y: number) => { x: number; y: number } | null;
   /** Nearest bank in this connected swim region, for an interrupted swimmer. */
   nearestSwimShore?: (x: number, y: number) => { x: number; y: number } | null;
 }
@@ -982,19 +982,19 @@ export class ActionSystem {
    * handling of `Arrival.Blocked`.
    */
   private travel(person: Person, ctx: ActionContext, answers?: LethalNeed): boolean {
-    const rafting = person.action === 'boat' || (canUseRaft(person) && person.targetX !== null && person.targetY !== null &&
+    const rafting = person.action === 'boat' || (canUseBoat(person) && person.targetX !== null && person.targetY !== null &&
       !ctx.world.sameRegion(person.x, person.y, person.targetX, person.targetY) &&
-      ctx.world.sameBoatRegion(person.x, person.y, person.targetX, person.targetY));
+      sameBoatRouteFor(person, ctx.world, person.x, person.y, person.targetX, person.targetY));
     if (rafting) {
-      if (!canUseRaft(person)) { this.abandon(person, 'no_raft', ctx); return false; }
+      if (!canUseBoat(person)) { this.abandon(person, 'no_raft', ctx); return false; }
       // A long crossing checks needs every tick. Interrupted afloat, reach a
       // bank before releasing the commitment, as the swim retreat does.
       const retreating = person.action === 'boat' && person.order === null;
       const interrupted = retreating ? null : this.interruption(person, ctx, { ignoreLaden: true, answers });
       if (interrupted) {
         this.stop(person, interrupted, ctx);
-        if (ctx.world.isBoatTile(person.x, person.y)) {
-          const bank = ctx.nearestBoatShore?.(person.x, person.y);
+        if (ctx.world.isBoatTile(person.x, person.y) || ctx.world.isLogboatTile(person.x, person.y)) {
+          const bank = ctx.nearestBoatShore?.(person, person.x, person.y);
           if (bank) { person.action = 'boat'; person.order = null; person.actionTimer = 1;
             person.targetX = bank.x + 0.5; person.targetY = bank.y + 0.5; }
         }

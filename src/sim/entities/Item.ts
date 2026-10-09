@@ -89,6 +89,8 @@ export type ItemClass = 'food' | 'long' | 'small' | 'bulky' | 'loose';
 export const ITEMS: Record<string, ItemDef> = {
   raft: { id: 'raft', label: 'Reed raft', nutrition: 0, spoilTicks: 0, baseValue: 12,
     class: 'bulky', hand: { perHand: 0, perArms: 2, hands: 2, shoulder: 0 } },
+  logboat: { id: 'logboat', label: 'Logboat', nutrition: 0, spoilTicks: 0, baseValue: 24,
+    class: 'bulky', hand: { perHand: 0, perArms: 1, hands: 2, shoulder: 0 } },
   berries:  { id: 'berries',  label: 'Berries',    nutrition: 14, hydration: 4, spoilTicks: 2400, baseValue: 1, macros: { fat: 0.05, protein: 0.05, carb: 0.90 }, class: 'food', hand: { perHand: 4, perArms: 10, hands: 1 } },
   apple:    { id: 'apple',    label: 'Apples',     nutrition: 16, hydration: 6, spoilTicks: 6000, baseValue: 1, macros: { fat: 0.03, protein: 0.02, carb: 0.95 }, class: 'food', hand: { perHand: 2, perArms: 6, hands: 1 } },
   pear:     { id: 'pear',     label: 'Pears',      nutrition: 15, hydration: 6, spoilTicks: 4800, baseValue: 1, macros: { fat: 0.03, protein: 0.02, carb: 0.95 }, class: 'food', hand: { perHand: 2, perArms: 6, hands: 1 } },

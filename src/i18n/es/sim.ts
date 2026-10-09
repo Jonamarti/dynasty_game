@@ -1,5 +1,6 @@
 /** Spanish for sim. Keys are the English templates; see `i18n.ts`. */
 export const ES_SIM: Record<string, string> = {
+  "they need a reed raft or logboat and its knowledge": "necesitan una balsa de juncos o una canoa de tronco y conocer su técnica",
   "Variety drive": "Motivo de variedad",
   "Safety drive": "Motivo de seguridad",
   "safety": "seguridad",

@@ -2031,8 +2031,8 @@ export class Renderer {
     ctx.stroke();
     ctx.restore();
     // Afloat is observed action/position, never a read of a stranger's pack.
-    if (person.aboardRaft && this.sim.world.isBoatTile(person.x, person.y)) {
-      art.drawAsset(ctx, 'props', 'item/raft', px - 32 * k, y0 + 57 * k, k);
+    if (person.aboardBoat && (this.sim.world.isBoatTile(person.x, person.y) || this.sim.world.isLogboatTile(person.x, person.y))) {
+      art.drawAsset(ctx, 'props', person.aboardBoat === 'logboat' ? 'item/logboat' : 'item/raft', px - 32 * k, y0 + 57 * k, k);
       aspect.held = null;
     }
     art.drawPerson(ctx, aspect, x0, y0, k);
@@ -2185,7 +2185,6 @@ export class Renderer {
       ctx.strokeRect(px - w / 2 - 3, py - h / 2 - 3, w + 6, h + 6);
     }
   }
-
   /** A beast from the committed frames, facing whichever way it last moved. False if the art has no such species. */
   private drawArtAnimal(art: ArtAtlas, animal: Animal, at: Placed, px: number, py: number, w: number, h: number): boolean {
     const { ctx } = this;

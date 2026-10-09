@@ -76,7 +76,7 @@ import { telemetry } from './Telemetry.ts';
 export const enum PathStatus { Found = 0, AlreadyThere = 1, NoRoute = 2, GaveUp = 3 }
 
 /** The movement graph a route is allowed to use. */
-export type PassMode = 'walk' | 'swim' | 'boat';
+export type PassMode = 'walk' | 'swim' | 'boat' | 'logboat';
 const SWIM_COST = 6;
 
 /**
@@ -347,11 +347,12 @@ export class Pathfinder {
 
   private canPass(x: number, y: number, mode: PassMode): boolean {
     if (this.world.isWalkable(x, y)) return true;
-    return mode === 'boat' ? this.world.isBoatTile(x, y) : mode === 'swim' && this.world.isSwimTile(x, y);
+    return mode === 'boat' ? this.world.isBoatTile(x, y) : mode === 'logboat' ? this.world.isLogboatTile(x, y) : mode === 'swim' && this.world.isSwimTile(x, y);
   }
 
   private samePassRegion(ax: number, ay: number, bx: number, by: number, mode: PassMode): boolean {
     if (mode === 'boat') return this.world.sameBoatRegion(ax, ay, bx, by);
+    if (mode === 'logboat') return this.world.sameLogboatRegion(ax, ay, bx, by);
     return mode === 'swim'
       ? this.world.sameSwimRegion(ax, ay, bx, by)
       : this.world.sameRegion(ax, ay, bx, by);

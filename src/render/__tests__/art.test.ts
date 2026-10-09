@@ -82,6 +82,10 @@ describe('art coverage', () => {
     expect(props.keys['item/sling']).toBeDefined();
   });
 
+  it('draws an inventory icon for the logboat', () => {
+    expect(props.keys['item/logboat']).toBeDefined();
+  });
+
   it('draws an inventory icon for each crafted digging tool', () => {
     for (const tool of DIG_TOOLS.filter(tool => tool.tech)) {
       expect(props.keys[`item/${tool.item}`], tool.item).toBeDefined();

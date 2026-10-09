@@ -3468,6 +3468,8 @@ envolver la latitud por error.
   de 15b, sobre todo), y se añade
   ese término a la decisión de partir.
 
+**Avance 2026-10-09: canoa local integrada.** Nodo, receta, regiones propias, orden y seguridad compartida, arte y traducciones. Seis pruebas de navegación y un e2e con negativos de técnica/objeto y capturas en artifacts/screenshots/m15-phase35-logboat-2026-10-09/. Viajes fechados, animales y vela siguen en esta fase. [Contrato](m15_phase35_logboat.md).
+
 **Puerta:** un check por nodo contra el build sin el nodo; la cohorte
 `migrants` a 20 semillas.
 

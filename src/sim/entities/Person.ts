@@ -25,6 +25,7 @@ import { Beliefs } from '../ai/Beliefs.ts';
 import { PlaceMemory } from '../social/PlaceMemory.ts';
 import { armForce, newBody, poisonWork, type Body, type Condition } from './Body.ts';
 import type { IdSpace } from '../core/IdSpace.ts';
+import type { TransportMode } from './Animal.ts';
 
 /**
  * `farm` and `smith` are added ahead of the technologies that will use them.
@@ -217,6 +218,8 @@ export class Person {
   isPlayer = false;
   /** Observed raft deployment, for drawing only; routing checks the actual craft. */
   declare aboardRaft?: boolean;
+  /** Observable craft currently carrying this person; renderers must not inspect private tech. */
+  aboardBoat?: 'raft' | 'logboat';
   /**
    * A standing occupation, or none. Leans `Brain`'s scorer toward the job's
    * own verbs and damps the rest of `WORK_ACTIONS` a little — see `Job.ts`.

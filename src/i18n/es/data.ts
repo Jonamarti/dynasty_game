@@ -312,4 +312,6 @@ export const ES_DATA: Record<string, string> = {
   "Iron spade": "Pala de hierro",
   "Iron plough": "Arado de hierro",
 
+  "Logboat": "Canoa de tronco",
+  "A hollowed timber hull carries its maker across fresh water and sheltered sea lanes.": "Un casco vaciado en un tronco lleva a quien lo construyó por agua dulce y brazos de mar resguardados.",
 };

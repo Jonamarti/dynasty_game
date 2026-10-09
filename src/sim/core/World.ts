@@ -400,6 +400,7 @@ export class World {
     this.walkable[i] = now;
     this.swimRegionsDirty = true;
     this.boatVersion = -1;
+    this.logboatVersion = -1;
     if (walkable) this.joinRegions(i); else this.splitRegions(i);
   }
 
@@ -715,6 +716,42 @@ export class World {
       };
     }
     return null;
+  }
+
+  /** A logboat can use rivers and lakes, plus salt water sheltered close to shore. */
+  isLogboatTile(x: number, y: number): boolean {
+    return this.isFreshWater(x, y) || (this.isSaltWater(x, y) && this.depthAt(x, y) <= this.swimDepth * 4);
+  }
+
+  /** Logboat routes add sheltered salt lanes; reed rafts retain their freshwater-only region. */
+  private logboatRegions?: Int32Array;
+  private logboatVersion = -1;
+  sameLogboatRegion(ax: number, ay: number, bx: number, by: number): boolean {
+    if (!this.inBounds(ax, ay) || !this.inBounds(bx, by)) return false;
+    if (!this.logboatRegions || this.logboatVersion !== this.earthVersion) {
+      const region = this.logboatRegions = new Int32Array(this.width * this.height).fill(-1);
+      const queue: number[] = [];
+      let id = 0;
+      for (let start = 0; start < region.length; start++) {
+        const sx = start % this.width, sy = Math.floor(start / this.width);
+        if (region[start] !== -1 || !(this.isWalkable(sx, sy) || this.isLogboatTile(sx, sy))) continue;
+        queue.length = 0; queue.push(start); region[start] = id;
+        for (let head = 0; head < queue.length; head++) {
+          const tile = queue[head]!, x = tile % this.width, y = Math.floor(tile / this.width);
+          for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+            const nx = x + dx!, ny = y + dy!;
+            if (!this.inBounds(nx, ny)) continue;
+            const next = this.index(nx, ny);
+            if (region[next] !== -1 || !(this.isWalkable(nx, ny) || this.isLogboatTile(nx, ny))) continue;
+            region[next] = id; queue.push(next);
+          }
+        }
+        id++;
+      }
+      this.logboatVersion = this.earthVersion;
+    }
+    const a = this.logboatRegions[this.index(ax, ay)]!;
+    return a !== -1 && a === this.logboatRegions[this.index(bx, by)];
   }
 
   /** Derived boat connectivity is rebuilt after terrain changes, never saved.

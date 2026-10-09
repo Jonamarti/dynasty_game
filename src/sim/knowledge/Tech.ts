@@ -51,6 +51,8 @@ import { BODY_PARTS, strikeShare, type BodyPart } from '../entities/Body.ts';
 export const TECHS = [
   'firemaking', 'cordage', 'plant_lore', 'tracking',
   'cooking', 'hafting', 'clothing', 'pottery', 'stoneworking', 'carpentry',
+  // M15 phase 35: a built logboat opens navigable sea lanes as well as fresh water.
+  'logboat',
   // Phase 4: the fourth channel. Everything above travels only between living
   // heads; these are how a thing gets past the death of everyone who knew it.
   'marking', 'writing', 'clay_tablet', 'library',
@@ -830,6 +832,22 @@ export const TECH: Record<Tech, TechDef> = {
     description:
       'Timber jointed rather than piled. Roofs that span a room, and a house a ' +
       'family can grow inside.',
+  },
+  logboat: {
+    id: 'logboat', label: 'The logboat', domain: 'timber',
+    age: 'mesolithic', firstKnown: 'about 8,000 BC',
+    kind: 'device',
+    requires: ['carpentry', 'firemaking', 'stoneworking'], difficulty: 0.65, skill: 'build',
+    prototype: { wood: 4, rope: 2 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'carpentry' }, { kind: 'knows', tech: 'firemaking' },
+                { kind: 'place', biome: 'water' }],
+        weight: 1.0, story: 'hollowed timber with fire and an edge, and the river carried it' },
+      { needs: [{ kind: 'knows', tech: 'stoneworking' }, { kind: 'knows', tech: 'carpentry' },
+                { kind: 'doing', action: 'gather' }],
+        weight: 0.7, story: 'watched a timber float and wondered how far it could carry a person' },
+    ],
+    description: 'A hollowed timber hull, shaped with fire and stone, for fresh water and sheltered sea lanes.',
   },
   // M8.1: the first node of the food half of the tree. See
   // m8_plan_the_ages.md, mechanism 2 — a fish node reuses `ResourceNode`
@@ -2584,6 +2602,10 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   carpentry: {
     summary: 'Jointed timber: the longhouse, and faster building.',
     site: 'BuildingDef.requiresTech on the longhouse, ActionSystem.doBuild, RECIPES.spade and Earth.digTool',
+  },
+  logboat: {
+    summary: 'A hollowed timber hull carries its maker across fresh water and sheltered sea lanes.',
+    site: 'canUseLogboat in sim/core/Raft.ts; World.sameLogboatRegion; MovementSystem boat routing; RECIPES.logboat',
   },
   fishing: {
     summary: 'More from every fishing spot, and food that keeps coming in winter.',
