@@ -32,6 +32,7 @@ export interface CompactBandLifeContext {
   readonly worldSeed: string | number;
   readonly ids: IdSpace;
   readonly peopleById: Map<number, Person>;
+  readonly parentArchive?: (id: number) => Person | null;
   readonly householdsById: Map<number, Household>;
   readonly relationships: RelationshipGraph;
   readonly makeChild?: (mother: Person, rng: RNG) => Person;
@@ -107,7 +108,7 @@ export function advanceCompactBandLife(roster: readonly CompactPerson[], ctx: Co
     if (!person.alive) continue;
     system.daily([person], {
       rng: compact.rng, population: ctx.population, tick: ctx.tick, day: ctx.day,
-      peopleById: ctx.peopleById, householdsById: ctx.householdsById, roofTonight: ctx.roofTonight,
+      peopleById: ctx.peopleById, parentArchive: ctx.parentArchive, householdsById: ctx.householdsById, roofTonight: ctx.roofTonight,
       makeChild, onBirth: (child, mother, father) => registerBirth(child, mother, father, ctx, newborns, events),
       onDeath: (dying, cause) => dying.die(cause),
     });

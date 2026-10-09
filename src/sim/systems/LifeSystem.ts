@@ -81,6 +81,8 @@ export interface LifeContext {
   tick: number;
   day: number;
   peopleById: Map<number, Person>;
+  /** Resolve an already conceived child's parent across comarca owners; never enables distant conception. */
+  parentArchive?: (id: number) => Person | null;
   householdsById: Map<number, Household>;
   /**
    * Who slept under which roof at midnight (`Simulation.shareTheHearth`).
@@ -194,7 +196,7 @@ export class LifeSystem {
       if (risk) {
         telemetry.count('pregnant_days_at_risk');
         if (care.rng.next() < risk.chance) {
-          const father = mother.pregnantBy === null ? null : ctx.peopleById.get(mother.pregnantBy) ?? null;
+          const father = mother.pregnantBy === null ? null : ctx.peopleById.get(mother.pregnantBy) ?? ctx.parentArchive?.(mother.pregnantBy) ?? null;
           mother.pregnant = false;
           mother.gestationLeft = 0;
           mother.pregnantBy = null;
@@ -211,7 +213,7 @@ export class LifeSystem {
 
     mother.pregnant = false;
     mother.lastBirthDay = ctx.day;
-    const father = mother.pregnantBy === null ? null : ctx.peopleById.get(mother.pregnantBy) ?? null;
+    const father = mother.pregnantBy === null ? null : ctx.peopleById.get(mother.pregnantBy) ?? ctx.parentArchive?.(mother.pregnantBy) ?? null;
     mother.pregnantBy = null;
 
     const child = this.conceiveChild(mother, father, ctx);

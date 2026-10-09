@@ -1,3 +1,7 @@
+## 2026-10-09 — M15 fase 34: residentes compactos y alimento físicamente debitado
+
+Se activa un runtime fechado para personas fuera del mapa junto con ComarcaEcology. Conserva identidad, edad, nacimientos, streams, trabajo bancado y plan diario; los consumos retiran artículos reales y la cosecha paga trabajo sobre nodos existentes. El cereal crudo sin nutrición se excluye antes de debitarlo. El trabajo no puede acumular años de crédito ni producir sobre un buffer lleno. LifeSystem admite resolver el padre de un embarazo ya concebido en otro propietario sin habilitar concepción remota. Cinco pruebas del adaptador pasan, incluido JSON a mitad del día y reservas finitas. Typecheck pasa; verificación conjunta final en la entrega de viaje. Cohortes y matriz diferidas por AGENTS.md: sin afirmar mejora económica. [Contrato](m15_phase34_offmap_runtime.md).
+
 ## 2026-10-09 — M15 fase 34: deliberación y fisión migratoria
 
 BandSystem ofrece migración por falta de agua, hambre sostenida, amenaza, exceso de población o destierro, con prioridad fija y destinos del mapa personal. Sin un vecino conocido pide scout. El consenso usa necesidad específica; sed no veta la salida que busca agua. Una partida parcial aprobada crea una hija con ID global y conserva humanos, parentesco, cultura y hogares. Nueve pruebas focales pasan; el control de fisión opera sobre rosters reales y no sustituye una cohorte. [Contrato](m15_phase34_migration_policy.md). Capturas contemporáneas: artifacts/screenshots/m15-phase34-travel-2026-10-09T-02/. Cohortes y matriz diferidas por AGENTS.md.

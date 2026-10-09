@@ -4268,3 +4268,7 @@ El coordinador debe intercalar cada consumo/llegada física en su tick antes de
 la siguiente barrida; no se afirma correspondencia para mutaciones ignoradas.
 Sigue autoridad global, producción tipada, ecología/terreno y materialización;
 no hay cruce jugable ni cierre de fase 34.
+
+## Avance del 2026-10-09 — Fase 34, residentes compactos con bienes físicos
+
+ComarcaOffmapRuntime avanza la comarca aparcada sin otro motor detallado: cuerpos, trabajo, consumo finito, demografía y conocimiento, junto con la ecología del libro. La primera jornada puede ser parcial y se guarda su progreso. Cinco pruebas de política/runtime pasan; el consumo se descuenta antes del alivio. Reglas de diseño y límites de calibración en [contrato](m15_phase34_offmap_runtime.md). El coordinador de viaje se entrega en el siguiente commit.

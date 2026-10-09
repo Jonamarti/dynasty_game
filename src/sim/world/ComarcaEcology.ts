@@ -123,17 +123,20 @@ export class ComarcaEcology {
   toRecord(): ComarcaEcologyRecord { return clone(this.state); }
 
   /** Advance existing terrain and objects through the game's passive event calendars. */
-  advanceTo(targetTick: number, geography: WorldGeography): ComarcaEcologyResult {
+  advanceTo(targetTick: number, geography: WorldGeography, services?: {
+    ids?: IdSpace; peopleById?: Map<number, Person>; inhabitedBands?: ReadonlySet<number>;
+    onTick?: (tick: number, clock: TimeManager, world: World, objects: WorldObjectState) => void;
+  }): ComarcaEcologyResult {
     if (!Number.isSafeInteger(targetTick) || targetTick < this.state.entry.lastAdvancedTick) invalid('target tick moved backwards');
     const entry = this.state.entry;
     const expectedIdentity = comarcaIdentityAt(geography, entry.identity.cx, entry.identity.cy);
     if (JSON.stringify(expectedIdentity) !== JSON.stringify(entry.identity)) invalid('geography does not match saved comarca');
     const clock = TimeManager.fromSnapshot({ version: 1, tick: entry.lastAdvancedTick, config: this.state.time });
     const tileLedger = TileLedger.fromRecord({ recordType: 'TileLedger', version: 1, entries: [entry] });
-    const detached = tileLedger.hydrate(entry.identity, { tick: entry.lastAdvancedTick, day: entry.lastAdvancedDay }, new Map<number, Person>());
+    const detached = tileLedger.hydrate(entry.identity, { tick: entry.lastAdvancedTick, day: entry.lastAdvancedDay }, services?.peopleById ?? new Map<number, Person>());
     const world = detached.world;
     const objects = detached.objects;
-    const ids = IdSpace.fromSnapshot(this.state.ids);
+    const ids = services?.ids ?? IdSpace.fromSnapshot(this.state.ids);
     const forestRng = RNG.fromSnapshot(this.state.forestRng);
     const wildlifeRng = RNG.fromSnapshot(this.state.wildlifeRng);
     const ecologyRng = RNG.fromSnapshot(this.state.ecologyRng);
@@ -167,7 +170,7 @@ export class ComarcaEcology {
       treeHash.rebuild(objects.trees);
       for (const building of objects.buildings) {
         if (building.complete && building.crop) building.crop.advance(clock.day, clock.growth);
-        const neglect = abandonedBuildingNeglectPerDay(building, daysPerYear);
+        const neglect = services?.inhabitedBands?.has(building.ownerBandId) ? 0 : abandonedBuildingNeglectPerDay(building, daysPerYear);
         if (neglect > 0) building.damage(neglect);
         const keeps = building.def.preserves ?? 1;
         sweepSpoilage(building.store, keeps);
@@ -195,6 +198,7 @@ export class ComarcaEcology {
       for (let i = objects.animals.length - 1; i >= 0; i--) if (!objects.animals[i]!.alive) {
         objects.animalsById.delete(objects.animals[i]!.id); objects.animals.splice(i, 1);
       }
+      services?.onTick?.(tick, clock, world, objects);
       if (tick > 0 && tick % ticksPerDay === 0) daily();
     }    const day = clock.day;
     const updatedEntry: TileLedgerEntry = { recordType: 'TileLedgerEntry', version: 1, identity: clone(entry.identity),
