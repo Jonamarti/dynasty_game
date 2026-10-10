@@ -1,3 +1,15 @@
+## 2026-10-10 — m15: polainas cosidas
+
+`0.15.39-alpha`: técnica individual tras sastrería, dos rutas de descubrimiento,
+receta de piel 2 + tendón 1 con aguja retenida, y hueco de piernas. Abrigo 0,15
+solo puesto y capa de piernas real del atlas; torso/pies siguen independientes.
+Icono regenerado, español completo y equipo conservado por JSON.
+
+Typecheck, 66/66 unitarias focalizadas y browser 1/1 pasan; chequeo corto con
+2/147 fallos conocidos. La suite global sobre .38 se informa separadamente.
+Contrato: `docs/m15_phase14c_leggings.md`; captura revisada:
+`artifacts/screenshots/m15-phase14c-leggings-2026-10-10/01-polainas.png`.
+No acredita supervivencia de un aprendiz con materiales ni cierra14c.
 ## 2026-10-10 — m15: envolturas de pies
 
 `0.15.38-alpha`: nueva técnica individual, descubrimiento por frío/cuerda,

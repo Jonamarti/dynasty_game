@@ -1,5 +1,10 @@
 /** Spanish for tech. Keys are the English templates; see `i18n.ts`. */
 export const ES_TECH: Record<string, string> = {
+  'Sewn hide leg coverings; the first date is uncertain': 'Prendas de piel cosida para las piernas; la fecha más antigua es incierta',
+  'thought of sewing hide around legs that the tunic left cold': 'pensó en coser piel alrededor de las piernas que la túnica dejaba frías',
+  'pulled sinew through hide and imagined a covering for each leg': 'pasó tendón a través de una piel e imaginó una prenda para cada pierna',
+  'Sewn hide coverings warm the legs without occupying the torso or feet.': 'Las prendas de piel cosida abrigan las piernas sin ocupar el torso ni los pies.',
+  'Sewn leggings warm the legs only while worn.': 'Las polainas cosidas solo abrigan las piernas cuando se llevan puestas.',
   'Crafted foot wraps warm the feet only when actually equipped.': 'Las envolturas de pies fabricadas solo abrigan cuando se llevan puestas.',
   'Hide bound around the feet; the first date is uncertain': 'Piel atada alrededor de los pies; la fecha más antigua es incierta',
   'wrapped a cold foot in a scrap of hide': 'envolvió un pie frío en un retazo de piel',

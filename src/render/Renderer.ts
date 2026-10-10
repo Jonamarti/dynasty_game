@@ -68,7 +68,9 @@ export function wornGarmentsOf(person: Person): PersonAspect['wear'] {
     ? 'wraps' as const : undefined;
   // Keep absent optional regions out of the appearance record: old callers
   // and cached appearances already use the two torso/cloak keys.
-  return feet ? { torso, cloak, feet } : { torso, cloak };
+  const legs = person.equipment.legs?.item === 'leggings' && person.inventory.count('leggings') >= 1
+    ? 'trousers' as const : undefined;
+  return { torso, cloak, ...(feet ? { feet } : {}), ...(legs ? { legs } : {}) };
 }
 
 const BIOME_COLORS: Record<Biome, [string, string]> = {

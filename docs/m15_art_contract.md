@@ -89,3 +89,5 @@ item/dried_meat y item/dried_fish tienen iconos propios generados. Fuentes:
 art/src/buildings/buildings.ts y art/src/props/items.ts; art:build actualizado.
 
 2026-10-10 — foot_wraps: icono generado desde art/src/props/items.ts; prenda de pies en la capa existente feet/wraps, solo cuando el inventario respalda equipment.feet. Ver m15_phase14c_foot_wraps.md.
+
+2026-10-10 — leggings: icono generado en art/src/props/items.ts; capa existente trousers en las piernas cuando equipment.legs tiene polainas respaldadas por inventario. Contrato m15_phase14c_leggings.md.

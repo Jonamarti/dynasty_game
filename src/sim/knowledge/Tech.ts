@@ -206,6 +206,7 @@ export const TECHS = [
   'pemmican',
   'saltmaking', 'salting',
   'foot_wraps',
+  'leggings',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -470,6 +471,19 @@ export interface TechDef {
  * catch.
  */
 export const TECH: Record<Tech, TechDef> = {
+  leggings: {
+    id: 'leggings', label: 'Leggings', domain: 'cloth',
+    age: 'upper_palaeolithic', firstKnown: 'Sewn hide leg coverings; the first date is uncertain',
+    kind: 'device', requires: ['tailoring'], difficulty: 0.3, skill: 'build',
+    prototype: { hide: 1, sinew: 1 }, maxRefinement: 3,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'tailoring' }, { kind: 'holding', item: 'needle' }, { kind: 'feeling', need: 'cold' }],
+        weight: 0.8, story: 'thought of sewing hide around legs that the tunic left cold' },
+      { needs: [{ kind: 'knows', tech: 'tailoring' }, { kind: 'holding', item: 'sinew' }, { kind: 'season', season: 'winter' }],
+        weight: 0.5, story: 'pulled sinew through hide and imagined a covering for each leg' },
+    ],
+    description: 'Sewn hide coverings warm the legs without occupying the torso or feet.',
+  },
   foot_wraps: {
     id: 'foot_wraps', label: 'Foot wraps', domain: 'cloth',
     age: 'middle_palaeolithic', firstKnown: 'Hide bound around the feet; the first date is uncertain',
@@ -2652,6 +2666,8 @@ export interface TechEffect {
 }
 
 export const TECH_EFFECTS: Record<Tech, TechEffect> = {
+  leggings: { summary: 'Sewn leggings warm the legs only while worn.',
+    site: 'RECIPES.leggings retained needle; ITEMS.leggings garment; warmthFrom and Renderer.wornGarmentsOf' },
   foot_wraps: { summary: 'Crafted foot wraps warm the feet only when actually equipped.',
     site: 'RECIPES.foot_wraps; ITEMS.foot_wraps garment; warmthFrom and Renderer.wornGarmentsOf' },
   preserving: { summary: 'A drying rack makes meat and fish that spoil ten times more slowly.',
