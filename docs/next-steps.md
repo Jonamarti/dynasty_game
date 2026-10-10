@@ -1,3 +1,5 @@
+**2026-10-10: 14c, parka con alamares entregada.** Nodo de receta, materiales físicos, abrigo sólo puesto y capa con cierres de hueso. [Contrato y captura](m15_phase14c_toggles.md). Siguen túnica de lino y manto de lana; bolsillos/desgaste/reparación pendientes.
+
 **2026-10-10: 14a–14b, ropa puesta entregada.** Abrigo/armadura en slots del cuerpo, calor y protección sólo vestidos, órdenes cortas, apariencia y limpieza al perder propiedad. [Contrato](m15_phase14_worn_clothing.md). Catálogo, bolsillos, deterioro y reparación14c siguen pendientes.
 
 **2026-10-10: 15a, instrumento por origen entregado.** Pérdidas secas/reales y nutrición en inventario personal, almacén, obra y montón. [Contrato](m15_phase15a_spoilage_sources.md). Cohortes de veinte semillas y activación15c siguen diferidas por AGENTS.md; tasa por defecto cero.

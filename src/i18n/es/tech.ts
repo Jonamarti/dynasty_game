@@ -1,5 +1,11 @@
 /** Spanish for tech. Keys are the English templates; see `i18n.ts`. */
 export const ES_TECH: Record<string, string> = {
+  'Toggles': 'Alamares',
+  'Bone toggles; the first date is uncertain': 'Alamares de hueso; se desconoce la primera fecha',
+  'used bone pieces to fasten a warm hide coat closed': 'usó piezas de hueso para cerrar un abrigo cálido de piel',
+  'thought of fastening a coat shut against the winter cold': 'pensó en cerrar un abrigo para protegerse del frío invernal',
+  'Bone toggles fasten a fur coat closed and make it warmer while worn.': 'Los alamares de hueso cierran un abrigo de piel y lo hacen más cálido mientras se lleva puesto.',
+  'Bone toggles fasten a fur coat closed and warm the torso only while worn.': 'Los alamares de hueso cierran un abrigo de piel y abrigan el torso solo cuando se lleva puesto.',
   'Sewn hide head coverings; the first date is uncertain': 'Prendas de piel cosida para la cabeza; la fecha más antigua es incierta',
   'pulled hide over a cold head and thought of sewing it to fit': 'se cubrió la cabeza fría con piel y pensó en coserla a medida',
   'folded a winter hide into a covering for the head': 'dobló una piel en invierno para cubrir la cabeza',

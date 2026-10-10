@@ -1682,6 +1682,12 @@ el mismo hueco de pies sin sumar ambas prendas. [Contrato y captura](m15_phase14
 **2026-10-10:** gorro `fur_hat` entregado con aguja retenida, hueco de cabeza,
 abrigo y capa visual. [Contrato y captura](m15_phase14c_fur_hat.md).
 
+**2026-10-10, avance 14c:** parka con alamares `toggled_coat` entregada como
+nodo de receta `toggles`, tras sastrería y trabajo de hueso. Consume parka 1
+y hueso 2; abrigo 0,48 sólo puesta, con cierres visibles y persistencia.
+[Contrato y captura](m15_phase14c_toggles.md). Bolsillos, desgaste y reparación
+siguen pendientes; no se declara cerrada 14c ni mejora de supervivencia.
+
 ### 14d. Estatus (medido; opcional dentro de la fase)
 
 `garment.status` suma al motivo de estatus (fase 5d) de quien la lleva y a la

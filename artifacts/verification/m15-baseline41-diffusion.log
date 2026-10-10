@@ -1,0 +1,26 @@
+
+ RUN  v4.1.11 C:/Users/Marty/Documents/Work/Programs/dynastyGame/artifacts/verification/m15-baseline41
+
+ ❯ src/sim/__tests__/people-knowledge.test.ts (35 tests | 1 failed) 15480ms
+     × the model is honest that sustained full contact does homogenise, over generations 137ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/sim/__tests__/people-knowledge.test.ts > a technological gap persists (owner decision 2026-10-06: diffusion must be small) > the model is honest that sustained full contact does homogenise, over generations
+AssertionError: expected 0.63 to be less than 0.6
+ ❯ src/sim/__tests__/people-knowledge.test.ts:418:67
+    416|     // the table, not concentrated in the one that is new. Still a hal…
+    417|     // ten-year figure above and clear of the hot build's 0.1.
+    418|     expect(dispersion(1, LEARN_MU_START, PARTIAL_START, 120, 20)).toBe…
+       |                                                                   ^
+    419|   });
+    420| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 34 passed (35)
+   Start at  17:32:29
+   Duration  17.30s (transform 984ms, setup 0ms, import 1.56s, tests 15.48s, environment 0ms)
+

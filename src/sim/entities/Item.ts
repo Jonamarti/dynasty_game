@@ -493,6 +493,10 @@ export const ITEMS: Record<string, ItemDef> = {
     class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'feet', warmth: 0.12 } },
   fur_hat: { id: 'fur_hat', label: 'Fur hat', nutrition: 0, spoilTicks: 0, baseValue: 5,
     class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'head', warmth: 0.10 } },
+  // M15 phase 14c: bone toggles close a fur coat, adding torso warmth only
+  // after the garment has been crafted and equipped.
+  toggled_coat: { id: 'toggled_coat', label: 'Toggled coat', nutrition: 0, spoilTicks: 0, baseValue: 18,
+    class: 'bulky', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'torso', warmth: 0.48 } },
 };
 
 export class Inventory {

@@ -4739,3 +4739,13 @@ real de esas primeras conservas y demanda posterior antes de medir/activar15c.
 
 ### 2026-10-10 — suite completa de la copia fija38
 272 archivos:267 pasan,5 fallan;1992 pruebas pasan,6 fallan,1 omitida. Log artifacts/m15-full-unit-38.log (598.58s), commit ee9506c. Persisten tributo, conspiración, sed, contador de comida, correspondencia compacta y excavación. Difusión pasa en esta copia sin arreglo dirigido; no se declara resuelta ni suite verde. Excluye las prendas posteriores .39–.41, verificadas focalmente.
+
+### 2026-10-10 — difusión reproducida antes de las prendas nuevas
+La copia fija e28db05 (`0.15.41-alpha`) reproduce `people-knowledge.test.ts`:
+34/35 correctas, difusión de contacto sostenido 0,63 frente al límite <0,6.
+Log: artifacts/verification/m15-baseline41-diffusion.log. Es anterior a
+alamares/lino/lana; no se ajusta el umbral ni se declara resuelta la incidencia.
+La corrida global inicial durante integración (.41→.42) es evidencia mixta:
+8 pruebas fallidas y un fallo de carga por lectura de package.json durante
+escritura, además del arte previo al rebuild. No es una línea base fija ni
+la verificación final. Se repetirá sobre el conjunto estable.

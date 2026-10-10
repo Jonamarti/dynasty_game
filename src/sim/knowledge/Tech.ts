@@ -209,6 +209,7 @@ export const TECHS = [
   'leggings',
   'moccasins',
   'fur_hat',
+  'toggles',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -473,6 +474,19 @@ export interface TechDef {
  * catch.
  */
 export const TECH: Record<Tech, TechDef> = {
+  toggles: {
+    id: 'toggles', label: 'Toggles', domain: 'cloth', tier: 'craft',
+    age: 'upper_palaeolithic', firstKnown: 'Bone toggles; the first date is uncertain',
+    kind: 'device', requires: ['tailoring', 'bone_working'], difficulty: 0.35, skill: 'build',
+    prototype: { fur_coat: 1, bone: 2 }, maxRefinement: 3,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'tailoring' }, { kind: 'knows', tech: 'bone_working' }, { kind: 'holding', item: 'fur_coat' }, { kind: 'holding', item: 'bone' }],
+        weight: 0.8, story: 'used bone pieces to fasten a warm hide coat closed' },
+      { needs: [{ kind: 'knows', tech: 'tailoring' }, { kind: 'knows', tech: 'bone_working' }, { kind: 'feeling', need: 'cold' }, { kind: 'season', season: 'winter' }],
+        weight: 0.5, story: 'thought of fastening a coat shut against the winter cold' },
+    ],
+    description: 'Bone toggles fasten a fur coat closed and make it warmer while worn.',
+  },
   fur_hat: {
     id: 'fur_hat', label: 'Fur hat', domain: 'cloth',
     age: 'upper_palaeolithic', firstKnown: 'Sewn hide head coverings; the first date is uncertain',
@@ -2694,6 +2708,8 @@ export interface TechEffect {
 }
 
 export const TECH_EFFECTS: Record<Tech, TechEffect> = {
+  toggles: { summary: 'Bone toggles fasten a fur coat closed and warm the torso only while worn.',
+    site: 'RECIPES.toggled_coat; ITEMS.toggled_coat garment; warmthFrom and Renderer.wornGarmentsOf' },
   fur_hat: { summary: 'A sewn fur hat warms the head only while worn.',
     site: 'RECIPES.fur_hat retained needle; ITEMS.fur_hat garment; warmthFrom and Renderer.wornGarmentsOf' },
   moccasins: { summary: 'Sewn moccasins warm the feet more than wraps while actually worn.',

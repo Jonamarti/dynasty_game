@@ -89,6 +89,13 @@ describe('art coverage', () => {
     }
   });
 
+  it('draws a toggled fur coat as both a prop and a visible torso garment', () => {
+    expect(props.keys['item/toggled_coat']).toBeDefined();
+    for (const dir of ART_BAKED_DIRS) {
+      expect(people.keys[personKey('torso_wear', 'toggled_coat', 'adult', 'f', dir, 'idle')]).toBeDefined();
+    }
+  });
+
   it('draws an inventory icon for the logboat', () => {
     expect(props.keys['item/logboat']).toBeDefined();
   });

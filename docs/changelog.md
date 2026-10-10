@@ -1,3 +1,16 @@
+## 2026-10-10 — m15: parka con alamares
+
+`0.15.42-alpha`: cierre de hueso para una parka existente, nodo de receta
+tras sastrería/trabajo de hueso y abrigo 0,48 sólo puesto. La receta consume
+parka 1 y hueso 2; no exige aguja para colocar los cierres. Capa de torso
+con alamares, icono generado, español y continuidad JSON incluidos.
+
+Typecheck, 98/98 pruebas focales y browser 1/1 pasan. El chequeo corto conserva los dos
+fallos conocidos (antojos y rendimiento); no se declara economía mejorada.
+Captura: `artifacts/screenshots/m15-phase14c-toggled-coat-2026-10-10/01-abrigo-con-alamares.png`.
+Contrato: `docs/m15_phase14c_toggles.md`. Bolsillos/desgaste/reparación siguen
+pendientes y las cohortes/matriz pesada quedan diferidas por AGENTS.md.
+
 ## 2026-10-10 — m15: gorro de piel y resultado completo de la copia38
 
 `0.15.41-alpha`: técnica individual tras sastrería, receta piel 1 con aguja

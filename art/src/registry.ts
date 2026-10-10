@@ -49,7 +49,7 @@ const CELL = 96;
 // ------------------------------------------------------------------- people
 const HAIR_STYLES: readonly HairStyle[] = ['short', 'long', 'balding', 'bald'];
 const EXPRESSIONS: readonly FaceExpr[] = ['neutral', 'content', 'warm', 'stern', 'frustrated', 'angry', 'afraid', 'strained', 'pained'];
-const TORSO: readonly NonNullable<Wear['torso']>[] = ['cape', 'wrap', 'tunic', 'longtunic'];
+const TORSO: readonly NonNullable<Wear['torso']>[] = ['cape', 'wrap', 'tunic', 'longtunic', 'fur_coat', 'toggled_coat'];
 
 export function collectPeople(): Collected {
   const bank = new Bank();

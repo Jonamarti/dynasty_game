@@ -1,6 +1,7 @@
 /** Spanish for data. Keys are the English templates; see `i18n.ts`. */
 export const ES_DATA: Record<string, string> = {
   'Fur hat': 'Gorro de piel',
+  'Toggled coat': 'Abrigo con alamares',
   'Moccasins': 'Mocasines',
   'Leggings': 'Polainas',
   'Foot wraps': 'Envolturas de pies',
