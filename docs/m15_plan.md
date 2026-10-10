@@ -10,7 +10,7 @@
 
 **Avance 2026-10-10 — 12c:** luz nocturna localizada, fuentes visibles por
 hash, capa reutilizable y niebla conforme a sightOf. [Contrato y medida de
-composición](m15_phase12c_night_light.md). Antorchas12d y calor12e implementados; nights12f sigue abierto.
+composición](m15_phase12c_night_light.md). Antorchas12d y calor12e implementados; nights12f tiene instrumento; cohortes y coste siguen abiertos.
 
 **Avance 2026-10-10 — 12b:** lectores de vista/testigos/observación y trabajo
 fino/caza conectados a luz local, con progreso bancado y migración de partidas.
@@ -1479,6 +1479,13 @@ declarado: ≤ 4 puntos. Si se supera, antes de nada se mira si las hogueras se
 construyen a tiempo (`the-hearth-warms`).
 
 ### 12f. Checks y escenario
+
+**2026-10-10 — instrumento entregado, mediciones pendientes.** `nights` y sus
+tres checks pasan con oportunidades controladas de observación, fabricación
+y encendido real; las mutaciones sin lectores de luz/sin antorcha fallan.
+Contrato y límites: [12f nights](m15_phase12f_nights.md). No demuestra adopción
+autónoma ni cambia la simulación. Cohorte de robos/violencia y coste ≤3 puntos
+siguen diferidos por la instrucción de verificación rápida de M15.
 
 - Escenario **`nights`**: invierno duro, dos bandas que saben `firemaking`.
 - `darkness-hides`: la fracción de hechos con testigo es menor de noche que de

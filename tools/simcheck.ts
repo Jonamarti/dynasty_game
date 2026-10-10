@@ -45,6 +45,7 @@ import { setupIronCarburising } from './ironCarburisingFixture.ts';
 import { setupIronTools } from './ironToolsFixture.ts';
 import { setupIronPlough } from './ironPloughFixture.ts';
 import { setupSalters, observeSalters, saltersLosses } from './saltersFixture.ts';
+import { setupNights, observeNights, nightsMeasurements } from './nightsFixture.ts';
 import { createFrontier, setupFrontier, observeFrontier, createFrontierCohort, observeFrontierCohort } from './frontierFixture.ts';
 
 /**
@@ -252,6 +253,13 @@ function setupSmiths(sim: Simulation): void {
 }
 
 export const SCENARIOS: Record<string, Scenario> = {
+  nights: {
+    name: 'nights', description: 'Hard winter, two firemaking bands; paired witness and ordered craft/torch opportunities, not autonomous crime or survival calibration.',
+    config: { seed: 'nights', world: { width: 48, height: 48 }, time: { daysPerSeason: 6, startDay: 18 },
+      needs: { coldRate: 0.16 }, carry: { legacyPack: true }, otherBandThinkInterval: 1,
+      population: { bands: 2, peoplePerBand: 8, startingTech: withPrerequisites(['firemaking', 'hafting']) } },
+    steps: 150, setup: setupNights, checks: ['darkness-hides', 'torches-are-carried', 'light-lets-work'],
+  },
   salters: {
     name: 'salters', description: 'Two supplied bands on one coast; one knows preservation. A short winter mechanism comparison, not a survival cohort.',
     config: { seed: 'salters', world: { width: 64, height: 64 }, time: { daysPerSeason: 2, startDay: 4 },
@@ -1508,6 +1516,18 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
   const first = samples[0]!;
   const last = samples[samples.length - 1]!;
   const tel = base.telemetry;
+
+  if (base.scenario === 'nights') {
+    const night = nightsMeasurements(sim);
+    add('darkness-hides', !!night && night.dayWitnesses !== null && night.nightWitnesses < night.dayWitnesses,
+      'paired theft probes: night witnesses=' + night?.nightWitnesses + ', day=' + night?.dayWitnesses);
+    add('torches-are-carried', (night?.torchSamples ?? 0) > 0,
+      (night?.torchSamples ?? 0) + ' winter night samples with an owned burning torch after ordered ignition');
+    const lit = (night?.work[0] ?? 0) / Math.max(1, night?.samples[0] ?? 0);
+    const dark = (night?.work[1] ?? 0) / Math.max(1, night?.samples[1] ?? 0);
+    add('light-lets-work', !!night && night.samples.every(samples => samples > 0) && lit > dark,
+      'actual night craft progress/tick: hearth=' + lit.toFixed(3) + ', dark=' + dark.toFixed(3));
+  }
 
   if (base.scenario === 'salters') {
     const meals = tel.salters_winter_meals_knowing ?? 0, kept = tel.salters_winter_preserved_knowing ?? 0;
@@ -4438,6 +4458,7 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
     if (scenario.name === 'frontier') observeFrontier(sim);
     if (scenario.name === 'frontier-cohort') observeFrontierCohort(sim);
     if (scenario.name === 'salters') observeSalters(sim);
+    if (scenario.name === 'nights') observeNights(sim);
     for (const person of sim.people) {
       if (!person.alive || !person.pregnant) { wasPregnant.delete(person.id); continue; }
       if (wasPregnant.has(person.id)) continue;

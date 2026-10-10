@@ -1676,3 +1676,5 @@ en invierno). Investigar trazas de decisiones/destino antes de retocar pesos.
 El comparador de pérdidas también pasaba sin recetas y se eliminó; diseñar una
 medición discriminante antes de autorizar activación15c. No usar esta semilla
 para afirmar mejora económica. docs/m15_phase15d_salters.md conserva evidencia.
+
+2026-10-10: nights12f tiene tres checks de mecanismos y pruebas negativas; véase m15_phase12f_nights.md. Pendientes adopción autónoma/cohorte de violencia/coste; no cerrar la fase por estas oportunidades ordenadas.

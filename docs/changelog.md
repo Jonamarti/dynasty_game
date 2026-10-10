@@ -1,3 +1,17 @@
+## 2026-10-10 — m15: noches, comprobaciones de mecanismos
+
+Escenario `nights`: invierno duro, dos bandas con fuego, dos órdenes equivalentes
+para fabricar hachas y una orden real para encender antorcha. Los checks miden
+el canal real de testigos, combustible en mano y progreso bancado. Una primera
+fixture daba una falsa señal al entrar otros observadores a mediodía; la prueba
+negativa detectó el problema y ahora conserva una única oportunidad equivalente.
+
+Typecheck y 14/14 unitarias focalizadas pasan; `nights` pasa 3/3 (0 frente a 1
+testigos, 40 muestras de antorcha, progreso nocturno 1.000 frente a 0.545).
+Desactivar lectores o retirar la antorcha hace fallar los checks correspondientes.
+Herramienta sin cambio de UI ni versión; no requiere captura. Contrato:
+`docs/m15_phase12f_nights.md`. No acredita adopción autónoma, violencia ni coste
+poblacional; cohortes diferidas. La suite global sigue con deuda documentada.
 ## 2026-10-09 — arreglo: explorar con el personaje controlado ya no lo hace desaparecer
 
 El propietario reportó que, al pulsar "Explorar hacia el {dirección}" en el
