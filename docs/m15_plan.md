@@ -4434,3 +4434,10 @@ para muebles. Llegada de estaciones corregida (0.6 de movimiento frente a0.5
 del lado de un tile): regresión negativa específica y37 pruebas focales correctas.
 Contrato/captura m15_phase15b_indoor_rack.md. Catálogo15b implementado; queda
 medición comparativa15d/activación15c, sin declarar economía medida ni cerrarM15.
+
+2026-10-10 — 15d escenario salters e instrumentos comparativos implementados,
+con informe honesto fallido:0/8 comidas de invierno conservadas. Una fabricación
+de seca real y dos comidas conservadas fuera del invierno. Atribución de pérdidas
+764/1381 nutrición; se elimina spoilage-is-answered porque también pasa sin ninguna
+receta conservada.21 pruebas del instrumento/mecanismos y typecheck correctos;
+healthcheck1/1 fallido. m15_phase15d_salters.md.15d no cerrado,15c/cohortes diferidas.

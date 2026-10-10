@@ -4725,3 +4725,14 @@ medio tile: secadero desde su lado corto quedaba con timer0 durante1000ticks.
 El criterio compartido admite el radio de llegada solo en estaciones. La nueva
 prueba interior falla aun suministrando la colocación nueva al ActionSystem
 anterior, y pasa ahora; habitaciones siguen exigiendo entrada física.
+
+### 2026-10-10 — salters no consume conservas en invierno; comparación no discrimina
+La semilla salters de2400ticks fabrica una vez dried_meat y come sus dos unidades
+fuera del invierno, pero ninguna de sus8 comidas invernales es conservada.
+preserved-food-lasts falla de forma explícita (no n/a). El inicio en invierno
+produce0/12 igualmente. No se cambian coeficientes para pintar la prueba verde.
+spoilage-is-answered pasaba con764/1381 nutrición perdida, pero también pasa al
+retirar TODAS las recetas de conserva: se borra como exige el plan. Quedan
+contadores físicos e informe de pérdidas; falta una comparación discriminante.
+Contrato/logs docs/m15_phase15d_salters.md. Seguimiento M16: investigar destino
+real de esas primeras conservas y demanda posterior antes de medir/activar15c.

@@ -5275,6 +5275,11 @@ export class Simulation {
           telemetry.count(prefix + source, count);
           telemetry.count(prefix + source + '_' + itemId, count);
           telemetry.count(prefix + source + '_nutrition', count * (ITEMS[itemId]?.nutrition ?? 0));
+          // Attribution is physical ownership, not an observer's private knowledge.
+          // Unowned public piles stay in the source ledger, outside band comparisons.
+          const ownerBand = carrier?.bandId ?? building?.ownerBandId;
+          if (ownerBand !== undefined) telemetry.count(prefix + 'band_' + ownerBand + '_nutrition',
+            count * (ITEMS[itemId]?.nutrition ?? 0));
           if (!dry) {
             // A dry estimate is not an event anyone experienced. Nor may an
             // onlooker inspect packed food: only a visible hand or public pile

@@ -1669,3 +1669,10 @@ continúa la red y recetas de conservación, con tasa general aún0.
 
 2026-10-10: preserving/secadero exterior15b entregado; faltan ahumado/red,
 sal y pemmican, colocación interior y15d. No cambia activación15c ni gate de era.
+
+M16, hallazgo al cerrar mecanismos15b: salters fabrica/come dos dried_meat fuera
+del invierno, pero preservados son0/8 comidas invernales (también0/12 empezando
+en invierno). Investigar trazas de decisiones/destino antes de retocar pesos.
+El comparador de pérdidas también pasaba sin recetas y se eliminó; diseñar una
+medición discriminante antes de autorizar activación15c. No usar esta semilla
+para afirmar mejora económica. docs/m15_phase15d_salters.md conserva evidencia.

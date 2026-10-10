@@ -44,6 +44,7 @@ import { setupIronForging } from './ironForgingFixture.ts';
 import { setupIronCarburising } from './ironCarburisingFixture.ts';
 import { setupIronTools } from './ironToolsFixture.ts';
 import { setupIronPlough } from './ironPloughFixture.ts';
+import { setupSalters, observeSalters, saltersLosses } from './saltersFixture.ts';
 import { createFrontier, setupFrontier, observeFrontier, createFrontierCohort, observeFrontierCohort } from './frontierFixture.ts';
 
 /**
@@ -251,6 +252,13 @@ function setupSmiths(sim: Simulation): void {
 }
 
 export const SCENARIOS: Record<string, Scenario> = {
+  salters: {
+    name: 'salters', description: 'Two supplied bands on one coast; one knows preservation. A short winter mechanism comparison, not a survival cohort.',
+    config: { seed: 'salters', world: { width: 64, height: 64 }, time: { daysPerSeason: 2, startDay: 4 },
+      needs: { spoilRate: 1 }, otherBandThinkInterval: 1,
+      population: { bands: 2, peoplePerBand: 8, startingTech: withPrerequisites(['cooking', 'cordage', 'fishing']) } },
+    steps: 2400, setup: setupSalters, checks: ['preserved-food-lasts'],
+  },
   ironsmiths: {
     name: 'ironsmiths',
     description: 'One ordered iron smelt at a finished furnace with a supplied charge; tests bloomery, not autonomous economics.',
@@ -1500,6 +1508,14 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
   const first = samples[0]!;
   const last = samples[samples.length - 1]!;
   const tel = base.telemetry;
+
+  if (base.scenario === 'salters') {
+    const meals = tel.salters_winter_meals_knowing ?? 0, kept = tel.salters_winter_preserved_knowing ?? 0;
+    const losses = saltersLosses(sim);
+    add('preserved-food-lasts', meals > 0 && kept > 0,
+      kept + '/' + meals + ' winter meals preserved; spoiled nutrition knowing=' + (losses?.knowing ?? 0) +
+      ', other=' + (losses?.other ?? 0) + '; loss comparison failed negative verification, no check or survival claim');
+  }
 
   if (base.scenario === 'frontier') {
     const fresh = tel.drink_fresh ?? 0;
@@ -4421,6 +4437,7 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
     sim.step();
     if (scenario.name === 'frontier') observeFrontier(sim);
     if (scenario.name === 'frontier-cohort') observeFrontierCohort(sim);
+    if (scenario.name === 'salters') observeSalters(sim);
     for (const person of sim.people) {
       if (!person.alive || !person.pregnant) { wasPregnant.delete(person.id); continue; }
       if (wasPregnant.has(person.id)) continue;

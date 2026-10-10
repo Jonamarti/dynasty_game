@@ -14466,3 +14466,15 @@ artifacts/screenshots/m15-phase15b-indoor-rack-2026-10-10-final/03-secadero-inte
 Nueva captura de salazón desplazada en su body real, con Vite recién arrancado
 para mostrar versión actual: artifacts/screenshots/m15-phase15b-salt-2026-10-10-final/03-alimentos-salados-desplazados.png.
 Single-seed conserva los dos fallos nombrados;15d/15c pendientes de medición.
+
+## 2026-10-10 — m15: diagnóstico salters y pérdidas por banda (0.15.37-alpha)
+
+Escenario costero comparativo de2400ticks, una banda conocedora, stocks iniciales
+por adulto y estaciones reales. Comidas de invierno desde eatenToday y nutrición
+perdida por propiedad física, sin inferir comidas del inventario ni tocar RNG.
+21 pruebas focales y typecheck correctos, pero el informe single-seed FALLA:
+0/8 comidas conservadas de invierno. No se anuncia como verificación verde.
+spoilage-is-answered se elimina: su supuesto PASS sigue apareciendo al quitar
+todas las recetas de conservación. Las pérdidas764/1381 quedan como diagnóstico;
+no coste de supervivencia ni mejora económica afirmados. Contrato/evidencia en
+docs/m15_phase15d_salters.md.15d parcialmente entregada;15c/cohortes diferidas.
