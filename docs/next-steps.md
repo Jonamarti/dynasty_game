@@ -2,6 +2,8 @@
 abrigo sólo puesto y arte generado. [Contrato y captura](m15_phase14c_hip.md).
 Siguiente: falda de fibra; después curtido/desgaste/remiendo, bolsillos,
 creencias y retirada por calor. Se cierra la sesión antes de iniciar otro corte.
+La versión `.47` corrige la omisión de la capa visual base; el check original
+de 360 píxeles vuelve a pasar. [Verificación](m15_phase14_hip_tailors_verification_20261010.md).
 
 **2026-10-10: 14e, instrumento tailors entregado.** Vestido autónomo de gorros
 suministrados y abrigo medido en sondas del mismo cuerpo. [Contrato](m15_phase14e_tailors.md).

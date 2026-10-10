@@ -14,6 +14,12 @@ persistencia y botones de Equipo verificados. [Contrato y captura](m15_phase14c_
 Siguiente corte: falda de fibra. Curtido, bolsillos, desgaste/remiendo,
 creencias y retirada por calor siguen abiertos; no se declara cerrada 14c.
 
+**Avance del 2026-10-10 — arreglo de arte y verificación:** `.47` restaura
+la variante base que `.46` omitió al añadir cadera. Paridad original de los
+360 cuerpos/poses pasa sin actualizar referencias. [Informe](m15_phase14_hip_tailors_verification_20261010.md).
+Se conservan los fallos unitarios y de niebla heredados; se cierra la sesión
+antes de falda de fibra, sin declarar M15 completa.
+
 **Avance 2026-10-10 — 12c:** luz nocturna localizada, fuentes visibles por
 hash, capa reutilizable y niebla conforme a sightOf. [Contrato y medida de
 composición](m15_phase12c_night_light.md). Antorchas12d y calor12e implementados; nights12f tiene instrumento; cohortes y coste siguen abiertos.

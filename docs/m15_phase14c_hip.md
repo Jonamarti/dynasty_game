@@ -29,3 +29,9 @@ The pre-change single-seed health run had 2/147 existing failures:
 those same failures. Logs: `artifacts/m15-loincloth-{tests,health,browser,sheet}-20261010.log`.
 Full regression results are recorded separately. Cohorts and the heavy matrix
 remain deferred by AGENTS.md.
+
+The full `.46` browser run found an omitted base visual layer. `.47` restores
+the `base` variant for empty hips; the original 360-case pixel parity test
+passes again, plus Kit/version 3/3. Final capture:
+`artifacts/screenshots/m15-hip-base-fix-2026-10-10T-01/T-01-hide-loincloth.png`.
+Full results and limits: [verification](m15_phase14_hip_tailors_verification_20261010.md).

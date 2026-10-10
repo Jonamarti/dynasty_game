@@ -1,3 +1,20 @@
+## 2026-10-10 — m15: restaurar la capa base tras añadir ropa de cadera
+
+`0.15.47-alpha`: la regresión completa `.46` descubrió que `flush` omitía el
+taparrabos de presentación al recibir una variante vacía. Se restaura `base`
+y se regeneran las personas; los píxeles de referencia permanecen intactos.
+Prueba nueva de identidad de capa, typecheck y 36 focales pasan. La prueba
+original de paridad pasa sus 360 casos; equipo y versión pasan 3/3.
+Captura inspeccionada:
+`artifacts/screenshots/m15-hip-base-fix-2026-10-10T-01/T-01-hide-loincloth.png`.
+
+[Informe completo](m15_phase14_hip_tailors_verification_20261010.md): suite
+unitaria `.46`, 2.029 pasan / 7 heredadas fallan; navegador inicial 154/156,
+niebla heredada y paridad nueva, esta última corregida y repetida. Se restauran
+22 capturas históricas con hash comprobado; las nuevas quedan en otro directorio.
+No se afirma una suite global verde. No se inicia la falda ni se ejecutan
+cohortes/matriz pesada; la entrega deja abiertos los pendientes de 14c/14e.
+
 ## 2026-10-10 — m15: taparrabos físico en la cadera
 
 `0.15.46-alpha`: el primer artículo de cadera usa el hueco ya existente,

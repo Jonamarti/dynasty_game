@@ -1,3 +1,24 @@
+## 2026-10-10 — M15 14c/14e: verificación de taparrabos y tailors
+
+La suite `.46` reproduce las siete aserciones fallidas ya registradas en `.45`:
+correspondencia compacta, actividad del contador de comida, diggers, difusión,
+tributo, conspiración y muerte por sed. Pasan 2.029 pruebas; no se ajustaron
+sus umbrales. El chequeo corto normal conserva dieta/rendimiento. El navegador
+reproduce la aserción de píxel de niebla de `smoke.spec.ts:326`, que la copia
+fija `.41` ya fallaba. [Informe y logs](m15_phase14_hip_tailors_verification_20261010.md).
+
+La ejecución completa de navegador `.46` dio 154/156: además de la niebla,
+falló por primera vez la paridad de píxeles. Queda **corregido en `.47`**:
+la variante vacía de cadera omitía el taparrabos base en `flush`; se devuelve
+`base`, se regenera y el check original de 360 casos vuelve a pasar sin tocar
+referencias. Equipo/versión pasan 3/3. No se repite la lista completa después
+del arreglo; no se presenta aquel 154/156 como una ejecución verde.
+
+Los dos checks de `tailors` cubren vestido de gorros suministrados y el lector
+real de abrigo; no prueban confección autónoma, deterioro/remiendo ni mejores
+resultados demográficos. Falda, curtido, bolsillos y lectores de creencias/calor
+siguen pendientes. No se declara cerrada 14c/14e ni se ejecutan cohortes.
+
 ## 2026-10-09 — M15 fase 36: límites conservados para M16
 
 El tráfico conserva personas y mercancías físicas entre propietarios detallados, compactos y residentes retirados del nivel macro. No convierte el excedente abstracto de PeopleSim en inventarios de estaño, herramientas o sal: falta producción y contabilidad macro por objeto para crear caravanas desde pueblos nunca materializados. Las rutas de comercio actuales requieren un mercader nombrado y mercancías realmente poseídas. El aprendizaje vuelve a su sociedad con ese portador al regresar a su región; no se publica mientras viaja. La prueba de estaño mide conservación del trueque, no producción ni una mejora económica. Cohortes y matriz quedan diferidas por AGENTS.md.

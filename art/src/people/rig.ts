@@ -820,7 +820,9 @@ function flush(sink: Sink, spec: PersonSpec, P: Pieces): void {
       case 'cloak_back': case 'cloak_front': return w.cloak ?? '';
       case 'torso_wear': case 'sleeve': case 'sleeves': return w.torso ?? '';
       case 'trousers': return w.legs ?? '';
-      case 'loincloth': return w.hips ?? '';
+      // An empty variant is omitted by flush. Unfitted figures must retain
+      // their base layer or the registry silently drops the old appearance.
+      case 'loincloth': return w.hips ?? 'base';
       case 'feet': return w.feet ?? '';
       case 'head_back': case 'head_wear': return w.head ?? '';
       case 'hair': case 'hair_back': return spec.hair;
