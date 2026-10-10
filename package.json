@@ -1,7 +1,7 @@
 {
   "name": "dynasty",
   "private": true,
-  "version": "0.15.40-alpha",
+  "version": "0.15.41-alpha",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -18,7 +18,7 @@
     "world:bench": "vite-node tools/world-bench.ts",
     "world:cohort": "vite-node tools/people-world.ts",
     "verify": "npm run typecheck && npm run test && npm run sim:check:all && npm run e2e",
-    "e2e": "playwright test e2e/smoke.spec.ts e2e/animals.spec.ts e2e/group-colors.spec.ts e2e/dig-animation.spec.ts e2e/chop-animation.spec.ts e2e/craft-animation.spec.ts e2e/tool-equipment.spec.ts e2e/geographic-terrain.spec.ts e2e/bank-resources.spec.ts e2e/earth-river-map.spec.ts e2e/autonomy-rebuild.spec.ts e2e/brain-commitment.spec.ts e2e/earth-river-tools.spec.ts e2e/earthworks.spec.ts e2e/water-depth.spec.ts e2e/water-wading.spec.ts e2e/swimming.spec.ts e2e/fishing.spec.ts e2e/freshwater.spec.ts e2e/river-continuity.spec.ts e2e/tech-subwebs.spec.ts e2e/phase13d-nodes.spec.ts e2e/globe.spec.ts e2e/phase37-metal.spec.ts e2e/phase40-bloomery.spec.ts e2e/phase40-forging.spec.ts e2e/phase40-carburising.spec.ts e2e/phase40-iron-tools.spec.ts e2e/phase40-ploughshare.spec.ts e2e/version.spec.ts e2e/fog-on-switch.spec.ts e2e/one-comarca.spec.ts e2e/comarca-travel.spec.ts e2e/phase35-logboat.spec.ts e2e/phase35-journeys.spec.ts e2e/phase35-transport.spec.ts e2e/phase35-sail.spec.ts e2e/phase36-rival.spec.ts e2e/world-caravan-ui.spec.ts e2e/world-map-choice.spec.ts e2e/extraction-animation.spec.ts e2e/roof-lift.spec.ts e2e/hearth-light.spec.ts e2e/phase16d-furniture.spec.ts e2e/clothing.spec.ts e2e/phase12d-torch.spec.ts e2e/garment-layers.spec.ts e2e/preserving.spec.ts e2e/smoking.spec.ts e2e/pemmican.spec.ts e2e/salt-preserving.spec.ts e2e/indoor-preserving.spec.ts e2e/foot-wraps.spec.ts e2e/leggings.spec.ts e2e/moccasins.spec.ts",
+    "e2e": "playwright test e2e/smoke.spec.ts e2e/animals.spec.ts e2e/group-colors.spec.ts e2e/dig-animation.spec.ts e2e/chop-animation.spec.ts e2e/craft-animation.spec.ts e2e/tool-equipment.spec.ts e2e/geographic-terrain.spec.ts e2e/bank-resources.spec.ts e2e/earth-river-map.spec.ts e2e/autonomy-rebuild.spec.ts e2e/brain-commitment.spec.ts e2e/earth-river-tools.spec.ts e2e/earthworks.spec.ts e2e/water-depth.spec.ts e2e/water-wading.spec.ts e2e/swimming.spec.ts e2e/fishing.spec.ts e2e/freshwater.spec.ts e2e/river-continuity.spec.ts e2e/tech-subwebs.spec.ts e2e/phase13d-nodes.spec.ts e2e/globe.spec.ts e2e/phase37-metal.spec.ts e2e/phase40-bloomery.spec.ts e2e/phase40-forging.spec.ts e2e/phase40-carburising.spec.ts e2e/phase40-iron-tools.spec.ts e2e/phase40-ploughshare.spec.ts e2e/version.spec.ts e2e/fog-on-switch.spec.ts e2e/one-comarca.spec.ts e2e/comarca-travel.spec.ts e2e/phase35-logboat.spec.ts e2e/phase35-journeys.spec.ts e2e/phase35-transport.spec.ts e2e/phase35-sail.spec.ts e2e/phase36-rival.spec.ts e2e/world-caravan-ui.spec.ts e2e/world-map-choice.spec.ts e2e/extraction-animation.spec.ts e2e/roof-lift.spec.ts e2e/hearth-light.spec.ts e2e/phase16d-furniture.spec.ts e2e/clothing.spec.ts e2e/phase12d-torch.spec.ts e2e/garment-layers.spec.ts e2e/preserving.spec.ts e2e/smoking.spec.ts e2e/pemmican.spec.ts e2e/salt-preserving.spec.ts e2e/indoor-preserving.spec.ts e2e/foot-wraps.spec.ts e2e/leggings.spec.ts e2e/moccasins.spec.ts e2e/fur-hat.spec.ts",
     "shots": "playwright test e2e/screenshots.spec.ts",
     "why": "vite-node tools/why.ts --",
     "profile:systems": "vite-node tools/profile-systems.ts",

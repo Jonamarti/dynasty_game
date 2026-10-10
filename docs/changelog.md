@@ -1,3 +1,19 @@
+## 2026-10-10 — m15: gorro de piel y resultado completo de la copia38
+
+`0.15.41-alpha`: técnica individual tras sastrería, receta piel 1 con aguja
+retenida, prenda del hueco cabeza y abrigo 0,10 solo puesto. Capa visual de
+cabeza, icono generado, español y persistencia JSON incluidos.
+
+Typecheck, 75/75 unitarias focalizadas y browser 1/1 pasan; chequeo corto con
+2/147 fallos conocidos. Contrato: `docs/m15_phase14c_fur_hat.md`. Captura:
+`artifacts/screenshots/m15-phase14c-fur-hat-2026-10-10/01-gorro-de-piel.png`.
+
+Suite completa sobre copia fija .38, commit ee9506c: 272 archivos,267 correctos
+y5 fallidos;1992 pruebas correctas,6 fallidas,1 omitida;598,58 segundos.
+Log `artifacts/m15-full-unit-38.log`. Persisten tributo, conspiración, sed,
+contador de comida, correspondencia compacta y excavación. Difusión pasa en
+esa copia, sin arreglo dirigido ni declaración de problema resuelto. La suite
+excluye polainas/mocasines/gorro, verificados focalmente después. No es verde.
 ## 2026-10-10 — m15: mocasines
 
 `0.15.40-alpha`: técnica individual tras sastrería y envolturas de pies,

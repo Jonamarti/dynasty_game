@@ -6,6 +6,9 @@ export type ItemArt = [id: string, label: string, tech: string, draw: () => stri
 export const WOOD = '#86633c', WOOD_D = '#3a2716', STONE = '#a9adb0', STONE_D = '#3d4244', BONE = '#e6dcc0', BONE_D = '#7a6d4e', CORD = '#c9b27f';
 const rot = (inner: string, deg: number, cx = 32, cy = 32): string => `<g transform="rotate(${deg} ${cx} ${cy})">${inner}</g>`;
 export const ITEMS: ItemArt[] = [
+  ['fur_hat', 'Gorro de piel', 'fur_hat', () =>
+    shape(smooth([[9, 40], [13, 21], [26, 12], [43, 15], [53, 28], [55, 43], [43, 50], [19, 49]]), '#8b6544', '#3f291c')
+      + stroke('M11,40Q32,48 53,41M32,15L32,40', '#d4b58c', 2.4)],
   ['moccasins', 'Mocasines', 'moccasins', () =>
     [18, 43].map(x => shape(smooth([[x - 6, 15], [x + 5, 13], [x + 6, 34], [x + 14, 44], [x + 7, 53], [x - 9, 49], [x - 8, 31]]), '#8c6541', '#3f291c')
       + stroke(`M${x - 5},18L${x + 4},18M${x - 4},36Q${x + 4},41 ${x + 9},46`, '#d4b58c', 1.6)).join('')],

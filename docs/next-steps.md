@@ -1684,3 +1684,5 @@ para afirmar mejora económica. docs/m15_phase15d_salters.md conserva evidencia.
 2026-10-10: polainas leggings de14c entregadas; contrato m15_phase14c_leggings.md. Pendientes otras prendas y sistemas de ropa.
 
 2026-10-10: mocasines de14c entregados con reemplazo de envolturas en pies; m15_phase14c_moccasins.md. Pendientes otras prendas y sistemas de ropa.
+
+2026-10-10: gorro de piel de14c entregado; m15_phase14c_fur_hat.md. Pendientes resto de catálogo/red y lectores de bolsillos, creencias, retirada con calor y desgaste/remiendo. Suite fija38: seis fallos en cinco archivos, ver bugs/changelog; no verde.

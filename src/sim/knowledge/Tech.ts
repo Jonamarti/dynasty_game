@@ -208,6 +208,7 @@ export const TECHS = [
   'foot_wraps',
   'leggings',
   'moccasins',
+  'fur_hat',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -472,6 +473,19 @@ export interface TechDef {
  * catch.
  */
 export const TECH: Record<Tech, TechDef> = {
+  fur_hat: {
+    id: 'fur_hat', label: 'Fur hat', domain: 'cloth',
+    age: 'upper_palaeolithic', firstKnown: 'Sewn hide head coverings; the first date is uncertain',
+    kind: 'device', requires: ['tailoring'], difficulty: 0.25, skill: 'build',
+    prototype: { hide: 1 }, maxRefinement: 3,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'tailoring' }, { kind: 'holding', item: 'needle' }, { kind: 'feeling', need: 'cold' }],
+        weight: 0.8, story: 'pulled hide over a cold head and thought of sewing it to fit' },
+      { needs: [{ kind: 'knows', tech: 'tailoring' }, { kind: 'holding', item: 'hide' }, { kind: 'season', season: 'winter' }],
+        weight: 0.5, story: 'folded a winter hide into a covering for the head' },
+    ],
+    description: 'A sewn hide cap warms the head independently of a coat or cloak.',
+  },
   moccasins: {
     id: 'moccasins', label: 'Moccasins', domain: 'cloth',
     age: 'upper_palaeolithic', firstKnown: 'Sewn hide shoes; the first date is uncertain',
@@ -2680,6 +2694,8 @@ export interface TechEffect {
 }
 
 export const TECH_EFFECTS: Record<Tech, TechEffect> = {
+  fur_hat: { summary: 'A sewn fur hat warms the head only while worn.',
+    site: 'RECIPES.fur_hat retained needle; ITEMS.fur_hat garment; warmthFrom and Renderer.wornGarmentsOf' },
   moccasins: { summary: 'Sewn moccasins warm the feet more than wraps while actually worn.',
     site: 'RECIPES.moccasins retained needle; ITEMS.moccasins garment; warmthFrom and Renderer.wornGarmentsOf' },
   leggings: { summary: 'Sewn leggings warm the legs only while worn.',

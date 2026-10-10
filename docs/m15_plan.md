@@ -1,4 +1,4 @@
-**2026-10-10: 14a–14b, ropa puesta entregada.** Abrigo/armadura en slots del cuerpo, calor y protección sólo vestidos, órdenes cortas, apariencia y limpieza al perder propiedad. [Contrato](m15_phase14_worn_clothing.md). Catálogo iniciado con capa/túnica; quedan otras prendas, creencias, bolsillos, deterioro y reparación14c.
+**2026-10-10: 14a–14b, ropa puesta entregada.** Abrigo/armadura en slots del cuerpo, calor y protección sólo vestidos, órdenes cortas, apariencia y limpieza al perder propiedad. [Contrato](m15_phase14_worn_clothing.md). Catálogo con capa, túnica, envolturas de pies, polainas, mocasines y gorro; quedan otras prendas, creencias, bolsillos, deterioro y reparación14c.
 
 **2026-10-10: 15a, instrumento por origen entregado.** Pérdidas secas/reales y nutrición en inventario personal, almacén, obra y montón. [Contrato](m15_phase15a_spoilage_sources.md). Cohortes de veinte semillas y activación15c siguen diferidas por AGENTS.md; tasa por defecto cero.
 
@@ -1678,6 +1678,9 @@ piernas independiente. [Contrato y captura](m15_phase14c_leggings.md).
 
 **2026-10-10:** mocasines `moccasins` entregados, sustituyen las envolturas en
 el mismo hueco de pies sin sumar ambas prendas. [Contrato y captura](m15_phase14c_moccasins.md).
+
+**2026-10-10:** gorro `fur_hat` entregado con aguja retenida, hueco de cabeza,
+abrigo y capa visual. [Contrato y captura](m15_phase14c_fur_hat.md).
 
 ### 14d. Estatus (medido; opcional dentro de la fase)
 

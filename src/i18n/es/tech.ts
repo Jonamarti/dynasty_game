@@ -1,5 +1,10 @@
 /** Spanish for tech. Keys are the English templates; see `i18n.ts`. */
 export const ES_TECH: Record<string, string> = {
+  'Sewn hide head coverings; the first date is uncertain': 'Prendas de piel cosida para la cabeza; la fecha más antigua es incierta',
+  'pulled hide over a cold head and thought of sewing it to fit': 'se cubrió la cabeza fría con piel y pensó en coserla a medida',
+  'folded a winter hide into a covering for the head': 'dobló una piel en invierno para cubrir la cabeza',
+  'A sewn hide cap warms the head independently of a coat or cloak.': 'Un gorro de piel cosida abriga la cabeza independientemente del abrigo o la capa.',
+  'A sewn fur hat warms the head only while worn.': 'Un gorro de piel cosido solo abriga la cabeza cuando se lleva puesto.',
   'Sewn hide shoes; the first date is uncertain': 'Zapatos de piel cosida; la fecha más antigua es incierta',
   'thought of sewing foot wraps shut instead of tying them': 'pensó en cerrar las envolturas de pies con costuras en lugar de atarlas',
   'folded a scrap of hide around a foot and followed its edge with thread': 'dobló un retazo de piel alrededor de un pie y siguió su borde con hilo',

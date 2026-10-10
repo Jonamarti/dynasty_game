@@ -4736,3 +4736,6 @@ retirar TODAS las recetas de conserva: se borra como exige el plan. Quedan
 contadores físicos e informe de pérdidas; falta una comparación discriminante.
 Contrato/logs docs/m15_phase15d_salters.md. Seguimiento M16: investigar destino
 real de esas primeras conservas y demanda posterior antes de medir/activar15c.
+
+### 2026-10-10 — suite completa de la copia fija38
+272 archivos:267 pasan,5 fallan;1992 pruebas pasan,6 fallan,1 omitida. Log artifacts/m15-full-unit-38.log (598.58s), commit ee9506c. Persisten tributo, conspiración, sed, contador de comida, correspondencia compacta y excavación. Difusión pasa en esta copia sin arreglo dirigido; no se declara resuelta ni suite verde. Excluye las prendas posteriores .39–.41, verificadas focalmente.
