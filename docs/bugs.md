@@ -1,3 +1,6 @@
+## 2026-10-11 — M15 14c, retirada por calor: límites conservados
+
+El modelo todavía no tiene una necesidad de sobrecalentamiento: la retirada usa temperatura exterior positiva y deuda de frío baja, con umbrales provisionales. Una observación social que cambie el origen de la creencia de abrigo puede aplazar la retirada hasta una nueva experiencia propia; no se activa desgaste/remiendo ni curtido. El chequeo corto conserva `cravings-steer-the-diet` y `perf-budget`; la verificación de cohortes sigue diferida. Contrato y alcance en [14c calor](m15_phase14c_heat_removal.md). No se declara M15 completa.
 ## 2026-10-11 — M15 14c, creencias de abrigo: límites y verificación
 
 El chequeo normal conserva los fallos previos de dieta/rendimiento; `tailors`

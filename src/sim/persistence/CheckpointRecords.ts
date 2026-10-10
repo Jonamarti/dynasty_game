@@ -81,7 +81,18 @@ function copyConfig(input: unknown): SimConfig {
       !Object.hasOwn(input.ai, 'commitmentEntryPressure') && !Object.hasOwn(input.ai, 'commitmentBreakMargin') &&
       !Object.hasOwn(input.ai, 'commitmentTieMargin')) {
     input = { ...input, ai: { ...input.ai, commitmentEntryPressure: DEFAULT_CONFIG.ai.commitmentEntryPressure,
-      commitmentBreakMargin: DEFAULT_CONFIG.ai.commitmentBreakMargin, commitmentTieMargin: DEFAULT_CONFIG.ai.commitmentTieMargin } };
+      commitmentBreakMargin: DEFAULT_CONFIG.ai.commitmentBreakMargin, commitmentTieMargin: DEFAULT_CONFIG.ai.commitmentTieMargin,
+    } };
+  }
+  // M15 phase 14c adds provisional autonomous heat-removal thresholds. An
+  // exact earlier AI shape receives defaults only when all three fields are
+  // absent; a partly written configuration remains invalid.
+  if (object(input) && object(input.ai) && Object.hasOwn(input.ai, 'commitmentEntryPressure') &&
+      Object.hasOwn(input.ai, 'commitmentBreakMargin') && Object.hasOwn(input.ai, 'commitmentTieMargin') &&
+      !Object.hasOwn(input.ai, 'garmentHeatTemperature') && !Object.hasOwn(input.ai, 'garmentHeatCold') &&
+      !Object.hasOwn(input.ai, 'garmentHeatWeight')) {
+    input = { ...input, ai: { ...input.ai, garmentHeatTemperature: DEFAULT_CONFIG.ai.garmentHeatTemperature,
+      garmentHeatCold: DEFAULT_CONFIG.ai.garmentHeatCold, garmentHeatWeight: DEFAULT_CONFIG.ai.garmentHeatWeight } };
   }
   // Missing light means a save written under daylight-independent rules.
   // Partial or malformed light settings still fail the exact-key validation.
@@ -97,6 +108,10 @@ function copyConfig(input: unknown): SimConfig {
   const config = visit(input, DEFAULT_CONFIG, 'config') as SimConfig;
   for (const value of [config.light.nightFloor, config.light.fineWorkDark, config.light.huntDark]) {
     if (value > 1) invalid('light factors must be between zero and one');
+  }
+  if (config.ai.garmentHeatTemperature <= 0 || config.ai.garmentHeatTemperature > 1 ||
+      config.ai.garmentHeatCold <= 0 || config.ai.garmentHeatCold > 100 || config.ai.garmentHeatWeight <= 0) {
+    invalid('invalid garment heat settings');
   }
   for (const value of [config.light.torchTicks, config.light.fatTorchTicks]) {
     if (!Number.isSafeInteger(value) || value <= 0) invalid('torch fuel must be a positive whole number of ticks');

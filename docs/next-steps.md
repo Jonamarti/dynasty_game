@@ -1,3 +1,4 @@
+**Avance del 2026-10-11 — 14c, retirada por calor:** los NPC pueden quitarse una capa cuyo abrigo han probado cuando el ambiente es cálido y la deuda de frío ya es baja. Se conserva la prenda, las órdenes del jugador y las armaduras dedicadas; los umbrales están en configuración. [Contrato](m15_phase14c_heat_removal.md). No existe aún una necesidad de sobrecalentamiento ni se afirma mejora demográfica. Bolsillos y propiedad física para desgaste/remiendo siguen pendientes; 14c/14e y M15 continúan abiertos, con cohortes/matriz diferidas.
 **2026-10-10: 14c, creencias de abrigo entregadas.** Experiencia propia
 atribuible a la ropa, hipótesis de observación pública y decisiones de
 vestido/confección por expectativa con prueba de curiosidad acotada.

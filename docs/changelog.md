@@ -1,3 +1,8 @@
+## 2026-10-11 — m15: quitar ropa probada cuando hace calor
+
+`0.15.50-alpha`: los NPC puntúan quitar una capa al alcanzar ambiente cálido y frío bajo, según experiencia propia positiva de abrigo. Reutiliza la acción corta de Equipo, conserva inventario y órdenes manuales del jugador, y mantiene armaduras dedicadas. Los tres umbrales provisionales están en AiConfig con migración de guardados y rechazo de grupos parciales; sin nuevas tiradas ni cambios de NeedsSystem. [Contrato](m15_phase14c_heat_removal.md).
+
+Typecheck y 30 pruebas focales pasan; la prueba positiva falla con el Brain anterior. El chequeo corto conserva dieta/rendimiento previos (2/147); no se afirma suite global verde ni mejora demográfica. La suite completa se reserva para el corte de bolsillos. Navegador final: 3/3 después de recargar Vite, que inicialmente conservaba la versión anterior (1/3). Captura de hito inspeccionada, sin nueva UI: `artifacts/screenshots/m15-phase14c-heat-2026-10-11T-02/01-fur-coat-worn-in-kit.png`. Informes en `artifacts/verification/m15-14c-heat-2026-10-11/`. Cohortes y matriz pesada diferidas por AGENTS.md; M15/14c continúan abiertos.
 ## 2026-10-11 — m15: expectativas personales de abrigo
 
 `0.15.49-alpha`: vestido y confección consultan `warm:<prenda>` en vez de

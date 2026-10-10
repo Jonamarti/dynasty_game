@@ -44,6 +44,7 @@ import type { Tree } from '../entities/Tree.ts';
 import type { Animal } from '../entities/Animal.ts';
 import { chooseCravingFood } from './FoodChoice.ts';
 import { ITEMS } from '../entities/Item.ts';
+import { GARMENT_SLOTS } from '../entities/Equipment.ts';
 import { houseInteriorTiles } from '../world/HouseInterior.ts';
 import {
   TECH, techPower, prerequisitesMet, answerPressure, workableIdea as chooseWorkableIdea, type Tech,
@@ -127,6 +128,9 @@ export interface BrainContext {
   commitmentEntryPressure?: number;
   commitmentBreakMargin?: number;
   commitmentTieMargin?: number;
+  garmentHeatTemperature?: number;
+  garmentHeatCold?: number;
+  garmentHeatWeight?: number;
   nodeHash: SpatialHash<ResourceNode>;
   peopleHash: SpatialHash<Person>;
   shoreHash: SpatialHash<{ x: number; y: number }>;
@@ -1037,6 +1041,7 @@ export class Brain {
     // is genuinely the better errand rather than whichever was scored last.
     let pickupBest = 0;
     let garmentItem: string | null = null;
+    let garmentToRemove: string | null = null;
     let torchItem: string | null = null;
 
     const thirst = drive.thirst;
@@ -1090,6 +1095,34 @@ export class Brain {
         }
       }
       if (garmentItem) add('wear_garment', drive.warmth * 1.4 * bestGain / 0.4);
+    }
+    // Warmth has no separate overheating meter yet. The physical cold ledger
+    // is still a real thermal signal: in warm weather, once it is almost empty,
+    // a personally proven insulating layer is no longer buying useful relief.
+    // Use only own evidence so a public winter guess cannot make somebody shed
+    // clothing, and leave protective garments on for their separate purpose.
+    const garmentHeatTemperature = ctx.garmentHeatTemperature ?? DEFAULT_CONFIG.ai.garmentHeatTemperature;
+    const garmentHeatCold = ctx.garmentHeatCold ?? DEFAULT_CONFIG.ai.garmentHeatCold;
+    const garmentHeatWeight = ctx.garmentHeatWeight ?? DEFAULT_CONFIG.ai.garmentHeatWeight;
+    if (!person.isPlayer && person.age >= 1 && person.needs.cold <= garmentHeatCold &&
+        ctx.time.temperature >= garmentHeatTemperature) {
+      let mostUsefulLayer = 0;
+      for (const slot of GARMENT_SLOTS) {
+        const worn = person.equipment[slot];
+        if (!worn || person.inventory.count(worn.item) < 1) continue;
+        const def = ITEMS[worn.item];
+        if (!def?.garment || def.garment.slot !== slot || def.garment.warmth <= 0 ||
+            def.id === 'hide_armour' || def.armourTech) continue;
+        const learned = person.beliefs.get('warm:' + worn.item);
+        if (learned?.source !== 'own' || learned.value <= mostUsefulLayer) continue;
+        mostUsefulLayer = learned.value;
+        garmentToRemove = worn.item;
+      }
+      if (garmentToRemove) {
+        const remainingCold = Math.max(0, 1 - person.needs.cold / garmentHeatCold);
+        garmentItem = garmentToRemove;
+        add('take_off_garment', garmentHeatWeight * mostUsefulLayer / 0.4 * remainingCold);
+      }
     }
     if (hydratingFood && person.needs.thirst > 35) {
       // Fruit buys one drink tick at most. It helps when no known source exists,
@@ -4857,6 +4890,7 @@ export class Brain {
         person.targetItemId = found.foodToEat;
         break;
       case 'wear_garment':
+      case 'take_off_garment':
         person.targetItemId = found.garmentItem;
         break;
       case 'light_torch':
