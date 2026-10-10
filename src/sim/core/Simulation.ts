@@ -127,6 +127,7 @@ import type { WorldGeography } from '../world/WorldGeography.ts';
 import { geographicResourceAvailable } from '../world/GeographicResources.ts';
 import { stepMark } from './StepProbe.ts';
 import { approachComarcaEdge, type ComarcaTravel } from '../world/ComarcaTravel.ts';
+import { applyHouseWalls } from '../world/HouseInterior.ts';
 import { edgeOfTile, type ComarcaEdge } from '../world/ComarcaNeighbour.ts';
 import type { ComarcaMigrationContext } from '../world/ComarcaMigration.ts';
 import { comarcaResourceProfile, PROFILE_SPAN, type ComarcaResourceProfile } from '../world/ResourceProfile.ts';
@@ -1154,6 +1155,13 @@ export class Simulation {
     this.freshShoreHash.rebuild(world.freshShore);
     this.saltShoreHash.rebuild(world.saltShore);
     this.rebuildHashes();
+    for (const building of this.buildings) {
+      if (!building.def.interior || !building.complete || building.ruined) continue;
+      const owner = this.bands.find(band => band.id === building.ownerBandId);
+      applyHouseWalls(this.world, building, owner ?? {
+        homeX: building.centerX, homeY: building.centerY,
+      }, this.peopleHash, true);
+    }
     this.reconcileTransportLeases();
     this.treeHash.rebuild(this.trees);
     this.pileHash.rebuild(this.piles);
@@ -5910,6 +5918,12 @@ export class Simulation {
       movement: this.movementSystem,
       nodesById: this.nodesById,
       buildingsById: this.buildingsById,
+      onBuildingStateChanged: (building: Building) => {
+        const owner = this.bands.find(band => band.id === building.ownerBandId);
+        applyHouseWalls(this.world, building, owner ?? {
+          homeX: building.centerX, homeY: building.centerY,
+        }, this.peopleHash, building.complete && !building.ruined);
+      },
       treesById: this.treesById,
       animalsById: this.animalsById,
       onAnimalKilled: (animal: Animal) => this.removeAnimal(animal),

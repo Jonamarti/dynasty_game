@@ -35,6 +35,8 @@ export interface BuildingDef {
   workTicks: number;
   /** 0-1 reduction in cold for anyone standing inside. */
   shelter: number;
+  /** A one-tile wall ring around a room, with one traversable doorway. */
+  interior?: { door: 'toward_camp' };
   /** Item capacity. 0 means it stores nothing. */
   storage: number;
   /**
@@ -298,10 +300,11 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     id: 'mud_hut',
     label: 'Mud hut',
     icon: '\u{1F6D6}',
-    width: 3, height: 3,
+    width: 4, height: 4,
     materials: { wood: 8, sticks: 6, thatch: 10, mud: 14 },
     workTicks: 520,
     shelter: 0.85,
+    interior: { door: 'toward_camp' },
     storage: 40,
     // Indoors and out of the sun, but it is a house rather than a store.
     preserves: 1.2,
@@ -323,12 +326,13 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     id: 'wattle_hut',
     label: 'Wattle hut',
     icon: '\u{1F6D6}',
-    width: 3, height: 3,
+    width: 4, height: 4,
     // No wood at all — the whole point of a woven wall is that it answers
     // what the mud hut's timber frame answers without felling a tree for it.
     materials: { sticks: 10, thatch: 12, mud: 10 },
     workTicks: 400,
     shelter: 0.88,
+    interior: { door: 'toward_camp' },
     storage: 40,
     preserves: 1.2,
     requiresTech: 'wattle_daub',
@@ -340,10 +344,11 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     id: 'stone_house',
     label: 'Stone house',
     icon: '\u{1F3E0}',
-    width: 3, height: 3,
+    width: 5, height: 5,
     materials: { flint: 20, wood: 6, mud: 10 },
     workTicks: 750,
     shelter: 0.92,
+    interior: { door: 'toward_camp' },
     storage: 50,
     preserves: 1.3,
     requiresTech: 'masonry',
@@ -636,10 +641,11 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     id: 'longhouse',
     label: 'Longhouse',
     icon: '\u{1F3E1}',
-    width: 6, height: 3,
+    width: 8, height: 4,
     materials: { wood: 34, sticks: 16, thatch: 30, mud: 24 },
     workTicks: 1800,
     shelter: 0.95,
+    interior: { door: 'toward_camp' },
     storage: 160,
     requiresTech: 'carpentry',
     description: 'Jointed timber. A whole family under one roof, and a hall to hold court in.',
@@ -810,6 +816,11 @@ export class Building {
   /** Ticks of work done. Complete when it reaches `def.workTicks`. */
   progress = 0;
   complete: boolean;
+
+  /** Persisted to reconcile the physical wall ring after completion, ruin and repair. */
+  wallsApplied = false;
+  /** Door orientation is fixed at completion; moving camp must not move a hole in the wall. */
+  interiorDoorSide: 'north' | 'east' | 'south' | 'west' | null = null;
 
   /**
    * How much of the building is still standing, once there is a building to

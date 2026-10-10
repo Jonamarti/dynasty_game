@@ -10,6 +10,7 @@ import type { Person } from '../entities/Person.ts';
 import type { Building } from '../entities/Building.ts';
 import type { SpatialHash } from '../core/SpatialHash.ts';
 import type { World } from '../core/World.ts';
+import { houseInteriorContains } from '../world/HouseInterior.ts';
 import { bleeding, feverDrain, mendBody, poisonDrain, poisonHunger, poisonThirst } from '../entities/Body.ts';
 import { LETHAL_NEEDS } from '../entities/Person.ts';
 import { telemetry } from '../core/Telemetry.ts';
@@ -122,8 +123,10 @@ export class NeedsSystem {
       // false for anything `Building.durability` was never set on, so an
       // ordinary hut with no sabotage in its history is unaffected.
       if (!building.complete || building.ruined || building.def.shelter <= best) continue;
-      // Warmth spills past the walls; see Building.SHELTER_MARGIN.
-      if (building.contains(person.x, person.y, 1.5)) best = building.def.shelter;
+      // A walled house shelters its room. Open designs such as windbreaks keep
+      // the older nearby-warmth footprint.
+      if (building.def.interior ? houseInteriorContains(building, person.x, person.y)
+        : building.contains(person.x, person.y, 1.5)) best = building.def.shelter;
     }
     return best;
   }

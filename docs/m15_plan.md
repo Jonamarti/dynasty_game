@@ -1,5 +1,11 @@
 # M15 — El plan maestro: de las manos vacías al Estado
 
+**Avance 2026-10-10 — 16b:** viviendas nuevas con muros físicos, puerta fija,
+habitación que determina abrigo/sueño y ciclo construir–ruina–reparación.
+Terreno base preservado y guardado v3 compatible con v1/v2. Véase
+[contrato 16b](m15_phase16b_house_walls.md). 16c y mobiliario siguen pendientes
+en este punto; no se declara cerrada toda la fase 16.
+
 Escrito el 2026-09-26, al procesar `docs/notes5.txt` con el propietario. Es el
 **único plan vigente** del proyecto a partir de hoy.
 

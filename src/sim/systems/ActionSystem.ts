@@ -102,6 +102,7 @@ import { noteWorkOutcome } from '../core/Mood.ts';
 import { support } from '../social/Persuasion.ts';
 import { swimRefusal, swimRouteRefusal } from '../core/Swimming.ts';
 import { canWork } from '../knowledge/Ore.ts';
+import { houseInteriorContains } from '../world/HouseInterior.ts';
 
 export interface ActionContext {
   comarcaTravel?: ComarcaTravel;
@@ -109,6 +110,8 @@ export interface ActionContext {
   movement: MovementSystem;
   nodesById: Map<number, ResourceNode>;
   buildingsById: Map<number, Building>;
+  /** Reconciles derived house walls when a dwelling is completed, ruined or restored. */
+  onBuildingStateChanged?: (building: Building) => void;
   treesById: Map<number, Tree>;
   animalsById: Map<number, Animal>;
   /** Called when an animal is killed, so the world can take it out. */
@@ -2493,6 +2496,7 @@ export class ActionSystem {
         person.workedTicks++;
         person.practice('build', 0.2);
         if (site.repair(mend)) {
+          ctx.onBuildingStateChanged?.(site);
           telemetry.count('building_repaired');
           person.chronicle.push({
             tick: ctx.tick,
@@ -2533,6 +2537,7 @@ export class ActionSystem {
     person.workedTicks++;
     person.practice('build', 0.25);
     if (site.addWork(work)) {
+      ctx.onBuildingStateChanged?.(site);
       telemetry.count('building_completed');
       // Per design as well as in total: "did anybody ever finish a granary?" is
       // a question about whether a gated design is reachable, and an aggregate
@@ -2604,6 +2609,7 @@ export class ActionSystem {
     person.workedTicks++;
     person.practice('build', 0.15);
     if (site.damage(wreck)) {
+      ctx.onBuildingStateChanged?.(site);
       telemetry.count('building_sabotaged');
       if (site.crop) {
         site.crop.trampled();
@@ -3965,6 +3971,14 @@ export class ActionSystem {
     const building = person.targetBuildingId === null
       ? null : this.reachBuilding(person, ctx, undefined, 'trespass');
     if (person.targetBuildingId !== null && !building) return;
+    if (building?.def.interior && !houseInteriorContains(building, person.x, person.y)) {
+      // Reaching the doorway is not being in bed. Keep the order committed and
+      // route from the opening to a room tile before sleep can restore fatigue.
+      person.targetX = building.centerX;
+      person.targetY = building.centerY;
+      this.travel(person, ctx);
+      return;
+    }
 
     telemetry.count(building ? 'sleeping' : 'sleeping_open');
     person.needs.fatigue = Math.max(0, person.needs.fatigue -

@@ -77,13 +77,14 @@ describe('WorldTerrainRecord', () => {
 
   it('rejects malformed versions, arrays, indexes, region ledgers and unknown fields', () => {
     const valid = JSON.parse(JSON.stringify(toWorldTerrainRecord(world())));
-    expect(() => fromWorldTerrainRecord({ ...valid, version: 3 })).toThrow(/v1 or v2/);
+    expect(() => fromWorldTerrainRecord({ ...valid, version: 4 })).toThrow(/v1 through v3/);
     const v2 = structuredClone(valid);
     v2.version = 2;
+    delete v2.tiles.baseWalkable;
     v2.tiles.waterKind = v2.tiles.biome.map((biome: number) => biome === 0 ? 1 : 0);
     v2.tiles.waterSurface = v2.tiles.biome.map((biome: number) => biome === 0 ? Math.fround(v2.config.waterLevel) : 0);
     const v2World = fromWorldTerrainRecord(v2);
-    expect(toWorldTerrainRecord(v2World)).toEqual(v2);
+    expect(toWorldTerrainRecord(v2World).version).toBe(3);
     expect(() => fromWorldTerrainRecord({ ...valid, extra: true })).toThrow(/unknown or missing/);
     const incompleteConfig = structuredClone(valid);
     delete incompleteConfig.config.pitDepth;
@@ -139,6 +140,7 @@ describe('WorldTerrainRecord', () => {
     const mergedIslands = structuredClone(valid);
     const count = mergedIslands.width * mergedIslands.height;
     mergedIslands.tiles.walkable = Array(count).fill(0);
+    mergedIslands.tiles.baseWalkable = Array(count).fill(0);
     mergedIslands.tiles.region = Array(count).fill(-1);
     const islandA = mergedIslands.width * 2 + 2;
     const islandB = mergedIslands.width * 10 + 10;
@@ -146,6 +148,8 @@ describe('WorldTerrainRecord', () => {
     mergedIslands.tiles.biome[islandB] = 1;
     mergedIslands.tiles.walkable[islandA] = 1;
     mergedIslands.tiles.walkable[islandB] = 1;
+    mergedIslands.tiles.baseWalkable[islandA] = 1;
+    mergedIslands.tiles.baseWalkable[islandB] = 1;
     mergedIslands.tiles.region[islandA] = 0;
     mergedIslands.tiles.region[islandB] = 0;
     mergedIslands.regionSizes = [[0, 2]];

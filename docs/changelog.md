@@ -3908,6 +3908,17 @@ Added the moods-move-choices health check, comparing talk frequency in the low a
 
 # Changelog
 
+## 2026-10-10 — M15 16b: muros y habitaciones físicas
+
+Las viviendas nuevas tienen un perímetro bloqueado y una puerta fija orientada
+al campamento. Dormir y abrigarse exige entrar en la habitación. Completar,
+arruinar y reparar reconcilia los muros; el terreno bajo ellos se conserva en
+el registro v3 y las partidas v1/v2 siguen siendo legibles. Las definiciones
+antiguas conservan su tamaño y comportamiento. Contrato:
+`m15_phase16b_house_walls.md`. Typecheck y 20 pruebas focales pasaron;
+sim:check mantiene los fallos previos cravings-steer-the-diet y perf-budget.
+La presentación interior y sus capturas se entregan en el siguiente cambio 16c.
+
 ## 2026-10-10 — M15 34: preservar el límite de avisos al cruzar
 
 La llegada podía unir dos colas de avisos válidas en una de 33 entradas que

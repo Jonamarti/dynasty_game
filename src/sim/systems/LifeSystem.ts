@@ -18,6 +18,7 @@ import type { Person } from '../entities/Person.ts';
 import { ELDER_YEARS, SKILLS, TRAITS, TRAIT_SPREAD } from '../entities/Person.ts';
 import type { Household } from '../entities/Household.ts';
 import type { Building } from '../entities/Building.ts';
+import { houseInteriorContains } from '../world/HouseInterior.ts';
 import type { RNG } from '../core/RNG.ts';
 import type { PopulationConfig } from '../core/Config.ts';
 import { telemetry } from '../core/Telemetry.ts';
@@ -32,14 +33,16 @@ import {
  * samples it at midnight for the hearth and for conception, and the compact
  * LOD (`CompactAdvance`) asks it of a couple it advances out of sight. Two
  * copies would drift — the compact model would grow families the detailed one
- * forbids. Containment is `reachBuilding`'s own, with a tile of margin:
- * somebody still walking to the hut has `action === 'sleep'` and a target, and
- * is not under it yet.
+ * forbids. Open shelters use the building margin; walled houses require the
+ * sleeper to have reached the room, not merely the footprint or doorway.
  */
 export function roofOverSleeper(person: Person, buildingsById: ReadonlyMap<number, Building>): Building | null {
   if (!person.alive || person.action !== 'sleep' || person.targetBuildingId === null) return null;
   const roof = buildingsById.get(person.targetBuildingId);
-  return roof && roof.complete && roof.def.shelter > 0 && roof.contains(person.x, person.y, 1) ? roof : null;
+  const underRoof = roof?.def.interior
+    ? houseInteriorContains(roof, person.x, person.y)
+    : roof?.contains(person.x, person.y, 1) ?? false;
+  return roof && roof.complete && roof.def.shelter > 0 && underRoof ? roof : null;
 }
 
 // Moved to `entities/Pregnancy.ts` (M15 phase 19) so the thirds of a pregnancy

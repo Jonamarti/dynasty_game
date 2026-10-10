@@ -67,6 +67,10 @@ export class World {
   soil!: Soil;
   readonly biome: Uint8Array;
   readonly walkable: Uint8Array;
+  /** Ground walkability below house-wall overlays. */
+  readonly baseWalkable: Uint8Array;
+  /** Transient wall mask reconstructed from completed buildings after load. */
+  readonly houseWallBlocks: Uint8Array;
 
   /** Optional geographic water provenance. Omitted in classic play to keep its checkpoint shape stable. */
   declare readonly waterKind?: Uint8Array;
@@ -128,6 +132,8 @@ export class World {
     this.fertility = new Float32Array(n);
     this.biome = new Uint8Array(n);
     this.walkable = new Uint8Array(n);
+    this.baseWalkable = new Uint8Array(n);
+    this.houseWallBlocks = new Uint8Array(n);
     this.grass = new Float32Array(n);
     this.grassCap = new Float32Array(n);
     this.region = new Int32Array(n).fill(-1);
@@ -135,6 +141,7 @@ export class World {
 
     if (localGeography) this.generateFromGeography(localGeography);
     else this.generate(rng);
+    this.baseWalkable.set(this.walkable);
     this.findShores();
     this.findRegions();
     this.findSwimRegions();
@@ -376,11 +383,9 @@ export class World {
   }
 
   /**
-   * The only place `walkable` changes after generation — M15 phase 16a — and it
-   * keeps `region` true as it does, repairing the landmass labels in place
-   * instead of re-flooding the island. Digging (phase 26) and walls (phase 16b)
-   * both come through here, so one piece of code owns the invariant that
-   * `regions-stay-true` checks against a full recompute.
+   * Ground walkability changes are recorded separately from derived house
+   * walls, then the effective tile and its region labels are repaired in one
+   * place. Digging updates the ground beneath a wall without opening it.
    *
    * **Blocking** a tile may cut its landmass in two: flood outward from each
    * walkable neighbour, one step per front in turn, merging fronts that touch.
@@ -395,13 +400,31 @@ export class World {
   setWalkable(x: number, y: number, walkable: boolean): void {
     if (!this.inBounds(x, y)) return;
     const i = this.index(x, y);
-    const now = walkable ? 1 : 0;
+    this.baseWalkable[i] = walkable ? 1 : 0;
+    const now = this.baseWalkable[i] === 1 && this.houseWallBlocks[i] !== 1 ? 1 : 0;
+    this.applyWalkability(i, now);
+  }
+
+  /** Toggle a house wall without overwriting terrain or earthwork walkability. */
+  setHouseWall(x: number, y: number, blocked: boolean): void {
+    if (!this.inBounds(x, y)) return;
+    const i = this.index(x, y);
+    this.houseWallBlocks[i] = blocked ? 1 : 0;
+    const now = this.baseWalkable[i] === 1 && this.houseWallBlocks[i] !== 1 ? 1 : 0;
+    this.applyWalkability(i, now);
+  }
+
+  private applyWalkability(i: number, now: number): void {
     if (this.walkable[i] === now) return;
     this.walkable[i] = now;
     this.swimRegionsDirty = true;
     this.boatVersion = -1;
     this.logboatVersion = -1;
-    if (walkable) this.joinRegions(i); else this.splitRegions(i);
+    if (now === 1) this.joinRegions(i); else this.splitRegions(i);
+  }
+
+  isHouseWallBlocked(x: number, y: number): boolean {
+    return this.inBounds(x, y) && this.houseWallBlocks[this.index(x, y)] === 1;
   }
 
   /** The four walkable neighbours of a tile, as indices. */

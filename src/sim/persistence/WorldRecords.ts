@@ -5,7 +5,7 @@ import { World } from '../core/World.ts';
 import { Soil } from '../core/Soil.ts';
 import { DEFAULT_CONFIG, type WorldConfig } from '../core/Config.ts';
 
-export const WORLD_TERRAIN_RECORD_VERSION = 2 as const;
+export const WORLD_TERRAIN_RECORD_VERSION = 3 as const;
 
 type NumericArrayKey = 'elevation' | 'offset' | 'prominence' | 'moisture' | 'fertility' |
   'grass' | 'grassCap';
@@ -15,7 +15,7 @@ type SoilArrayKey = 'texture' | 'organic' | 'nutrient';
 
 export interface WorldTerrainRecord {
   readonly recordType: 'WorldTerrainRecord';
-  readonly version: 1 | 2;
+  readonly version: 1 | 2 | 3;
   readonly width: number;
   readonly height: number;
   readonly chunkSize: number;
@@ -24,7 +24,7 @@ export interface WorldTerrainRecord {
   readonly earthVersion: number;
   readonly nextRegionId: number;
   readonly config: Record<string, number | boolean>;
-  readonly tiles: Record<NumericArrayKey, number[]> & Record<ByteArrayKey, number[]> & Record<RegionArrayKey, number[]> &
+  readonly tiles: Record<NumericArrayKey, number[]> & Record<ByteArrayKey, number[]> & { baseWalkable: number[] } & Record<RegionArrayKey, number[]> &
     { readonly waterKind?: number[]; readonly waterSurface?: number[] };
   readonly soil: Record<SoilArrayKey, number[]> & { active: number[] };
   readonly regionSizes: [number, number][];
@@ -36,7 +36,7 @@ const byteKeys: ByteArrayKey[] = ['biome', 'walkable'];
 const soilKeys: SoilArrayKey[] = ['texture', 'organic', 'nutrient'];
 const worldOwnKeys = ['config', 'width', 'height', 'chunkSize', 'chunksX', 'chunksY', 'elevation', 'offset', 'earthVersion',
   'prominence', 'moisture', 'fertility', 'biome', 'walkable', 'grass', 'grassCap', 'region', 'regionSizes', 'nextRegionId', 'shoreTiles',
-  'boatRegions', 'boatVersion', 'logboatRegions', 'logboatVersion', 'swimRegion', 'swimRegionSizes', 'swimRegionsDirty', 'swimRegionEarthVersion', 'soil'];
+  'baseWalkable', 'houseWallBlocks', 'boatRegions', 'boatVersion', 'logboatRegions', 'logboatVersion', 'swimRegion', 'swimRegionSizes', 'swimRegionsDirty', 'swimRegionEarthVersion', 'soil'];
 const soilOwnKeys = ['width', 'fertility', 'texture', 'organic', 'nutrient', 'active'];
 const configKeys = Object.keys(DEFAULT_CONFIG.world) as (keyof WorldConfig)[];
 const integerConfigKeys = ['width', 'height', 'chunkSize', 'berryBushes', 'flintOutcrops', 'deadwood', 'gameHerds', 'predators',
@@ -115,6 +115,7 @@ export function toWorldTerrainRecord(world: World): WorldTerrainRecord {
   const tiles = {} as WorldTerrainRecord['tiles'];
   for (const key of numericKeys) tiles[key] = copyValues(world[key]);
   for (const key of byteKeys) tiles[key] = copyValues(world[key]);
+  tiles.baseWalkable = copyValues(world.baseWalkable);
   tiles.region = copyValues(world.region);
   if (hasHydrology) {
     if (!world.waterKind || !world.waterSurface || world.waterKind.length !== world.biome.length || world.waterSurface.length !== world.biome.length) invalid('incomplete local hydrology arrays');
@@ -122,7 +123,7 @@ export function toWorldTerrainRecord(world: World): WorldTerrainRecord {
     (tiles as Record<string, number[]>).waterSurface = copyValues(world.waterSurface);
   }
   return {
-    recordType: 'WorldTerrainRecord', version: hasHydrology ? WORLD_TERRAIN_RECORD_VERSION : 1,
+    recordType: 'WorldTerrainRecord', version: WORLD_TERRAIN_RECORD_VERSION,
     width: world.width, height: world.height, chunkSize: world.chunkSize,
     chunksX: world.chunksX, chunksY: world.chunksY, earthVersion: world.earthVersion,
     nextRegionId: internals.nextRegionId, config,
@@ -139,7 +140,7 @@ export function toWorldTerrainRecord(world: World): WorldTerrainRecord {
 /** Validate first, then hydrate independent arrays and working World/Soil prototypes without constructors. */
 export function fromWorldTerrainRecord(record: unknown): World {
   if (!object(record)) invalid('expected object');
-  if (record.version !== 1 && record.version !== 2) invalid('expected WorldTerrainRecord v1 or v2');
+  if (record.version !== 1 && record.version !== 2 && record.version !== 3) invalid('expected WorldTerrainRecord v1 through v3');
   exact(record, ['recordType', 'version', 'width', 'height', 'chunkSize', 'chunksX', 'chunksY', 'earthVersion', 'nextRegionId', 'config', 'tiles', 'soil', 'regionSizes', 'shoreTiles']);
   if (record.recordType !== 'WorldTerrainRecord') invalid('expected WorldTerrainRecord');
   if (!safeDimension(record.width) || !safeDimension(record.height) || !safeDimension(record.chunkSize) ||
@@ -150,8 +151,8 @@ export function fromWorldTerrainRecord(record: unknown): World {
   if (!Number.isSafeInteger(n) || n > 10_000_000) invalid('tile count out of range');
   validateConfig(record.config, record.width as number, record.height as number, record.chunkSize as number);
   if (!object(record.tiles)) invalid('invalid tile arrays');
-  const hasHydrology = record.version === 2;
-  exact(record.tiles, [...numericKeys, ...byteKeys, 'region', ...(hasHydrology ? ['waterKind', 'waterSurface'] : [])]);
+  const hasHydrology = record.version === 2 || (record.version === 3 && Object.hasOwn(record.tiles, 'waterKind'));
+  exact(record.tiles, [...numericKeys, ...byteKeys, ...(record.version === 3 ? ['baseWalkable'] : []), 'region', ...(hasHydrology ? ['waterKind', 'waterSurface'] : [])]);
   const arrays = new Map<string, Float32Array | Uint8Array | Int32Array>();
   for (const key of [...numericKeys, ...soilKeys]) {
     const raw = key === 'texture' || key === 'organic' || key === 'nutrient' ?
@@ -170,9 +171,20 @@ export function fromWorldTerrainRecord(record: unknown): World {
     if (!Array.isArray(raw) || raw.length !== n) invalid(`invalid ${key} array`);
     for (let i = 0; i < n; i++) {
       const value: unknown = Object.hasOwn(raw, i) ? raw[i] : undefined;
-      if (!Number.isInteger(value) || (key === 'biome' ? (value as number) < 0 || (value as number) > (record.version === 2 ? 6 : 5) : value !== 0 && value !== 1)) invalid(`invalid ${key} array`);
+      if (!Number.isInteger(value) || (key === 'biome' ? (value as number) < 0 || (value as number) > (record.version >= 2 ? 6 : 5) : value !== 0 && value !== 1)) invalid(`invalid ${key} array`);
     }
     arrays.set(key, new Uint8Array(raw as number[]));
+  }
+  if (record.version === 3) {
+    const base = record.tiles.baseWalkable;
+    if (!Array.isArray(base) || base.length !== n) invalid('invalid baseWalkable array');
+    for (let i = 0; i < n; i++) {
+      const value: unknown = Object.hasOwn(base, i) ? base[i] : undefined;
+      if (value !== 0 && value !== 1) invalid('invalid baseWalkable array');
+    }
+    arrays.set('baseWalkable', new Uint8Array(base));
+  } else {
+    arrays.set('baseWalkable', new Uint8Array(arrays.get('walkable') as Uint8Array));
   }
   const regionRaw = record.tiles.region;
   if (!Array.isArray(regionRaw) || regionRaw.length !== n) invalid('invalid region array');
@@ -221,6 +233,7 @@ export function fromWorldTerrainRecord(record: unknown): World {
   }
   const counted = new Map<number, number>();
   const walkable = arrays.get('walkable') as Uint8Array;
+  const baseWalkable = arrays.get('baseWalkable') as Uint8Array;
   const biome = arrays.get('biome') as Uint8Array;
   const regions = arrays.get('region') as Int32Array;
   const elevation = arrays.get('elevation') as Float32Array;
@@ -232,9 +245,9 @@ export function fromWorldTerrainRecord(record: unknown): World {
     const depth = hasHydrology && (arrays.get('waterKind') as Uint8Array)[i] === 1
       ? (arrays.get('waterSurface') as Float32Array)[i]! - elevation[i]! - offset[i]!
       : waterDepth;
-    if ((walkable[i] === 1) !== (id >= 0) ||
-        (biome[i] === 5 && walkable[i] !== 0) ||
-        ((biome[i] === 0 || biome[i] === 6) && walkable[i] === 1 && depth >= waterConfig.wadeDepth!)) {
+    if ((walkable[i] === 1) !== (id >= 0) || (walkable[i] === 1 && baseWalkable[i] !== 1) ||
+        (biome[i] === 5 && baseWalkable[i] !== 0) ||
+        ((biome[i] === 0 || biome[i] === 6) && baseWalkable[i] === 1 && depth >= waterConfig.wadeDepth!)) {
       invalid('walkability and region labels disagree');
     }
     if (id >= 0) counted.set(id, (counted.get(id) ?? 0) + 1);
@@ -293,7 +306,7 @@ export function fromWorldTerrainRecord(record: unknown): World {
     chunksX: record.chunksX, chunksY: record.chunksY, earthVersion: record.earthVersion,
     config: { ...record.config }, elevation: arrays.get('elevation'), offset: arrays.get('offset'),
     prominence: arrays.get('prominence'), moisture: arrays.get('moisture'), fertility: arrays.get('fertility'),
-    biome: arrays.get('biome'), walkable: arrays.get('walkable'), grass: arrays.get('grass'),
+    biome: arrays.get('biome'), walkable: arrays.get('walkable'), baseWalkable, houseWallBlocks: new Uint8Array(n), grass: arrays.get('grass'),
     grassCap: arrays.get('grassCap'), region: arrays.get('region'), regionSizes: sizes,
     nextRegionId: record.nextRegionId, shoreTiles: shores,
     // Swimming components are a derived cache. Rebuild lazily after restore:
