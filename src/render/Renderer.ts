@@ -64,8 +64,10 @@ export function wornGarmentsOf(person: Person): PersonAspect['wear'] {
     ? torsoId === 'sewn_tunic' ? 'tunic' : torsoId : undefined;
   const cloak = person.equipment.cloak?.item === 'hide_cape' && person.inventory.count('hide_cape') >= 1
     ? 'cloak' as const : undefined;
-  const feet = person.equipment.feet?.item === 'foot_wraps' && person.inventory.count('foot_wraps') >= 1
-    ? 'wraps' as const : undefined;
+  const feetId = person.equipment.feet?.item;
+  const feet = feetId && person.inventory.count(feetId) >= 1
+    ? feetId === 'foot_wraps' ? 'wraps' as const : feetId === 'moccasins' ? 'boots' as const : undefined
+    : undefined;
   // Keep absent optional regions out of the appearance record: old callers
   // and cached appearances already use the two torso/cloak keys.
   const legs = person.equipment.legs?.item === 'leggings' && person.inventory.count('leggings') >= 1

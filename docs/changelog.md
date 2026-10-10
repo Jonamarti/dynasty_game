@@ -1,3 +1,15 @@
+## 2026-10-10 — m15: mocasines
+
+`0.15.40-alpha`: técnica individual tras sastrería y envolturas de pies,
+receta piel 1 + tendón 1 con aguja retenida, abrigo 0,12 y capa de calzado.
+Ponerse mocasines sustituye las envolturas en el hueco de pies, conserva el
+par anterior y no suma su calor. Español, icono generado y JSON incluidos.
+
+Typecheck, 71/71 unitarias focalizadas y browser 1/1 pasan; chequeo corto con
+2/147 fallos conocidos. Suite global sobre .38 separada. Contrato:
+`docs/m15_phase14c_moccasins.md`; captura revisada:
+`artifacts/screenshots/m15-phase14c-moccasins-2026-10-10/01-mocasines.png`.
+Quedan prendas y sistemas de14c; ninguna mejora poblacional inferida.
 ## 2026-10-10 — m15: polainas cosidas
 
 `0.15.39-alpha`: técnica individual tras sastrería, dos rutas de descubrimiento,

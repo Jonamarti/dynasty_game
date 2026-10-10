@@ -489,6 +489,8 @@ export const ITEMS: Record<string, ItemDef> = {
     class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'feet', warmth: 0.08 } },
   leggings: { id: 'leggings', label: 'Leggings', nutrition: 0, spoilTicks: 0, baseValue: 7,
     class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'legs', warmth: 0.15 } },
+  moccasins: { id: 'moccasins', label: 'Moccasins', nutrition: 0, spoilTicks: 0, baseValue: 6,
+    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'feet', warmth: 0.12 } },
 };
 
 export class Inventory {

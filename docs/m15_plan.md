@@ -1676,6 +1676,9 @@ La red completa y el resto de prendas siguen pendientes.
 **2026-10-10:** polainas `leggings` entregadas, aguja retenida y hueco de
 piernas independiente. [Contrato y captura](m15_phase14c_leggings.md).
 
+**2026-10-10:** mocasines `moccasins` entregados, sustituyen las envolturas en
+el mismo hueco de pies sin sumar ambas prendas. [Contrato y captura](m15_phase14c_moccasins.md).
+
 ### 14d. Estatus (medido; opcional dentro de la fase)
 
 `garment.status` suma al motivo de estatus (fase 5d) de quien la lleva y a la

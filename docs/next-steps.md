@@ -1682,3 +1682,5 @@ para afirmar mejora económica. docs/m15_phase15d_salters.md conserva evidencia.
 2026-10-10: entrada foot_wraps de14c implementada con técnica, receta, hueco, abrigo y capa de pies; m15_phase14c_foot_wraps.md. Pendientes resto de prendas/red, bolsillos, creencias y desgaste/remiendo.
 
 2026-10-10: polainas leggings de14c entregadas; contrato m15_phase14c_leggings.md. Pendientes otras prendas y sistemas de ropa.
+
+2026-10-10: mocasines de14c entregados con reemplazo de envolturas en pies; m15_phase14c_moccasins.md. Pendientes otras prendas y sistemas de ropa.

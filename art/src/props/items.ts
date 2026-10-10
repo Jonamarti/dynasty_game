@@ -6,6 +6,9 @@ export type ItemArt = [id: string, label: string, tech: string, draw: () => stri
 export const WOOD = '#86633c', WOOD_D = '#3a2716', STONE = '#a9adb0', STONE_D = '#3d4244', BONE = '#e6dcc0', BONE_D = '#7a6d4e', CORD = '#c9b27f';
 const rot = (inner: string, deg: number, cx = 32, cy = 32): string => `<g transform="rotate(${deg} ${cx} ${cy})">${inner}</g>`;
 export const ITEMS: ItemArt[] = [
+  ['moccasins', 'Mocasines', 'moccasins', () =>
+    [18, 43].map(x => shape(smooth([[x - 6, 15], [x + 5, 13], [x + 6, 34], [x + 14, 44], [x + 7, 53], [x - 9, 49], [x - 8, 31]]), '#8c6541', '#3f291c')
+      + stroke(`M${x - 5},18L${x + 4},18M${x - 4},36Q${x + 4},41 ${x + 9},46`, '#d4b58c', 1.6)).join('')],
   ['leggings', 'Polainas', 'leggings', () =>
     [19, 43].map(x => shape(poly([[x - 8, 10], [x + 8, 10], [x + 5, 53], [x - 6, 53]]), '#b59a73', '#513a24')
       + stroke(`M${x + 3},13L${x + 1},50M${x - 6},46L${x + 5},46`, '#e5d4b0', 1.6)).join('')],

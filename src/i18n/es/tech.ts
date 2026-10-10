@@ -1,5 +1,10 @@
 /** Spanish for tech. Keys are the English templates; see `i18n.ts`. */
 export const ES_TECH: Record<string, string> = {
+  'Sewn hide shoes; the first date is uncertain': 'Zapatos de piel cosida; la fecha más antigua es incierta',
+  'thought of sewing foot wraps shut instead of tying them': 'pensó en cerrar las envolturas de pies con costuras en lugar de atarlas',
+  'folded a scrap of hide around a foot and followed its edge with thread': 'dobló un retazo de piel alrededor de un pie y siguió su borde con hilo',
+  'Sewn hide shoes replace foot wraps with a warmer fitted covering.': 'Los zapatos de piel cosida sustituyen las envolturas por una prenda ajustada que abriga más.',
+  'Sewn moccasins warm the feet more than wraps while actually worn.': 'Los mocasines cosidos abrigan los pies más que las envolturas mientras se llevan puestos.',
   'Sewn hide leg coverings; the first date is uncertain': 'Prendas de piel cosida para las piernas; la fecha más antigua es incierta',
   'thought of sewing hide around legs that the tunic left cold': 'pensó en coser piel alrededor de las piernas que la túnica dejaba frías',
   'pulled sinew through hide and imagined a covering for each leg': 'pasó tendón a través de una piel e imaginó una prenda para cada pierna',
