@@ -158,6 +158,10 @@ export interface BuildingDef {
    * their own mechanisms to.
    */
   providesWater?: boolean;
+  /** A carried object placed on the floor of a host dwelling. */
+  furniture?: boolean;
+  /** Fatigue recovery multiplier for a sleeper resting on this furniture. */
+  sleepQuality?: number;
   /**
    * Set on a design that moves ground to a plan rather than raising a
    * structure — M15 phase 26c. The tiles, and how far each has got, hang off
@@ -312,6 +316,22 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     description:
       'Daubed walls on a felled-timber frame, under thatch. Warm enough to ' +
       'winter in, and the first thing worth cutting a tree for.',
+  },
+
+  // M15 phase 16d. Furniture is a walkable 1×1 Building so it can share the
+  // world-object index, checkpoint and renderer. Simulation.placeFurniture is
+  // the only creation path: it records the host and checks the home's floor.
+  bedding: {
+    id: 'bedding', label: 'Bedding', icon: '\u{1F6CF}',
+    width: 1, height: 1, materials: {}, workTicks: 0, shelter: 0, storage: 0,
+    requiresTech: null, furniture: true, sleepQuality: 1.0,
+    description: 'A bed of grass or hide laid inside a home.',
+  },
+  bed: {
+    id: 'bed', label: 'Bed', icon: '\u{1F6CF}',
+    width: 1, height: 1, materials: {}, workTicks: 0, shelter: 0, storage: 0,
+    requiresTech: 'carpentry', furniture: true, sleepQuality: 1.1,
+    description: 'A raised wooden bed with bedding, inside a home.',
   },
 
   // --- M11 phase 10, second commit: two more shelters -----------------------
@@ -821,6 +841,8 @@ export class Building {
   wallsApplied = false;
   /** Door orientation is fixed at completion; moving camp must not move a hole in the wall. */
   interiorDoorSide: 'north' | 'east' | 'south' | 'west' | null = null;
+  /** Host dwelling for placed furniture; null on ordinary buildings. */
+  hostId: number | null = null;
 
   /**
    * How much of the building is still standing, once there is a building to

@@ -82,6 +82,13 @@ describe('art coverage', () => {
     expect(props.keys['item/sling']).toBeDefined();
   });
 
+  it('draws inventory icons and world sprites for the phase 16d sleep surfaces', () => {
+    for (const id of ['bedding', 'bed']) {
+      expect(props.keys[`item/${id}`], `${id} inventory icon`).toBeDefined();
+      expect(buildings.keys[`b/${id}/ext`], `${id} placed furniture`).toBeDefined();
+    }
+  });
+
   it('draws an inventory icon for the logboat', () => {
     expect(props.keys['item/logboat']).toBeDefined();
   });

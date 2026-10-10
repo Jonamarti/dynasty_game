@@ -60,7 +60,7 @@ import {
   equipFor as fitToolForAction, equipItemInSlot, manualEquipRefusal,
   manualEquipSlot, type ToolAction,
 } from '../core/ToolEquipment.ts';
-import { RECIPES, hasIngredients } from '../entities/Recipe.ts';
+import { RECIPES, hasIngredients, ingredientsFor, recipeTechPower } from '../entities/Recipe.ts';
 import {
   INSCRIPTIONS, type Inscription, type InscriptionDef, type InscriptionForm,
 } from '../entities/Inscription.ts';
@@ -105,7 +105,7 @@ import { noteWorkOutcome } from '../core/Mood.ts';
 import { support } from '../social/Persuasion.ts';
 import { swimRefusal, swimRouteRefusal } from '../core/Swimming.ts';
 import { canWork } from '../knowledge/Ore.ts';
-import { houseInteriorContains } from '../world/HouseInterior.ts';
+import { houseInteriorContains, sleepQualityAt } from '../world/HouseInterior.ts';
 
 export interface ActionContext {
   fineWorkPace?: (person: Person) => number;
@@ -117,6 +117,8 @@ export interface ActionContext {
   buildingsById: Map<number, Building>;
   /** Reconciles derived house walls when a dwelling is completed, ruined or restored. */
   onBuildingStateChanged?: (building: Building) => void;
+  /** Places one carried furniture item at a clear floor tile in its host dwelling. */
+  placeFurniture?: (person: Person, host: Building, itemId: string) => Building | null;
   treesById: Map<number, Tree>;
   animalsById: Map<number, Animal>;
   /** Called when an animal is killed, so the world can take it out. */
@@ -487,7 +489,7 @@ function answersColdProject(person: Person, ctx: ActionContext): boolean {
 }
 
 function answersColdRecipe(recipe: (typeof RECIPES)[string]): boolean {
-  return answersColdTech(recipe.tech) ||
+  return (recipe.tech !== null && answersColdTech(recipe.tech)) ||
     Object.keys(recipe.output).some(item =>
       item === 'fur_coat' || item === 'cloth' || item === 'wool_cloth');
 }
@@ -806,6 +808,7 @@ export class ActionSystem {
       case 'ask_permission': this.doAskPermission(person, ctx); break;
       case 'make_peace': this.doMakePeace(person, ctx); break;
       case 'craft': this.doCraft(person, ctx); break;
+      case 'place_furniture': this.doPlaceFurniture(person, ctx); break;
       case 'inscribe': this.doInscribe(person, ctx); break;
       case 'read': this.doRead(person, ctx); break;
       case 'ponder': this.doPonder(person, ctx); break;
@@ -4031,6 +4034,31 @@ export class ActionSystem {
       return;
     }
 
+    // Furniture is in the room but does not occupy a blocking tile. Route to
+    // the best sleep surface before the first recovery tick so a house with a
+    // bed is mechanically different from its bare floor.
+    if (building?.def.interior) {
+      const pieces = ctx.buildingHash.queryRadius(building.centerX, building.centerY,
+        Math.max(building.def.width, building.def.height) + 1)
+        .filter(piece => piece.hostId === building.id && piece.complete && !piece.ruined &&
+          (piece.def.sleepQuality ?? 0) > 0)
+        .sort((a, b) => (b.def.sleepQuality ?? 0) - (a.def.sleepQuality ?? 0) ||
+          Math.hypot(a.centerX - person.x, a.centerY - person.y) -
+            Math.hypot(b.centerX - person.x, b.centerY - person.y) || a.id - b.id);
+      const surface = pieces[0];
+      if (surface && Math.hypot(surface.centerX - person.x, surface.centerY - person.y) > 0.3) {
+        person.targetX = surface.centerX;
+        person.targetY = surface.centerY;
+        this.travel(person, ctx);
+        return;
+      }
+      const quality = sleepQualityAt(building, person.x, person.y, pieces);
+      telemetry.count('sleep_quality_' + Math.round(quality * 10));
+      telemetry.count(surface ? 'sleeping_furniture' : 'sleeping');
+      person.needs.fatigue = Math.max(0, person.needs.fatigue - SLEEP_RECOVERY * quality);
+      return;
+    }
+
     telemetry.count(building ? 'sleeping' : 'sleeping_open');
     person.needs.fatigue = Math.max(0, person.needs.fatigue -
       SLEEP_RECOVERY * (building ? 1 : 0.7));
@@ -4039,6 +4067,33 @@ export class ActionSystem {
     // counting it toward `MAX_WORK_STRETCH` would eventually report that
     // somebody had been asleep long enough to need a break.
 
+  }
+
+  /** Put a carried bed or bedding on a free room tile, leaving the door open. */
+  private doPlaceFurniture(person: Person, ctx: ActionContext): void {
+    const itemId = person.targetItemId;
+    if (!itemId || !ITEMS[itemId]?.furniture) {
+      this.abandon(person, 'no_furniture', ctx);
+      return;
+    }
+    const host = this.reachBuilding(person, ctx, {
+      ok: building => !!building.def.interior && building.complete && !building.ruined,
+      reason: 'house_gone',
+    }, 'trespass');
+    if (!host) return;
+    if (person.inventory.count(itemId) < 1) {
+      this.abandon(person, 'lack_furniture', ctx);
+      return;
+    }
+    const placed = ctx.placeFurniture?.(person, host, itemId) ?? null;
+    if (!placed) {
+      this.abandon(person, 'no_room', ctx);
+      return;
+    }
+    person.inventory.remove(itemId, 1);
+    person.handled.set(itemId, ctx.tick);
+    telemetry.count('furniture_placed_' + itemId);
+    this.finish(person);
   }
 
   /**
@@ -4530,7 +4585,7 @@ export class ActionSystem {
       this.abandon(person, 'no_recipe', ctx);
       return;
     }
-    if (techPower(person, recipe.tech) <= 0) {
+    if (recipeTechPower(person, recipe) <= 0) {
       this.abandon(person, 'dont_know_how', ctx);
       return;
     }
@@ -4597,7 +4652,7 @@ export class ActionSystem {
 
     // M15 phase 11b: worked into a craft, whether it survives the recipe
     // (an ingredient) or is what came out of it (the product).
-    for (const [itemId, count] of Object.entries(recipe.ingredients)) {
+    for (const [itemId, count] of Object.entries(ingredientsFor(recipe, person.inventory) ?? recipe.ingredients)) {
       person.inventory.remove(itemId, count);
       person.handled.set(itemId, ctx.tick);
     }

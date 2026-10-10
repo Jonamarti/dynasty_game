@@ -531,7 +531,9 @@ describe('recipes', () => {
     for (const recipe of Object.values(RECIPES)) {
       const output = Object.keys(recipe.output)[0]!;
       expect(
-        recipe.keep > 0 || wantedByBuildings.has(output) || ['raft', 'logboat', 'sail'].includes(output),
+        recipe.keep > 0 || wantedByBuildings.has(output) ||
+          (ITEMS[output]?.furniture === true && BUILDINGS[output]?.furniture === true) ||
+          ['raft', 'logboat', 'sail'].includes(output),
         recipe.id + ' makes ' + output + ', which nothing wants'
       ).toBe(true);
     }

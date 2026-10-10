@@ -1,9 +1,9 @@
 /** Finite grain processing with the detailed groats recipe; raw grain never feeds a body. */
-import { RECIPES } from '../entities/Recipe.ts';
+import { RECIPES, recipeTechPower } from '../entities/Recipe.ts';
 import { ITEMS } from '../entities/Item.ts';
 import { ADULT_YEARS, type Person } from '../entities/Person.ts';
 import type { Building } from '../entities/Building.ts';
-import { awlFactor, techPower } from '../knowledge/Tech.ts';
+import { awlFactor } from '../knowledge/Tech.ts';
 
 export interface CompactBandProcessingRecord {
   readonly recordType: 'CompactBandProcessingRecord'; readonly version: 1;
@@ -37,7 +37,7 @@ export class CompactBandProcessing {
       day, grainConsumed, mealsProduced, nutritionProduced: mealsProduced * ITEMS.meal!.nutrition, workUsed, reason,
     });
     if (this.grain < recipe.ingredients.grain!) return report('no_grain');
-    const worker = [...people].filter(p => p.alive && p.years >= ADULT_YEARS && techPower(p, recipe.tech) > 0).sort((a, b) => a.id - b.id)[0];
+    const worker = [...people].filter(p => p.alive && p.years >= ADULT_YEARS && recipeTechPower(p, recipe) > 0).sort((a, b) => a.id - b.id)[0];
     if (!worker) return report('no_practitioner');
     if (!buildings.some(b => b.complete && !b.ruined && b.def.id === recipe.station && b.ownerBandId === worker.bandId)) return report('no_station');
     // Bank on the named practitioner: changing workers cannot turn a novice's hours into a master's batch.

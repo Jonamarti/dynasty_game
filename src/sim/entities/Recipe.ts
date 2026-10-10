@@ -31,6 +31,8 @@ import type { Skill } from './Person.ts';
 import type { Tech } from '../knowledge/Tech.ts';
 import { ITEMS, type Inventory } from './Item.ts';
 import { t, language, joinAnd } from '../../i18n/i18n.ts';
+import type { Person } from './Person.ts';
+import { techPower } from '../knowledge/Tech.ts';
 
 export interface RecipeDef {
   id: string;
@@ -50,6 +52,8 @@ export interface RecipeDef {
   /** Ticks at `skillFactor` 1. A novice sits at 0.35 and takes nearly three times as long. */
   workTicks: number;
   ingredients: Record<string, number>;
+  /** Alternative ingredient loads for one output, tried in declaration order. */
+  ingredientOptions?: Record<string, number>[];
   output: Record<string, number>;
   /**
    * A `BUILDINGS` id this must be made at, or undefined for anywhere.
@@ -81,6 +85,11 @@ export interface RecipeDef {
 }
 
 export const RECIPES: Record<string, RecipeDef> = {
+  bedding: { id: 'bedding', label: 'Bedding', icon: '\u{1F6CF}', tech: 'cordage', skill: 'build',
+    workTicks: 110, ingredients: { thatch: 4 }, ingredientOptions: [{ hide: 2 }],
+    output: { bedding: 1 }, keep: 0 },
+  bed: { id: 'bed', label: 'Bed', icon: '\u{1F6CF}', tech: 'carpentry', skill: 'build',
+    workTicks: 140, ingredients: { wood: 3, bedding: 1 }, output: { bed: 1 }, keep: 0 },
   // Kept at zero: a raft is made for a journey, not a new universal AI tax.
   raft: { id: 'raft', label: 'Reed raft', icon: '🛶', tech: 'cordage', skill: 'build',
     workTicks: 120, ingredients: { thatch: 6, sticks: 2, rope: 1 }, output: { raft: 1 }, keep: 0 },
@@ -823,8 +832,20 @@ export function nutritionPerUnit(recipe: RecipeDef, itemId: string): number {
 
 /** Whether a pack holds everything one run of `recipe` consumes. */
 export function hasIngredients(inventory: Inventory, recipe: RecipeDef): boolean {
-  return Object.entries(recipe.ingredients)
-    .every(([itemId, count]) => inventory.count(itemId) >= count);
+  return ingredientsFor(recipe, inventory) !== null;
+}
+
+/** Shared accessor for recipe availability in scorers and menus. */
+export function recipeTechPower(person: Person, recipe: RecipeDef): number {
+  return techPower(person, recipe.tech);
+}
+
+/** Resolve one complete load, preferring the recipe's primary ingredients. */
+export function ingredientsFor(recipe: RecipeDef, inventory: Inventory): Record<string, number> | null {
+  for (const ingredients of [recipe.ingredients, ...(recipe.ingredientOptions ?? [])]) {
+    if (Object.entries(ingredients).every(([itemId, count]) => inventory.count(itemId) >= count)) return ingredients;
+  }
+  return null;
 }
 
 /**
@@ -835,12 +856,19 @@ export function hasIngredients(inventory: Inventory, recipe: RecipeDef): boolean
  * fourth hand-written copy of a recipe's contents.
  */
 export function missingIngredients(inventory: Inventory, recipe: RecipeDef): string {
-  const short = Object.entries(recipe.ingredients)
+  if (recipe.ingredientOptions?.some(option => Object.entries(option)
+    .every(([itemId, count]) => inventory.count(itemId) >= count))) return '';
+  const format = (ingredients: Record<string, number>): string[] => Object.entries(ingredients)
     .filter(([itemId, count]) => inventory.count(itemId) < count)
     .map(([itemId, count]) => {
       const label = t(ITEMS[itemId]?.label ?? itemId).toLowerCase();
       return count > 1 ? count + ' ' + label : label;
     });
+  const short = format(recipe.ingredients);
   if (short.length === 0) return '';
+  const options = (recipe.ingredientOptions ?? []).map(format).filter(option => option.length > 0);
+  if (options.length === 1 && short.length === 1 && options[0]!.length === 1) {
+    return t('You need either {first} or {second}', { first: short[0], second: options[0]![0] });
+  }
   return t('You need {list}', { list: language() === 'en' ? short.join(' and ') : joinAnd(short) });
 }

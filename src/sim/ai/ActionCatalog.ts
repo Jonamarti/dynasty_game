@@ -27,7 +27,7 @@ import { canWork } from '../knowledge/Ore.ts';
 import { SOW_SEED } from '../entities/Field.ts';
 import type { Tree } from '../entities/Tree.ts';
 import { ITEMS } from '../entities/Item.ts';
-import { RECIPES, hasIngredients, missingIngredients, type RecipeDef } from '../entities/Recipe.ts';
+import { RECIPES, hasIngredients, missingIngredients, recipeTechPower, type RecipeDef } from '../entities/Recipe.ts';
 import { INSCRIPTIONS } from '../entities/Inscription.ts';
 import { TECH, techPower, prerequisitesMet, type Tech } from '../knowledge/Tech.ts';
 import { MAX_IDEAS, PROTOTYPE_AT } from '../knowledge/Synthesis.ts';
@@ -192,6 +192,8 @@ export interface CatalogContext {
   commanding?: Person | null;
   /** The player's own unfinished projects, for a request made to a bandmate. */
   buildings?: readonly Building[];
+  /** Current household's home, for the interior-furniture placement verb. */
+  homeBuildingId?: number | null;
   /**
    * Where the actor could hold a feast right now, or null — M15 phase 38a.
    * Precomputed by the caller with `Simulation.feastVenueFor`, the rule the
@@ -1116,6 +1118,34 @@ function buildingActions(
         warning: watched,
       });
     }
+    if (building.def.interior && actor.inventory.entries().some(([itemId, count]) =>
+      count > 0 && ITEMS[itemId]?.furniture)) {
+      const furniture = actor.inventory.entries().filter(([itemId, count]) =>
+        count > 0 && ITEMS[itemId]?.furniture).map(([itemId]) => itemId).sort();
+      const hostPieces = (ctx.buildings ?? []).filter(candidate => candidate.hostId === building.id);
+      const hasRoom = houseInteriorTiles(building).some(tile =>
+        ctx.world.isWalkable(Math.floor(tile.x), Math.floor(tile.y)) &&
+        !hostPieces.some(piece => piece.x === Math.floor(tile.x) && piece.y === Math.floor(tile.y)));
+      const isHome = ctx.homeBuildingId === building.id;
+      const inside = houseInteriorContains(building, actor.x, actor.y);
+      for (const itemId of furniture) {
+        const def = BUILDINGS[itemId];
+        const techOkay = !def?.requiresTech || actor.knownTech.has(def.requiresTech);
+        options.push({
+          id: 'place_furniture', itemId, buildingId: building.id,
+          label: t('Place {thing}', { thing: t(ITEMS[itemId]!.label).toLowerCase() }),
+          icon: ITEMS[itemId]!.furniture ? (def?.icon ?? '\u{1F6CF}') : '\u{1F6CF}',
+          enabled: isHome && inside && hasRoom && techOkay && building.complete && !building.ruined,
+          reason: !isHome ? t('That is not your household’s home')
+            : !inside ? t('You must be inside the house to place furniture')
+              : !hasRoom ? t('There is no room inside the house')
+                : !techOkay ? t('Nobody here knows how to make that')
+                : !building.complete || building.ruined ? t('The house cannot be used right now')
+                  : undefined,
+          warning: watched,
+        });
+      }
+    }
     // M8.1, mechanism 4: what this station is *for*, offered on the station
     // itself. Passing `building` as the station means the one that was clicked
     // is the one used, rather than whichever the UI thinks is nearest.
@@ -1123,7 +1153,7 @@ function buildingActions(
       const crafts: ActionOption[] = [];
       for (const recipe of Object.values(RECIPES)) {
         if (recipe.station !== building.def.id) continue;
-        if (techPower(actor, recipe.tech) <= 0) continue;
+        if (recipeTechPower(actor, recipe) <= 0) continue;
         const option = craftOption(actor, recipe, ctx, building);
         // Still a refusal, unlike every other verb on this building, and on
         // purpose: `ActionSystem`'s station craft does not pass through
@@ -1421,7 +1451,7 @@ function groundActions(
   // is missing, which is the question the `reason` channel exists to answer.
   const crafts: ActionOption[] = [];
   for (const recipe of Object.values(RECIPES)) {
-    if (techPower(actor, recipe.tech) <= 0) continue;
+    if (recipeTechPower(actor, recipe) <= 0) continue;
     crafts.push(craftOption(actor, recipe, ctx));
   }
   options.push(...grouped(crafts, t('Make…'), '\u{1F528}',

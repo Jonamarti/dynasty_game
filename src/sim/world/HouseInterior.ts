@@ -7,6 +7,35 @@ export type HouseSide = 'north' | 'east' | 'south' | 'west';
 export interface HouseDoor { readonly side: HouseSide; readonly x: number; readonly y: number }
 export interface HouseBandAnchor { readonly homeX: number; readonly homeY: number }
 
+/** Walkable room-tile centers in a stable, center-out order for furniture placement. */
+export function houseInteriorTiles(building: Building): { x: number; y: number }[] {
+  if (!building.def.interior || building.def.width < 3 || building.def.height < 3) return [];
+  const tiles: { x: number; y: number }[] = [];
+  for (let y = building.y + 1; y < building.y + building.def.height - 1; y++) {
+    for (let x = building.x + 1; x < building.x + building.def.width - 1; x++) {
+      tiles.push({ x: x + 0.5, y: y + 0.5 });
+    }
+  }
+  return tiles.sort((a, b) =>
+    Math.hypot(a.x - building.centerX, a.y - building.centerY) -
+      Math.hypot(b.x - building.centerX, b.y - building.centerY) || a.y - b.y || a.x - b.x);
+}
+
+/** Fatigue multiplier for the room tile somebody actually lies on. */
+export function sleepQualityAt(
+  host: Building | null, x: number, y: number, furnishings: readonly Building[] = []
+): number {
+  if (!host) return 0.7;
+  if (!host.def.interior) return 1;
+  if (!houseInteriorContains(host, x, y)) return 0.7;
+  const tileX = Math.floor(x), tileY = Math.floor(y);
+  const quality = furnishings
+    .filter(piece => piece.hostId === host.id && piece.complete && !piece.ruined &&
+      piece.x === tileX && piece.y === tileY)
+    .reduce((best, piece) => Math.max(best, piece.def.sleepQuality ?? 0), 0);
+  return Math.max(0.9, quality);
+}
+
 /** Whether the tile World.isWalkable would use is a room tile. */
 export function houseInteriorContains(building: Building, x: number, y: number): boolean {
   const tileX = Math.floor(x), tileY = Math.floor(y);

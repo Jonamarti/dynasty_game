@@ -32,7 +32,7 @@ import {
 } from '../entities/Building.ts';
 import { SOW_SEED } from '../entities/Field.ts';
 import { earthworkWorkRefusal } from '../core/Earth.ts';
-import { RECIPES } from '../entities/Recipe.ts';
+import { RECIPES, recipeTechPower } from '../entities/Recipe.ts';
 import { techPower, type Tech } from '../knowledge/Tech.ts';
 import { JOB_IDS, type JobId } from '../entities/Job.ts';
 import type { RelationshipGraph } from './../social/Relationships.ts';
@@ -1581,7 +1581,7 @@ export class BandSystem {
       const missing = buildable.filter(def => isStation(def) &&
         !stations.some(existing => existing.def.id === def.id) &&
         Object.values(RECIPES).some(recipe => recipe.station === def.id &&
-          members.some(m => techPower(m, recipe.tech) > 0)));
+          members.some(m => recipeTechPower(m, recipe) > 0)));
       // Cheapest first: a band's first workshop should be the one it can finish.
       if (!wanted) wanted = this.cheapest(missing)?.id ?? null;
     }

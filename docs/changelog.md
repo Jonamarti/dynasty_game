@@ -14266,3 +14266,16 @@ El diagnóstico de la semilla band identificó un chop a 5,499 tiles con visión
 visible o registrado por esa persona. No se rebaja el control de conocimiento.
 La regresión falla sobre el código anterior y cubre rechazo de lo desconocido,
 visión diurna y recuerdo fuera de vista. Focal 1/1; cohortes diferidas.
+
+## 2026-10-10 — M15 16d: fabricar y colocar lechos y camas
+
+Lecho de hierba o piel, cama de carpintería, colocación en el hogar propio y
+sueño en la mejor superficie de la habitación. El mueble conserva hostId por
+JSON y no bloquea el suelo. La revisión detectó apilado por una consulta de
+ocupación al centro en vez de al origen: regresión negativa confirmada y arreglo.
+Contrato: docs/m15_phase16d_bedding.md. Captura revisada en
+artifacts/screenshots/m15-phase16d-2026-10-10/01-bed-in-house.png.
+La captura usa sim.order; no verifica el clic físico del radial. La autonomía
+de fabricación/colocación y el resto del catálogo de muebles siguen abiertos.
+Single-seed compartido: 2/147 fallos heredados de dieta/rendimiento; conocimiento
+ya pasa tras 1a0c2a1. Cohortes/matriz diferidas; no se afirma mejora económica.

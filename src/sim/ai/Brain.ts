@@ -50,7 +50,7 @@ import {
 } from '../knowledge/Tech.ts';
 import { wantedOreKinds } from '../knowledge/Ore.ts';
 import {
-  RECIPES, hasIngredients, recipeFor, recipeUsing, nutritionPerUnit,
+  RECIPES, hasIngredients, recipeFor, recipeUsing, nutritionPerUnit, recipeTechPower,
 } from '../entities/Recipe.ts';
 import { INSCRIPTIONS, type Inscription } from '../entities/Inscription.ts';
 import { pressedByNeed, EARSHOT } from '../systems/ActionSystem.ts';
@@ -3382,7 +3382,18 @@ export class Brain {
         .filter(b => b.complete && !b.ruined && b.def.shelter > 0.2 &&
           person.distanceTo({ x: b.centerX, y: b.centerY }) <= ctx.sightRadius &&
           ctx.world.sameRegion(person.x, person.y, b.centerX, b.centerY) && this.canUse(person, b, ctx)),
-        b => b.def.shelter * 40 - person.distanceTo({ x: b.centerX, y: b.centerY }));
+        b => {
+          const pieces = ctx.buildingHash.queryRadius(b.centerX, b.centerY,
+            Math.max(b.def.width, b.def.height) + 1)
+            .filter(piece => piece.hostId === b.id && piece.complete && !piece.ruined);
+          const roomQuality = b.def.interior
+            ? Math.max(0.9, ...pieces.map(piece => piece.def.sleepQuality ?? 0))
+            : 1;
+          // A better sleep surface can win over a slightly warmer hut; doSleep
+          // routes the last room tiles to that surface before fatigue recovers.
+          return b.def.shelter * 40 + roomQuality * 10 -
+            person.distanceTo({ x: b.centerX, y: b.centerY });
+        });
       if (restShelter) {
         const nearness = this.proximityBonus(person,
           { x: restShelter.centerX, y: restShelter.centerY }, ctx.sightRadius);
@@ -3560,7 +3571,7 @@ export class Brain {
     // this drift and the drift resurfaces as exactly that thrash.
     for (const recipe of
       pressedByNeed(person, ctx.needs.workLimits) ? [] : Object.values(RECIPES)) {
-      if (techPower(person, recipe.tech) <= 0) continue;
+      if (recipeTechPower(person, recipe) <= 0) continue;
       if (!hasIngredients(person.inventory, recipe)) continue;
       const output = Object.keys(recipe.output)[0]!;
       const forSelf = person.inventory.count(output) < recipe.keep;
@@ -3992,7 +4003,7 @@ export class Brain {
     if (direct > 0) return appealOf(person, itemId, VARIETY_WEIGHT,
       ctx.motivation.cravings, ctx.motivation.beliefChoice);
     const recipe = recipeUsing(itemId);
-    if (!recipe || techPower(person, recipe.tech) <= 0) return 0;
+    if (!recipe || recipeTechPower(person, recipe) <= 0) return 0;
     const output = Object.keys(recipe.output).find(id => (ITEMS[id]?.nutrition ?? 0) > 0);
     const appeal = output ? appealOf(person, output, VARIETY_WEIGHT,
       ctx.motivation.cravings, ctx.motivation.beliefChoice) / (ITEMS[output]?.nutrition ?? 1) : 1;
@@ -4339,7 +4350,7 @@ export class Brain {
     // Cheap enough now that `recipeUsing` is indexed, but the early return
     // above is what keeps the ordinary case to one property read.
     const recipe = recipeUsing(node.itemId);
-    if (!recipe || techPower(person, recipe.tech) <= 0) return 0;
+    if (!recipe || recipeTechPower(person, recipe) <= 0) return 0;
     const output = Object.keys(recipe.output).find(id => (ITEMS[id]?.nutrition ?? 0) > 0);
     const appeal = output ? appealOf(person, output, VARIETY_WEIGHT,
       ctx.motivation.cravings, ctx.motivation.beliefChoice) / (ITEMS[output]?.nutrition ?? 1) : 1;
@@ -4351,7 +4362,7 @@ export class Brain {
     const direct = ITEMS[node.itemId];
     if (direct && direct.nutrition > 0) return direct.macros?.protein ?? 0;
     const recipe = recipeUsing(node.itemId);
-    if (!recipe || techPower(person, recipe.tech) <= 0) return 0;
+    if (!recipe || recipeTechPower(person, recipe) <= 0) return 0;
     const output = Object.keys(recipe.output).find(id => (ITEMS[id]?.nutrition ?? 0) > 0);
     return output ? ITEMS[output]?.macros?.protein ?? 0 : 0;
   }

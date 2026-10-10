@@ -6,6 +6,19 @@ export type ItemArt = [id: string, label: string, tech: string, draw: () => stri
 export const WOOD = '#86633c', WOOD_D = '#3a2716', STONE = '#a9adb0', STONE_D = '#3d4244', BONE = '#e6dcc0', BONE_D = '#7a6d4e', CORD = '#c9b27f';
 const rot = (inner: string, deg: number, cx = 32, cy = 32): string => `<g transform="rotate(${deg} ${cx} ${cy})">${inner}</g>`;
 export const ITEMS: ItemArt[] = [
+  ['bedding', 'Lecho', 'cordage', () =>
+    ell(32, 51, 24, 5, 'rgba(0,0,0,0.18)')
+    + shape(poly([[8, 31], [31, 18], [56, 31], [32, 45]]), '#c2a36a', WOOD_D)
+    + shape(poly([[13, 31], [31, 21], [51, 32], [32, 42]]), '#b7a17c', '#79684d')
+    + stroke('M17,31L33,40M26,26L42,35M37,23L49,30', '#e0d0ae', 1.4)],
+  ['bed', 'Cama', 'carpentry', () =>
+    ell(32, 53, 25, 5, 'rgba(0,0,0,0.2)')
+    + shape(poly([[7, 26], [31, 13], [57, 27], [32, 41]]), WOOD, WOOD_D)
+    + shape(poly([[7, 30], [32, 44], [32, 52], [7, 38]]), '#6f4c2d', WOOD_D)
+    + shape(poly([[32, 44], [57, 30], [57, 38], [32, 52]]), '#593c25', WOOD_D)
+    + shape(poly([[12, 27], [32, 16], [52, 28], [32, 39]]), '#d7ccb4', '#76684f')
+    + shape(poly([[13, 26], [23, 21], [30, 25], [20, 29]]), '#eee5d3', '#8f8065')
+    + stroke('M14,34L14,41M50,32L50,39M32,44L32,51', WOOD, 2)],
   ['raft', 'Balsa de juncos', 'cordage', () =>
     [16, 24, 32, 40, 48].map(x => limb([[x, 12], [x, 52]], 7, '#b89d5c', '#685332')).join('')
     + stroke('M12,23L52,23M12,41L52,41', CORD, 2.6)

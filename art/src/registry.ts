@@ -14,6 +14,7 @@ import {
 } from '../../src/render/ArtManifest.ts';
 import { ANIMAL_KINDS, ANIMAL_POSES, paintAnimal } from './animals/animals.ts';
 import { BUILDINGS, INTERIORS, PLANS } from './buildings/buildings.ts';
+import { FURNITURE } from './buildings/furniture.ts';
 import { ell, limb, normalizeIds, poly, shape, stroke, svgDoc } from './lib/draw.ts';
 import { BELLY_COVERS, CARRY_SLOTS, SLOT_ORDER, SLOT_TINT, isWoman, personLayers, type FaceExpr, type HairStyle, type PersonSpec, type Wear } from './people/rig.ts';
 import { BABY_BEDS, HAND, HELD_KINDS, babyLyingLayers, heldSvg } from './props/held.ts';
@@ -140,7 +141,8 @@ const EXT_TOP = -14;
 export function collectBuildings(): Collected {
   const bank = new Bank();
   const widths: Record<string, number> = {};
-  for (const [id, , , w, draw] of BUILDINGS) {
+  const buildings = [...BUILDINGS, ...FURNITURE];
+  for (const [id, , , w, draw] of buildings) {
     const vw = w === 288 ? 288 : 144;
     widths[id] = vw;
     bank.add(`b/${id}/ext`, draw(), vw, 126, `0 ${EXT_TOP} ${vw} 126`);
@@ -168,7 +170,7 @@ export function collectBuildings(): Collected {
       planGroundY: 100 + 2,
       widths,
       tint: { 'banner/cloth': 'band' },
-      buildings: BUILDINGS.map(([id, label, tech]) => ({ id, label, tech })),
+      buildings: buildings.map(([id, label, tech]) => ({ id, label, tech })),
       plans: PLANS.map(([id]) => id),
       interiors: INTERIORS.map(({ id, width, height }) => ({ id, width, height })),
     },

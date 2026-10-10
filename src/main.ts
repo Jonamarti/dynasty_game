@@ -1873,6 +1873,8 @@ function openRadial(actor: Person, target: ActionTarget, screenX: number, screen
   const options = availableActions(subject, target, {
     world: sim.world, nearWater, saltWater, drownAt: sim.config.world.drownAt, commanding,
     buildings: sim.buildings,
+    homeBuildingId: subject.householdId === null ? null
+      : sim.householdsById.get(subject.householdId)?.homeBuildingId ?? null,
     backersWanted: sim.config.motivation.backersWanted,
     stationFor: stationId => nearestStation(subject, stationId),
     builtOn: (x, y) => sim.buildingAt(x, y) !== null,
@@ -2051,7 +2053,8 @@ function issue(
   const reason = sim.lastRefusal;
   sim.lastRefusal = null;
   renderer.floaters.push(actor.x, actor.y,
-    ok ? actionLabel(actionId, option.recipeId, option.mode) : (reason ?? t('cannot do that')),
+    ok ? actionId === 'place_furniture' ? option.label : actionLabel(actionId, option.recipeId, option.mode)
+      : (reason ?? t('cannot do that')),
     { color: ok ? '#ffd35c' : '#e66464', boxed: true, ttl: ok ? 2.6 : 3.6 });
 }
 

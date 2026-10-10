@@ -96,7 +96,7 @@ import { ORDER_REFUSED, type Notice } from '../knowledge/Synthesis.ts';
 import {
   eraFor, techPower, ERA_ORDER, ERAS, TECHS, type EraDef, type Tech,
 } from '../knowledge/Tech.ts';
-import { RECIPES, type RecipeDef } from '../entities/Recipe.ts';
+import { RECIPES, recipeTechPower, type RecipeDef } from '../entities/Recipe.ts';
 import { standingOver, type AuthorityContext } from '../social/Authority.ts';
 import { mayUse, type PropertyUse } from '../social/Property.ts';
 import {
@@ -128,8 +128,8 @@ import type { WorldGeography } from '../world/WorldGeography.ts';
 import { geographicResourceAvailable } from '../world/GeographicResources.ts';
 import { stepMark } from './StepProbe.ts';
 import { approachComarcaEdge, type ComarcaTravel } from '../world/ComarcaTravel.ts';
-import { applyHouseWalls } from '../world/HouseInterior.ts';
 import { lightAt as measuredLightAt, lightFactor } from './Light.ts';
+import { applyHouseWalls, houseInteriorContains, houseInteriorTiles } from '../world/HouseInterior.ts';
 import { edgeOfTile, type ComarcaEdge } from '../world/ComarcaNeighbour.ts';
 import type { ComarcaMigrationContext } from '../world/ComarcaMigration.ts';
 import { comarcaResourceProfile, PROFILE_SPAN, type ComarcaResourceProfile } from '../world/ResourceProfile.ts';
@@ -4228,6 +4228,11 @@ export class Simulation {
         return false;
       }
     }
+    if (action === 'place_furniture') {
+      const host = target.buildingId === undefined ? null : this.buildingsById.get(target.buildingId) ?? null;
+      const refusal = this.furniturePlacementRefusal(person, host, target.itemId ?? '');
+      if (refusal) { this.lastRefusal = refusal; return false; }
+    }
     // M15 phase 19b: the heavy work is refused her in the last third of a
     // pregnancy, with the reason. Before any state is touched, so a refused
     // order leaves her at whatever she was doing — the same seam every other
@@ -4751,7 +4756,7 @@ export class Simulation {
   /** Designs currently placeable, given what the world knows how to do. */
   availableDesigns(): BuildingDef[] {
     return Object.values(BUILDINGS).filter(
-      def => !def.earthwork?.turnOf &&
+      def => !def.furniture && !def.earthwork?.turnOf &&
         (def.requiresTech === null || this.knownTech.has(def.requiresTech))
     );
   }
@@ -4763,7 +4768,7 @@ export class Simulation {
    */
   lockedDesigns(): BuildingDef[] {
     return Object.values(BUILDINGS).filter(
-      def => def.requiresTech !== null && !this.knownTech.has(def.requiresTech)
+      def => !def.furniture && def.requiresTech !== null && !this.knownTech.has(def.requiresTech)
     );
   }
 
@@ -4784,12 +4789,60 @@ export class Simulation {
    * player could see.
    */
   availableRecipes(person: Person): RecipeDef[] {
-    return Object.values(RECIPES).filter(recipe => techPower(person, recipe.tech) > 0);
+    return Object.values(RECIPES).filter(recipe => recipeTechPower(person, recipe) > 0);
   }
 
   /** Recipes that exist but are out of this person's reach, for the greyed line. */
   lockedRecipes(person: Person): RecipeDef[] {
-    return Object.values(RECIPES).filter(recipe => techPower(person, recipe.tech) <= 0);
+    return Object.values(RECIPES).filter(recipe => recipeTechPower(person, recipe) <= 0);
+  }
+
+  /** Shared order/menu reason for placing carried furniture in a household home. */
+  furniturePlacementRefusal(person: Person, host: Building | null, itemId: string): string | null {
+    const furniture = BUILDINGS[itemId];
+    const homeId = person.householdId === null
+      ? null : this.householdsById.get(person.householdId)?.homeBuildingId ?? null;
+    if (!host?.def.interior || !host.complete || host.ruined || homeId !== host.id) {
+      return t('That is not your household’s home');
+    }
+    if (!houseInteriorContains(host, person.x, person.y)) {
+      return t('You must be inside the house to place furniture');
+    }
+    if (!furniture?.furniture || !ITEMS[itemId]?.furniture) return t('That is not furniture');
+    if (furniture.requiresTech && !person.knownTech.has(furniture.requiresTech)) {
+      return t('Nobody here knows how to make that');
+    }
+    if (person.inventory.count(itemId) < 1) return t('You are not carrying that furniture');
+    if (!this.furnitureSpot(host)) return t('There is no room inside the house');
+    return null;
+  }
+
+  private furnitureSpot(host: Building): { x: number; y: number } | null {
+    for (const tile of houseInteriorTiles(host)) {
+      const x = Math.floor(tile.x), y = Math.floor(tile.y);
+      // The hash indexes a building's integer origin, not its tile center.
+      // A zero-radius center query misses every piece and stacks all beds.
+      const occupied = this.buildingHash.queryRadius(x, y, 0)
+        .some(building => building.hostId === host.id && building.x === x && building.y === y);
+      if (this.world.isWalkable(x, y) && !occupied) return { x, y };
+    }
+    return null;
+  }
+
+  private placeFurniture(person: Person, host: Building, itemId: string): Building | null {
+    if (this.furniturePlacementRefusal(person, host, itemId)) return null;
+    const tile = this.furnitureSpot(host);
+    const def = BUILDINGS[itemId];
+    if (!tile || !def) return null;
+    const furniture = new Building(def, tile.x, tile.y, host.ownerBandId, this.ids);
+    furniture.hostId = host.id;
+    furniture.sponsorId = person.id;
+    furniture.plannedTick = this.time.tick;
+    this.buildings.push(furniture);
+    this.buildingsById.set(furniture.id, furniture);
+    this.buildingHash.insert(furniture);
+    telemetry.count('furniture_placed');
+    return furniture;
   }
 
   /**
@@ -4971,7 +5024,7 @@ export class Simulation {
   ): Building | null {
     this.assertExecutionAuthority();
     const def = BUILDINGS[defId];
-    if (!def) return null;
+    if (!def || def.furniture) return null;
     if (def.requiresTech !== null && !this.knownTech.has(def.requiresTech)) return null;
     if (!this.canPlace(def, x, y)) return null;
 
@@ -5974,6 +6027,8 @@ export class Simulation {
           homeX: building.centerX, homeY: building.centerY,
         }, this.peopleHash, building.complete && !building.ruined);
       },
+      placeFurniture: (person: Person, host: Building, itemId: string) =>
+        this.placeFurniture(person, host, itemId),
       treesById: this.treesById,
       animalsById: this.animalsById,
       onAnimalKilled: (animal: Animal) => this.removeAnimal(animal),

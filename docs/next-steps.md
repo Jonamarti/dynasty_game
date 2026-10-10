@@ -1,3 +1,5 @@
+**2026-10-10: 16d, lechos y camas entregados.** Recetas con materiales alternativos, colocación dentro del hogar, persistencia y recuperación según superficie. [Contrato y captura](m15_phase16d_bedding.md). Autonomía y otros muebles pendientes.
+
 **2026-10-10: conocimiento de madera corregido.** La búsqueda amplia de árboles para obras sólo acepta visión actual o memoria personal. Regresión negativa confirmada; no se relaja people-act-on-what-they-know.
 
 **2026-10-09: fase 36 cerrada funcionalmente.** Noticias personales por contacto, caravanas físicas con campamento y regreso, incursiones desde destinos conocidos y casas rivales persistentes. Cinco commits de funcionalidades/arreglo y uno de captura; versión 0.15.7-alpha. [Verificación y capturas](m15_phase36_verification_20261009.md). Sigue **fase 41, revisión final y calibración de M15**: 37–40 ya están entregadas. Stock macro por objeto y los límites LOD siguen registrados en bugs/M16; no se declara producción macro calibrada ni mejora económica. Cohortes y matriz pesada continúan diferidas por instrucciones del propietario. Las notas inferiores son históricas.

@@ -76,6 +76,8 @@ export interface ItemDef {
    * `accepts` keeps the extra room specific to the kinds it can hold.
    */
   container?: { slot: import('./Equipment.ts').Slot; capacity: number; accepts: ItemClass[] };
+  /** Item can be carried to and placed as the matching 1×1 furniture Building. */
+  furniture?: boolean;
 }
 
 /**
@@ -87,6 +89,10 @@ export interface ItemDef {
 export type ItemClass = 'food' | 'long' | 'small' | 'bulky' | 'loose';
 
 export const ITEMS: Record<string, ItemDef> = {
+  bedding: { id: 'bedding', label: 'Bedding', nutrition: 0, spoilTicks: 0, baseValue: 5,
+    class: 'bulky', hand: { perHand: 0, perArms: 1, hands: 2 }, furniture: true },
+  bed: { id: 'bed', label: 'Bed', nutrition: 0, spoilTicks: 0, baseValue: 12,
+    class: 'bulky', hand: { perHand: 0, perArms: 1, hands: 2 }, furniture: true },
   raft: { id: 'raft', label: 'Reed raft', nutrition: 0, spoilTicks: 0, baseValue: 12,
     class: 'bulky', hand: { perHand: 0, perArms: 2, hands: 2, shoulder: 0 } },
   sail: { id: 'sail', label: 'Sail', nutrition: 0, spoilTicks: 0, baseValue: 18,
