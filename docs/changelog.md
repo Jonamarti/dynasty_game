@@ -14377,3 +14377,15 @@ correctas y nueva prueba de demanda correcta; typecheck correcto. Reporte corto
 mantiene fallos iniciales de dieta/rendimiento, sin afirmar mejora económica.
 Captura revisada: artifacts/screenshots/m15-phase14c-layers-2026-10-10-final/01-tunica-y-capa.png.
 E2E focal ok14,5s; cierre Vite bloqueado e interrumpido, no salida global limpia.
+
+## 2026-10-10 — premisas de pruebas y fixture de herreros
+
+Se actualizan premisas comprobadas: armadura realmente puesta (body/combat),
+exportación terreno3 con lectura explícita1/2 (water-model), rival de otra
+banda para probar nombres desconocidos y bebé recién creado distinto de los
+hijos fundadores (id-space). Ironworkers tiene8 residentes para proporcionar
+los4 adultos de sus cuatro órdenes, sin cambiar la población del juego.
+Focos:41/41 y5/5 correctos; typecheck correcto. No reglas nuevas ni bump.
+Estos focos resuelven14 fallos del índice28; la traducción de carbón resuelve
+uno más. Quedan7 fallos de aquel resultado sin resolver; todavía no es una
+suite global verde. Se actualiza la cabecera del plan con avances12d/12e/14c/16d.

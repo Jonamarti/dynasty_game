@@ -20,6 +20,11 @@ describe('per-world ID spaces', () => {
     expect(second.piles).toHaveLength(0);
 
     const mother = first.people.find(person => person.sex === 'female' && person.spouseId !== null)!;
+    // Founding families already include children with this mother. Locate the
+    // newly allocated person, not the first existing child in the roster.
+    const beforeIds = new Set(first.people.map(person => person.id));
+    const secondIds = second.people.map(person => person.id);
+    const secondNext = second.idSnapshot().next.person;
     const father = first.peopleById.get(mother.spouseId!)!;
     mother.pregnant = true;
     mother.gestationLeft = 1;
@@ -28,12 +33,12 @@ describe('per-world ID spaces', () => {
     second.step();
     first.step();
 
-    const newborn = first.people.find(person => person.motherId === mother.id);
+    const newborn = first.people.find(person => person.motherId === mother.id && !beforeIds.has(person.id));
     expect(newborn).toBeDefined();
     expect(newborn!.id).toBeGreaterThan(Math.max(...first.people.filter(p => p !== newborn).map(p => p.id)));
     expect(newborn!.skillGain).toBe(2);
-    expect(second.people.map(person => person.id)).toEqual([1, 2, 3, 4]);
-    expect(second.idSnapshot().next.person).toBe(5);
+    expect(second.people.map(person => person.id)).toEqual(secondIds);
+    expect(second.idSnapshot().next.person).toBe(secondNext);
   });
 
   it('continues monotonically from JSON snapshots and allows deliberate shared worlds', () => {

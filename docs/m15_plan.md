@@ -1,8 +1,8 @@
-**2026-10-10: 14a–14b, ropa puesta entregada.** Abrigo/armadura en slots del cuerpo, calor y protección sólo vestidos, órdenes cortas, apariencia y limpieza al perder propiedad. [Contrato](m15_phase14_worn_clothing.md). Catálogo, bolsillos, deterioro y reparación14c siguen pendientes.
+**2026-10-10: 14a–14b, ropa puesta entregada.** Abrigo/armadura en slots del cuerpo, calor y protección sólo vestidos, órdenes cortas, apariencia y limpieza al perder propiedad. [Contrato](m15_phase14_worn_clothing.md). Catálogo iniciado con capa/túnica; quedan otras prendas, creencias, bolsillos, deterioro y reparación14c.
 
 **2026-10-10: 15a, instrumento por origen entregado.** Pérdidas secas/reales y nutrición en inventario personal, almacén, obra y montón. [Contrato](m15_phase15a_spoilage_sources.md). Cohortes de veinte semillas y activación15c siguen diferidas por AGENTS.md; tasa por defecto cero.
 
-**2026-10-10: 16d, lechos y camas entregados.** Recetas con materiales alternativos, colocación dentro del hogar, persistencia y recuperación según superficie. [Contrato y captura](m15_phase16d_bedding.md). Autonomía y otros muebles pendientes.
+**2026-10-10: 16d, lechos y camas entregados.** Recetas con materiales alternativos, colocación dentro del hogar, persistencia y recuperación según superficie. [Contrato y captura](m15_phase16d_bedding.md). Primera superficie autónoma implementada; asignaciones, acopio específico y otros muebles pendientes.
 
 **2026-10-10: conocimiento de madera corregido.** La búsqueda amplia de árboles para obras sólo acepta visión actual o memoria personal. Regresión negativa confirmada; no se relaja people-act-on-what-they-know.
 
@@ -10,7 +10,7 @@
 
 **Avance 2026-10-10 — 12c:** luz nocturna localizada, fuentes visibles por
 hash, capa reutilizable y niebla conforme a sightOf. [Contrato y medida de
-composición](m15_phase12c_night_light.md). Antorchas/calor/nights siguen abiertos.
+composición](m15_phase12c_night_light.md). Antorchas12d y calor12e implementados; nights12f sigue abierto.
 
 **Avance 2026-10-10 — 12b:** lectores de vista/testigos/observación y trabajo
 fino/caza conectados a luz local, con progreso bancado y migración de partidas.
@@ -19,7 +19,7 @@ nights siguen abiertos; se registra un nuevo fallo de destino desconocido.
 
 **Avance 2026-10-10 — 12a:** luz local medida por hash y muestras de
 medianoche, sin alterar decisiones. [Contrato](m15_phase12a_light.md).
-Vista/trabajo/testigos/caza y antorchas todavía no leen esta medida.
+Vista/trabajo/testigos/caza y antorchas ya leen esta medida (12b–12e).
 
 **Avance 2026-10-10 — 16c:** habitaciones con suelo/muros generados, cuatro
 puertas y techos apartables por ocupante observado, cursor o V. Niebla en Z.

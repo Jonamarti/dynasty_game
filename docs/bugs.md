@@ -4698,3 +4698,9 @@ proyecciones rival-house-view con más nombres conocidos que su premisa.
 Cuatro pruebas de daño llevan armadura solo en inventory (premisa anterior14b);
 dos water-model esperan versiones1/2 aunque16b exporta3; i18n faltaba una
 traducción de carbón (corregida124c410). No se presenta esta suite como verde.
+
+Actualización: premisas de body/combat, water-model, rival-house-view, id-space
+y fixture ironworkers corregidas;41/41+5/5 pruebas focales correctas. Junto con
+la traducción de carbón resuelven15 de los22 fallos de la copia28. Quedan los
+7 fallos del contador de comida, difusión, correspondencia, tierra, tributo,
+conspiración y sed, sin afirmar resultado global actualizado.

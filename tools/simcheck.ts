@@ -291,7 +291,9 @@ export const SCENARIOS: Record<string, Scenario> = {
     name: 'ironworkers',
     description: 'Four supplied iron-tool orders at one finished anvil; checks each tool reader, not autonomous economics.',
     config: { seed: 'ironworkers', world: { width: 48, height: 48 },
-      population: { bands: 1, peoplePerBand: 6,
+      // Founding families supply children as well as adults. Eight residents
+      // provide the four adult smiths the four-charge fixture actually needs.
+      population: { bands: 1, peoplePerBand: 8,
         startingTech: withPrerequisites(['forging', 'ground_stone', 'bronze_tools', 'carpentry', 'sickle']) } },
     steps: 300,
     setup: setupIronTools,

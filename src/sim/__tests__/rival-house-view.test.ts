@@ -11,7 +11,9 @@ function fixture() {
   });
   const observer = sim.livingPeople().find(person => person.householdId !== null)!;
   const own = sim.householdsById.get(observer.householdId!)!;
-  const rivalPerson = sim.livingPeople().find(person => person.householdId !== own.id)!;
+  // A different same-band household is already named by Knowledge. These
+  // privacy cases need an actual stranger, rather than silently testing kin.
+  const rivalPerson = sim.livingPeople().find(person => person.bandId !== observer.bandId)!;
   const rival = sim.householdsById.get(rivalPerson.householdId!)!;
   own.feud.set(rival.id, 45);
   own.feudSuspects.set(rival.id, rivalPerson.id);

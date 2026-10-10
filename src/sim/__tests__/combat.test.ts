@@ -90,6 +90,7 @@ describe('armour', () => {
     for (const part of BODY_PARTS) expect(protectionOf(person, part)).toBe(0);
 
     person.inventory.add('hide_armour', 1);
+    person.equipment.torso = { item: 'hide_armour', count: 1 };
     expect(protectionOf(person, 'torso')).toBe(ITEMS.hide_armour!.protects!.torso);
     // The cuirass leaves the head bare and shields the torso best.
     expect(protectionOf(person, 'head')).toBe(0);
@@ -99,20 +100,24 @@ describe('armour', () => {
     // Two of them are not twice the protection: armour is the best thing worn,
     // not the sum of everything carried.
     person.inventory.add('hide_armour', 1);
+    person.equipment.torso = { item: 'hide_armour', count: 1 };
     expect(armourOf(person)).toBe(once);
   });
 
   it('is, averaged over where blows land, the 0.3 the single number used to be', () => {
     const person = fighter('averaged');
     person.inventory.add('hide_armour', 1);
+    person.equipment.torso = { item: 'hide_armour', count: 1 };
     expect(armourOf(person)).toBeCloseTo(0.3, 1);
   });
 
-  it('takes a better coat of two pieces where each is better', () => {
+  it('changes protection when the worn torso layer is replaced', () => {
     const person = fighter('layers');
     person.inventory.add('fur_coat', 1);
+    person.equipment.torso = { item: 'fur_coat', count: 1 };
     const furOnly = protectionOf(person, 'torso');
     person.inventory.add('hide_armour', 1);
+    person.equipment.torso = { item: 'hide_armour', count: 1 };
     expect(protectionOf(person, 'torso')).toBeGreaterThan(furOnly);
   });
 

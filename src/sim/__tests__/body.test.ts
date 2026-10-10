@@ -244,7 +244,10 @@ describe('what is worn turns a blow aside where it lands (21f)', () => {
     const [attacker, victim] = sim.livingPeople();
     attacker!.x = victim!.x + 1;
     attacker!.y = victim!.y;
-    if (armoured) victim!.inventory.add('hide_armour', 1);
+    if (armoured) {
+      victim!.inventory.add('hide_armour', 1);
+      victim!.equipment.torso = { item: 'hide_armour', count: 1 };
+    }
     sim.order(attacker!, 'attack', { personId: victim!.id });
     for (let i = 0; i < 200 && victim!.health >= 100; i++) sim.step();
     const part = BODY_PARTS.find(p => victim!.body[p].wound === 'fresh')!;

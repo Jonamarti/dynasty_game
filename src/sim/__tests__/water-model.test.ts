@@ -43,7 +43,12 @@ describe('local freshwater and saltwater semantics', () => {
   it('keeps geographic water classes and raised river surfaces through terrain records', () => {
     const world = geographicWorld();
     const record = toWorldTerrainRecord(world);
-    expect(record.version).toBe(2);
+    expect(record.version).toBe(3);
+    const legacy = JSON.parse(JSON.stringify(record));
+    legacy.version = 2; delete legacy.tiles.baseWalkable;
+    const oldWorld = fromWorldTerrainRecord(legacy);
+    expect(oldWorld.isDrinkingWater(1, 1)).toBe(true);
+    expect(oldWorld.isDrinkingWater(4, 1)).toBe(false);
     const restored = fromWorldTerrainRecord(JSON.parse(JSON.stringify(record)));
 
     expect(toWorldTerrainRecord(restored)).toEqual(record);
@@ -78,15 +83,18 @@ describe('local freshwater and saltwater semantics', () => {
     expect(() => fromWorldTerrainRecord(saltRiver)).toThrow(/water kind and biome disagree/);
   });
 
-  it('retains the v1 terrain shape and potable legacy island water', () => {
+  it('exports v3 and still reads potable legacy island water from a v1 record', () => {
     const world = new World({ ...DEFAULT_CONFIG.world, width: 20, height: 20 }, new RNG('classic-water-model'));
     const record = toWorldTerrainRecord(world);
-    expect(record.version).toBe(1);
+    expect(record.version).toBe(3);
     expect(record.tiles).not.toHaveProperty('waterKind');
     const waterIndex = world.biome.findIndex(value => value === 0);
     const x = waterIndex % world.width;
     const y = Math.floor(waterIndex / world.width);
     expect(world.isDrinkingWater(x, y)).toBe(true);
+    const legacy = JSON.parse(JSON.stringify(record));
+    legacy.version = 1; delete legacy.tiles.baseWalkable;
+    expect(fromWorldTerrainRecord(legacy).isDrinkingWater(x, y)).toBe(true);
     expect(world.saltShore).toEqual([]);
   });
 
