@@ -14411,3 +14411,17 @@ typecheck correctos. Reporte corto mantiene fallos iniciales dieta/perf-budget.
 Captura: artifacts/screenshots/m15-phase15b-drying-2026-10-10/01-secadero-y-comida-seca.png.
 Caso E2E ok15,2s; teardown Vite bloqueado/interrumpido. Sin cohorte ni afirmación
 de mejora económica. Ahumado, sal/pemmican, interiores y15d siguen abiertos.
+
+## 2026-10-10 — m15: ahumar en un secadero junto a una hoguera (0.15.33-alpha)
+
+Smoking requiere preserving/firemaking y produce dos alimentos reales con
+mayor duración y nutrición. Fuego físico a tres tiles del secadero, filtrado
+antes de seleccionar estaciones y revalidado durante el trabajo para evitar
+ahumar al sol o continuar junto a una hoguera arruinada. Rechazo traducido,
+progreso bancado, materia prima intacta; iconos generados desde art/src.
+Contrato/pruebas/limitaciones: docs/m15_phase15b_smoking.md. Se corrigieron
+comentarios históricos que aún afirmaban que preserving no existía.
+Captura: artifacts/screenshots/m15-phase15b-smoking-2026-10-10/01-ahumado-junto-a-hoguera.png.
+82 pruebas focales y seis finales de ahumado correctas; typecheck correcto;
+E2E 1 passed con salida limpia. Single-seed conserva cravings-steer-the-diet y
+perf-budget; no cohorte ni afirmación de mejor supervivencia.15b continúa.

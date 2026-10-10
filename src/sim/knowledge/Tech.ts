@@ -202,6 +202,7 @@ export const TECHS = [
   // M15 phase 35: physical transport and its journey policy ship together.
   'sledge', 'pack_animals', 'horse_riding', 'sail',
   'preserving',
+  'smoking',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -465,6 +466,15 @@ export interface TechDef {
  * catch.
  */
 export const TECH: Record<Tech, TechDef> = {
+  smoking: {
+    id: 'smoking', label: 'Smoking food', domain: 'fire',
+    age: 'mesolithic', firstKnown: 'Mesolithic', kind: 'device',
+    requires: ['preserving', 'firemaking'], difficulty: 0.4, skill: 'cook',
+    prototype: { meat: 1, sticks: 2 }, maxRefinement: 2,
+    sparks: [{ needs: [{ kind: 'knows', tech: 'preserving' }, { kind: 'holding', item: 'dried_meat' }],
+      weight: 0.6, story: 'noticed that strips hung above the fire kept better than strips left in the air' }],
+    description: 'Smoke meat and fish on a drying rack beside a hearth.',
+  },
   preserving: {
     id: 'preserving', label: 'Preserving food', domain: 'fire',
     age: 'mesolithic', firstKnown: 'Mesolithic', kind: 'device',
@@ -2590,6 +2600,8 @@ export interface TechEffect {
 export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   preserving: { summary: 'A drying rack makes meat and fish that spoil ten times more slowly.',
     site: 'BUILDINGS.drying_rack and RECIPES.dried_meat/dried_fish; Inventory.spoil reads their spoilTicks' },
+  smoking: { summary: 'A rack beside a hearth makes smoked food that keeps longer than dried food.',
+    site: 'RECIPES.smoked_meat/smoked_fish; order, craft and Brain require a physical hearth' },
   spear: {
     summary: 'A blade at the end of a shaft: harder blows, first strikes, and more fish when harpooned.',
     site: 'ActionSystem.doAttack, doHunt and doHarvest; RECIPES.spear',

@@ -1,5 +1,9 @@
 /** Spanish for tech. Keys are the English templates; see `i18n.ts`. */
 export const ES_TECH: Record<string, string> = {
+  'Smoking food': 'Ahumar comida',
+  'Smoke meat and fish on a drying rack beside a hearth.': 'Ahumar carne y pescado en un secadero junto a una hoguera.',
+  'A rack beside a hearth makes smoked food that keeps longer than dried food.': 'Un secadero junto a una hoguera produce comida ahumada que dura más que la comida seca.',
+  'noticed that strips hung above the fire kept better than strips left in the air': 'observó que las tiras colgadas sobre el fuego duraban más que las que dejaba al aire',
   'Preserving food': 'Conservar comida',
   'Dry meat and fish on a rack so they keep longer.': 'Secar carne y pescado en un secadero para que duren más.',
   'A drying rack makes meat and fish that spoil ten times more slowly.': 'El secadero produce carne y pescado que se estropean diez veces más despacio.',

@@ -51,6 +51,7 @@ import {
 } from '../knowledge/Tech.ts';
 import { wantedOreKinds } from '../knowledge/Ore.ts';
 import { torchInHand, torchIgnitionRefusal } from '../core/Torch.ts';
+import { hearthNear } from '../core/Light.ts';
 import {
   RECIPES, hasIngredients, recipeFor, recipeUsing, nutritionPerUnit, recipeTechPower,
 } from '../entities/Recipe.ts';
@@ -3703,7 +3704,8 @@ export class Brain {
         const stationId = recipe.station;
         station = this.pickBest(
           ctx.buildings.filter(b =>
-            b.complete && !b.ruined && b.def.id === stationId && this.canUse(person, b, ctx)),
+            b.complete && !b.ruined && b.def.id === stationId && this.canUse(person, b, ctx) &&
+            (!recipe.requiresFire || hearthNear(ctx.buildingHash, b.centerX, b.centerY, 3))),
           b => -person.distanceTo({ x: b.centerX, y: b.centerY })
         );
         if (!station) continue;

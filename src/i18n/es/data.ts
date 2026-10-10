@@ -1,5 +1,9 @@
 /** Spanish for data. Keys are the English templates; see `i18n.ts`. */
 export const ES_DATA: Record<string, string> = {
+  'Smoked meat': 'Carne ahumada',
+  'Smoked fish': 'Pescado ahumado',
+  'Smoke meat': 'Ahumar carne',
+  'Smoke fish': 'Ahumar pescado',
   "Berries": "Bayas",
   "Apples": "Manzanas",
   "Pears": "Peras",

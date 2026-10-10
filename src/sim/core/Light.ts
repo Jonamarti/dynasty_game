@@ -20,6 +20,12 @@ export function hearthLight(building: Building): LightSource | null {
     : null;
 }
 
+/** Physical fire for ignition and smoking; daylight and torches cannot replace it. */
+export function hearthNear(buildings: SpatialHash<Building>, x: number, y: number, radius: number): boolean {
+  return buildings.queryRadius(x, y, radius + 1).some(building =>
+    hearthLight(building) !== null && Math.hypot(building.centerX - x, building.centerY - y) <= radius);
+}
+
 /** A lit torch is carried by its person, so its position follows the spatial hash. */
 export function torchLight(person: Person): LightSource | null {
   if (!person.alive) return null;

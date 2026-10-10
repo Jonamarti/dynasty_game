@@ -132,7 +132,7 @@ import { geographicResourceAvailable } from '../world/GeographicResources.ts';
 import { stepMark } from './StepProbe.ts';
 import { approachComarcaEdge, type ComarcaTravel } from '../world/ComarcaTravel.ts';
 import { applyHouseWalls, houseInteriorContains, houseInteriorTiles } from '../world/HouseInterior.ts';
-import { lightAt as measuredLightAt, lightFactor, torchLight } from './Light.ts';
+import { lightAt as measuredLightAt, lightFactor, torchLight, hearthNear } from './Light.ts';
 import { advanceTorchBurn, torchIgnitionRefusal, torchRefusalText, transferableUnits, burningTorchRefusalText } from './Torch.ts';
 import { edgeOfTile, type ComarcaEdge } from '../world/ComarcaNeighbour.ts';
 import type { ComarcaMigrationContext } from '../world/ComarcaMigration.ts';
@@ -2906,9 +2906,7 @@ export class Simulation {
 
   /** Torch lighting needs a maintained, completed hearth, not just daylight. */
   hearthNear(x: number, y: number, radius: number): boolean {
-    return this.buildingHash.queryRadius(x, y, radius + 1).some(building =>
-      building.complete && !building.ruined && building.def.id === 'hearth' &&
-      Math.hypot(building.centerX - x, building.centerY - y) <= radius);
+    return hearthNear(this.buildingHash, x, y, radius);
   }
 
   private lookForIntruders(): void {
@@ -4346,6 +4344,9 @@ export class Simulation {
             station: aNoun(label),
           }));
         }
+        if (RECIPES[target.recipeId]?.requiresFire && !this.hearthNear(named.centerX, named.centerY, 3)) {
+          return this.cancelOrder(person, t('You need a lit hearth nearby'));
+        }
       }
     }
 
@@ -5197,12 +5198,10 @@ export class Simulation {
    * was tried as well and changed nothing — 87.1% — which locates the harm in
    * *packs*: people carry a great deal of food and all of it rots.
    *
-   * So `preserving` and the drying rack are **not shipped**. A technology whose
-   * effect is a multiplier on zero is exactly the declared-and-inert content
-   * this project has a rule against, and half of one is worse than neither.
-   * Both are three lines away in `m8_plan_the_ages.md` when the food economy
-   * has the headroom for a supply cut — the honest reading is that it does not
-   * yet, and that the supply half of M8.1 should be allowed to bed in first.
+   * Those measurements held preservation back in M8. M15 now ships physical
+   * drying and smoking recipes whose products have their own spoilTicks;
+   * knowing the technology never gives raw food a magical pack multiplier.
+   * Default activation still awaits the owner's deferred cohort measurement.
    
    *
    * Placed immediately after `refreshRecords` because it is the same kind of
@@ -5288,10 +5287,8 @@ export class Simulation {
       }
     };
 
-    // A pack keeps food no better than the open air, and there is nothing
-    // anybody can carry that changes that — see the note on this method for why
-    // `preserving` is not in `TECHS`. When it ships, this is the one line that
-    // changes: `sweep(person.inventory, spoilFactor(person))`.
+    // A pack keeps raw food no better than the open air. Preservation changes
+    // the actual food item, not a carrier-wide multiplier for knowing a design.
     for (const person of this.people) {
       if (!person.alive) continue;
       sweep(person.inventory, 1, 'carried', person, person);

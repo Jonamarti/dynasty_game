@@ -58,6 +58,8 @@ export interface RecipeDef {
   toolOptions?: string[];
   /** Preservation demand is learned from actual loss of this raw input. */
   preservesInput?: string;
+  /** Checked at the named station every tick, so a demolished fire stops the work. */
+  requiresFire?: boolean;
   output: Record<string, number>;
   /**
    * A `BUILDINGS` id this must be made at, or undefined for anywhere.
@@ -790,6 +792,12 @@ export const RECIPES: Record<string, RecipeDef> = {
   dried_fish: { id: 'dried_fish', label: 'Dry fish', icon: '🐟', tech: 'preserving', skill: 'cook',
     workTicks: 120, ingredients: { fish: 2 }, output: { dried_fish: 2 }, station: 'drying_rack',
     preservesInput: 'fish', keep: 4 },
+  smoked_meat: { id: 'smoked_meat', label: 'Smoke meat', icon: '🥩', tech: 'smoking', skill: 'cook',
+    workTicks: 160, ingredients: { meat: 2, sticks: 1 }, output: { smoked_meat: 2 }, station: 'drying_rack',
+    preservesInput: 'meat', requiresFire: true, keep: 4 },
+  smoked_fish: { id: 'smoked_fish', label: 'Smoke fish', icon: '🐟', tech: 'smoking', skill: 'cook',
+    workTicks: 160, ingredients: { fish: 2, sticks: 1 }, output: { smoked_fish: 2 }, station: 'drying_rack',
+    preservesInput: 'fish', requiresFire: true, keep: 4 },
 };
 
 /** Every item any recipe can produce. Used by the "is this reachable?" tests. */

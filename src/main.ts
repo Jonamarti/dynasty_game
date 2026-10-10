@@ -1837,11 +1837,12 @@ canvas.addEventListener('wheel', event => {
  * allowed to try, and being refused by whoever owns it is the owner's O4 rather
  * than something to pre-empt by hiding the option.
  */
-function nearestStation(who: Person, stationId: string): Building | null {
+function nearestStation(who: Person, stationId: string, requiresFire = false): Building | null {
   let best: Building | null = null;
   let bestDistance = Infinity;
   for (const building of sim.buildings) {
-    if (!building.complete || building.def.id !== stationId) continue;
+    if (!building.complete || building.ruined || building.def.id !== stationId) continue;
+    if (requiresFire && !sim.hearthNear(building.centerX, building.centerY, 3)) continue;
     if (sim.mayUseBuilding(who, building).watched) continue;
     if (!sim.world.sameRegion(who.x, who.y, building.centerX, building.centerY)) continue;
     const distance = who.distanceTo({ x: building.centerX, y: building.centerY });
@@ -1885,7 +1886,8 @@ function openRadial(actor: Person, target: ActionTarget, screenX: number, screen
     homeBuildingId: subject.householdId === null ? null
       : sim.householdsById.get(subject.householdId)?.homeBuildingId ?? null,
     backersWanted: sim.config.motivation.backersWanted,
-    stationFor: stationId => nearestStation(subject, stationId),
+    stationFor: (stationId, requiresFire) => nearestStation(subject, stationId, requiresFire),
+    hearthNear: (x, y, radius) => sim.hearthNear(x, y, radius),
     builtOn: (x, y) => sim.buildingAt(x, y) !== null,
     plantRefusal: (x, y) => sim.plantOrderRefusal(subject, x, y),
     ploughRefusal: (person, field) => sim.ploughOrderRefusal(person, field),

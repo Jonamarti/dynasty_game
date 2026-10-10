@@ -4407,3 +4407,10 @@ comestibles duran10×, misma nutrición/macros, demanda por creencia de pérdida
 estación usable, progreso/interrupciones compartidos. m15_phase15b_drying.md.
 78 pruebas focales y typecheck correctos; captura en contrato. Ahumado/red,
 sal/pemmican, interiores y15d pendientes;15c sigue diferida.
+
+2026-10-10 — 15b ahumado implementado: tecnología smoking, carne/pescado,
+secadero con hoguera por hash y tres lectores coherentes (orden/menú/trabajo).
+IA filtra estaciones sin fuego antes de elegir; pérdida del fuego conserva
+progreso y alimentos, con razón visible. m15_phase15b_smoking.md y captura.
+Sal/pemmican, red con dos hijos efectivos, interiores y15d siguen pendientes;
+15c y cohortes diferidas. No se declara cerrada15b.

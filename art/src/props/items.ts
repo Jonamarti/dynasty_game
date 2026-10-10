@@ -6,6 +6,13 @@ export type ItemArt = [id: string, label: string, tech: string, draw: () => stri
 export const WOOD = '#86633c', WOOD_D = '#3a2716', STONE = '#a9adb0', STONE_D = '#3d4244', BONE = '#e6dcc0', BONE_D = '#7a6d4e', CORD = '#c9b27f';
 const rot = (inner: string, deg: number, cx = 32, cy = 32): string => `<g transform="rotate(${deg} ${cx} ${cy})">${inner}</g>`;
 export const ITEMS: ItemArt[] = [
+  ['smoked_meat', 'Carne ahumada', 'smoking', () =>
+    [18, 32, 46].map(x => shape(smooth([[x - 5, 13], [x + 5, 10], [x + 7, 42], [x + 2, 53], [x - 6, 45]]), '#683b29', '#301c15')
+      + stroke(`M${x - 3},23L${x + 4},25M${x - 3},35L${x + 4},37`, '#b77544', 1.5)).join('')],
+  ['smoked_fish', 'Pescado ahumado', 'smoking', () =>
+    shape(smooth([[8, 32], [19, 20], [37, 21], [49, 32], [37, 44], [19, 43]]), '#967247', '#493019')
+    + shape(poly([[46, 32], [58, 20], [58, 44]]), '#715637', '#493019')
+    + ell(18, 29, 2, 2, '#27251b') + stroke('M26,24L26,39M34,24L34,39', '#d5a469', 1.5)],
   ['dried_meat', 'Carne seca', 'preserving', () =>
     [18, 32, 46].map(x => shape(smooth([[x - 5, 13], [x + 5, 10], [x + 7, 42], [x + 2, 53], [x - 6, 45]]), '#914d32', '#4a2719')).join('')],
   ['dried_fish', 'Pescado seco', 'preserving', () =>

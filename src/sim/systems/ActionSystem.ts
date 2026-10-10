@@ -4736,6 +4736,12 @@ export class ActionSystem {
         reason: 'no_station_' + stationId,
       }, 'trespass');
       if (!station) return;
+      // Recheck on every work tick: the hearth can be ruined after arrival.
+      // This happens before banking or consuming anything, and drying stays fire-free.
+      if (recipe.requiresFire && !ctx.hearthNear?.(station.centerX, station.centerY, 3)) {
+        this.abandon(person, 'no_fire_near', ctx);
+        return;
+      }
     }
 
     // Hours already spent on this same recipe come off the timer.
