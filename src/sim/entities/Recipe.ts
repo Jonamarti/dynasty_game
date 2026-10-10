@@ -818,6 +818,8 @@ export const RECIPES: Record<string, RecipeDef> = {
     workTicks: 80, ingredients: { hide: 1 }, toolOptions: ['needle'], output: { fur_hat: 1 }, keep: 1 },
   toggled_coat: { id: 'toggled_coat', label: 'Toggled coat', icon: '🧥', tech: 'toggles', skill: 'build',
     workTicks: 110, ingredients: { fur_coat: 1, bone: 2 }, output: { toggled_coat: 1 }, keep: 1 },
+  linen_tunic: { id: 'linen_tunic', label: 'Linen tunic', icon: '👕', tech: 'linen_tunic', skill: 'build',
+    workTicks: 120, ingredients: { cloth: 2, thread: 1 }, toolOptions: ['needle'], output: { linen_tunic: 1 }, keep: 1 },
 };
 
 /** Every item any recipe can produce. Used by the "is this reachable?" tests. */

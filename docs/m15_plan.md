@@ -1688,7 +1688,13 @@ y hueso 2; abrigo 0,48 sólo puesta, con cierres visibles y persistencia.
 [Contrato y captura](m15_phase14c_toggles.md). Bolsillos, desgaste y reparación
 siguen pendientes; no se declara cerrada 14c ni mejora de supervivencia.
 
+**2026-10-10, avance 14c:** túnica de lino `linen_tunic` entregada tras tejido:
+tela 2 e hilo 1, aguja retenida, torso con abrigo 0,20 sólo puesto. Su capa
+usa lino natural y conserva la ropa sustituida y el equipo en JSON.
+[Contrato y captura](m15_phase14c_linen_tunic.md). Bolsillos todavía pendientes.
+
 ### 14d. Estatus (medido; opcional dentro de la fase)
+
 
 `garment.status` suma al motivo de estatus (fase 5d) de quien la lleva y a la
 primera impresión que causa (`firstImpression`, M11 fase 7). Nodos: `beads`

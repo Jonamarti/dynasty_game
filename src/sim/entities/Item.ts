@@ -497,6 +497,10 @@ export const ITEMS: Record<string, ItemDef> = {
   // after the garment has been crafted and equipped.
   toggled_coat: { id: 'toggled_coat', label: 'Toggled coat', nutrition: 0, spoilTicks: 0, baseValue: 18,
     class: 'bulky', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'torso', warmth: 0.48 } },
+  // M15 phase 14c: the first woven garment is warmer only when worn; pockets
+  // wait for a garment-capacity model rather than borrowing a generic slot.
+  linen_tunic: { id: 'linen_tunic', label: 'Linen tunic', nutrition: 0, spoilTicks: 0, baseValue: 10,
+    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'torso', warmth: 0.20 } },
 };
 
 export class Inventory {

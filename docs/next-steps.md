@@ -1,3 +1,5 @@
+**2026-10-10: 14c, túnica de lino entregada.** Tela/hilo, aguja retenida, abrigo del torso y capa visual de lino. [Contrato y captura](m15_phase14c_linen_tunic.md). Sigue manto de lana y subred Ropa; bolsillos/desgaste/reparación pendientes.
+
 **2026-10-10: 14c, parka con alamares entregada.** Nodo de receta, materiales físicos, abrigo sólo puesto y capa con cierres de hueso. [Contrato y captura](m15_phase14c_toggles.md). Siguen túnica de lino y manto de lana; bolsillos/desgaste/reparación pendientes.
 
 **2026-10-10: 14a–14b, ropa puesta entregada.** Abrigo/armadura en slots del cuerpo, calor y protección sólo vestidos, órdenes cortas, apariencia y limpieza al perder propiedad. [Contrato](m15_phase14_worn_clothing.md). Catálogo, bolsillos, deterioro y reparación14c siguen pendientes.

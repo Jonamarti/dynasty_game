@@ -26,7 +26,7 @@ export type FaceExpr = 'neutral' | 'content' | 'warm' | 'stern' | 'frustrated' |
 
 /** One garment per body region; every region is independent of the others. */
 export interface Wear {
-  torso?: 'cape' | 'wrap' | 'tunic' | 'longtunic' | 'hide_armour' | 'fur_coat' | 'toggled_coat';
+  torso?: 'cape' | 'wrap' | 'tunic' | 'linen_tunic' | 'longtunic' | 'hide_armour' | 'fur_coat' | 'toggled_coat';
   legs?: 'trousers';
   feet?: 'boots' | 'wraps';
   hands?: 'gloves';
@@ -91,6 +91,7 @@ const W = {
   hide: '#a4784c', hideD: '#7d5735', hideLine: '#3d2914',
   wool: '#b39264', woolD: '#8a6c44', woolLine: '#4a3822',
   leather: '#6f4b2c', leatherL: '#8d6239', trousers: '#a89070', gold: '#d9b04a', bone: '#e6dcc0',
+  linen: '#d0bd87', linenLine: '#5b4a2d', linenD: '#9e8653',
 };
 const SWADDLE = '#d4c39a', SWADDLE_LINE = '#5a4a2c';
 const BROW_INK = '#3a2a20', FACE_LINE = 'rgba(110,60,40,0.6)';
@@ -204,6 +205,7 @@ function legWear(w: Wear, hip: Pt, knee: Pt, ank: Pt, g: Geo, near: boolean, foo
 
 function sleeveWear(w: Wear, s0: Pt, elbow: Pt, hand: Pt, g: Geo): string {
   if (w.torso === 'tunic') return limb([s0, lerp(s0, elbow, 0.92)], g.limb * 0.92 + 1.8, W.hide, W.hideLine);
+  if (w.torso === 'linen_tunic') return limb([s0, lerp(s0, elbow, 0.92)], g.limb * 0.92 + 1.8, W.linen, W.linenLine);
   if (w.torso === 'longtunic') return limb([s0, elbow, lerp(elbow, hand, 0.8)], g.limb * 0.92 + 1.8, W.wool, W.woolLine);
   if (w.torso === 'fur_coat' || w.torso === 'toggled_coat') return limb([s0, elbow, lerp(elbow, hand, 0.8)], g.limb * 0.98 + 2, W.fur, W.furLine);
   return '';
@@ -241,16 +243,17 @@ function torsoWearFront(t: Wear['torso'], G: FrontG, back: boolean): string {
     out.push(shape(poly(pts), W.hide, W.hideLine));
     out.push(stroke(`M${cx - sh + 5.6},${sY + 0.4}L${cx + hp},${hem - 3}`, W.hideD, 1));
     out.push(ell(cx - wa * 0.4, sY + T * 0.7, 1.3, 0.9, W.hideD) + ell(cx + wa * 0.2, sY + T * 0.9, 1.1, 0.8, W.hideD));
-  } else if (t === 'tunic' || t === 'longtunic' || t === 'fur_coat' || t === 'toggled_coat') {
-    const fur = t === 'fur_coat' || t === 'toggled_coat', toggled = t === 'toggled_coat', long = t !== 'tunic', hem = hipY + g.leg * (long ? 0.6 : 0.34);
-    const fill = fur ? W.fur : long ? W.wool : W.hide;
-    const line = fur ? W.furLine : long ? W.woolLine : W.hideLine;
-    const dark = fur ? W.furL : long ? W.woolD : W.hideD;
+  } else if (t === 'tunic' || t === 'linen_tunic' || t === 'longtunic' || t === 'fur_coat' || t === 'toggled_coat') {
+    const fur = t === 'fur_coat' || t === 'toggled_coat', linen = t === 'linen_tunic', toggled = t === 'toggled_coat', long = t !== 'tunic' && !linen, hem = hipY + g.leg * (long ? 0.6 : 0.34);
+    const fill = fur ? W.fur : linen ? W.linen : long ? W.wool : W.hide;
+    const line = fur ? W.furLine : linen ? W.linenLine : long ? W.woolLine : W.hideLine;
+    const dark = fur ? W.furL : linen ? W.linenD : long ? W.woolD : W.hideD;
     out.push(shape(`M${cx - sh + 0.4},${sY + 1}L${cx - 3.6},${sY - 0.2}Q${cx},${sY + (back ? 1.4 : 4.2)} ${cx + 3.6},${sY - 0.2}L${cx + sh - 0.4},${sY + 1}L${cx + wa + 1.2},${sY + T * 0.62}L${cx + hp + 2.6},${hem}L${cx - hp - 2.6},${hem}L${cx - wa - 1.2},${sY + T * 0.62}Z`, fill, line));
     out.push(stroke(`M${cx - hp - 2.4},${hem - 1.4}L${cx + hp + 2.4},${hem - 1.4}`, dark, 1.1));
     out.push(shape(poly([[cx - hp - 1.2, hipY - 2.2], [cx + hp + 1.2, hipY - 2.2], [cx + hp + 1.2, hipY + 0.6], [cx - hp - 1.2, hipY + 0.6]]), W.leather, W.hideLine));
     if (!back) out.push(ell(cx + hp * 0.75, hipY + 3.4, 2.4, 3, W.leatherL, W.hideLine));
     if (fur) for (let i = -2; i <= 2; i++) out.push(stroke(`M${cx + i * 2.2},${hem - 1}l0.7,1.8`, W.furL, 0.9));
+    if (linen) for (const y of [sY + T * 0.30, sY + T * 0.52]) out.push(stroke(`M${cx - wa * 0.55},${y}L${cx + wa * 0.55},${y}`, '#eadba9', 0.7));
     if (toggled && !back) for (const y of [sY + T * 0.22, sY + T * 0.46, sY + T * 0.70]) out.push(ell(cx, y, 1.25, 1.5, W.bone, W.hideLine));
     if (toggled && back) out.push(stroke(`M${cx},${sY + T * 0.18}L${cx},${sY + T * 0.72}`, W.furL, 1));
   }
@@ -288,15 +291,16 @@ function torsoWearSide(t: Wear['torso'], G: SideG): string {
   } else if (t === 'wrap') {
     const hem = hipY + g.leg * 0.3;
     out.push(shape(poly([[cx - d * 0.45, sY + 0.2], [cx + d * 0.32, sY - 0.2], [cx + d * 0.6, sY + T * 0.4], [cx + d * 0.62, hem - 1], [cx + d * 0.3, hem + 2], [cx, hem - 0.4], [cx - d * 0.3, hem + 2], [cx - d * 0.66, hem - 1], [cx - d * 0.58, sY + T * 0.4]]), W.hide, W.hideLine));
-  } else if (t === 'tunic' || t === 'longtunic' || t === 'fur_coat' || t === 'toggled_coat') {
-    const fur = t === 'fur_coat' || t === 'toggled_coat', long = t !== 'tunic', hem = hipY + g.leg * (long ? 0.6 : 0.34);
-    const fill = fur ? W.fur : long ? W.wool : W.hide;
-    const line = fur ? W.furLine : long ? W.woolLine : W.hideLine;
-    const dark = fur ? W.furL : long ? W.woolD : W.hideD;
+  } else if (t === 'tunic' || t === 'linen_tunic' || t === 'longtunic' || t === 'fur_coat' || t === 'toggled_coat') {
+    const fur = t === 'fur_coat' || t === 'toggled_coat', linen = t === 'linen_tunic', long = t !== 'tunic' && !linen, hem = hipY + g.leg * (long ? 0.6 : 0.34);
+    const fill = fur ? W.fur : linen ? W.linen : long ? W.wool : W.hide;
+    const line = fur ? W.furLine : linen ? W.linenLine : long ? W.woolLine : W.hideLine;
+    const dark = fur ? W.furL : linen ? W.linenD : long ? W.woolD : W.hideD;
     out.push(shape(poly([[cx - d * 0.44, sY + 0.2], [cx + d * 0.32, sY - 0.2], [cx + d * 0.6, sY + T * 0.34], [cx + d * 0.56, hipY], [cx + d * 0.72, hem], [cx - d * 0.74, hem], [cx - d * 0.62, hipY], [cx - d * 0.56, sY + T * 0.3]]), fill, line));
     out.push(stroke(`M${cx - d * 0.72},${hem - 1.4}L${cx + d * 0.7},${hem - 1.4}`, dark, 1.1));
     out.push(shape(poly([[cx - d * 0.6, hipY - 2.2], [cx + d * 0.58, hipY - 2.2], [cx + d * 0.58, hipY + 0.6], [cx - d * 0.6, hipY + 0.6]]), W.leather, W.hideLine));
     out.push(ell(cx + d * 0.1, hipY + 3, 2.4, 3, W.leatherL, W.hideLine));
+    if (linen) out.push(stroke(`M${cx - d * 0.28},${sY + T * 0.43}L${cx + d * 0.28},${sY + T * 0.43}`, '#eadba9', 0.7));
     if (t === 'toggled_coat') out.push(ell(cx + d * 0.02, sY + T * 0.42, 1.25, 1.5, W.bone, W.hideLine));
   }
   return out.join('');
@@ -383,7 +387,7 @@ function babySidePieces(G: SideG): { blanket: string; skin: string } {
  * flat across it. Drawn above the garment and below the belt line, so the belt
  * stays visible under it. Not drawn from behind: a back does not show one.
  */
-export const BELLY_COVERS: ReadonlySet<string> = new Set(['wrap', 'tunic', 'longtunic', 'hide_armour', 'fur_coat', 'toggled_coat']);
+export const BELLY_COVERS: ReadonlySet<string> = new Set(['wrap', 'tunic', 'linen_tunic', 'longtunic', 'hide_armour', 'fur_coat', 'toggled_coat']);
 
 function bellyFront(G: FrontG, fill: string, line: string, crease: string): string {
   const { cx, sY, wa, T } = G;
@@ -403,6 +407,7 @@ function bellySide(G: SideG, fill: string, line: string, crease: string): string
 }
 const bellyGarment = (t: NonNullable<Wear['torso']>): [string, string, string] =>
   t === 'fur_coat' || t === 'toggled_coat' ? [W.fur, W.furLine, W.furL]
+    : t === 'linen_tunic' ? [W.linen, W.linenLine, W.linenD]
     : t === 'longtunic' ? [W.wool, W.woolLine, W.woolD] : [W.hide, W.hideLine, W.hideD];
 
 // ---------------------------------------------------------------- head parts

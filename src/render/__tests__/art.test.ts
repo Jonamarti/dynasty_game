@@ -96,6 +96,18 @@ describe('art coverage', () => {
     }
   });
 
+  it('draws the linen tunic icon, torso layer and pregnancy layer in linen colours', () => {
+    expect(props.keys['item/linen_tunic']).toBeDefined();
+    for (const dir of ART_BAKED_DIRS) {
+      expect(people.keys[personKey('torso_wear', 'linen_tunic', 'adult', 'f', dir, 'idle')]).toBeDefined();
+    }
+    for (const dir of ['S', 'E'] as const) {
+      for (const pose of ART_POSES) {
+        expect(people.keys[personKey('belly_wear', 'linen_tunic', 'adult', 'f', dir, pose)]).toBeDefined();
+      }
+    }
+  });
+
   it('draws an inventory icon for the logboat', () => {
     expect(props.keys['item/logboat']).toBeDefined();
   });

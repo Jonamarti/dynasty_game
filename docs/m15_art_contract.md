@@ -95,3 +95,9 @@ art/src/buildings/buildings.ts y art/src/props/items.ts; art:build actualizado.
 2026-10-10 — moccasins: icono generado art/src/props/items.ts; capa feet/boots existente cuando equipment.feet contiene mocasines respaldados por inventario. Contrato m15_phase14c_moccasins.md.
 
 2026-10-10 — fur_hat: icono generado art/src/props/items.ts; capa head/cap existente solo cuando equipment.head contiene gorro respaldado por inventario. Contrato m15_phase14c_fur_hat.md.
+
+2026-10-10 — linen_tunic: icono y variante visual propia generados desde
+art/src/props/items.ts y art/src/people/rig.ts; usa el rig de torso existente
+con tono de lino y su capa de embarazo. Visibilidad requiere equipment.torso y
+que el inventario respalde la prenda. No añade bolsillos ni capacidad. Contrato
+m15_phase14c_linen_tunic.md.

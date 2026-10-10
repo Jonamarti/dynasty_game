@@ -1,5 +1,10 @@
 /** Spanish for tech. Keys are the English templates; see `i18n.ts`. */
 export const ES_TECH: Record<string, string> = {
+  'Linen tunic': 'Túnica de lino',
+  'cut woven flax cloth and stitched it into a tunic': 'cortó tela de lino tejida y la cosió para hacer una túnica',
+  'sewed a woven tunic to keep the warmth from escaping': 'cosió una túnica tejida para conservar el calor',
+  'Woven linen sewn into a light tunic that warms the torso only while worn.': 'Lino tejido y cosido en una túnica ligera que abriga el torso solo cuando se lleva puesta.',
+  'A linen tunic warms the torso only while worn.': 'Una túnica de lino abriga el torso solo cuando se lleva puesta.',
   'Toggles': 'Alamares',
   'Bone toggles; the first date is uncertain': 'Alamares de hueso; se desconoce la primera fecha',
   'used bone pieces to fasten a warm hide coat closed': 'usó piezas de hueso para cerrar un abrigo cálido de piel',

@@ -1,3 +1,15 @@
+## 2026-10-10 — m15: túnica de lino
+
+`0.15.43-alpha`: nodo de receta tras tejido, tela 2 e hilo 1 con aguja
+retenida. Vestida aporta 0,20 al torso y sustituye la prenda anterior sin
+perderla; JSON conserva técnica y equipo. El arte usa una capa de lino
+natural distinta de la piel. Traducciones y cobertura de las capas incluidas.
+
+Contrato: `docs/m15_phase14c_linen_tunic.md`. Captura nueva:
+`artifacts/screenshots/m15-phase14c-linen-tunic-2026-10-10/01-tunica-de-lino.png`.
+Typecheck, 98/98 pruebas focales y browser 1/1 pasan. El chequeo corto mantiene 2/147 fallos conocidos (antojos y rendimiento).
+Bolsillos pendientes; cohortes/matriz pesada diferidas por AGENTS.md.
+
 ## 2026-10-10 — m15: parka con alamares
 
 `0.15.42-alpha`: cierre de hueso para una parka existente, nodo de receta
