@@ -1,0 +1,36 @@
+
+Running 1 test using 1 worker
+
+(node:4232) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  1 e2e\smoke.spec.ts:326:1 › the observer map hides unvisited ground and prevents selecting its entities (3.1s)
+
+
+  1) e2e\smoke.spec.ts:326:1 › the observer map hides unvisited ground and prevents selecting its entities 
+
+    Error: expect(received).toBeGreaterThan(expected)
+
+    Expected: > 45
+    Received:   36
+
+      373 |     return [...canvas.getContext('2d')!.getImageData(px, py, 1, 1).data].slice(0, 3);
+      374 |   }, unknown!);
+    > 375 |   expect(clearPixel[0]! + clearPixel[1]! + clearPixel[2]!).toBeGreaterThan(45);
+          |                                                            ^
+      376 |   await page.mouse.click(unknown!.x, unknown!.y);
+      377 |   await expect(page.locator('.picker')).toBeVisible();
+      378 |   await page.reload();
+        at C:\Users\Marty\Documents\Work\Programs\dynastyGame\e2e\smoke.spec.ts:375:60
+
+    Error Context: artifacts\playwright\smoke-the-observer-map-hid-7bcb4-ents-selecting-its-entities\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    artifacts\playwright\smoke-the-observer-map-hid-7bcb4-ents-selecting-its-entities\trace.zip
+    Usage:
+
+        npx playwright show-trace artifacts\playwright\smoke-the-observer-map-hid-7bcb4-ents-selecting-its-entities\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    e2e\smoke.spec.ts:326:1 › the observer map hides unvisited ground and prevents selecting its entities 

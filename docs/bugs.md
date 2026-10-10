@@ -4749,3 +4749,22 @@ La corrida global inicial durante integración (.41→.42) es evidencia mixta:
 8 pruebas fallidas y un fallo de carga por lectura de package.json durante
 escritura, además del arte previo al rebuild. No es una línea base fija ni
 la verificación final. Se repetirá sobre el conjunto estable.
+
+### 2026-10-10 — suite estable45 después de las prendas y subred Ropa
+278 archivos:272 pasan,6 fallan;2020 pruebas pasan,7 fallan,1 omitida.
+Log artifacts/m15-full-unit-45-20261010.log (358,48s). Persisten el negativo
+de correspondencia compacta (100 no supera101,2032), contador de comida0,
+diggers, difusión0,66≥0,6, tributo0, conspiración (rey2 frente a1) y una
+muerte por sed. La copia fija41 ya fallaba difusión0,63; la cifra varía y
+no se declara resuelta. Las prendas/arte/i18n/subred y la huella determinista
+pasan. No se relajaron umbrales ni se corrieron cohortes/matriz pesada.
+
+### 2026-10-10 — e2e de niebla: brillo fuera de umbral en copia41 y45
+`smoke.spec.ts` observer map llega a comprobar el brillo después de V:
+RGB suma36 frente a >45. Se reproduce idéntico con servidor nuevo sobre
+la copia fija e28db05 (.41), anterior a alamares/lino/lana/subred. Logs
+artifacts/m15-ui-baseline41-fog-20261010.log y m15-ui-45-recheck-20261010.log.
+La causa de ese píxel sigue sin confirmar; no se rebaja el umbral ni se
+declara resuelta la niebla. La comprobación posterior de selección no llega
+a ejecutarse en ese test. El error nuevo de alamares era una aserción en
+Perfil en vez de Equipo: se corrigió el test y su repetición pasa.

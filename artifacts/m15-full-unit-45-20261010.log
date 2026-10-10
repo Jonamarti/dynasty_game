@@ -1,0 +1,137 @@
+
+> dynasty@0.15.45-alpha test
+> vitest run --maxWorkers=2 --testTimeout=15000
+
+
+ RUN  v4.1.11 C:/Users/Marty/Documents/Work/Programs/dynastyGame
+
+ ❯ src/sim/__tests__/start-place.test.ts (16 tests | 1 failed) 24876ms
+     × no band is camped away from fresh water, and nobody dies of thirst in a month 17177ms
+ ❯ src/sim/__tests__/compact-correspondence.test.ts (3 tests | 1 failed | 1 skipped) 38615ms
+     × lean/delta: survival and needs of an equivalent cohort agree within the declared tolerances 27936ms
+ ❯ src/sim/__tests__/earthwork-checks.test.ts (3 tests | 1 failed) 17246ms
+     × passes in diggers, where the band finishes what the chief marked out 13204ms
+ ❯ src/sim/__tests__/determinism.test.ts (9 tests | 1 failed) 2833ms
+     × food observation counters do not change the seeded world 766ms
+ ❯ src/sim/__tests__/polity.test.ts (32 tests | 2 failed) 2633ms
+     × arrives at the overlord's store 864ms
+     × is broken by a king with soldiers, and its instigator cast out 138ms
+ ❯ src/sim/__tests__/people-knowledge.test.ts (35 tests | 1 failed) 16005ms
+     × the model is honest that sustained full contact does homogenise, over generations 133ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 7 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/sim/__tests__/compact-correspondence.test.ts > compact vs detailed correspondence (small cohort, 10 days; seeds not used to measure the table) > lean/delta: survival and needs of an equivalent cohort agree within the declared tolerances
+AssertionError: expected 100 to be greater than 101.20321428571548
+ ❯ src/sim/__tests__/compact-correspondence.test.ts:36:31
+     34|       // Negative control: the same cohort with no intake is far from …
+     35|       expect(surv(r.detailed) - surv(r.closed)).toBeGreaterThanOrEqual…
+     36|       expect(r.closed.hunger).toBeGreaterThan(r.detailed.hunger + 30);
+       |                               ^
+     37|     }, 180000);
+     38|   }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/7]⎯
+
+ FAIL  src/sim/__tests__/determinism.test.ts > Simulation determinism > food observation counters do not change the seeded world
+AssertionError: expected 0 to be greater than 0
+ ❯ src/sim/__tests__/determinism.test.ts:101:62
+     99|       for (let i = 0; i < 1200; i++) observed.step();
+    100|       expect(fingerprint(observed)).toBe(fingerprint(quiet));
+    101|       expect(telemetry.get('compact_food_nutrition_gather')).toBeGreat…
+       |                                                              ^
+    102|     } finally {
+    103|       telemetry.disable();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/7]⎯
+
+ FAIL  src/sim/__tests__/earthwork-checks.test.ts > earthworks-are-dug > passes in diggers, where the band finishes what the chief marked out
+AssertionError: expected { id: 'earthworks-are-dug', …(2) } to match object { ok: true }
+(2 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+-   "ok": true,
++   "ok": false,
+  }
+
+ ❯ src/sim/__tests__/earthwork-checks.test.ts:35:26
+     33|   it('passes in diggers, where the band finishes what the chief marked…
+     34|     const report = runScenario(SCENARIOS.diggers!);
+     35|     expect(find(report)).toMatchObject({ ok: true });
+       |                          ^
+     36|     expect(find(report)?.skipped).not.toBe(true);
+     37|     // The other invariants hold with earth being moved.
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/7]⎯
+
+ FAIL  src/sim/__tests__/people-knowledge.test.ts > a technological gap persists (owner decision 2026-10-06: diffusion must be small) > the model is honest that sustained full contact does homogenise, over generations
+AssertionError: expected 0.6599999999999999 to be less than 0.6
+ ❯ src/sim/__tests__/people-knowledge.test.ts:418:67
+    416|     // the table, not concentrated in the one that is new. Still a hal…
+    417|     // ten-year figure above and clear of the hot build's 0.1.
+    418|     expect(dispersion(1, LEARN_MU_START, PARTIAL_START, 120, 20)).toBe…
+       |                                                                   ^
+    419|   });
+    420| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/7]⎯
+
+ FAIL  src/sim/__tests__/polity.test.ts > tribute: carried to the overlord > arrives at the overlord's store
+AssertionError: expected 0 to be greater than 0
+ ❯ src/sim/__tests__/polity.test.ts:447:48
+    445|     }
+    446|     expect(telemetry.get('tribute_ordered')).toBeGreaterThan(0);
+    447|     expect(telemetry.get('tribute_delivered')).toBeGreaterThan(0);
+       |                                                ^
+    448|   });
+    449| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/7]⎯
+
+ FAIL  src/sim/__tests__/polity.test.ts > plots against the king > is broken by a king with soldiers, and its instigator cast out
+AssertionError: expected 2 to be 1 // Object.is equality
+
+- Expected
++ Received
+
+- 1
++ 2
+
+ ❯ src/sim/__tests__/polity.test.ts:485:26
+    483|     const { sim, band, king, instigator } = plot(2);
+    484|     for (let i = 0; i <= sim.config.time.ticksPerDay; i++) sim.step();
+    485|     expect(band.chiefId).toBe(king.id);
+       |                          ^
+    486|     expect(instigator.bandId).not.toBe(band.id);
+    487|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/7]⎯
+
+ FAIL  src/sim/__tests__/start-place.test.ts > every band camps by the water, and drinks it > no band is camped away from fresh water, and nobody dies of thirst in a month
+AssertionError: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ src/sim/__tests__/start-place.test.ts:84:28
+     82|     for (let i = 0; i < sim.config.time.ticksPerDay * 30; i++) sim.ste…
+     83|     const thirsty = [...sim.peopleById.values()].filter(p => !p.alive …
+     84|     expect(thirsty.length).toBe(0);
+       |                            ^
+     85|   }, 120_000);
+     86| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/7]⎯
+
+
+ Test Files  6 failed | 272 passed (278)
+      Tests  7 failed | 2020 passed | 1 skipped (2028)
+   Start at  17:59:12
+   Duration  358.48s (transform 12.43s, setup 0ms, import 188.30s, tests 443.11s, environment 53ms)
+

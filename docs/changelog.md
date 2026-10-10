@@ -1,3 +1,12 @@
+## 2026-10-10 — m15: verificación conjunta de ropa42–45
+
+[Informe](m15_phase14c_verification_20261010.md), logs y capturas conservados.
+Typecheck y pruebas focales pasan. Suite completa estable:2020 correctas,
+7 fallidas,1 omitida,278 archivos; persisten las incidencias registradas.
+Navegador inicial78/80: alamares corregido/repetido pasa; niebla reproduce
+el mismo fallo en la copia41. Versión tras commit funcional2/2. No se
+declara suite global verde ni mejora económica. Cohortes/matriz diferidas.
+
 ## 2026-10-10 — m15: subred Ropa
 
 `0.15.45-alpha`: puerta Ropa con sastrería, hilado, tejido y siete recetas
