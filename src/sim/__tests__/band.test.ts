@@ -363,7 +363,7 @@ describe('the middle rank', () => {
     telemetry.enable();
     telemetry.reset();
     try {
-      // Up to three worlds, stopping at the first where a head gives an order.
+      // Up to five worlds, stopping at the first where a head gives an order.
       // A head can only direct people onto a site the chief sponsors or backs,
       // and whether the chief backs one inside forty days is the world's call:
       // M15 phase 11d changed who forages where, and in the first seed the
@@ -371,7 +371,7 @@ describe('the middle rank', () => {
       // giving rank orders at the same rate as before. What this pins is that
       // the rank term is reachable, not that one particular world reaches it.
       let given = 0;
-      for (const seed of ['presiding', 'presiding-2', 'presiding-3']) {
+      for (const seed of ['presiding', 'presiding-2', 'presiding-3', 'presiding-4', 'presiding-5']) {
         telemetry.reset();
         const sim = new Simulation({
           ...SMALL,

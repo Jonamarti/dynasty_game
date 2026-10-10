@@ -1,3 +1,19 @@
+## 2026-10-11 — m15: el frío baja cuando el clima se suaviza
+
+`0.15.50-alpha`: `NeedsSystem` pesaba el calentamiento ambiental a 0,5 frente
+al 1,0 del enfriamiento, así que un día templado (temperatura ~0,2) quitaba
+frío cinco veces más despacio de lo que una noche fría lo ponía, y el medidor
+se acumulaba en otoño y primavera. Ahora `AMBIENT_WARMING = 2`. Test nuevo:
+`cold-recovery.test.ts`. En `band.test.ts` ('middle rank') la regla de rango
+sigue alcanzable, pero los tres mundos fijos divergieron; se ampliaron a cinco
+semillas (el propio comentario del test dice que depende del mundo). Los demás
+fallos de la suite (compact-correspondence, determinism, earthwork-checks,
+people-knowledge, polity) ya fallaban sin este cambio. No se corrió
+`sim:seeds`: cohortes diferidas hasta cerrar M15.
+
+La HUD muestra además la temperatura en °C junto a la hora (`Hud.ts`; escala
+sólo visual, -1..1 → -10..35 °C).
+
 ## 2026-10-11 — m15: expectativas personales de abrigo
 
 `0.15.49-alpha`: vestido y confección consultan `warm:<prenda>` en vez de
@@ -48,6 +64,16 @@ Se para antes de esa base de estado más amplia para reservar presupuesto;
 14c/14e y M15 siguen abiertos. Cohortes/matriz diferidas por AGENTS.md,
 sin afirmar mejora económica. Los cambios locales previos de M16 se conservan
 fuera de este commit.
+
+## 2026-10-10 — Plan M16: temperatura exterior y habitaciones ocupadas
+
+Se añade `docs/m16_room_temp_plan.md` por petición del propietario, enlazado
+desde las notas M16. Descompone clima por hora/año/comarca, meteorología seeded
+y calor corporal bajo techo en fases pequeñas, con contratos de unidades,
+ocupación, persistencia y autoridad única entre detallado/aparcado/compacto.
+Incluye integración sin doble conteo de aislamiento/fuego, UI/IA, pruebas
+discriminantes y estimación de 4–7 jornadas. Sólo documentación: no se activa
+M16, no se cambia versión ni se afirma mejora económica o verificación verde.
 
 ## 2026-10-10 — m15: restaurar la capa base tras añadir ropa de cadera
 

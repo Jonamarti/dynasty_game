@@ -108,6 +108,9 @@ export interface NeedsHooks {
   babyInArms?: (person: Person) => boolean;
 }
 
+/** Cold shed per unit of positive temperature, relative to chill's weight of 1. */
+const AMBIENT_WARMING = 2;
+
 export class NeedsSystem {
   constructor(private readonly config: NeedsConfig, private readonly world?: World) {}
 
@@ -143,7 +146,13 @@ export class NeedsSystem {
     const cfg = this.config;
     // Cold bites at night and in winter; in high summer people warm back up.
     const chill = Math.max(0, -time.temperature);
-    const warming = Math.max(0, time.temperature) * 0.5;
+    // Owner report: cold shot up in winter but would not come back down once the
+    // weather turned mild. Warming used to be weighted 0.5 against chill's 1.0,
+    // so a mild day (temperature ~0.2) shed cold five times slower than a cold
+    // night gained it, and the meter ratcheted upward through autumn and spring.
+    // Recovery is deliberately faster than the rise: a body sheds a chill in a
+    // warm afternoon far quicker than it picks one up.
+    const warming = Math.max(0, time.temperature) * AMBIENT_WARMING;
     // The same reading with the sign the other way — what makes you cold in
     // February is what makes you thirsty in July — is `thirstDriftPerTick`.
 

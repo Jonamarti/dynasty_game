@@ -738,7 +738,10 @@ export class Hud {
 
   update(sim: Simulation, selection: Selection | null): void {
     const stats = sim.stats();
-    this.clockEl.textContent = sim.time.label();
+    // Display only: the sim's -1..1 temperature mapped onto -10..35 °C. Nothing
+    // reads this back, so the scale can change without touching the simulation.
+    const celsius = Math.round(12.5 + 22.5 * sim.time.temperature);
+    this.clockEl.textContent = `${sim.time.label()} · ${celsius}°C`;
     this.statsEl.textContent = t('{era} · {alive} alive · {built}/{buildings} built · step {tick}', {
       era: t(stats.era), alive: stats.population,
       built: stats.buildingsComplete, buildings: stats.buildings, tick: stats.tick,
