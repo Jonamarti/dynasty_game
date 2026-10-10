@@ -4677,3 +4677,13 @@ no transportan metadatos de combustible: pueden dejar un slot sin propietario,
 que el siguiente paso elimina. No se preserva la llama en el receptor. Falta
 un contrato general de transferencia de objetos encendidos; no se afirma que
 los montones o almacenes guarden combustible. Ver m15_phase12d_torches.md.
+
+### 2026-10-10 — fallos focales adicionales, comparados contra12d
+Cinco fallos se reproducen tanto en12d como en12e (55/60 pasan): el contador
+compact_food_nutrition_gather queda0 aunque las huellas de determinismo sí
+coinciden; diggers no completa earthworks-are-dug; tribute_delivered queda0;
+el rey cambia a id2 en la prueba de conspiración; una muerte por sed aparece
+tras30 días en start-place. No se atribuyen al cambio de calor local, pero no
+se ha demostrado que existieran antes de este conjunto de trabajo M15.
+Comparación fija: artifacts/m15-12d-regression-comparison.log. Investigación y
+calibración pendientes para M16; no se ha relajado ningún umbral para dar verde.

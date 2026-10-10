@@ -44,6 +44,7 @@ import type { Tree } from '../entities/Tree.ts';
 import type { Animal } from '../entities/Animal.ts';
 import { chooseCravingFood } from './FoodChoice.ts';
 import { ITEMS } from '../entities/Item.ts';
+import { houseInteriorTiles } from '../world/HouseInterior.ts';
 import {
   TECH, techPower, prerequisitesMet, answerPressure, workableIdea as chooseWorkableIdea, type Tech,
   AXE_TOOLS, weaponItemOf,
@@ -242,6 +243,8 @@ interface FoundTargets {
   foodToEat: string | null;
   garmentItem: string | null;
   torchItem: string | null;
+  furnitureItem: string | null;
+  furnitureHome: Building | null;
   waterQuestionPeer: Person | null;
   explorePoint: { x: number; y: number } | null;
   waterExplorePoint: { x: number; y: number } | null;
@@ -3611,6 +3614,38 @@ export class Brain {
     }
 
     // --- Craft -------------------------------------------------------------
+    // Actual placed pieces end the residents' keep loop. This first ladder
+    // supplies one shared surface; individual bed assignments follow later.
+    const homeId = person.householdId === null ? null :
+      ctx.householdsById.get(person.householdId)?.homeBuildingId ?? null;
+    const home = homeId === null ? null : ctx.buildingsById.get(homeId) ?? null;
+    let furnitureItem: string | null = null;
+    let furnitureHome: Building | null = null;
+    let furnitureRecipe: string | null = null;
+    if (!person.isChild && home?.def.interior && home.complete && !home.ruined &&
+      !pressedByNeed(person, ctx.needs.workLimits)) {
+      const pieces = ctx.buildingHash.queryRadius(home.centerX, home.centerY,
+        Math.max(home.def.width, home.def.height) + 1).filter(piece => piece.hostId === home.id);
+      const quality = pieces.reduce((best, piece) => piece.complete && !piece.ruined
+        ? Math.max(best, piece.def.sleepQuality ?? 0) : best, 0);
+      const free = houseInteriorTiles(home).some(tile => ctx.world.isWalkable(tile.x, tile.y) &&
+        !pieces.some(piece => piece.x === Math.floor(tile.x) && piece.y === Math.floor(tile.y)));
+      if (free) {
+        const canMakeBed = recipeTechPower(person, RECIPES.bed!) > 0;
+        if (quality < 1.1 && person.inventory.count('bed') >= 1) furnitureItem = 'bed';
+        else if (quality < 1 && person.inventory.count('bedding') >= 1 &&
+          !(canMakeBed && hasIngredients(person.inventory, RECIPES.bed!))) furnitureItem = 'bedding';
+        if (quality < (canMakeBed ? 1.1 : 1) && !furnitureItem) {
+          furnitureRecipe = canMakeBed && hasIngredients(person.inventory, RECIPES.bed!) ? 'bed' :
+            person.inventory.count('bedding') < 1 ? 'bedding' : null;
+        }
+        if (furnitureItem) {
+          furnitureHome = home;
+          add('place_furniture', 0.8 * this.proximityBonus(person,
+            { x: home.centerX, y: home.centerY }, ctx.sightRadius));
+        }
+      }
+    }
     // Table-driven, so a new recipe needs no edit here. Two reasons to make
     // something, deliberately at different weights: one you want for yourself
     // (`keep`, which today is the hand axe and its halving of every job
@@ -3637,7 +3672,8 @@ export class Brain {
       // day would turn the recipe's keep target into a permanent material tax.
       const wantsTorch = person.inventory.count('torch') + person.inventory.count('fat_torch') < 1 &&
         (ctx.time.daylight < 0.35 || person.needs.cold > 10 && person.beliefs.expect('warm:torch').value > 0);
-      const forSelf = isTorchRecipe ? wantsTorch : person.inventory.count(output) < recipe.keep;
+      const forSelf = ITEMS[output]?.furniture ? recipe.id === furnitureRecipe :
+        isTorchRecipe ? wantsTorch : person.inventory.count(output) < recipe.keep;
       const forSite = site !== null && site.stillNeeds(output) > 0;
       if (!forSelf && !forSite) continue;
 
@@ -3972,7 +4008,7 @@ export class Brain {
     return {
       scores,
       found: {
-        water, foodToEat, garmentItem, torchItem, waterQuestionPeer, explorePoint, waterExplorePoint, bringFoodPoint, foodNode, pickupPile, pickupItem, matNode, grassSpot, plantSpot, companion, suitor, sparPartner, student, childPupil, mentor, colleague,
+        water, foodToEat, garmentItem, torchItem, furnitureItem, furnitureHome, waterQuestionPeer, explorePoint, waterExplorePoint, bringFoodPoint, foodNode, pickupPile, pickupItem, matNode, grassSpot, plantSpot, companion, suitor, sparPartner, student, childPupil, mentor, colleague,
         victim, foe, attackRoute, intruder, restrainee, kinDefence, correctee, amendsTo, complainTo, parleyWith, peaceWith, helpCallerTarget, bindTarget, patrolPoint, investigatePoint, concealCorpse, giftee, giftItem, feastStore, feastHost, beneficiary, nursingChild, playmate, tradePartner, fleeFrom, fleePoint,
         quarry,
         site, shelter, restShelter, storeTarget, storeItemId, storeItemCount, larderTarget, sabotageTarget, fruitTree, fellTree,
@@ -4813,6 +4849,14 @@ export class Brain {
         break;
       case 'light_torch':
         person.targetItemId = found.torchItem;
+        break;
+      case 'place_furniture':
+        if (found.furnitureHome && found.furnitureItem) {
+          person.targetItemId = found.furnitureItem;
+          person.targetBuildingId = found.furnitureHome.id;
+          person.targetX = found.furnitureHome.centerX;
+          person.targetY = found.furnitureHome.centerY;
+        }
         break;
       case 'ask_water':
         if (found.waterQuestionPeer) person.targetPersonId = found.waterQuestionPeer.id;

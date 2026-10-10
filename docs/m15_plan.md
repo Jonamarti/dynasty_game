@@ -4386,3 +4386,8 @@ carbón apagado. Solo ropa puesta/llama real/hoguera próxima; el cuerpo compact
 recibe el mismo índice de hogueras. m15_phase12e_local_heat.md: tres regresiones
 fallan en12d y pasan ahora. Cota de mortalidad pendiente, cohorte diferida por
 instrucción M15. Continúa12f.
+
+2026-10-10 — 16d autonomía de primera superficie: fabricar bedding/bed con
+materiales propios, colocar en hogar propio, detener demanda al existir la
+superficie y caminar al interior con interrupciones. m15_phase16d_bedding.md.
+Asignaciones individuales, acopio específico y muebles restantes pendientes.

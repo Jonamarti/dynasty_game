@@ -4188,6 +4188,8 @@ export class ActionSystem {
 
   /** Put a carried bed or bedding on a free room tile, leaving the door open. */
   private doPlaceFurniture(person: Person, ctx: ActionContext): void {
+    const interrupted = this.interruption(person, ctx, { ignoreLaden: true });
+    if (interrupted) { this.stop(person, interrupted, ctx, 'furniture_'); return; }
     const itemId = person.targetItemId;
     if (!itemId || !ITEMS[itemId]?.furniture) {
       this.abandon(person, 'no_furniture', ctx);
@@ -4198,6 +4200,13 @@ export class ActionSystem {
       reason: 'house_gone',
     }, 'trespass');
     if (!host) return;
+    // A doorway satisfies contains(), but placement requires a room tile.
+    // Keep the object carried throughout the interrupted trip inside.
+    if (!houseInteriorContains(host, person.x, person.y)) {
+      person.targetX = host.centerX; person.targetY = host.centerY;
+      this.travel(person, ctx);
+      return;
+    }
     if (person.inventory.count(itemId) < 1) {
       this.abandon(person, 'lack_furniture', ctx);
       return;

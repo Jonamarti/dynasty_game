@@ -14340,3 +14340,14 @@ No UI nueva. Cohortes y cota de mortalidad diferidas; no se afirma mejor supervi
 La suite global iniciada durante la integración se interrumpió: leyó archivos
 mientras cambiaban, por lo que ese resultado mixto no sirve como verificación
 final. Se vuelven a ejecutar sus fallos focalmente sobre código fijo.
+
+## 2026-10-10 — m15: primera cama autónoma del hogar (0.15.28-alpha)
+
+El NPC puntúa fabricación y colocación según superficies realmente instaladas
+en su hogar. Recetas existentes y recursos propios; la llegada a la puerta ya
+no consume el mueble antes de entrar. Viaje con interrupciones. Seis pruebas
+focales correctas; typecheck previo correcto. No UI nueva.
+Contrato y límites en m15_phase16d_bedding.md; la fase16d completa sigue abierta.
+Dos pruebas nuevas fallan en el build12d anterior y pasan ahora. Typecheck
+final correcto; reporte una semilla mantiene los dos fallos iniciales de dieta
+ y perf-budget. No se mide mejora de economía con una sola semilla.

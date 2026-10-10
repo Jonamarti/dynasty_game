@@ -1655,3 +1655,7 @@ compacto y ambas manos visibles. Siguen calor12e y escenario nights12f.
 
 2026-10-10: calor12e implementado; m15_phase12e_local_heat.md. Falta12f y medir
 la cota de supervivencia cuando el propietario autorice la cohorte nombrada.
+
+2026-10-10: primera superficie autónoma16d implementada; continúan asignaciones,
+acopio y catálogo de muebles. Cinco fallos focales confirmados en12d/12e se
+registran en bugs.md sin presentarlos como una suite global correcta.

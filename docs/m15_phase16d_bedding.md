@@ -35,3 +35,19 @@ recovery reader. The art registry and renderer wiring are coordinated in the
 separate art task; this contract does not declare the renderer portion closed.
 
 The art registry includes bedding and bed sprites and item icons. The in-world capture is saved at artifacts/screenshots/m15-phase16d-2026-10-10/01-bed-in-house.png. The browser capture drives the simulation order through the debug fixture; it does not independently verify a physical radial-menu click.
+
+## 2026-10-10: household autonomy, first surface
+
+An adult with a completed household home and a free room tile can make bedding
+from owned ingredients, turn carried bedding and wood into a bed when carpentry
+is known, and place the carried furniture. The scorer reads actual hosted sleep
+quality: once the home has the desired surface, its keep demand stops. The trip
+inside checks interruptions and retains the object until physical placement.
+Tests cover the crafting ladder, completed-home suppression, absent-home refusal
+and a real autonomous doorway-to-room trip (selection weight forced in the test,
+no player order). Six furniture tests pass. No new UI or art is introduced.
+
+This ladder supplies one shared surface per home. Separate sleeping assignments,
+material gathering specifically for furniture, upgrades in a completely full
+room, comfort furniture and the rest of16d remain open. It is not completion of
+the whole furnishing phase or evidence of improved household survival.

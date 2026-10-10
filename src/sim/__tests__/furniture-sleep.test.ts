@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { Brain, type BrainContext } from '../ai/Brain.ts';
 import { Simulation } from '../core/Simulation.ts';
 import { toCheckpointRecord } from '../persistence/CheckpointRecords.ts';
 import { Building, BUILDINGS } from '../entities/Building.ts';
@@ -38,6 +39,64 @@ function fixture() {
 }
 
 describe('bedding and beds', () => {
+  it('scores the bedding-to-bed ladder only for an unfinished household need', () => {
+    const { sim, person, house } = fixture();
+    const brain = (sim as unknown as { brain: Brain }).brain;
+    const score = brain.score.bind(brain);
+    person.action = 'idle'; person.order = null; person.needs.fatigue = 0;
+    person.knownTech.add('cordage'); person.inventory.add('hide', 2);
+    let checked = false;
+    const spy = vi.spyOn(brain, 'score').mockImplementation((actor, ctx: BrainContext) => {
+      if (actor !== person || checked) return score(actor, ctx);
+      checked = true;
+      expect(score(actor, ctx).found.recipe).toBe('bedding');
+      person.inventory.remove('hide', 2); person.inventory.add('bedding', 1);
+      person.knownTech.add('carpentry'); person.inventory.add('wood', 3);
+      expect(score(actor, ctx).found.recipe).toBe('bed');
+      person.inventory.remove('bedding', 1); person.inventory.add('bed', 1);
+      expect(score(actor, ctx).found.furnitureHome).toBe(house);
+      expect(score(actor, ctx).found.furnitureItem).toBe('bed');
+      const bed = new Building(BUILDINGS.bed!, house.centerX, house.centerY, person.bandId, sim.ids);
+      bed.hostId = house.id; bed.complete = true; ctx.buildingHash.insert(bed);
+      expect(score(actor, ctx).found.furnitureItem).toBeNull();
+      expect(score(actor, ctx).found.recipe).not.toBe('bedding');
+      expect(score(actor, ctx).found.recipe).not.toBe('bed');
+      person.householdId = null; ctx.buildingHash.remove(bed);
+      expect(score(actor, ctx).found.furnitureItem).toBeNull();
+      return score(actor, ctx);
+    });
+    try { for (let tick = 0; tick < 30 && !checked; tick++) sim.step();
+      expect(checked).toBe(true);
+    } finally { spy.mockRestore(); }
+  });
+
+  it('autonomously carries its bed from the doorway into the room before placing it', () => {
+    const { sim, person, house } = fixture();
+    person.knownTech.add('carpentry'); person.inventory.add('bed', 1);
+    person.action = 'idle'; person.order = null; person.needs.fatigue = 0;
+    person.x = house.x + house.def.width / 2; person.y = house.y + house.def.height + 0.5;
+    person.targetX = person.x; person.targetY = person.y;
+    sim.peopleHash.rebuild(sim.livingPeople());
+    const brain = (sim as unknown as { brain: Brain }).brain;
+    const score = brain.score.bind(brain);
+    const spy = vi.spyOn(brain, 'score').mockImplementation((actor, ctx) => {
+      const result = score(actor, ctx);
+      if (actor === person) for (const action of result.scores) {
+        if (action.action === 'place_furniture') action.score = 100;
+      }
+      return result;
+    });
+    try {
+      for (let tick = 0; tick < 120 && person.inventory.count('bed') > 0; tick++) {
+        person.needs.hunger = person.needs.thirst = person.needs.cold = 0;
+        sim.step();
+      }
+      expect(person.inventory.count('bed')).toBe(0);
+      expect(sim.buildings.some(piece => piece.hostId === house.id && piece.def.id === 'bed')).toBe(true);
+      expect(person.order).toBeNull();
+    } finally { spy.mockRestore(); }
+  });
+
   it('resolves bedding from thatch or hide and explains the alternative', () => {
     const inventory = new Inventory();
     expect(ingredientsFor(RECIPES.bedding!, inventory)).toBeNull();
