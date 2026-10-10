@@ -240,6 +240,7 @@ export const ACTION_LABELS: Record<string, string> = {
   wear_garment: 'putting on clothes',
   take_off_garment: 'taking off clothes',
   place_furniture: 'placing furniture',
+  light_torch: 'lighting torch',
 };
 
 /**
@@ -284,6 +285,12 @@ export const STOP_REASONS: Record<string, string> = {
   baby_uses_hand: 'a baby was using that hand',
   already_equipped: 'that item was already equipped there',
   equipment_order_lost: 'the equipment order was lost',
+  torch_order_lost: 'the torch order was lost',
+  unknown_torch: 'that was not a torch',
+  no_fire_near: 'there was no lit hearth nearby',
+  torch_not_owned: 'they no longer had that torch',
+  no_free_hand: 'they had no free hand for the torch',
+  torch_already_lit: 'the torch was already lit',
   unknown_garment: 'that was not a garment',
   garment_not_owned: 'they no longer had that garment',
   garment_already_worn: 'that garment was already being worn',

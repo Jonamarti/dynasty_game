@@ -4669,3 +4669,11 @@ El sim:check band del árbol compartido (ropa/muebles/luz simultáneos) dio un a
 **Diagnóstico y arreglo 2026-10-10:** el destino desconocido fue chop (árbol a 5,499 tiles, visión 4,2, sin memoria), no forrajeo. El scorer de madera para obras buscaba a tres radios sin filtrar conocimiento. Se corrige la elegibilidad; regresión negativa confirmada antes del arreglo. La comprobación global pendiente se conserva sin relajar.
 
 **Control corto posterior 2026-10-10:** people-act-on-what-they-know vuelve a PASS tras el filtro de madera. La semilla band conserva sólo cravings-steer-the-diet y perf-budget (2/147), sin rebajar umbrales. Log: artifacts/m15-pending-simcheck-20261010.log.
+
+### 2026-10-10 — combustible de antorcha y transferencias sociales automáticas
+La unidad ardiendo se reserva en drop/handOver/store del jugador. Las rutas
+sociales automáticas que retiran directamente de Inventory (amends, demandas)
+no transportan metadatos de combustible: pueden dejar un slot sin propietario,
+que el siguiente paso elimina. No se preserva la llama en el receptor. Falta
+un contrato general de transferencia de objetos encendidos; no se afirma que
+los montones o almacenes guarden combustible. Ver m15_phase12d_torches.md.

@@ -14310,3 +14310,20 @@ ocultar imports pendientes con cambios de otro agente. Catálogo de prendas,
 bolsillos, deterioro y reparación de14c siguen pendientes. Cohortes diferidas.
 
 Revisión final14ab: entregar o almacenar la última prenda limpia la referencia vestida al instante. Regresión de transferencia incluida. El E2E volvió a mostrar ok (22,2s) y dejó captura actual en artifacts/screenshots/m15-phase14-ab-2026-10-10-final/01-fur-coat-worn-in-kit.png; se interrumpió el teardown de Vite que seguía abierto, no se presenta como ejecución global verde.
+
+## 2026-10-10 — m15: antorchas con combustible real (0.15.26-alpha)
+
+Encendido junto a hoguera, grasa de ciervo/jabalí y dos recetas. La llama aporta
+luz y calor, se dibuja junto al hacha y consume combustible también fuera del
+mapa activo. Equipar otra herramienta conserva el combustible; un bebé y una
+llama dejan las manos ocupadas. Transferencias manuales reservan la unidad
+ardiendo para impedir reiniciar su duración. Contrato: m15_phase12d_torches.md.
+Capturas: artifacts/screenshots/m15-phase12d-torches-2026-10-10-close/.
+Caso E2E focal ok (13,9 s); cierre Vite bloqueado e interrumpido, no salida global
+limpia. Typecheck correcto; focos previos 46 y 34 pruebas correctas. Suite global
+en curso, resultados se registrarán. Cohortes de economía/supervivencia diferidas.
+Foco integrado final: 48/48 pruebas correctas. Las transferencias sociales
+automáticas sin combustible se registran por separado en docs/bugs.md.
+Typecheck del índice exacto correcto. Reporte de una semilla: 2/147 fallos,
+cravings-steer-the-diet y perf-budget, los mismos nombres del inicio; no es
+una afirmación de mejora económica. people-act-on-what-they-know permanece PASS.

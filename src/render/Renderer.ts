@@ -11,7 +11,7 @@
  */
 import { stageOf, type Corpse } from '../sim/entities/Corpse.ts';
 import type { Simulation } from '../sim/core/Simulation.ts';
-import { hearthLight, type LightSource } from '../sim/core/Light.ts';
+import { hearthLight, torchLight, type LightSource } from '../sim/core/Light.ts';
 import { Interpolator, type Placed } from './Interpolator.ts';
 import type { Inscription } from '../sim/entities/Inscription.ts';
 import type { Person } from '../sim/entities/Person.ts';
@@ -51,7 +51,7 @@ import { choppingPose, craftingPose, diggingPose, extractionPose, fishingPose, g
 import { ADULT_YEARS } from '../sim/entities/Person.ts';
 import { showing } from '../sim/entities/Pregnancy.ts';
 import {
-  SpriteAtlas, BAND_COLORS, bandColorIndex, sizeClassOf, bodyScaleOf, hairVariantOf, hasBeardOf, heldItemFor,
+  SpriteAtlas, BAND_COLORS, bandColorIndex, sizeClassOf, bodyScaleOf, hairVariantOf, hasBeardOf, heldItemFor, heldTorchFor,
   type SizeClass,
 } from './Sprites.ts';
 
@@ -593,6 +593,15 @@ export class Renderer {
     for (const building of sim.buildingHash.queryRadius(camera.x, camera.y, viewRadius + 5)) {
       const source = hearthLight(building);
       if (!source || !inSight(source.x, source.y)) continue;
+      const px = camera.worldToScreenX(source.x), py = camera.worldToScreenY(source.y);
+      const radius = source.radius * scale;
+      if (px + radius < 0 || px - radius > camera.viewWidth ||
+          py + radius < 0 || py - radius > camera.viewHeight) continue;
+      nightSources.push({ source, centerLight: sim.lightAt(source.x, source.y) });
+    }
+    for (const carrier of sim.peopleHash.queryRadius(camera.x, camera.y, viewRadius + 5)) {
+      const source = torchLight(carrier);
+      if (!source || !inSight(carrier.x, carrier.y)) continue;
       const px = camera.worldToScreenX(source.x), py = camera.worldToScreenY(source.y);
       const radius = source.radius * scale;
       if (px + radius < 0 || px - radius > camera.viewWidth ||
@@ -2127,6 +2136,8 @@ export class Renderer {
     const chopping = choppingPose(person, this.sim, moving, this.workAlpha);
     const crafting = craftingPose(person, this.sim, moving, this.workAlpha);
     const workPose = gathering ?? fishing ?? extraction ?? digging ?? chopping ?? crafting;
+    const torch = heldTorchFor(person);
+    const otherHeld = gathering || crafting ? null : heldItemFor(person, this.sim.config.carry.autoEquipTools, true);
     const aspect: PersonAspect = {
       age: sizeClass, sex: person.sex === 'male' ? 'm' : 'f', dir,
       pose: moving ? (('w' + frame) as ArtPose) : workPose ?? 'idle',
@@ -2138,7 +2149,9 @@ export class Renderer {
       // visible state; the garment slot is the public observation of what is
       // being worn.
       wear: wornGarmentsOf(person),
-      carryBaby: false, held: gathering || crafting ? null : heldItemFor(person, this.sim.config.carry.autoEquipTools),
+      carryBaby: false,
+      held: torch?.slot === 'right' ? torch.kind : otherHeld,
+      heldLeft: torch?.slot === 'left' ? torch.kind : torch ? otherHeld : null,
       // M15 phase 19c: the belly of the last third, which anybody can see
       // (`Pregnancy.showing`); the earlier thirds are not on the sprite.
       belly: showing(person),
@@ -2161,6 +2174,7 @@ export class Renderer {
     if (person.aboardBoat && (this.sim.world.isBoatTile(person.x, person.y) || this.sim.world.isLogboatTile(person.x, person.y))) {
       art.drawAsset(ctx, 'props', person.aboardBoat === 'logboat' ? 'item/logboat' : 'item/raft', px - 32 * k, y0 + 57 * k, k);
       aspect.held = null;
+      aspect.heldLeft = null;
     }
     art.drawPerson(ctx, aspect, x0, y0, k);
   }

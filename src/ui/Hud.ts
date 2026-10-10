@@ -1093,7 +1093,11 @@ export class Hud {
       const babyText = baby
         ? escapeHtml(t('{name}, in arms', { name: knowledgeOfPerson(observer, baby, sim.relationships).displayName }))
         : null;
-      const heldText = held ? escapeHtml(t(ITEMS[held.item]?.label ?? held.item)) + ' ×' + held.count : null;
+      const fuelText = held?.lit !== undefined
+        ? ' · ' + escapeHtml(t('{n} ticks of flame', { n: held.lit })) : '';
+      const heldText = held
+        ? escapeHtml(t(ITEMS[held.item]?.label ?? held.item)) + ' ×' + held.count + fuelText
+        : null;
       rows.push('<div class="hud-sub">' + tc('slot', slot) + ': ' +
         ([babyText, heldText].filter(Boolean).join(' · ') || t('empty')) +
         '</div>');
@@ -1134,7 +1138,8 @@ export class Hud {
         '</div>');
 
       if (!own) continue;
-      const verbs = itemActions(person, itemId, nearby.length, soleRecipientName, nearbyStore);
+      const verbs = itemActions(person, itemId, nearby.length, soleRecipientName, nearbyStore,
+        sim.hearthNear(person.x, person.y, 2));
       rows.push('<div class="hud-item-verbs">' +
         verbs.map(v =>
           '<button class="hud-verb' + (v.enabled ? '' : ' is-disabled') + '"' +

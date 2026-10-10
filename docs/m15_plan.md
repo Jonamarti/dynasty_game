@@ -4374,3 +4374,9 @@ ComarcaOffmapRuntime avanza la comarca aparcada sin otro motor detallado: cuerpo
 ## Avance del 2026-10-09 — Fase 34, coordinador de frontera
 
 Cruce físico con seguidores, regreso de exploradores a los dos días, reentrada desde el libro y demografía de residentes activados. Se retira la autoridad antigua y se conservan IDs, parentesco, artículos, memorias por comarca y streams. Trece pruebas de viaje, cinco de runtime, diez de migración y cinco de raíz pasan en controles focalizados; ecología añade cuatro. Una prueba antigua de raíz v1 se actualiza para omitir frontier, que esa versión nunca contenía. El cierre de presentación registra sus capturas y la verificación conjunta final.
+
+2026-10-10 — 12d implementada: antorchas simples y de grasa, encendido de tres pasos,
+combustible persistente en manos, avance detallado/compacto, luz/calor/huida,
+creencias NPC y dibujo de ambas manos. Contrato: m15_phase12d_torches.md.
+Capturas: artifacts/screenshots/m15-phase12d-torches-2026-10-10-close/.
+La medición de cohortes sigue diferida por instrucción M15; 12e/12f pendientes.

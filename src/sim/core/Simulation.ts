@@ -131,8 +131,9 @@ import type { WorldGeography } from '../world/WorldGeography.ts';
 import { geographicResourceAvailable } from '../world/GeographicResources.ts';
 import { stepMark } from './StepProbe.ts';
 import { approachComarcaEdge, type ComarcaTravel } from '../world/ComarcaTravel.ts';
-import { lightAt as measuredLightAt, lightFactor } from './Light.ts';
 import { applyHouseWalls, houseInteriorContains, houseInteriorTiles } from '../world/HouseInterior.ts';
+import { lightAt as measuredLightAt, lightFactor, torchLight } from './Light.ts';
+import { advanceTorchBurn, torchIgnitionRefusal, torchRefusalText, transferableUnits, burningTorchRefusalText } from './Torch.ts';
 import { edgeOfTile, type ComarcaEdge } from '../world/ComarcaNeighbour.ts';
 import type { ComarcaMigrationContext } from '../world/ComarcaMigration.ts';
 import { comarcaResourceProfile, PROFILE_SPAN, type ComarcaResourceProfile } from '../world/ResourceProfile.ts';
@@ -2900,7 +2901,14 @@ export class Simulation {
 
   /** Local light instrument, shared by later sight/work readers and presentation. */
   lightAt(x: number, y: number): number {
-    return measuredLightAt(x, y, this.time.daylight, this.buildingHash);
+    return measuredLightAt(x, y, this.time.daylight, this.buildingHash, this.peopleHash);
+  }
+
+  /** Torch lighting needs a maintained, completed hearth, not just daylight. */
+  hearthNear(x: number, y: number, radius: number): boolean {
+    return this.buildingHash.queryRadius(x, y, radius + 1).some(building =>
+      building.complete && !building.ruined && building.def.id === 'hearth' &&
+      Math.hypot(building.centerX - x, building.centerY - y) <= radius);
   }
 
   private lookForIntruders(): void {
@@ -3000,7 +3008,11 @@ export class Simulation {
   drop(person: Person, itemId: string, count: number): ItemPile | null {
     this.assertExecutionAuthority();
     this.assertCanonical(this.peopleById, person, 'person');
-    const taken = person.inventory.remove(itemId, count);
+    const available = transferableUnits(person, itemId);
+    if (available < 1 && person.inventory.count(itemId) >= 1) {
+      this.lastRefusal = burningTorchRefusalText(); return null;
+    }
+    const taken = person.inventory.remove(itemId, Math.min(count, available));
     if (taken === 0) return null;
 
     let pile = this.pileHash.findNearest(person.x, person.y, 1.2);
@@ -3113,12 +3125,16 @@ export class Simulation {
     this.assertExecutionAuthority();
     this.assertCanonical(this.peopleById, giver, 'person');
     this.assertCanonical(this.peopleById, receiver, 'person');
+    const available = transferableUnits(giver, itemId);
+    if (available < 1 && giver.inventory.count(itemId) >= 1) {
+      this.lastRefusal = burningTorchRefusalText(); return 0;
+    }
     const room = receiver.carryCapacity - receiver.carrying;
     if (room <= 0) {
       this.lastRefusal = t('{name} cannot carry any more', { name: receiver.name });
       return 0;
     }
-    const moved = giver.inventory.remove(itemId, Math.min(room, count, giver.inventory.count(itemId)));
+    const moved = giver.inventory.remove(itemId, Math.min(room, count, available));
     if (moved === 0) return 0;
     receiver.inventory.add(itemId, moved);
     // Worn layers are ownership references too. Handing over the last copy
@@ -3150,6 +3166,10 @@ export class Simulation {
     this.assertExecutionAuthority();
     this.assertCanonical(this.peopleById, person, 'person');
     this.assertCanonical(this.buildingsById, store, 'building');
+    const available = transferableUnits(person, itemId);
+    if (available < 1 && person.inventory.count(itemId) >= 1) {
+      this.lastRefusal = burningTorchRefusalText(); return 0;
+    }
     const access = this.mayUseBuilding(person, store);
     if (!access.ours) {
       // The inventory-panel shortcut does not run through ActionSystem, so it
@@ -3165,7 +3185,7 @@ export class Simulation {
       telemetry.count(access.watched ? 'property_used_watched' : 'property_used_unseen');
       if (access.watched) this.noteWatched(person, access, true);
     }
-    const moved = store.accept(person.inventory, itemId, count);
+    const moved = store.accept(person.inventory, itemId, Math.min(count, available));
     if (moved === 0) return 0;
     reconcileCarry(person, this.config.carry, (x, y, id, amount) => this.dropAt(x, y, id, amount));
     telemetry.count('stored', moved);
@@ -4007,16 +4027,15 @@ export class Simulation {
   }
 
   /**
-   * Whether a fire burns within `r` of a point: a finished hearth or a roof
-   * (a hut with a fire in it). M15 phase 23e. The plan wrote this against
-   * `Light.lightAt` and a torch field from phase 12; neither exists yet, so
-   * the reader is pointed at what does, and moves to `light` when 12 lands
-   * (docs/bugs.md).
+   * Whether a fire burns within `r` of a point. Wildlife is more wary of a
+   * torch carried nearby than of a fixed hearth: its avoidance radius doubles.
    */
   litNear(x: number, y: number, r: number): boolean {
-    return this.buildingHash.queryRadius(x, y, r + 2).some(b =>
+    if (this.buildingHash.queryRadius(x, y, r + 2).some(b =>
       b.complete && !b.ruined && (b.def.id === 'hearth' || b.def.shelter > 0) &&
-      Math.hypot(b.centerX - x, b.centerY - y) <= r);
+      Math.hypot(b.centerX - x, b.centerY - y) <= r)) return true;
+    return this.peopleHash.queryRadius(x, y, r * 2 + 1).some(person =>
+      !!torchLight(person) && Math.hypot(person.x - x, person.y - y) <= r * 2);
   }
 
   /** A beast's bite landing on a person: the wound, the fear, and the telling. */
@@ -4241,6 +4260,10 @@ export class Simulation {
         this.lastRefusal = manualGarmentReasonText(refusal);
         return false;
       }
+    }
+    if (action === 'light_torch') {
+      const refusal = torchIgnitionRefusal(person, target.itemId ?? '', this.hearthNear(person.x, person.y, 2));
+      if (refusal) { this.lastRefusal = torchRefusalText(refusal); return false; }
     }
     if (action === 'place_furniture') {
       const host = target.buildingId === undefined ? null : this.buildingsById.get(target.buildingId) ?? null;
@@ -5635,6 +5658,7 @@ export class Simulation {
     if (!Number.isSafeInteger(tick) || tick !== this.time.tick + 1) throw new RangeError('Journey ticks must be contiguous');
     const travellers = travellerIds.map(id => this.peopleById.get(id)).filter((person): person is Person => !!person && person.alive);
     this.time.advance();
+    this.advanceTorchFuels(travellers);
     for (const person of travellers) person.action = 'walk';
     const nurslingFactor = nurslingHungerFactor(this.config.childhood.feedsPerDay,
       this.config.time.ticksPerDay, this.config.needs.hungerRate);
@@ -5683,6 +5707,7 @@ export class Simulation {
     stepMark?.('(start)');
     if (!this.playerIntent) this.playerMovementRefusal = null;
     this.time.advance();
+    this.advanceTorchFuels(this.people);
     this.rebuildHashes();
     stepMark?.('advance+rebuildHashes');
 
@@ -6038,6 +6063,7 @@ export class Simulation {
         ? lightFactor(this.lightAt(person.x, person.y), this.config.light.fineWorkDark) : 1,
       huntLightFactor: (person: Person) => this.config.light.enabled
         ? lightFactor(this.lightAt(person.x, person.y), this.config.light.huntDark) : 1,
+      hearthNear: (x: number, y: number, radius: number) => this.hearthNear(x, y, radius),
       world: this.world,
       movement: this.movementSystem,
       nodesById: this.nodesById,
@@ -6102,6 +6128,7 @@ export class Simulation {
       needs: this.config.needs,
       drownAt: this.config.world.drownAt,
       carry: this.config.carry,
+      light: this.config.light,
       motivation: this.config.motivation,
       persuasionAuthority: (sponsor: Person, listener: Person) =>
         this.standing(sponsor, listener, 'build').chance,
@@ -6830,6 +6857,11 @@ export class Simulation {
     for (const animal of this.animals) {
       if (animal.alive) this.animalHash.insert(animal);
     }
+  }
+
+  /** Fuel is advanced by simulation time only, so pause freezes carried light. */
+  private advanceTorchFuels(people: readonly Person[]): void {
+    for (const person of people) if (person.alive) advanceTorchBurn(person);
   }
 
   /**

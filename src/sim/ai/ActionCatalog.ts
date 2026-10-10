@@ -48,6 +48,7 @@ import { mayNurse } from './Nursing.ts';
 import { swimRefusal, swimRouteRefusal, swimRefusalText } from '../core/Swimming.ts';
 import { houseInteriorContains, houseInteriorTiles } from '../world/HouseInterior.ts';
 import { manualGarmentReasonText, manualGarmentRefusal } from '../core/ToolEquipment.ts';
+import { torchIgnitionRefusal, torchRefusalText, transferableUnits, burningTorchRefusalText } from '../core/Torch.ts';
 
 export type TargetKind =
   'ground' | 'person' | 'node' | 'building' | 'tree' | 'pile' | 'animal' | 'inscription' | 'corpse';
@@ -272,9 +273,11 @@ export function itemActions(
   /** The one neighbour's name, as the actor knows it, when `nearbyCount` is 1. */
   soleRecipientName: string | null,
   nearbyStore: Building | null,
+  torchNearFire = false,
 ): ActionOption[] {
   const def = ITEMS[itemId];
   const edible = (def?.nutrition ?? 0) > 0;
+  const canTransfer = transferableUnits(actor, itemId) >= 1;
   const garmentVerb = def?.garment
     ? actor.equipment[def.garment.slot]?.item === itemId ? 'take_off_garment' : 'wear_garment'
     : null;
@@ -298,8 +301,8 @@ export function itemActions(
           ? t('Give to {name}', { name: soleRecipientName })
           : t('Give to...'),
       icon: '\u{1F381}',
-      enabled: nearbyCount > 0,
-      reason: nearbyCount > 0 ? undefined : t('Nobody within reach'),
+      enabled: canTransfer && nearbyCount > 0,
+      reason: !canTransfer ? burningTorchRefusalText() : nearbyCount > 0 ? undefined : t('Nobody within reach'),
     },
     {
       id: 'store_item',
@@ -307,14 +310,15 @@ export function itemActions(
         ? t('Put in {store}', { store: theNoun(nearbyStore.def.label.toLowerCase()) })
         : t('Store'),
       icon: '\u{1F4E5}',
-      enabled: nearbyStore !== null,
-      reason: nearbyStore ? undefined : t('No store within reach'),
+      enabled: canTransfer && nearbyStore !== null,
+      reason: !canTransfer ? burningTorchRefusalText() : nearbyStore ? undefined : t('No store within reach'),
     },
     {
       id: 'drop_item',
       label: t('Drop'),
       icon: '\u{1F53B}',
-      enabled: true,
+      enabled: canTransfer,
+      reason: canTransfer ? undefined : burningTorchRefusalText(),
     },
     {
       id: 'equip_left', label: t('Left hand'), icon: '\u{1F91A}',
@@ -342,6 +346,14 @@ export function itemActions(
     enabled: garmentRefusal === null,
     reason: garmentRefusal ? manualGarmentReasonText(garmentRefusal) : undefined,
   });
+  if (itemId === 'torch' || itemId === 'fat_torch') {
+    const refusal = torchIgnitionRefusal(actor, itemId, torchNearFire);
+    options.push({
+      id: 'light_torch', label: t('Light torch'), icon: '\u{1F525}',
+      enabled: refusal === null,
+      reason: refusal ? torchRefusalText(refusal) : undefined,
+    });
+  }
   return options;
 }
 

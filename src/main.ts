@@ -893,7 +893,8 @@ function handleItemAction(
       quantityPicker.show(screenX, screenY, t('Drop {item}', { item: label.toLowerCase() }),
         person.inventory.count(itemId), count => {
           const dropped = sim.drop(person, itemId, count);
-          say(dropped ? t('dropped {item}', { item: named }) : t('nothing to drop'), dropped !== null);
+          const reason = sim.lastRefusal; sim.lastRefusal = null;
+          say(dropped ? t('dropped {item}', { item: named }) : reason ?? t('nothing to drop'), dropped !== null);
         });
       break;
     }
@@ -913,6 +914,13 @@ function handleItemAction(
       if (!ordered) sim.lastRefusal = null;
       say(ordered ? (verb === 'wear_garment' ? t('changing clothes') : t('taking off clothes'))
         : reason ?? t('could not change clothes'), ordered);
+      break;
+    }
+    case 'light_torch': {
+      const ordered = sim.order(person, verb, { itemId });
+      const reason = ordered ? null : sim.lastRefusal;
+      if (!ordered) sim.lastRefusal = null;
+      say(ordered ? t('lighting torch') : reason ?? t('could not light that torch'), ordered);
       break;
     }
     case 'give_item': {
@@ -967,7 +975,8 @@ function handleItemAction(
       quantityPicker.show(screenX, screenY, t('Store {item}', { item: label.toLowerCase() }),
         person.inventory.count(itemId), count => {
           const stored = sim.storeItem(person, store, itemId, count);
-          say(stored > 0 ? t('stored {n}', { n: stored }) : t('no room in the store'), stored > 0);
+          const reason = sim.lastRefusal; sim.lastRefusal = null;
+          say(stored > 0 ? t('stored {n}', { n: stored }) : reason ?? t('no room in the store'), stored > 0);
         });
       break;
     }

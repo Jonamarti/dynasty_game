@@ -688,6 +688,7 @@ function sideLayers(spec: PersonSpec): PersonOut {
   const shoulder: Pt = [cx + 0.4, sY + 2.6];
   const hx = cx + 2.2;
   let hrAnchor: Pt = [cx, sY];
+  let hlAnchor: Pt = [cx, sY];
   for (const near of [false, true]) {
     const col = near ? skin : REF.skinFar;
     const Larm = g.arm / 2;
@@ -717,7 +718,7 @@ function sideLayers(spec: PersonSpec): PersonOut {
     if (near) {
       hrAnchor = stoop ? rotatePt(hand, stoop, pivot) : hand;
       armSvg = rot(armSvg); sleeve = rot(sleeve);
-    }
+    } else hlAnchor = hand;
     add(P, 'arm_' + s, armSvg);
     add(P, 'sleeve_' + s, sleeve);
     add(P, 'hand_' + s, near ? rot(hSkin) : hSkin);
@@ -770,7 +771,8 @@ function sideLayers(spec: PersonSpec): PersonOut {
 
   flush(sink, spec, P);
   const ha: readonly [number, number] = [r2p(hrAnchor[0]), r2p(hrAnchor[1])];
-  return { layers: sink.layers, anchors: { hr: ha, hl: ha, bob: POSE_BOB[spec.pose] } };
+  return { layers: sink.layers, anchors: { hr: ha,
+    hl: [r2p(hlAnchor[0]), r2p(hlAnchor[1])], bob: POSE_BOB[spec.pose] } };
 }
 
 /** Turn the collected pieces into layers with their variant names. */

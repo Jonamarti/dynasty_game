@@ -47,6 +47,7 @@ import type { Spark } from './Synthesis.ts';
 import { PROTOTYPE_AT, PROTOTYPE_POWER, REFINEMENT_STEP } from './Synthesis.ts';
 import { ITEMS } from '../entities/Item.ts';
 import { GARMENT_SLOTS } from '../entities/Equipment.ts';
+import { torchInHand } from '../core/Torch.ts';
 import { BODY_PARTS, strikeShare, type BodyPart } from '../entities/Body.ts';
 
 export const TECHS = [
@@ -3306,7 +3307,8 @@ export function warmthFrom(person: Person): number {
   const brazier = person.inventory.has('charcoal')
     ? CHARCOAL_WARMTH * techPower(person, 'charcoal')
     : 0;
-  let unwarmed = (1 - fire) * (1 - brazier);
+  const torch = torchInHand(person) ? 0.2 : 0;
+  let unwarmed = (1 - fire) * (1 - brazier) * (1 - torch);
   for (const slot of GARMENT_SLOTS) {
     const worn = person.equipment[slot];
     const garment = worn ? ITEMS[worn.item]?.garment : undefined;

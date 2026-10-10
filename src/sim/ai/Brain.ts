@@ -49,6 +49,7 @@ import {
   AXE_TOOLS, weaponItemOf,
 } from '../knowledge/Tech.ts';
 import { wantedOreKinds } from '../knowledge/Ore.ts';
+import { torchInHand, torchIgnitionRefusal } from '../core/Torch.ts';
 import {
   RECIPES, hasIngredients, recipeFor, recipeUsing, nutritionPerUnit, recipeTechPower,
 } from '../entities/Recipe.ts';
@@ -240,6 +241,7 @@ interface FoundTargets {
   water: { x: number; y: number } | null;
   foodToEat: string | null;
   garmentItem: string | null;
+  torchItem: string | null;
   waterQuestionPeer: Person | null;
   explorePoint: { x: number; y: number } | null;
   waterExplorePoint: { x: number; y: number } | null;
@@ -1030,6 +1032,7 @@ export class Brain {
     // is genuinely the better errand rather than whichever was scored last.
     let pickupBest = 0;
     let garmentItem: string | null = null;
+    let torchItem: string | null = null;
 
     const thirst = drive.thirst;
     const hunger = drive.hunger;
@@ -3445,6 +3448,36 @@ export class Brain {
       }
     }
 
+    // A carried flame is an errand at the hearth, not a passive warmth item.
+    // Let learned expectations decide whether the small, local benefit is
+    // worth three work ticks; firemaking makes that expectation available when
+    // the person first turns either torch into something useful.
+    const currentTorch = torchInHand(person);
+    const heldUnlitTorch = (['left', 'right'] as const).find(slot => {
+      const held = person.equipment[slot];
+      return held && (held.item === 'torch' || held.item === 'fat_torch') && (held.lit ?? 0) <= 0;
+    });
+    const candidateTorch = heldUnlitTorch && person.inventory.count(person.equipment[heldUnlitTorch]!.item) >= 1
+      ? person.equipment[heldUnlitTorch]!.item : person.inventory.count('fat_torch') > 0 ? 'fat_torch'
+      : person.inventory.count('torch') > 0 ? 'torch' : null;
+    const nearbyHearth = ctx.buildingHash.queryRadius(person.x, person.y, 3)
+      .some(building => building.complete && !building.ruined && building.def.id === 'hearth' &&
+        person.distanceTo({ x: building.centerX, y: building.centerY }) <= 2);
+    if (!currentTorch && candidateTorch && nearbyHearth &&
+      torchIgnitionRefusal(person, candidateTorch) === null) {
+      const warmBelief = person.beliefs.expect('warm:torch').value;
+      const lightBelief = person.beliefs.expect('light:torch').value;
+      const warmthNeed = person.needs.cold > 10 ? person.needs.cold / 100 * warmBelief * 4 : 0;
+      const darkness = Math.max(0, 1 - ctx.time.daylight / 0.35);
+      const lightNeed = darkness * lightBelief * 1.5;
+      const torchScore = Math.max(warmthNeed, lightNeed);
+      if (torchScore > 0) {
+        add('light_torch', torchScore * this.proximityBonus(person,
+          { x: person.x, y: person.y }, ctx.sightRadius));
+        torchItem = candidateTorch;
+      }
+    }
+
     // --- Flee --------------------------------------------------------------
     // Being hurt outranks everything. A fight the loser can walk away from is
     // the normal outcome; a fight neither party can leave is always a killing.
@@ -3599,7 +3632,12 @@ export class Brain {
       if (recipeTechPower(person, recipe) <= 0) continue;
       if (!hasIngredients(person.inventory, recipe)) continue;
       const output = Object.keys(recipe.output)[0]!;
-      const forSelf = person.inventory.count(output) < recipe.keep;
+      const isTorchRecipe = output === 'torch' || output === 'fat_torch';
+      // One carried light answers the errand. Making both kinds every sunny
+      // day would turn the recipe's keep target into a permanent material tax.
+      const wantsTorch = person.inventory.count('torch') + person.inventory.count('fat_torch') < 1 &&
+        (ctx.time.daylight < 0.35 || person.needs.cold > 10 && person.beliefs.expect('warm:torch').value > 0);
+      const forSelf = isTorchRecipe ? wantsTorch : person.inventory.count(output) < recipe.keep;
       const forSite = site !== null && site.stillNeeds(output) > 0;
       if (!forSelf && !forSite) continue;
 
@@ -3934,7 +3972,7 @@ export class Brain {
     return {
       scores,
       found: {
-        water, foodToEat, garmentItem, waterQuestionPeer, explorePoint, waterExplorePoint, bringFoodPoint, foodNode, pickupPile, pickupItem, matNode, grassSpot, plantSpot, companion, suitor, sparPartner, student, childPupil, mentor, colleague,
+        water, foodToEat, garmentItem, torchItem, waterQuestionPeer, explorePoint, waterExplorePoint, bringFoodPoint, foodNode, pickupPile, pickupItem, matNode, grassSpot, plantSpot, companion, suitor, sparPartner, student, childPupil, mentor, colleague,
         victim, foe, attackRoute, intruder, restrainee, kinDefence, correctee, amendsTo, complainTo, parleyWith, peaceWith, helpCallerTarget, bindTarget, patrolPoint, investigatePoint, concealCorpse, giftee, giftItem, feastStore, feastHost, beneficiary, nursingChild, playmate, tradePartner, fleeFrom, fleePoint,
         quarry,
         site, shelter, restShelter, storeTarget, storeItemId, storeItemCount, larderTarget, sabotageTarget, fruitTree, fellTree,
@@ -4772,6 +4810,9 @@ export class Brain {
         break;
       case 'wear_garment':
         person.targetItemId = found.garmentItem;
+        break;
+      case 'light_torch':
+        person.targetItemId = found.torchItem;
         break;
       case 'ask_water':
         if (found.waterQuestionPeer) person.targetPersonId = found.waterQuestionPeer.id;

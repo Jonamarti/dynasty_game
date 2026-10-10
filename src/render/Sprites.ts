@@ -59,7 +59,7 @@ const SIZE_CLASSES: readonly SizeClass[] = ['infant', 'child', 'adolescent', 'ad
 export type HairVariant = 'dark' | 'grey' | 'balding' | 'bald';
 const HAIR_VARIANTS: readonly HairVariant[] = ['dark', 'grey', 'balding', 'bald'];
 
-export type HeldItemKind = 'spear' | 'bow' | 'atlatl' | 'sling' | 'bone_point' | 'copper_dagger' | 'bronze_sword' | 'handaxe' | 'net' | 'basket' | 'antler_pick' | 'spade' | 'bronze_spade' | 'iron_spade' | 'iron_plough' | 'digging_stick';
+export type HeldItemKind = 'spear' | 'bow' | 'atlatl' | 'sling' | 'bone_point' | 'copper_dagger' | 'bronze_sword' | 'handaxe' | 'net' | 'basket' | 'torch' | 'torch_unlit' | 'antler_pick' | 'spade' | 'bronze_spade' | 'iron_spade' | 'iron_plough' | 'digging_stick';
 /**
  * What shows in the hand when more than one thing is carried, most
  * conspicuous first. A hunter carrying both a bow and a basket reads as
@@ -162,7 +162,20 @@ export function hasBeardOf(person: Person): boolean {
  * conspicuous carried object; while digging, the usable tool selected by the
  * executor instead, so a spear in the pack cannot hide a working spade.
  */
-export function heldItemFor(person: Person, autoEquipTools = false): HeldItemKind | null {
+export function heldTorchFor(person: Person): { slot: 'left' | 'right'; kind: 'torch' | 'torch_unlit' } | null {
+  for (const slot of ['left', 'right'] as const) {
+    const held = person.equipment[slot];
+    if (held && (held.item === 'torch' || held.item === 'fat_torch') && held.count > 0 &&
+      person.inventory.count(held.item) >= 1 && !(slot === 'left' && person.armsTaken > 0)) {
+      return { slot, kind: (held.lit ?? 0) > 0 ? 'torch' : 'torch_unlit' };
+    }
+  }
+  return null;
+}
+
+export function heldItemFor(person: Person, autoEquipTools = false, ignoreTorch = false): HeldItemKind | null {
+  const torch = heldTorchFor(person);
+  if (!ignoreTorch && torch) return torch.kind;
   // A worker holding both a spear and a spade must show the tool doing the
   // work. Ask the executor's selector so refinements choose the same tool.
   if (person.action === 'sow' && person.targetItemId === 'iron_plough') return 'iron_plough';

@@ -450,6 +450,14 @@ export const ITEMS: Record<string, ItemDef> = {
     weapon: { damage: 0.95, reach: 0.65, hunt: 1.55, tech: 'carburising' },
     class: 'long', hand: { perHand: 1, perArms: 1, hands: 1 },
   },
+  // M15 phase 12d: hunted deer and boar yield edible fat, which can instead
+  // buy three times as much carried light as a stick-and-thatch torch.
+  fat: { id: 'fat', label: 'Fat', nutrition: 18, spoilTicks: 2400, baseValue: 3,
+    macros: { fat: 0.9, protein: 0.08, carb: 0.02 }, class: 'food', hand: { perHand: 2, perArms: 6, hands: 1 } },
+  torch: { id: 'torch', label: 'Torch', nutrition: 0, spoilTicks: 0, baseValue: 5,
+    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 } },
+  fat_torch: { id: 'fat_torch', label: 'Fat torch', nutrition: 0, spoilTicks: 0, baseValue: 8,
+    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 } },
 };
 
 export class Inventory {

@@ -13,7 +13,7 @@ import { CORD, STONE, STONE_D, WOOD, WOOD_D } from './items.ts';
 export const HAND: readonly [number, number] = [48, 48];
 
 /** What the sim can put in a hand today, plus the torch phase 12 adds. */
-export const HELD_KINDS = ['spear', 'bow', 'atlatl', 'sling', 'bone_point', 'copper_dagger', 'bronze_sword', 'handaxe', 'net', 'basket', 'torch', 'antler_pick', 'spade', 'bronze_spade', 'iron_spade', 'iron_plough', 'digging_stick'] as const;
+export const HELD_KINDS = ['spear', 'bow', 'atlatl', 'sling', 'bone_point', 'copper_dagger', 'bronze_sword', 'handaxe', 'net', 'basket', 'torch', 'torch_unlit', 'antler_pick', 'spade', 'bronze_spade', 'iron_spade', 'iron_plough', 'digging_stick'] as const;
 export type HeldKind = (typeof HELD_KINDS)[number];
 
 /** `side` is true when seen from the east or west. */
@@ -109,6 +109,11 @@ export function heldSvg(kind: HeldKind, side: boolean): string {
         + ell(tx, y - 15, 2.8, 3.6, '#4a3020', WOOD_D)
         + shape(smooth([[tx, y - 31], [tx + 4.6, y - 23], [tx + 3, y - 18], [tx - 2, y - 18], [tx - 3.6, y - 23]]), '#f2a03a', '#7a2f10')
         + shape(smooth([[tx, y - 26], [tx + 2.4, y - 22], [tx + 1.4, y - 19], [tx - 0.6, y - 19], [tx - 1.6, y - 22]]), '#ffe08a');
+    }
+    case 'torch_unlit': {
+      const tx = x + (side ? 1 : 0);
+      return limb([[x, y + 9], [tx, y - 14]], 2.4, WOOD, WOOD_D)
+        + ell(tx, y - 15, 2.8, 3.6, '#4a3020', WOOD_D);
     }
   }
 }

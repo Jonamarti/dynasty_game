@@ -26,6 +26,42 @@ describe('local light readers', () => {
     expect(sim.sightOf(person)).toBe(night);
   });
 
+  it('reads a moving torch from the live person hash for light and wildlife fire range', () => {
+    const sim = fixture(), [carrier, observer] = sim.livingPeople();
+    sim.time.tick = 0;
+    carrier!.x = 12; carrier!.y = 12;
+    observer!.x = 13.5; observer!.y = 12;
+    carrier!.inventory.add('torch', 1);
+    carrier!.equipment.left = { item: 'torch', count: 1, lit: 3 };
+    sim.peopleHash.rebuild([carrier!, observer!]);
+    expect(sim.lightAt(carrier!.x, carrier!.y)).toBe(1);
+    expect(sim.lightAt(observer!.x, observer!.y)).toBeGreaterThan(0);
+    expect(sim.litNear(observer!.x, observer!.y, 1)).toBe(true);
+    carrier!.x = 30; carrier!.y = 30;
+    sim.peopleHash.rebuild([carrier!, observer!]);
+    expect(sim.lightAt(observer!.x, observer!.y)).toBe(0);
+    expect(sim.litNear(observer!.x, observer!.y, 1)).toBe(false);
+    carrier!.equipment.left!.lit = 0;
+    carrier!.x = 13.5; carrier!.y = 12;
+    sim.peopleHash.rebuild([carrier!, observer!]);
+    expect(sim.lightAt(observer!.x, observer!.y)).toBe(0);
+    expect(sim.litNear(observer!.x, observer!.y, 1)).toBe(false);
+  });
+
+  it('does not treat an unowned or baby-occupied torch slot as a light source', () => {
+    const sim = fixture(), [carrier, observer] = sim.livingPeople();
+    sim.time.tick = 0;
+    carrier!.x = observer!.x = 12; carrier!.y = observer!.y = 12;
+    carrier!.equipment.left = { item: 'torch', count: 1, lit: 10 };
+    sim.peopleHash.rebuild([carrier!, observer!]);
+    expect(sim.lightAt(observer!.x, observer!.y)).toBe(0);
+    carrier!.inventory.add('torch', 1);
+    carrier!.armsTaken = 1;
+    expect(sim.lightAt(observer!.x, observer!.y)).toBe(0);
+    carrier!.equipment.right = { item: 'torch', count: 1, lit: 10 };
+    expect(sim.lightAt(observer!.x, observer!.y)).toBe(1);
+  });
+
   it('an observer misses a distant deed at night and sees it by day; the victim always knows', () => {
     const sim = fixture();
     const [actor, victim, observer] = sim.livingPeople();
@@ -69,5 +105,17 @@ describe('local light readers', () => {
     const sight = loaded.sightOf(person);
     loaded.time.tick = loaded.config.time.ticksPerDay / 2;
     expect(loaded.sightOf(person)).toBe(sight);
+  });
+
+  it('migrates only the older complete light config by adding torch durations', () => {
+    const sim = fixture();
+    const record = JSON.parse(JSON.stringify(toCheckpointRecord(sim)));
+    delete record.config.light.torchTicks;
+    delete record.config.light.fatTorchTicks;
+    const loaded = Simulation.fromCheckpointRecord(record);
+    expect(loaded.config.light).toMatchObject({ torchTicks: 20, fatTorchTicks: 60, enabled: true });
+    const malformed = JSON.parse(JSON.stringify(record));
+    delete malformed.config.light.huntDark;
+    expect(() => Simulation.fromCheckpointRecord(malformed)).toThrow();
   });
 });

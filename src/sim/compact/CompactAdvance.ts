@@ -28,6 +28,7 @@ import type { Person } from '../entities/Person.ts';
 import type { Household } from '../entities/Household.ts';
 import { LifeSystem, roofOverSleeper } from '../systems/LifeSystem.ts';
 import { TimeManager } from '../core/TimeManager.ts';
+import { advanceTorchBurn } from '../core/Torch.ts';
 import { NeedsSystem, thirstDriftPerTick, type NeedsHooks } from '../systems/NeedsSystem.ts';
 import type { Building } from '../entities/Building.ts';
 import type { World } from '../core/World.ts';
@@ -109,6 +110,7 @@ export class CompactBody {
     for (let tick = compact.lastAdvancedTick + 1; tick <= toTick; tick++) {
       if (!person.alive) break;
       this.clock.tick = tick;
+      advanceTorchBurn(person);
       const intake = this.env.intake;
       if (intake) {
         const tpd = this.env.time.ticksPerDay;

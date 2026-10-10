@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { lightAt, hearthLight, sourceLightAt } from '../core/Light.ts';
+import { lightAt, hearthLight, sourceLightAt, torchLight } from '../core/Light.ts';
 import { SpatialHash } from '../core/SpatialHash.ts';
 import { Building, BUILDINGS } from '../entities/Building.ts';
+import type { Person } from '../entities/Person.ts';
 
 describe('measured local light', () => {
   it('uses daylight away from sources and linear falloff around a real hearth', () => {
@@ -31,5 +32,24 @@ describe('measured local light', () => {
     }
     expect(lightAt(12, 10, 0, hash)).toBe(0.5);
     expect(sourceLightAt({ x: 0, y: 0, radius: 0, strength: 1 }, 0, 0)).toBe(0);
+  });
+
+  it('follows a living carrier only while an equipped torch has fuel', () => {
+    const person = {
+      id: 7, x: 10, y: 10, alive: true,
+      armsTaken: 0,
+      inventory: { count: () => 1 },
+      equipment: { left: { item: 'torch', count: 1, lit: 2 } },
+    } as unknown as Person;
+    const people = new SpatialHash<Person>(); people.insert(person);
+    const buildings = new SpatialHash<Building>();
+    expect(torchLight(person)).toEqual({ x: 10, y: 10, radius: 4, strength: 1 });
+    expect(lightAt(12, 10, 0, buildings, people)).toBe(0.5);
+    expect(lightAt(20, 10, 0, buildings, people)).toBe(0);
+    person.equipment.left!.lit = 0;
+    expect(lightAt(10, 10, 0, buildings, people)).toBe(0);
+    person.equipment.left!.lit = 10;
+    person.alive = false;
+    expect(torchLight(person)).toBeNull();
   });
 });

@@ -104,6 +104,12 @@ export function manualEquipRefusal(
     if ((slot === 'left' && person.armsTaken > 0) ||
       (slot === 'right' && person.armsTaken > 1)) return 'baby_uses_hand';
     if (def.hand.hands === 2 && (person.armsTaken > 0 || slot !== 'left')) return 'hands_full';
+    // Manual equipment can normally replace a fitted object, but a lit torch
+    // is a live fuel record. Dropping its inventory copy would silently erase
+    // the flame and reset the visible countdown.
+    const targets = def.hand.hands === 2 ? ['left', 'right'] as const : [slot] as const;
+    if (targets.some(target => person.equipment[target]?.item !== itemId &&
+      (person.equipment[target]?.lit ?? 0) > 0)) return 'hands_full';
   }
   if (person.equipment[slot]?.item === itemId &&
     (slot === 'back' || def.hand.hands === 1 || person.equipment.left?.item === itemId &&
@@ -140,6 +146,7 @@ export function equipItemInSlot(
 
   const desired = ITEMS[itemId]!;
   const wasEquipped = Object.values(person.equipment).some(entry => entry?.item === itemId);
+  const prior = Object.values(person.equipment).find(entry => entry?.item === itemId);
   const targets: ManualEquipmentSlot[] = slot === 'back' || desired.hand.hands === 1
     ? [slot] : ['left', 'right'];
   const displaced = new Set<string>();
@@ -173,7 +180,8 @@ export function equipItemInSlot(
     dropAt(person.x, person.y, displacedId, count);
   }
   if (desired.container && !wasEquipped) person.carryContainerCapacity += desired.container.capacity;
-  for (const target of targets) person.equipment[target] = { item: itemId, count: 1 };
+  for (const target of targets) person.equipment[target] = prior
+    ? { ...prior, count: 1 } : { item: itemId, count: 1 };
   if (displaced.size > 0) reconcileCarry(person, config, dropAt);
   return null;
 }
@@ -198,6 +206,12 @@ export function equipFor(
   const displaced = new Set<string>();
 
   if (desiredHands > 2 - person.armsTaken) return { changed: false, reason: 'hands_full' };
+  // With a baby occupying the other arm, fitting a tool would discard the
+  // only usable hand's burning fuel record. Refuse before changing any slot.
+  if (desired && person.armsTaken === 1 &&
+    Object.values(person.equipment).some(entry => (entry?.lit ?? 0) > 0)) {
+    return { changed: false, reason: 'hands_full' };
+  }
 
   // A two-handed load occupies both hands even though its fitted container is
   // represented in one slot. Clear it before deciding whether a one-handed
@@ -224,6 +238,7 @@ export function equipFor(
     for (const slot of ['left', 'right'] as const) {
       const equipped = person.equipment[slot];
       if (!equipped) continue;
+      if ((equipped.lit ?? 0) > 0) continue;
       delete person.equipment[slot];
       displaced.add(equipped.item);
       changed = true;
@@ -243,13 +258,23 @@ export function equipFor(
     }
     // Prefer an empty hand so swapping one tool does not drop the other. If
     // both are occupied, replace the right hand consistently.
-    targets.push(!person.equipment.right ? 'right' : !person.equipment.left ? 'left' : 'right');
+    targets.push(!person.equipment.right ? 'right' : !person.equipment.left ? 'left' :
+      (person.equipment.right?.lit ?? 0) > 0 ? 'left' : 'right');
   } else if (person.equipment.left?.item === desired && person.equipment.right?.item === desired) {
     const changed = displaced.size > 0;
     dropItems(person, displaced, config, dropAt);
     return { changed, reason: null };
   } else if (desiredHands === 2) {
+    if ((person.equipment.left?.lit ?? 0) > 0 || (person.equipment.right?.lit ?? 0) > 0) {
+      return { changed: false, reason: 'hands_full' };
+    }
     targets.push('left', 'right');
+  }
+
+  // If both hands carry a live flame, an action that needs another tool waits
+  // instead of dropping either fuel record behind the person's back.
+  if (targets.some(slot => (person.equipment[slot]?.lit ?? 0) > 0)) {
+    return { changed: false, reason: 'hands_full' };
   }
 
   // The baby already owns one arm. Keeping a second fitted object beside a

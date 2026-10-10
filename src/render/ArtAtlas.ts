@@ -48,6 +48,8 @@ export interface PersonAspect {
   wear: WornGarments;
   carryBaby: boolean;
   held: string | null;
+  /** A second observed object uses the other hand's existing rig anchor. */
+  heldLeft?: string | null;
   /**
    * The belly of the last third of a pregnancy (M15 phase 19c). Optional so
    * every aspect written before it keeps meaning what it meant.
@@ -139,7 +141,7 @@ export class ArtAtlas {
     return [
       a.age, a.sex, a.dir, a.pose, a.skin, a.hair, a.band, a.hairStyle, a.beard ? 'b' : '-', a.expression,
       w.torso ?? '', w.legs ?? '', w.feet ?? '', w.hands ?? '', w.head ?? '', w.cloak ?? '',
-      a.carryBaby ? 'c' : '', a.held ?? '', a.belly ? 'belly' : '',
+      a.carryBaby ? 'c' : '', a.held ?? '', a.heldLeft ?? '', a.belly ? 'belly' : '',
     ].join('|');
   }
 
@@ -188,10 +190,12 @@ export class ArtAtlas {
       if (variant === null) continue;
       const dy = GROUNDED.test(slot) ? 0 : anchor.bob;
       if (slot === 'held') {
-        if (!a.held) continue;
-        const hk = `held/${a.held}/${dir === 'E' ? 'E' : 'S'}`;
         const hand = this.props.meta['handAnchor'] as [number, number];
-        layers.push({ manifest: this.props, key: hk, tint: null, dx: anchor.hr[0] - hand[0], dy: anchor.hr[1] - hand[1] + dy });
+        for (const [item, at] of [[a.heldLeft, anchor.hl], [a.held, anchor.hr]] as const) {
+          if (!item) continue;
+          const hk = `held/${item}/${dir === 'E' ? 'E' : 'S'}`;
+          layers.push({ manifest: this.props, key: hk, tint: null, dx: at[0] - hand[0], dy: at[1] - hand[1] + dy });
+        }
         continue;
       }
       if (a.carryBaby && carrySlots.has(slot)) variant += CARRY_SUFFIX;

@@ -88,9 +88,18 @@ function copyConfig(input: unknown): SimConfig {
   if (object(input) && !Object.hasOwn(input, 'light')) {
     input = { ...input, light: { ...DEFAULT_CONFIG.light, enabled: false } };
   }
+  // 12d adds carried torch durations. Migrate only the exact older light
+  // shape so malformed partial configs still fail validation below.
+  if (object(input) && object(input.light) &&
+      Object.keys(input.light).sort().join(',') === 'enabled,fineWorkDark,huntDark,nightFloor') {
+    input = { ...input, light: { ...DEFAULT_CONFIG.light, ...input.light } };
+  }
   const config = visit(input, DEFAULT_CONFIG, 'config') as SimConfig;
   for (const value of [config.light.nightFloor, config.light.fineWorkDark, config.light.huntDark]) {
     if (value > 1) invalid('light factors must be between zero and one');
+  }
+  for (const value of [config.light.torchTicks, config.light.fatTorchTicks]) {
+    if (!Number.isSafeInteger(value) || value <= 0) invalid('torch fuel must be a positive whole number of ticks');
   }
   for (const value of [config.thinkInterval, config.otherBandThinkInterval, config.time.ticksPerDay, config.time.daysPerSeason,
     config.time.maxTicksPerFrame, config.world.width, config.world.height, config.world.chunkSize]) {

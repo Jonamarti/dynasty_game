@@ -765,6 +765,15 @@ export const RECIPES: Record<string, RecipeDef> = {
     workTicks: 130, ingredients: { steel: 1 }, output: { steel_sword: 1 },
     station: 'anvil', keep: 1,
   },
+  // M15 phase 12d: both recipes make an unlit, hand-held light source.
+  torch: {
+    id: 'torch', label: 'Torch', icon: '\u{1F525}', tech: 'firemaking', skill: 'build',
+    workTicks: 20, ingredients: { sticks: 1, thatch: 1 }, output: { torch: 1 }, keep: 1,
+  },
+  fat_torch: {
+    id: 'fat_torch', label: 'Fat torch', icon: '\u{1F525}', tech: 'firemaking', skill: 'build',
+    workTicks: 60, ingredients: { sticks: 1, fat: 1 }, output: { fat_torch: 1 }, keep: 1,
+  },
 };
 
 /** Every item any recipe can produce. Used by the "is this reachable?" tests. */

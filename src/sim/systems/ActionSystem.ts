@@ -106,10 +106,13 @@ import { support } from '../social/Persuasion.ts';
 import { swimRefusal, swimRouteRefusal } from '../core/Swimming.ts';
 import { canWork } from '../knowledge/Ore.ts';
 import { houseInteriorContains, sleepQualityAt } from '../world/HouseInterior.ts';
+import { igniteTorch, TORCH_IGNITION_TICKS } from '../core/Torch.ts';
 
 export interface ActionContext {
   fineWorkPace?: (person: Person) => number;
   huntLightFactor?: (person: Person) => number;
+  /** A completed, unruined hearth within lighting reach. */
+  hearthNear?: (x: number, y: number, radius: number) => boolean;
   comarcaTravel?: ComarcaTravel;
   world: World;
   movement: MovementSystem;
@@ -166,6 +169,7 @@ export interface ActionContext {
   /** Fatal cold/fatigue threshold for swimming. */
   drownAt?: number;
   carry: CarryConfig;
+  light?: { torchTicks: number; fatTorchTicks: number };
   motivation: MotivationConfig;
   /** Existing order authority, reused for requests to join a project. */
   persuasionAuthority?: (sponsor: Person, listener: Person) => number;
@@ -799,6 +803,7 @@ export class ActionSystem {
       case 'equip_back': this.doManualEquip(person, ctx); break;
       case 'wear_garment':
       case 'take_off_garment': this.doChangeGarment(person, ctx); break;
+      case 'light_torch': this.doLightTorch(person, ctx); break;
       case 'shelter': this.doShelter(person, ctx); break;
       case 'sleep': this.doSleep(person, ctx); break;
       case 'talk': this.doTalk(person, ctx); break;
@@ -1614,6 +1619,61 @@ export class ActionSystem {
       return;
     }
     telemetry.count(verb === 'wear_garment' ? 'garment_worn' : 'garment_taken_off');
+    this.finish(person);
+  }
+
+  /** Three interruptible work ticks to light a torch at a real hearth. */
+  private doLightTorch(person: Person, ctx: ActionContext): void {
+    const itemId = person.targetItemId;
+    if (itemId !== 'torch' && itemId !== 'fat_torch') {
+      this.abandon(person, 'torch_order_lost', ctx);
+      return;
+    }
+    if (!ctx.hearthNear?.(person.x, person.y, 2)) {
+      this.abandon(person, 'no_fire_near', ctx);
+      return;
+    }
+    if (person.inventory.count(itemId) <= 0) {
+      this.abandon(person, 'torch_not_owned', ctx);
+      return;
+    }
+    const heldSlot = (['left', 'right'] as const).find(slot => person.equipment[slot]?.item === itemId);
+    if (heldSlot && (person.equipment[heldSlot]!.lit ?? 0) > 0) {
+      this.abandon(person, 'torch_already_lit', ctx);
+      return;
+    }
+    if (!heldSlot && (person.armsTaken >= 2 || person.equipment.left && person.equipment.right)) {
+      this.abandon(person, 'no_free_hand', ctx);
+      return;
+    }
+    const interrupted = this.interruption(person, ctx, { ignoreLaden: true, answers: 'cold' });
+    if (interrupted) {
+      this.stop(person, interrupted, ctx);
+      return;
+    }
+    if (person.toolChangeAction !== 'light_torch') {
+      person.toolChangeAction = 'light_torch';
+      person.toolChangeTicks = TORCH_IGNITION_TICKS - 1;
+      person.actionTimer = person.toolChangeTicks;
+      person.actionTotal = TORCH_IGNITION_TICKS;
+    } else if (person.toolChangeTicks > 0) {
+      person.toolChangeTicks--;
+      person.actionTimer = person.toolChangeTicks;
+    }
+    person.workedTicks++;
+    person.practice('build', 0.2);
+    if (person.toolChangeTicks > 0) return;
+
+    const ticks = itemId === 'fat_torch'
+      ? (ctx.light?.fatTorchTicks ?? 60) : (ctx.light?.torchTicks ?? 20);
+    const refusal = igniteTorch(person, itemId, ticks);
+    if (refusal) {
+      this.abandon(person, refusal, ctx);
+      return;
+    }
+    person.beliefs.learn('light:torch', 0.7, 0.25, 'own', ctx.tick);
+    if (person.needs.cold > 0) person.beliefs.learn('warm:torch', 0.2, 0.25, 'own', ctx.tick);
+    telemetry.count('torch_lit_' + itemId);
     this.finish(person);
   }
 
@@ -3126,6 +3186,20 @@ export class ActionSystem {
       telemetry.count('harvest_hide');
     } else {
       ctx.dropAt(animal.x, animal.y, 'hide', 1);
+    }
+
+    // Deer and wild boar are the reliable fat sources. Their fixed yields keep
+    // this harvest addition from consuming another draw from the hunt stream.
+    const fatYield = animal.species === 'deer' ? 1 : animal.species === 'boar' ? 2 : 0;
+    if (fatYield > 0) {
+      const fatRoom = Math.max(0, Math.min(person.carryCapacity - person.carrying,
+        itemCapacityFor(person, ctx.carry, 'fat') - person.inventory.count('fat')));
+      const fatTaken = Math.min(fatYield, fatRoom);
+      if (fatTaken > 0) {
+        person.inventory.add('fat', fatTaken);
+        telemetry.count('harvest_fat', fatTaken);
+      }
+      if (fatTaken < fatYield) ctx.dropAt(animal.x, animal.y, 'fat', fatYield - fatTaken);
     }
 
     // M8.1: bone and sinew, and only for a butcher who knows what they are for.
@@ -4703,6 +4777,12 @@ export class ActionSystem {
       person.inventory.add(itemId, count);
       equipContainer(person, itemId);
       person.handled.set(itemId, ctx.tick);
+    }
+    if (recipe.output.torch || recipe.output.fat_torch) {
+      // Making the design gives a first, tentative expectation; using it later
+      // replaces that prior with the person's own observed light and warmth.
+      person.beliefs.learn('light:torch', 0.35, 0.15, 'own', ctx.tick);
+      person.beliefs.learn('warm:torch', 0.2, 0.15, 'own', ctx.tick);
     }
     if (recipe.id === 'roast_meat' || recipe.id === 'roast_fish') {
       const raw = recipe.id === 'roast_meat' ? 'meat' : 'fish';
