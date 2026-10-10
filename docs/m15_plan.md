@@ -1837,6 +1837,15 @@ más arriba.
 
 ## Fase 17 — El arte: personas pre-renderizadas por capas (nota 6; decisión 9)
 
+**Avance 2026-10-10 — gesto de pesca.** Cuatro poses `f0`–`f3` generadas
+para pescar en un banco somero realmente alcanzado y en trabajo activo.
+Movimiento, agotamiento, preparación y cancelación retiran el gesto; pausa
+congela su reloj. 33 pruebas focales pasan y el navegador reporta su caso
+aprobado; el cierre del servidor de Playwright se atasca y fue interrumpido.
+Capturas revisadas: `artifacts/screenshots/m15-fishing-animation-2026-10-10/`.
+[Contrato](m15_fishing_animation.md). Continúan las otras familias de trabajo
+y el sueño animal real; no se cierra la fase.
+
 **Avance del 2026-10-03 (fabricación).** Cuatro poses `m0`–`m3` con mano de
 apoyo y pies plantados. Leen trabajo iniciado y estación válida, sin consultar
 inventario ni conocimientos privados. Arte generado, anclas/selector y e2e

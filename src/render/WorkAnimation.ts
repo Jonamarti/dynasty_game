@@ -2,7 +2,7 @@
 import type { Simulation } from '../sim/core/Simulation.ts';
 import type { Person } from '../sim/entities/Person.ts';
 import { ARRIVAL_RADIUS } from '../sim/systems/MovementSystem.ts';
-import { CHOP_POSES, DIG_POSES, GATHER_POSES, MAKE_POSES, type ArtPose } from './ArtManifest.ts';
+import { CHOP_POSES, DIG_POSES, FISH_POSES, GATHER_POSES, MAKE_POSES, type ArtPose } from './ArtManifest.ts';
 import { RECIPES } from '../sim/entities/Recipe.ts';
 
 /** Shared clock contract: two work ticks per frame, with a bounded accumulator. */
@@ -32,6 +32,19 @@ export function gatheringPose(
   // Two simulation ticks per pose. The accumulator's fraction freezes while
   // paused; wall time would keep picking even while the whole world stands still.
   return workFrame(GATHER_POSES, person.workedTicks, alpha);
+}
+
+/** Fishing has a low reaching pull, shown only at an active shallow-water shoal. */
+export function fishingPose(
+  person: Person, sim: Pick<Simulation, 'nodesById' | 'world'>,
+  moving: boolean, alpha = 1,
+): ArtPose | null {
+  if (moving || !person.alive || (person.action !== 'forage' && person.action !== 'gather') ||
+      person.actionTimer <= 0 || person.actionTotal <= 0 || person.workedTicks <= 0 || person.targetNodeId === null) return null;
+  const node = sim.nodesById.get(person.targetNodeId);
+  if (!node || node.kind !== 'fish' || node.depleted || person.distanceTo(node) >= ARRIVAL_RADIUS ||
+      !sim.world.isShallow(node.x, node.y)) return null;
+  return workFrame(FISH_POSES, person.workedTicks, alpha);
 }
 
 /** A digging gesture is shown only for real work at a reachable, valid tile. */

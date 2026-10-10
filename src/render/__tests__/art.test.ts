@@ -13,7 +13,7 @@ import { describe, expect, it } from 'vitest';
 import { ANIMAL_KINDS, ANIMAL_POSES } from '../../../art/src/animals/animals.ts';
 import { collectAnimals, collectBuildings, collectPeople, collectProps } from '../../../art/src/registry.ts';
 import { personLayers, type PersonSpec } from '../../../art/src/people/rig.ts';
-import { ART_AGES, ART_BAKED_DIRS, ART_POSES, ART_SEXES, CHOP_POSES, DIG_POSES, GATHER_POSES, MAKE_POSES, anchorKey, personKey, type ArtManifest, type PersonAnchors } from '../ArtManifest.ts';
+import { ART_AGES, ART_BAKED_DIRS, ART_POSES, ART_SEXES, CHOP_POSES, DIG_POSES, FISH_POSES, GATHER_POSES, MAKE_POSES, anchorKey, personKey, type ArtManifest, type PersonAnchors } from '../ArtManifest.ts';
 import { BUILDINGS } from '../../sim/entities/Building.ts';
 import { EXPRESSIONS } from '../../sim/core/Mood.ts';
 import { SPECIES } from '../../sim/entities/Animal.ts';
@@ -164,6 +164,24 @@ describe('art build', () => {
       const manifest = load('people');
       const anchors = manifest.meta['anchors'] as Record<string, PersonAnchors>;
       for (const pose of DIG_POSES) {
+        const frame = personLayers({ ...base, pose });
+        expect(grounded(frame)).toEqual(grounded(idle));
+        expect(anchors[anchorKey(age, sex, dir, pose, false)]).toEqual(frame.anchors);
+        expect([...frame.anchors.hr, ...frame.anchors.hl, frame.anchors.bob].every(Number.isFinite)).toBe(true);
+        hands.add(JSON.stringify(frame.anchors.hr));
+      }
+      expect(hands.size).toBe(4);
+    }
+  });
+
+  it('keeps fishing feet planted and gives every shallow-water pull a distinct anchor', () => {
+    for (const age of ART_AGES) for (const sex of ART_SEXES) for (const dir of ART_BAKED_DIRS) {
+      const base: PersonSpec = { age, sex, dir, pose: 'idle', wear: { torso: 'longtunic', hands: 'gloves' }, carry: false, hair: 'long', beard: false, expr: 'neutral' };
+      const idle = personLayers(base);
+      const grounded = (out: ReturnType<typeof personLayers>) => out.layers.filter(layer => /^(shadow|legs|trousers|feet)/.test(layer.slot));
+      const anchors = load('people').meta['anchors'] as Record<string, PersonAnchors>;
+      const hands = new Set<string>();
+      for (const pose of FISH_POSES) {
         const frame = personLayers({ ...base, pose });
         expect(grounded(frame)).toEqual(grounded(idle));
         expect(anchors[anchorKey(age, sex, dir, pose, false)]).toEqual(frame.anchors);

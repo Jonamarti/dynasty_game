@@ -3908,6 +3908,17 @@ Added the moods-move-choices health check, comparing talk frequency in the low a
 
 # Changelog
 
+## 2026-10-10 — M15 17: gesto visible de pesca somera
+
+La pesca activa ya tiene cuatro poses generadas de alcance y recogida, con
+pies plantados y herramientas visibles. El selector reconoce trabajo real
+y descarta viaje, preparación, agotamiento y cancelación sin leer inventario
+privado ni cambiar la simulación/RNG. Typecheck y 33 focales pasan. El caso
+e2e reporta éxito, aunque se interrumpió el runner atascado cerrando Vite;
+no se declara e2e global verde. Capturas revisadas y conservadas:
+`artifacts/screenshots/m15-fishing-animation-2026-10-10/`.
+Versión 0.15.10-alpha; [contrato](m15_fishing_animation.md).
+
 ## 2026-10-10 — M15 29c/33: elegir el mapa terrestre inicial
 
 El atlas tenía dos mapas y el arranque siempre instalaba el recomendado.

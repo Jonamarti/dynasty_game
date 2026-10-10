@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Person } from '../../sim/entities/Person.ts';
 import { RNG } from '../../sim/core/RNG.ts';
-import { diggingPose, gatheringPose } from '../WorkAnimation.ts';
+import { diggingPose, fishingPose, gatheringPose } from '../WorkAnimation.ts';
 import type { Simulation } from '../../sim/core/Simulation.ts';
 
 function fixture() {
@@ -142,5 +142,54 @@ describe('digging animation', () => {
     expect(diggingPose(person, sim, false, 1)).toBe('d1');
     expect(diggingPose(person, sim, false, 50)).toBe('d1');
     expect(diggingPose(person, sim, false, -50)).toBe('d0');
+  });
+});
+
+describe('fishing animation', () => {
+  function fishingFixture() {
+    const person = new Person('Fisher', 4, 4, 0, new RNG('fishing-animation'));
+    person.action = 'forage'; person.targetNodeId = 1;
+    person.actionTimer = 10; person.actionTotal = 10; person.workedTicks = 1;
+    const node = { x: 4.3, y: 4, kind: 'fish', depleted: false };
+    const sim = { nodesById: new Map([[1, node]]), world: { isShallow: () => true } } as unknown as Pick<Simulation, 'nodesById' | 'world'>;
+    return { person, node, sim };
+  }
+
+  it('cycles four shallow-water pulls using work progress only', () => {
+    const { person, sim } = fishingFixture();
+    expect([1, 3, 5, 7, 9].map(ticks => {
+      person.workedTicks = ticks;
+      return fishingPose(person, sim, false, 0);
+    })).toEqual(['f0', 'f1', 'f2', 'f3', 'f0']);
+    expect(person.actionTimer).toBe(10);
+    expect([person.x, person.y]).toEqual([4, 4]);
+  });
+
+  it('does not show a pull while travelling, away, stopped, dead, depleted or outside the shallows', () => {
+    const { person, node, sim } = fishingFixture();
+    expect(fishingPose(person, sim, true)).toBeNull();
+    person.x = 8;
+    expect(fishingPose(person, sim, false)).toBeNull();
+    person.x = 4; person.actionTimer = 0;
+    expect(fishingPose(person, sim, false)).toBeNull();
+    person.actionTimer = 10; person.workedTicks = 0;
+    expect(fishingPose(person, sim, false)).toBeNull();
+    person.workedTicks = 1; person.alive = false;
+    expect(fishingPose(person, sim, false)).toBeNull();
+    person.alive = true; node.depleted = true;
+    expect(fishingPose(person, sim, false)).toBeNull();
+    node.depleted = false;
+    sim.world.isShallow = () => false;
+    expect(fishingPose(person, sim, false)).toBeNull();
+  });
+
+  it('freezes with the simulation fraction and ignores non-fish forage targets', () => {
+    const { person, node, sim } = fishingFixture(); person.workedTicks = 2;
+    expect(fishingPose(person, sim, false, 0.5)).toBe('f0');
+    expect(fishingPose(person, sim, false, 0.5)).toBe('f0');
+    expect(fishingPose(person, sim, false, 1)).toBe('f1');
+    expect(fishingPose(person, sim, false, 20)).toBe('f1');
+    node.kind = 'flint';
+    expect(fishingPose(person, sim, false)).toBeNull();
   });
 });

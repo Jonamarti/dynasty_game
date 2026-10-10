@@ -1,4 +1,4 @@
-/** M15 phase 27c: a real shallow-water pull with a fitted spear and its tech-web explanation. */
+/** M15 phases 17 and 27c: animate a real shallow-water pull and show its harpoon bonus. */
 import { mkdirSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
 
@@ -14,7 +14,7 @@ test('a fitted spear harvests a real shoal and the tech web explains the harpoon
   await page.locator('.hud-button', { hasText: 'Pause' }).click();
   await page.waitForFunction(() => !!(window as any).__dynasty?.renderer?.art);
 
-  const caught = await page.evaluate(() => {
+  const fishing = await page.evaluate(() => {
     const d = (window as any).__dynasty, sim = d.sim, person = sim.player, world = sim.world;
     if (!person) throw new Error('No player fixture');
     const fish = sim.nodes.filter((node: any) => node.kind === 'fish' && !node.depleted &&
@@ -31,6 +31,21 @@ test('a fitted spear harvests a real shoal and the tech web explains the harpoon
     person.equipment = { right: { item: 'spear', count: 1 } };
     const before = person.inventory.count('fish');
     if (!sim.order(person, 'forage', { nodeId: fish.id })) throw new Error('Simulation refused shallow fishing order');
+    for (let tick = 0; tick < 40 && person.workedTicks <= 0; tick++) sim.step();
+    if (person.workedTicks <= 0 || person.action !== 'forage') throw new Error('The shoal order never entered active work');
+    d.camera.zoom = 7.5; d.camera.snapTo(person.x, person.y); d.camera.following = false;
+    d.renderer.fogEnabled = false; d.renderer.interpolator.clear();
+    d.renderer.render(null, 0);
+    return { before, spear: person.inventory.count('spear'), fitted: person.equipment.right?.item === 'spear',
+      shallow: world.isShallow(person.x, person.y) };
+  });
+  expect(fishing).toMatchObject({ spear: 1, fitted: true, shallow: true });
+  if (SHOTS) mkdirSync(SHOTS, { recursive: true });
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/00-shallow-water-fishing-pose.png` });
+
+  const caught = await page.evaluate(() => {
+    const d = (window as any).__dynasty, sim = d.sim, person = sim.player, world = sim.world;
+    const before = person.inventory.count('fish');
     for (let tick = 0; tick < 120 && person.inventory.count('fish') <= before; tick++) sim.step();
     const amount = person.inventory.count('fish') - before;
     if (amount <= 0) throw new Error('The ordered shoal pull did not yield a fish');
@@ -47,7 +62,6 @@ test('a fitted spear harvests a real shoal and the tech web explains the harpoon
   expect(caught).toMatchObject({ spear: 1, fitted: true, shallow: true });
   expect(caught.amount).toBeGreaterThan(0);
 
-  if (SHOTS) mkdirSync(SHOTS, { recursive: true });
   await page.locator('.hud-tab[data-tab="kit"]').click();
   await expect(page.locator('.hud-tab[data-tab="kit"]')).toHaveClass(/is-active/);
   await expect(page.locator('#hud')).toContainText('Fish');
