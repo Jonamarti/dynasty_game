@@ -1,4 +1,5 @@
 import { canUseBoat, canUseLogboat, canUseRaft } from '../core/Raft.ts';
+import { saltSourceNear } from '../core/Preservation.ts';
 /**
  * Every verb in the game, and when it applies.
  *
@@ -159,7 +160,7 @@ export interface CatalogContext {
    * Optional so that the tests and the e2e specs which build a context by hand
    * keep compiling; a context without it simply offers no station recipes.
    */
-  stationFor?: (stationId: string, requiresFire?: boolean) => Building | null;
+  stationFor?: (stationId: string, requiresFire?: boolean, requiresSaltWater?: boolean) => Building | null;
   hearthNear?: (x: number, y: number, radius: number) => boolean;
   /**
    * Whether a building stands on a point. Handed in, like `stationFor`, because
@@ -1631,7 +1632,7 @@ function craftOption(
 ): ActionOption {
   const station = recipe.station === undefined
     ? null
-    : at ?? ctx.stationFor?.(recipe.station, recipe.requiresFire) ?? null;
+    : at ?? ctx.stationFor?.(recipe.station, recipe.requiresFire, recipe.requiresSaltWater) ?? null;
   const label = recipe.station === undefined
     ? t('Make {thing}', { thing: aNoun(recipe.label.toLowerCase()) })
     : t('Make {thing}', { thing: t(recipe.label).toLowerCase() });
@@ -1650,6 +1651,10 @@ function craftOption(
   if (recipe.requiresFire && station && !ctx.hearthNear?.(station.centerX, station.centerY, 3)) {
     return { id: 'craft', recipeId: recipe.id, buildingId: station.id, label, icon: recipe.icon,
       enabled: false, reason: t('You need a lit hearth nearby') };
+  }
+  if (recipe.requiresSaltWater && station && !saltSourceNear(ctx.world, station.x, station.y, station.def.width, station.def.height)) {
+    return { id: 'craft', recipeId: recipe.id, buildingId: station.id, label, icon: recipe.icon,
+      enabled: false, reason: t('You need salt water nearby') };
   }
   const ready = hasIngredients(actor.inventory, recipe);
   return {

@@ -1,4 +1,5 @@
 import { canUseBoat, sameBoatRouteFor } from '../core/Raft.ts';
+import { saltSourceNear } from '../core/Preservation.ts';
 import { edgeOfTile } from '../world/ComarcaNeighbour.ts';
 import type { ComarcaTravel } from '../world/ComarcaTravel.ts';
 /**
@@ -4740,6 +4741,10 @@ export class ActionSystem {
       // This happens before banking or consuming anything, and drying stays fire-free.
       if (recipe.requiresFire && !ctx.hearthNear?.(station.centerX, station.centerY, 3)) {
         this.abandon(person, 'no_fire_near', ctx);
+        return;
+      }
+      if (recipe.requiresSaltWater && !saltSourceNear(ctx.world, station.x, station.y, station.def.width, station.def.height)) {
+        this.abandon(person, 'no_salt_water', ctx);
         return;
       }
     }

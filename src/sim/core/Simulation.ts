@@ -133,6 +133,7 @@ import { stepMark } from './StepProbe.ts';
 import { approachComarcaEdge, type ComarcaTravel } from '../world/ComarcaTravel.ts';
 import { applyHouseWalls, houseInteriorContains, houseInteriorTiles } from '../world/HouseInterior.ts';
 import { lightAt as measuredLightAt, lightFactor, torchLight, hearthNear } from './Light.ts';
+import { saltSourceNear } from './Preservation.ts';
 import { advanceTorchBurn, torchIgnitionRefusal, torchRefusalText, transferableUnits, burningTorchRefusalText } from './Torch.ts';
 import { edgeOfTile, type ComarcaEdge } from '../world/ComarcaNeighbour.ts';
 import type { ComarcaMigrationContext } from '../world/ComarcaMigration.ts';
@@ -4347,6 +4348,9 @@ export class Simulation {
         if (RECIPES[target.recipeId]?.requiresFire && !this.hearthNear(named.centerX, named.centerY, 3)) {
           return this.cancelOrder(person, t('You need a lit hearth nearby'));
         }
+        if (RECIPES[target.recipeId]?.requiresSaltWater && !saltSourceNear(this.world, named.x, named.y, named.def.width, named.def.height)) {
+          return this.cancelOrder(person, t('You need salt water nearby'));
+        }
       }
     }
 
@@ -4926,6 +4930,9 @@ export class Simulation {
     }
     if (def.placement === 'shore' && !this.touchesShore(def, x, y)) {
       return t('{thing} has to sit at the water\u2019s edge', { thing: aNoun(def.label.toLowerCase()) });
+    }
+    if (def.placement === 'salt_shore' && !saltSourceNear(this.world, x, y, def.width, def.height)) {
+      return t('You need salt water nearby');
     }
     // M8.2. A field is the second design with somewhere it has to be, and the
     // first whose requirement is about the ground rather than the map: open

@@ -1,5 +1,7 @@
 /** Spanish for actions. Keys are the English templates; see `i18n.ts`. */
 export const ES_ACTIONS: Record<string, string> = {
+  'You need salt water nearby': 'Necesitas agua salada cerca',
+  'there was no salt water nearby': 'no había agua salada cerca',
   'You need a tool: {tools}': 'Necesitas una herramienta: {tools}',
   "You no longer have that item": "Ya no tienes ese objeto",
   "That is not something you can equip": "No puedes equiparte ese objeto",

@@ -1,5 +1,13 @@
 /** Spanish for data. Keys are the English templates; see `i18n.ts`. */
 export const ES_DATA: Record<string, string> = {
+  'Salt': 'Sal',
+  'Salted meat': 'Carne salada',
+  'Salted fish': 'Pescado salado',
+  'Boil salt': 'Obtener sal por cocción',
+  'Salt meat': 'Salar carne',
+  'Salt fish': 'Salar pescado',
+  'Salt pan': 'Salina',
+  'Vessels at the saltwater edge for boiling brine beside a hearth.': 'Vasijas en la costa salada para hervir salmuera junto a una hoguera.',
   'Pemmican': 'Pemmican',
   'Make pemmican': 'Preparar pemmican',
   'Smoked meat': 'Carne ahumada',

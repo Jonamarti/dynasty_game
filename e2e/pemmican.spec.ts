@@ -1,5 +1,6 @@
 import { mkdirSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
+import { techsOfWeb } from '../src/sim/knowledge/Tech.ts';
 
 test('pemmican is made and preservation opens a populated Spanish web', async ({ page }) => {
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
@@ -29,7 +30,7 @@ test('pemmican is made and preservation opens a populated Spanish web', async ({
   await expect(page.locator('.techweb-crumbs')).toContainText('Conservación');
   await expect(page.locator('.techweb-node[data-tech="smoking"]')).toBeVisible();
   await expect(page.locator('.techweb-node[data-tech="pemmican"]')).toBeVisible();
-  await expect(page.locator('.techweb-node')).toHaveCount(3);
+  await expect(page.locator('.techweb-node')).toHaveCount(techsOfWeb('preservation').length + 1);
   await page.screenshot({ path: `${shots}/02-red-conservacion.png` });
   expect(errors).toEqual([]);
 });

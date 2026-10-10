@@ -42,6 +42,12 @@ const flame = (x: number, y: number, s = 1): string => shape(smooth([[x, y - 20 
 const smoke = (x: number, y: number): string => `<path d="M${x},${y}Q${x - 8},${y - 10} ${x},${y - 20}T${x + 2},${y - 40}" fill="none" stroke="rgba(230,230,230,0.5)" stroke-width="5" stroke-linecap="round"/>`;
 
 export const BUILDINGS: BuildingArt[] = [
+  ['salt_pan', 'Salina', 'saltmaking', 128, () =>
+    gShadow(64, 103, 52, 12)
+    + shape(poly([[12, 86], [62, 53], [116, 81], [66, 114]]), B.stone, B.L)
+    + [35, 76].map(x => ell(x, 77, 19, 11, B.clay, B.L)
+      + ell(x, 73, 16, 8, '#ddd7b9', '#8b7555')
+      + stroke(`M${x - 7},73L${x + 4},73M${x - 3},69L${x + 8},70`, '#faf5df', 2)).join('')],
   ['drying_rack', 'Secadero', 'preserving', 128, () =>
     gShadow(64, 104, 50, 9)
     + limb([[20, 105], [20, 30]], 5, WOOD, B.L)

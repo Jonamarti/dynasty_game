@@ -4421,3 +4421,9 @@ puerta preserving en main y dos hijos efectivos smoking/pemmican. Capturas,
 112 pruebas y contrato m15_phase15b_pemmican.md. Rutas múltiples de descubrimiento
 corregidas sin relajar synthesis. Salina/salazón, interiores y15d siguen abiertos;
 15c/cohortes diferidas.15b aún no completa.
+
+2026-10-10 — 15b salina y salazón implementadas: procedencia salada física,
+fuego/vasija retenida, sal real de valor25 y recetas salted_meat/salted_fish.
+Revalidación en orden/menú/IA/trabajo y razón visible al perder salmuera.
+107 pruebas focales y typecheck;2 casos browser correctos y capturas en
+m15_phase15b_salt.md. Interiores y15d siguen abiertos;15c/cohortes diferidas.

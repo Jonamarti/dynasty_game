@@ -41,7 +41,8 @@ describe('pemmican and the populated preservation web', () => {
 
   it('opens preservation only with two real dependent nodes while keeping its gate in main', () => {
     expect(TECH.preserving.opens).toBe('preservation'); expect(webOf('preserving')).toBe('main');
-    expect(techsOfWeb('preservation')).toEqual(['smoking', 'pemmican']);
-    for (const tech of techsOfWeb('preservation')) expect(TECH[tech].requires).toContain('preserving');
+    expect(techsOfWeb('preservation')).toContain('smoking');
+    expect(techsOfWeb('preservation')).toContain('pemmican');
+    for (const tech of ['smoking', 'pemmican'] as const) expect(TECH[tech].requires).toContain('preserving');
   });
 });

@@ -6,6 +6,16 @@ export type ItemArt = [id: string, label: string, tech: string, draw: () => stri
 export const WOOD = '#86633c', WOOD_D = '#3a2716', STONE = '#a9adb0', STONE_D = '#3d4244', BONE = '#e6dcc0', BONE_D = '#7a6d4e', CORD = '#c9b27f';
 const rot = (inner: string, deg: number, cx = 32, cy = 32): string => `<g transform="rotate(${deg} ${cx} ${cy})">${inner}</g>`;
 export const ITEMS: ItemArt[] = [
+  ['salt', 'Sal', 'saltmaking', () =>
+    shape(poly([[10, 47], [20, 32], [30, 20], [44, 30], [55, 48]]), '#ece9dc', '#8b8879')
+    + stroke('M20,32L30,43L44,30M30,20L30,43L55,48', '#bcb9aa', 1.3)],
+  ['salted_meat', 'Carne salada', 'salting', () =>
+    shape(smooth([[10, 31], [22, 15], [46, 19], [55, 34], [42, 49], [17, 45]]), '#bd8062', '#593c2c')
+    + [19, 26, 34, 44].map(x => ell(x, 28 + x % 11, 2, 2, '#eee9da')).join('')],
+  ['salted_fish', 'Pescado salado', 'salting', () =>
+    shape(smooth([[8, 32], [19, 20], [37, 21], [49, 32], [37, 44], [19, 43]]), '#b0ac9b', '#575347')
+    + shape(poly([[46, 32], [58, 20], [58, 44]]), '#999585', '#575347')
+    + [23, 30, 37].map(x => ell(x, 30 + x % 7, 2, 2, '#f2eee1')).join('')],
   ['pemmican', 'Pemmican', 'pemmican', () =>
     ell(32, 50, 23, 5, 'rgba(0,0,0,0.18)')
     + shape(smooth([[9, 31], [19, 19], [42, 17], [55, 29], [49, 46], [25, 51], [12, 43]]), '#825433', '#3f291c')

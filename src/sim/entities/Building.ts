@@ -79,7 +79,7 @@ export interface BuildingDef {
    * to be in the water's edge, and a design whose whole point is the shore is
    * worse than useless in the middle of a field.
    */
-  placement?: 'shore' | 'arable';
+  placement?: 'shore' | 'arable' | 'salt_shore';
   /**
    * True if this is somewhere work is done rather than somewhere anybody lives.
    *
@@ -746,6 +746,12 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     materials: { wood: 2, rope: 2 }, workTicks: 120, shelter: 0, storage: 0,
     station: true, requiresTech: 'preserving',
     description: 'An open wooden frame for drying strips of meat and fish.',
+  },
+  salt_pan: {
+    id: 'salt_pan', label: 'Salt pan', icon: '🧂', width: 2, height: 2,
+    materials: { flint: 2, pottery: 2 }, workTicks: 140, shelter: 0, storage: 0,
+    station: true, requiresTech: 'saltmaking', placement: 'salt_shore',
+    description: 'Vessels at the saltwater edge for boiling brine beside a hearth.',
   },
 };
 

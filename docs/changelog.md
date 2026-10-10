@@ -14438,3 +14438,17 @@ E2E1 passed con salida limpia, captura Equipo y clic real a Conservación.
 Capturas: artifacts/screenshots/m15-phase15b-pemmican-2026-10-10/.
 Single-seed conserva dos fallos nombrados; tasa0 y cohortes siguen diferidas.
 No se afirma mejora de supervivencia ni cierre completo de15b.
+
+## 2026-10-10 — m15: salina costera y alimentos salados (0.15.35-alpha)
+
+Saltmaking y salting completan las técnicas de Conservación con lectores reales:
+sal de agua salada, hogar cercano y vasijas; sal consumida para conservar carne
+y pescado. El origen se valida por huella de estación, también durante el
+trabajo, para impedir sacar sal de río o continuar después de perder la fuente.
+La ficción potable de la isla clásica se conserva solo para beber; su costa
+sí suministra sal. Estación/objetos generados desde art/src y textos ES.
+Contrato docs/m15_phase15b_salt.md:107 pruebas focales, typecheck y2 E2E correctos;
+regresión negativa de ambos lectores salados. Capturas:
+artifacts/screenshots/m15-phase15b-salt-2026-10-10/.
+Single-seed conserva cravings-steer-the-diet/perf-budget; no cohorte ni mejora
+económica afirmada. Interiores/15d y activación medida siguen pendientes.

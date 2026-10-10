@@ -60,6 +60,7 @@ export interface RecipeDef {
   preservesInput?: string;
   /** Checked at the named station every tick, so a demolished fire stops the work. */
   requiresFire?: boolean;
+  requiresSaltWater?: boolean;
   output: Record<string, number>;
   /**
    * A `BUILDINGS` id this must be made at, or undefined for anywhere.
@@ -800,6 +801,13 @@ export const RECIPES: Record<string, RecipeDef> = {
     preservesInput: 'fish', requiresFire: true, keep: 4 },
   pemmican: { id: 'pemmican', label: 'Make pemmican', icon: '🥩', tech: 'pemmican', skill: 'cook',
     workTicks: 120, ingredients: { dried_meat: 2, fat: 1 }, output: { pemmican: 2 }, keep: 4 },
+  salt: { id: 'salt', label: 'Boil salt', icon: '🧂', tech: 'saltmaking', skill: 'cook',
+    workTicks: 160, ingredients: { sticks: 2 }, toolOptions: ['pottery'], output: { salt: 2 },
+    station: 'salt_pan', requiresFire: true, requiresSaltWater: true, keep: 4 },
+  salted_meat: { id: 'salted_meat', label: 'Salt meat', icon: '🥩', tech: 'salting', skill: 'cook',
+    workTicks: 100, ingredients: { meat: 2, salt: 1 }, output: { salted_meat: 2 }, preservesInput: 'meat', keep: 4 },
+  salted_fish: { id: 'salted_fish', label: 'Salt fish', icon: '🐟', tech: 'salting', skill: 'cook',
+    workTicks: 100, ingredients: { fish: 2, salt: 1 }, output: { salted_fish: 2 }, preservesInput: 'fish', keep: 4 },
 };
 
 /** Every item any recipe can produce. Used by the "is this reachable?" tests. */

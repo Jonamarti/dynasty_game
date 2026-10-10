@@ -1,5 +1,15 @@
 /** Spanish for tech. Keys are the English templates; see `i18n.ts`. */
 export const ES_TECH: Record<string, string> = {
+  'Saltmaking': 'Obtener sal',
+  'Salting food': 'Salar comida',
+  'noticed crystals left behind when brine dried in a vessel': 'observó los cristales que quedaban al secarse la salmuera en una vasija',
+  'thought of boiling seawater down to the crystals it left behind': 'pensó en hervir agua de mar hasta dejar solo sus cristales',
+  'rubbed fish with salt and found that it kept much longer': 'frotó pescado con sal y descubrió que duraba mucho más',
+  'wondered whether salt would keep meat from spoiling': 'se preguntó si la sal evitaría que la carne se estropease',
+  'Boil seawater in vessels at a salt pan beside a hearth.': 'Hervir agua de mar en vasijas en una salina junto a una hoguera.',
+  'Salt raw meat and fish to make the longest-lasting preserved foods.': 'Salar carne y pescado crudos para preparar los alimentos conservados más duraderos.',
+  'A salt pan at the sea edge, vessels and fire produce valuable salt.': 'Una salina en la costa, vasijas y fuego producen sal valiosa.',
+  'Salt keeps meat and fish longer than drying or smoking.': 'La sal conserva carne y pescado más tiempo que el secado o el ahumado.',
   'wanted a smaller, richer ration for the road': 'quería una ración más pequeña y nutritiva para el camino',
   'wondered whether smoke would help food keep longer': 'se preguntó si el humo ayudaría a conservar la comida',
   'thought of hanging fish on cord to keep them for another day': 'pensó en colgar pescado de una cuerda para conservarlo otro día',

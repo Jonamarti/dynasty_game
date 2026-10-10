@@ -477,6 +477,14 @@ export const ITEMS: Record<string, ItemDef> = {
   pemmican: { id: 'pemmican', label: 'Pemmican', nutrition: 60, spoilTicks: 120000,
     macros: { fat: 0.6, protein: 0.4, carb: 0 }, baseValue: 15,
     class: 'food', hand: { perHand: 3, perArms: 8, hands: 1 } },
+  salt: { id: 'salt', label: 'Salt', nutrition: 0, spoilTicks: 0, baseValue: 25,
+    class: 'small', hand: { perHand: 4, perArms: 10, hands: 1 } },
+  salted_meat: { id: 'salted_meat', label: 'Salted meat', nutrition: 30, spoilTicks: 240000,
+    macros: { fat: 0.45, protein: 0.55, carb: 0 }, baseValue: 12,
+    class: 'food', hand: { perHand: 3, perArms: 8, hands: 1 } },
+  salted_fish: { id: 'salted_fish', label: 'Salted fish', nutrition: 18, spoilTicks: 160000,
+    macros: { fat: 0.35, protein: 0.65, carb: 0 }, baseValue: 11,
+    class: 'food', hand: { perHand: 3, perArms: 8, hands: 1 } },
 };
 
 export class Inventory {

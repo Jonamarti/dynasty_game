@@ -4711,3 +4711,10 @@ ruta única y preserving solo concebible con carne rara. La apertura real de
 Conservación añade rutas alternativas pescado/palos y dos rutas a pemmican.
 Synthesis y el conjunto focal pasan (112/112). La ejecución global33 se conserva
 como evidencia de los fallos originales; no se presenta como suite verde.
+
+### 2026-10-10 — resultado global fijo33
+266 archivos:259 correctos,7 fallidos;1969 pruebas correctas,9 fallidas y1
+omitida (artifacts/m15-full-unit-33.log,565.22s). Dos regresiones nuevas de
+synthesis corregidas en b3f9907 y verificadas focalmente. Permanecen los siete
+fallos anteriores: difusión, correspondencia, contador de comida, tierra,
+tributo, conspiración y sed. Ningún resultado global verde afirmado.

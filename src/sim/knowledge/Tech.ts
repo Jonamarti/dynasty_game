@@ -204,6 +204,7 @@ export const TECHS = [
   'preserving',
   'smoking',
   'pemmican',
+  'saltmaking', 'salting',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -468,6 +469,28 @@ export interface TechDef {
  * catch.
  */
 export const TECH: Record<Tech, TechDef> = {
+  saltmaking: {
+    id: 'saltmaking', label: 'Saltmaking', domain: 'fire', web: 'preservation',
+    age: 'neolithic', firstKnown: 'Neolithic', kind: 'device',
+    requires: ['preserving', 'pottery'], difficulty: 0.45, skill: 'cook',
+    prototype: { pottery: 1, sticks: 2 }, maxRefinement: 2,
+    sparks: [{ needs: [{ kind: 'knows', tech: 'preserving' }, { kind: 'holding', item: 'pottery' }],
+      weight: 0.6, story: 'noticed crystals left behind when brine dried in a vessel' },
+      { needs: [{ kind: 'knows', tech: 'pottery' }, { kind: 'holding', item: 'sticks' }],
+        weight: 0.4, story: 'thought of boiling seawater down to the crystals it left behind' }],
+    description: 'Boil seawater in vessels at a salt pan beside a hearth.',
+  },
+  salting: {
+    id: 'salting', label: 'Salting food', domain: 'fire', tier: 'craft', web: 'preservation',
+    age: 'neolithic', firstKnown: 'Neolithic', kind: 'device',
+    requires: ['saltmaking'], difficulty: 0.35, skill: 'cook',
+    prototype: { fish: 1, salt: 1 }, maxRefinement: 2,
+    sparks: [{ needs: [{ kind: 'knows', tech: 'saltmaking' }, { kind: 'holding', item: 'fish' }],
+      weight: 0.6, story: 'rubbed fish with salt and found that it kept much longer' },
+      { needs: [{ kind: 'knows', tech: 'saltmaking' }, { kind: 'holding', item: 'salt' }],
+        weight: 0.4, story: 'wondered whether salt would keep meat from spoiling' }],
+    description: 'Salt raw meat and fish to make the longest-lasting preserved foods.',
+  },
   pemmican: {
     id: 'pemmican', label: 'Pemmican', domain: 'fire', tier: 'craft', web: 'preservation',
     age: 'mesolithic', firstKnown: 'Mesolithic', kind: 'device',
@@ -2621,6 +2644,10 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
     site: 'RECIPES.smoked_meat/smoked_fish; order, craft and Brain require a physical hearth' },
   pemmican: { summary: 'Dried meat and fat become nourishing food for long journeys.',
     site: 'RECIPES.pemmican and ITEMS.pemmican; ordinary eating and ComarcaInventoryTransfer ration readers' },
+  saltmaking: { summary: 'A salt pan at the sea edge, vessels and fire produce valuable salt.',
+    site: 'BUILDINGS.salt_pan; RECIPES.salt; saltSourceNear and hearthNear; ordinary trade value' },
+  salting: { summary: 'Salt keeps meat and fish longer than drying or smoking.',
+    site: 'RECIPES.salted_meat/salted_fish; Inventory.spoil and ordinary food readers' },
   spear: {
     summary: 'A blade at the end of a shaft: harder blows, first strikes, and more fish when harpooned.',
     site: 'ActionSystem.doAttack, doHunt and doHarvest; RECIPES.spear',
