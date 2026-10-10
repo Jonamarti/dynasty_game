@@ -27,6 +27,7 @@ import { PlaceMemory } from '../social/PlaceMemory.ts';
 import { armForce, newBody, poisonWork, type Body, type Condition } from './Body.ts';
 import type { IdSpace } from '../core/IdSpace.ts';
 import type { TransportMode } from './Animal.ts';
+import { garmentPocketCapacity } from '../core/GarmentPockets.ts';
 
 /**
  * `farm` and `smith` are added ahead of the technologies that will use them.
@@ -1026,7 +1027,8 @@ export class Person {
     // M15 phase 11c: capacity belongs to held equipment, not the abstract
     // multiplier granted by knowing a technology. Scenario code that still
     // opts into legacyPack asks Carry.capacityFor for the old formula.
-    return Math.max(1, Math.floor(10 * this.vigour * (2 - this.armsTaken) / 2 + this.carryContainerCapacity + this.transportCapacity));
+    return Math.max(1, Math.floor(10 * this.vigour * (2 - this.armsTaken) / 2 +
+      this.carryContainerCapacity + garmentPocketCapacity(this) + this.transportCapacity));
   }
 
   get carrying(): number {

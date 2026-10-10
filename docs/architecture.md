@@ -1,6 +1,6 @@
 # Architecture
 
-Current as of 2026-10-09 (M15 off-map compact band engine). No runtime
+Current as of 2026-10-11 (M15 garment heat removal and pockets). No runtime
 dependencies, Vite + a 2D canvas.
 
 ## Layout
@@ -804,3 +804,13 @@ WorldNews es un registro acotado de cada persona. SocialSystem etiqueta origen y
 WorldTrafficCoordinator vincula la agenda WorldCaravans a un único checkpoint por partida en tránsito. Personas y mercancías tienen un propietario: comarca activa, comarca aparcada o tráfico. El comercio deposita la carga al llegar, negocia existencias físicas por baseValue y regresa tras el campamento; conserva provisiones consumibles y cadáveres. La raíz v5 guarda tráfico y lee v1–v4 con tráfico vacío. Llegadas nuevas retiran residentes reales del macro; técnicas aprendidas llegan a su sociedad con un portador de vuelta en su región. La raíz despacha incursiones aceptadas después del step y las entrega a las acciones locales por el borde. No hay segundo motor detallado ni inventario macro inventado.
 
 La vista RivalHouseView recibe archivo mundial, pero cada nombre pasa por Knowledge y la memoria de enemistades es la del hogar observado. La reconciliación del regreso conserva la memoria llevada sin sumar dos veces una historia compartida. Ver los contratos m15_phase36_news.md, m15_phase36_traffic.md y m15_phase36_raids.md.
+
+
+## Ropa y calor — M15 14c, 2026-10-11
+
+Brain añade take_off_garment para NPC con experiencia propia de abrigo, ambiente cálido y frío bajo. Usa el temporizador e interrupciones existentes de Equipo, sin nuevas tiradas. Los umbrales se guardan en AiConfig; los checkpoints anteriores reciben los defaults completos y rechazan grupos parciales. Las armaduras dedicadas conservan su función. Ver m15_phase14c_heat_removal.md.
+
+
+## Bolsillos vestidos — M15 14c, 2026-10-11
+
+GarmentPockets comparte el cálculo entre Carry y Person. La prenda debe estar poseída en su hueco canónico; pocket aumenta capacidad agregada y límites de small, sin otro ledger de contenidos. ActionSystem reconcilia al completar cualquier cambio de ropa; transferir o dejar la última prenda usa la reconciliación existente y deposita exceso físico. La capacidad se deriva al cargar, sin campo mutable ni cambios en streams. Ver m15_phase14c_pockets.md.

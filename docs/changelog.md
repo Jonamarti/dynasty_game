@@ -1,3 +1,9 @@
+## 2026-10-11 — Integración de M15 en master
+
+`0.15.52-alpha`: se fusionan retirada por calor y bolsillos de prendas con la recuperación de frío ambiental y la temperatura de la HUD ya presentes en master. Se conserva la documentación de ambos recorridos y sus capturas; el contador incluye los tres cambios funcionales desde `.49`.
+
+Validación de integración: typecheck, 49 pruebas focales en ocho archivos y cuatro pruebas de navegador pasan. `sim:check` mantiene los dos fallos conocidos de dieta/rendimiento (2/147); no se repiten las suites completas ni las cohortes pesadas. Capturas nuevas en `artifacts/screenshots/m15-merge-master-2026-10-11/`, incluyendo Equipo con temperatura y versión, capacidad con/sin túnica y menú. Las notas locales pendientes se conservan sin incorporarlas al merge.
+
 ## 2026-10-11 — m15: el frío baja cuando el clima se suaviza
 
 `0.15.50-alpha`: `NeedsSystem` pesaba el calentamiento ambiental a 0,5 frente
@@ -13,6 +19,20 @@ people-knowledge, polity) ya fallaban sin este cambio. No se corrió
 
 La HUD muestra además la temperatura en °C junto a la hora (`Hud.ts`; escala
 sólo visual, -1..1 → -10..35 °C).
+
+## 2026-10-11 — m15: bolsillos de prendas puestas
+
+`0.15.51-alpha`: túnicas cosida/de lino y abrigo con alamares aportan cuatro unidades, la parka dos. El helper compartido entre Carry y Person exige prenda poseída en el hueco canónico y amplía los límites por objeto pequeño y la capacidad agregada. Quitar, sustituir o perder la última prenda reconcilia el exceso en montones físicos; guardar/cargar no duplica contenidos. [Contrato y resultados](m15_phase14c_pockets.md). Se precisa también que la elegibilidad heredada del vestido está expresada en días y no exige adultez; ese hallazgo se lleva a bugs/M16.
+
+Typecheck y 48 focales pasan. La suite unitaria completa registra 2.052 correctas, nueve fallidas y una omitida (285 archivos): siete fallos heredados, una premisa antigua de toggled_coat corregida y repetida entre las 48, y un timeout del guardado. La misma prueba de guardado pasa aislada con el mismo límite en 9,83 s. El simcheck mantiene dieta/rendimiento previos. Navegador completo: 157/159; reproduce la niebla heredada y descubre carga inicial inválida en la nueva prueba de bolsillos. Se corrige la preparación sin cambiar las aserciones de capacidad y la focal pasa, ampliada con retirada y conservación de exceso. No se repiten ni se afirman globalmente verdes las suites completas.
+
+Capturas inspeccionadas: `artifacts/screenshots/m15-phase14c-garment-pockets-2026-10-11/01-tunica-con-bolsillo.png` y `02-sin-tunica-exceso-en-suelo.png`. Se conservan las capturas históricas; informes finales en `artifacts/verification/m15-14c-heat-2026-10-11/`. Ambos cortes se hicieron con subagentes Luna 6 high en `codex/m15-clothing-heat-pockets`, separados del checkout del otro agente. Cohortes/matriz pesada diferidas por AGENTS.md; no se afirma mejora económica ni cierre de M15. Se para antes de propiedad de condición, desgaste/remiendo y curtido para reservar presupuesto de sesión.
+
+## 2026-10-11 — m15: quitar ropa probada cuando hace calor
+
+`0.15.50-alpha`: los NPC puntúan quitar una capa al alcanzar ambiente cálido y frío bajo, según experiencia propia positiva de abrigo. Reutiliza la acción corta de Equipo, conserva inventario y órdenes manuales del jugador, y mantiene armaduras dedicadas. Los tres umbrales provisionales están en AiConfig con migración de guardados y rechazo de grupos parciales; sin nuevas tiradas ni cambios de NeedsSystem. [Contrato](m15_phase14c_heat_removal.md).
+
+Typecheck y 30 pruebas focales pasan; la prueba positiva falla con el Brain anterior. El chequeo corto conserva dieta/rendimiento previos (2/147); no se afirma suite global verde ni mejora demográfica. La suite completa se reserva para el corte de bolsillos. Navegador final: 3/3 después de recargar Vite, que inicialmente conservaba la versión anterior (1/3). Captura de hito inspeccionada, sin nueva UI: `artifacts/screenshots/m15-phase14c-heat-2026-10-11T-02/01-fur-coat-worn-in-kit.png`. Informes en `artifacts/verification/m15-14c-heat-2026-10-11/`. Cohortes y matriz pesada diferidas por AGENTS.md; M15/14c continúan abiertos.
 
 ## 2026-10-11 — m15: expectativas personales de abrigo
 

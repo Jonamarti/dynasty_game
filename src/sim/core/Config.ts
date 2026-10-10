@@ -333,6 +333,12 @@ export interface AiConfig {
   commitmentBreakMargin: number;
   /** Drive pressures this close are treated as a seeded tie. */
   commitmentTieMargin: number;
+  /** Warmth-aware removal starts only above this normalized outdoor heat. */
+  garmentHeatTemperature: number;
+  /** A proven insulating layer may come off below this cold debt in heat. */
+  garmentHeatCold: number;
+  /** Utility weight for removing a proven layer once its cold relief is spent. */
+  garmentHeatWeight: number;
 }
 
 /** Tuning for the pull toward family, home and camp. */
@@ -634,6 +640,11 @@ export const DEFAULT_CONFIG: SimConfig = {
     commitmentEntryPressure: 0.16,
     commitmentBreakMargin: 0.08,
     commitmentTieMargin: 0.02,
+    // Provisional 14c thresholds: require clear positive heat and an almost
+    // settled cold meter; the action is a comfort adjustment, not survival.
+    garmentHeatTemperature: 0.45,
+    garmentHeatCold: 3,
+    garmentHeatWeight: 1.1,
   },
   motivation: {
     reachFilter: true, homePressure: true, nightSleep: true, infantsStill: true,

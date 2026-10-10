@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Simulation } from '../core/Simulation.ts';
+import { DEFAULT_CONFIG } from '../core/Config.ts';
 import { toCheckpointRecord, fromCheckpointRecord } from '../persistence/CheckpointRecords.ts';
 import { toExecutionRecord } from '../persistence/ExecutionRecords.ts';
 import { fromPersonRecord, toPersonRecord } from '../persistence/EntityRecords.ts';
@@ -77,6 +78,27 @@ describe('coordinated detached checkpoints', () => {
     expect(restored.config.ai.commitmentTieMargin).toBe(0.02);
     const partial = wire(toCheckpointRecord(fixture())) as any;
     delete partial.config.ai.commitmentTieMargin;
+    expect(() => fromCheckpointRecord(partial)).toThrow();
+  });
+
+  it('migrates complete pre-14c AI settings with heat-removal defaults and rejects partial heat settings', () => {
+    const current = wire(toCheckpointRecord(fixture())) as any;
+    delete current.config.ai.garmentHeatTemperature;
+    delete current.config.ai.garmentHeatCold;
+    delete current.config.ai.garmentHeatWeight;
+    const migrated = fromCheckpointRecord(current);
+    expect(migrated.config.ai.garmentHeatTemperature).toBe(DEFAULT_CONFIG.ai.garmentHeatTemperature);
+    expect(migrated.config.ai.garmentHeatCold).toBe(DEFAULT_CONFIG.ai.garmentHeatCold);
+    expect(migrated.config.ai.garmentHeatWeight).toBe(DEFAULT_CONFIG.ai.garmentHeatWeight);
+
+    const beforeCommitmentPolicy = wire(toCheckpointRecord(fixture())) as any;
+    for (const key of ['commitmentEntryPressure', 'commitmentBreakMargin', 'commitmentTieMargin',
+      'garmentHeatTemperature', 'garmentHeatCold', 'garmentHeatWeight']) delete beforeCommitmentPolicy.config.ai[key];
+    const oldestMigrated = fromCheckpointRecord(beforeCommitmentPolicy);
+    expect(oldestMigrated.config.ai.garmentHeatTemperature).toBe(DEFAULT_CONFIG.ai.garmentHeatTemperature);
+
+    const partial = wire(toCheckpointRecord(fixture())) as any;
+    delete partial.config.ai.garmentHeatCold;
     expect(() => fromCheckpointRecord(partial)).toThrow();
   });
 
