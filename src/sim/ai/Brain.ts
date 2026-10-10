@@ -2938,6 +2938,9 @@ export class Brain {
             const candidate = ctx.treeHash.findNearest(
               person.x, person.y, ctx.sightRadius * 3,
               t => t.standing && t.isMature &&
+                // The wider material search can revisit a remembered tree,
+                // but shrinking night sight must not reveal an unseen wood.
+                (person.distanceTo(t) <= ctx.sightRadius || person.placeMemory.hasNear('tree', t.x, t.y)) &&
                 ctx.world.sameRegion(person.x, person.y, t.x, t.y) && withinReach(anchor, reach, t.x, t.y)
             );
             if (candidate) {

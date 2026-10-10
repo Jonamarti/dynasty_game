@@ -1,3 +1,5 @@
+**2026-10-10: conocimiento de madera corregido.** La búsqueda amplia de árboles para obras sólo acepta visión actual o memoria personal. Regresión negativa confirmada; no se relaja people-act-on-what-they-know.
+
 # M15 — El plan maestro: de las manos vacías al Estado
 
 **Avance 2026-10-10 — 12c:** luz nocturna localizada, fuentes visibles por

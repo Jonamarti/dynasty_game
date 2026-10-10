@@ -14256,3 +14256,13 @@ lanzaron cohortes, century/generations ni sim:check:all. Logs locales:
 `artifacts/m15-frontier-final-typecheck-20261009.log` y
 `artifacts/m15-frontier-final-simcheck-20261009.log`.
 Cambios previos del usuario en notes_for_m15.txt y debug.log quedan fuera.
+
+## 2026-10-10 — M15: madera desde árboles vistos o recordados
+
+La menor visión nocturna expuso un defecto en el abastecimiento de obras:
+la búsqueda de madera miraba hasta tres radios de visión sin exigir memoria.
+El diagnóstico de la semilla band identificó un chop a 5,499 tiles con visión
+4,2 y ninguna memoria del árbol. Ahora el radio amplio sólo acepta un árbol
+visible o registrado por esa persona. No se rebaja el control de conocimiento.
+La regresión falla sobre el código anterior y cubre rechazo de lo desconocido,
+visión diurna y recuerdo fuera de vista. Focal 1/1; cohortes diferidas.
