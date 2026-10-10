@@ -27,7 +27,7 @@ import type { Household } from '../entities/Household.ts';
 import type { ResourceNode } from '../entities/ResourceNode.ts';
 import type { World } from '../core/World.ts';
 import { perceivedFatigue } from '../core/Circadian.ts';
-import { Arrival, type MovementSystem } from './MovementSystem.ts';
+import { Arrival, ARRIVAL_RADIUS, type MovementSystem } from './MovementSystem.ts';
 import { companionBonus, rememberHurt } from './WildlifeSystem.ts';
 import type { SpatialHash } from '../core/SpatialHash.ts';
 import type { SocialSystem } from '../social/SocialSystem.ts';
@@ -2537,7 +2537,11 @@ export class ActionSystem {
       this.abandon(person, requirement.reason, ctx);
       return null;
     }
-    if (building.contains(person.x, person.y)) {
+    // A one-tile side ends at 0.5 but movement stops at 0.6. The drying
+    // rack's short-side approach parked at y=11.51 forever, timer still zero.
+    // Stations permit that physical working distance; rooms still require entry.
+    if (building.contains(person.x, person.y) || building.def.station &&
+        person.distanceTo({ x: building.centerX, y: building.centerY }) <= ARRIVAL_RADIUS) {
       if (propertyEvent) this.useProperty(person, building, propertyEvent, ctx);
       return building;
     }

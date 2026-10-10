@@ -1551,7 +1551,7 @@ function showBuildGhost(worldX: number, worldY: number): void {
   if (!design) return;
   const x = Math.round(worldX);
   const y = Math.round(worldY);
-  const why = sim.placementRefusal(design, x, y);
+  const why = sim.placementRefusal(design, x, y, sim.player?.bandId);
   renderer.buildGhost = {
     x, y,
     width: design.width,
@@ -1765,7 +1765,7 @@ window.addEventListener('pointerup', event => {
           : t('{building} planned', { building: t(placed.def.label) }),
         { color: '#7ddc96', boxed: true });
     } else {
-      const why = sim.placementRefusal(design, x, y)
+      const why = sim.placementRefusal(design, x, y, sim.player?.bandId)
         ?? t('that cannot be built there');
       renderer.floaters.push(x, y, why, { color: '#e66464', boxed: true });
     }

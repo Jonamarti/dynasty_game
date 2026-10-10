@@ -4718,3 +4718,10 @@ omitida (artifacts/m15-full-unit-33.log,565.22s). Dos regresiones nuevas de
 synthesis corregidas en b3f9907 y verificadas focalmente. Permanecen los siete
 fallos anteriores: difusión, correspondencia, contador de comida, tierra,
 tributo, conspiración y sed. Ningún resultado global verde afirmado.
+
+### 2026-10-10 — llegada a estación de un tile, corregida
+Movimiento detenía a0.6tiles pero reachBuilding exigía quedar en la huella de
+medio tile: secadero desde su lado corto quedaba con timer0 durante1000ticks.
+El criterio compartido admite el radio de llegada solo en estaciones. La nueva
+prueba interior falla aun suministrando la colocación nueva al ActionSystem
+anterior, y pasa ahora; habitaciones siguen exigiendo entrada física.

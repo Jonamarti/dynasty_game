@@ -51,10 +51,10 @@ test('a coastal salt pan supplies salt for meat and fish', async ({ page }) => {
   await page.locator('.hud-tab[data-tab="kit"]').click();
   await expect(page.locator('.hud-panel')).toContainText('Carne salada');
   await expect(page.locator('.hud-panel')).toContainText('Pescado salado');
-  const shots = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m15-phase15b-salt-2026-10-10';
+  const shots = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m15-phase15b-salt-2026-10-10-final';
   mkdirSync(shots, { recursive: true });
   await page.screenshot({ path: `${shots}/01-salina-en-la-costa.png` });
-  await page.locator('.hud-panel').evaluate(el => { el.scrollTop = el.scrollHeight; });
-  await page.screenshot({ path: `${shots}/02-alimentos-salados.png` });
+  await page.locator('.hud-panel-body').evaluate(el => { el.scrollTop = el.scrollHeight; });
+  await page.screenshot({ path: `${shots}/03-alimentos-salados-desplazados.png` });
   expect(errors).toEqual([]);
 });

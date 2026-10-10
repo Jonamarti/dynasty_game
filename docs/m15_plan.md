@@ -4427,3 +4427,10 @@ fuego/vasija retenida, sal real de valor25 y recetas salted_meat/salted_fish.
 Revalidación en orden/menú/IA/trabajo y razón visible al perder salmuera.
 107 pruebas focales y typecheck;2 casos browser correctos y capturas en
 m15_phase15b_salt.md. Interiores y15d siguen abiertos;15c/cohortes diferidas.
+
+2026-10-10 — 15b secadero interior implementado: huella íntegra en habitación
+terminada, propietario por banda, hostId persistido y bloqueo de ambos tiles
+para muebles. Llegada de estaciones corregida (0.6 de movimiento frente a0.5
+del lado de un tile): regresión negativa específica y37 pruebas focales correctas.
+Contrato/captura m15_phase15b_indoor_rack.md. Catálogo15b implementado; queda
+medición comparativa15d/activación15c, sin declarar economía medida ni cerrarM15.

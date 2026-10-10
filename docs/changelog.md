@@ -14452,3 +14452,17 @@ regresión negativa de ambos lectores salados. Capturas:
 artifacts/screenshots/m15-phase15b-salt-2026-10-10/.
 Single-seed conserva cravings-steer-the-diet/perf-budget; no cohorte ni mejora
 económica afirmada. Interiores/15d y activación medida siguen pendientes.
+
+## 2026-10-10 — m15: secadero dentro de casa y llegada efectiva (0.15.36-alpha)
+
+Secadero dentro/fuera, huella íntegra y habitación anfitriona persistida.
+El bloqueo de muebles lee toda la huella para que una cama no ocupe el segundo
+tile del secadero. Rechazo visible en casa de otra banda. La prueba real
+identificó una llegada estacionaria a0.51tiles con timer0: estaciones aceptan
+el radio0.6 de movimiento, sin abrir la contención de habitaciones.
+Contrato docs/m15_phase15b_indoor_rack.md:37 pruebas, typecheck, regresión negativa
+de colocación y llegada, E2E con salida limpia y captura revisada:
+artifacts/screenshots/m15-phase15b-indoor-rack-2026-10-10-final/03-secadero-interior-lejos-del-borde.png.
+Nueva captura de salazón desplazada en su body real, con Vite recién arrancado
+para mostrar versión actual: artifacts/screenshots/m15-phase15b-salt-2026-10-10-final/03-alimentos-salados-desplazados.png.
+Single-seed conserva los dos fallos nombrados;15d/15c pendientes de medición.

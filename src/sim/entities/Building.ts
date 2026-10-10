@@ -80,6 +80,8 @@ export interface BuildingDef {
    * worse than useless in the middle of a field.
    */
   placement?: 'shore' | 'arable' | 'salt_shore';
+  /** The whole footprint can share a completed room, never its walls or doorway. */
+  fitsIndoors?: boolean;
   /**
    * True if this is somewhere work is done rather than somewhere anybody lives.
    *
@@ -744,7 +746,7 @@ export const BUILDINGS: Record<string, BuildingDef> = {
   drying_rack: {
     id: 'drying_rack', label: 'Drying rack', icon: '🥩', width: 2, height: 1,
     materials: { wood: 2, rope: 2 }, workTicks: 120, shelter: 0, storage: 0,
-    station: true, requiresTech: 'preserving',
+    station: true, requiresTech: 'preserving', fitsIndoors: true,
     description: 'An open wooden frame for drying strips of meat and fish.',
   },
   salt_pan: {

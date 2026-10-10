@@ -1,5 +1,6 @@
 /** Spanish for actions. Keys are the English templates; see `i18n.ts`. */
 export const ES_ACTIONS: Record<string, string> = {
+  'That house belongs to another band': 'Esa casa pertenece a otra banda',
   'You need salt water nearby': 'Necesitas agua salada cerca',
   'there was no salt water nearby': 'no había agua salada cerca',
   'You need a tool: {tools}': 'Necesitas una herramienta: {tools}',

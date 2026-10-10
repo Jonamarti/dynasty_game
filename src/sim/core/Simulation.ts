@@ -131,7 +131,7 @@ import type { WorldGeography } from '../world/WorldGeography.ts';
 import { geographicResourceAvailable } from '../world/GeographicResources.ts';
 import { stepMark } from './StepProbe.ts';
 import { approachComarcaEdge, type ComarcaTravel } from '../world/ComarcaTravel.ts';
-import { applyHouseWalls, houseInteriorContains, houseInteriorTiles } from '../world/HouseInterior.ts';
+import { applyHouseWalls, houseInteriorContains, houseInteriorTiles, houseContainsFootprint, houseForFootprint } from '../world/HouseInterior.ts';
 import { lightAt as measuredLightAt, lightFactor, torchLight, hearthNear } from './Light.ts';
 import { saltSourceNear } from './Preservation.ts';
 import { advanceTorchBurn, torchIgnitionRefusal, torchRefusalText, transferableUnits, burningTorchRefusalText } from './Torch.ts';
@@ -4864,8 +4864,9 @@ export class Simulation {
       const x = Math.floor(tile.x), y = Math.floor(tile.y);
       // The hash indexes a building's integer origin, not its tile center.
       // A zero-radius center query misses every piece and stacks all beds.
-      const occupied = this.buildingHash.queryRadius(x, y, 0)
-        .some(building => building.hostId === host.id && building.x === x && building.y === y);
+      const occupied = this.buildingHash.queryRadius(x, y, Math.max(host.def.width, host.def.height))
+        .some(building => building.hostId === host.id && x >= building.x && y >= building.y &&
+          x < building.x + building.def.width && y < building.y + building.def.height);
       if (this.world.isWalkable(x, y) && !occupied) return { x, y };
     }
     return null;
@@ -4906,7 +4907,7 @@ export class Simulation {
    * is the first design in the game that can be refused for somewhere a hut
    * would have been perfectly happy.
    */
-  placementRefusal(def: BuildingDef, x: number, y: number): string | null {
+  placementRefusal(def: BuildingDef, x: number, y: number, bandId?: number): string | null {
     for (let dy = 0; dy < def.height; dy++) {
       for (let dx = 0; dx < def.width; dx++) {
         // A ford is traversable, but it cannot hold a hut or a dry earthwork.
@@ -4921,6 +4922,10 @@ export class Simulation {
       const overlapsX = x < existing.x + existing.def.width && x + def.width > existing.x;
       const overlapsY = y < existing.y + existing.def.height && y + def.height > existing.y;
       if (overlapsX && overlapsY) {
+        if (def.fitsIndoors && houseContainsFootprint(existing, x, y, def.width, def.height)) {
+          if (bandId !== undefined && existing.ownerBandId !== bandId) return t('That house belongs to another band');
+          continue;
+        }
         return t('{thing} is already there', { thing: theNoun(existing.def.label.toLowerCase()) });
       }
     }
@@ -5071,9 +5076,11 @@ export class Simulation {
     const def = BUILDINGS[defId];
     if (!def || def.furniture) return null;
     if (def.requiresTech !== null && !this.knownTech.has(def.requiresTech)) return null;
-    if (!this.canPlace(def, x, y)) return null;
+    const refusal = this.placementRefusal(def, x, y, bandId);
+    if (refusal) { if (def.fitsIndoors) this.lastRefusal = refusal; return null; }
 
     const building = new Building(def, x, y, bandId, this.ids);
+    if (def.fitsIndoors) building.hostId = houseForFootprint(this.buildingHash, x, y, def.width, def.height)?.id ?? null;
     const plan = def.earthwork ?? def.dig;
     if (plan) building.earth = earthworkTiles(plan, x, y, def.width, def.height, this.world);
     building.plannedTick = this.time.tick;

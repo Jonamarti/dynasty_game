@@ -1,7 +1,7 @@
 import type { World } from '../core/World.ts';
 import type { SpatialHash } from '../core/SpatialHash.ts';
 import type { Person } from '../entities/Person.ts';
-import type { Building } from '../entities/Building.ts';
+import { BUILDINGS, type Building } from '../entities/Building.ts';
 
 export type HouseSide = 'north' | 'east' | 'south' | 'west';
 export interface HouseDoor { readonly side: HouseSide; readonly x: number; readonly y: number }
@@ -42,6 +42,18 @@ export function houseInteriorContains(building: Building, x: number, y: number):
   return building.def.interior !== undefined &&
     tileX >= building.x + 1 && tileX <= building.x + building.def.width - 2 &&
     tileY >= building.y + 1 && tileY <= building.y + building.def.height - 2;
+}
+
+/** A station must fit wholly in the room; admitting only its origin cut through walls. */
+export function houseContainsFootprint(house: Building, x: number, y: number, width: number, height: number): boolean {
+  return house.complete && !house.ruined &&
+    houseInteriorContains(house, x, y) && houseInteriorContains(house, x + width - 1, y + height - 1);
+}
+
+/** Origin-indexed houses can reach across several hash cells to contain a station. */
+export function houseForFootprint(hash: SpatialHash<Building>, x: number, y: number, width: number, height: number): Building | null {
+  const reach = Math.max(...Object.values(BUILDINGS).filter(def => def.interior).map(def => Math.max(def.width, def.height)));
+  return hash.queryRadius(x, y, reach).find(house => houseContainsFootprint(house, x, y, width, height)) ?? null;
 }
 
 /** Pick a wall opening facing camp once, then preserve it across relocation. */
