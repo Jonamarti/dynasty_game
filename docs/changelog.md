@@ -1,3 +1,16 @@
+## 2026-10-10 — m15: envolturas de pies
+
+`0.15.38-alpha`: nueva técnica individual, descubrimiento por frío/cuerda,
+receta piel 1 + cuerda 1 y prenda para el hueco de pies. Abrigo 0,08 mientras
+se lleva puesta; combina con túnica y capa, no abriga ni se dibuja desde la
+mochila. Icono regenerado y capa de pies del atlas conectada a equipo real.
+Español completo y JSON conservan técnica y equipo.
+
+Typecheck, 62/62 unitarias focalizadas y browser 1/1 pasan. Chequeo corto:
+2/147 fallos conocidos (`cravings-steer-the-diet`, `perf-budget`); no mejora
+económica o poblacional inferida. Sin nueva suite global completa. Contrato:
+`docs/m15_phase14c_foot_wraps.md`. Captura revisada:
+`artifacts/screenshots/m15-phase14c-foot-wraps-2026-10-10/02-envolturas-de-pies-diurnas.png`.
 ## 2026-10-10 — m15: noches, comprobaciones de mecanismos
 
 Escenario `nights`: invierno duro, dos bandas con fuego, dos órdenes equivalentes

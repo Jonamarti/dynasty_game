@@ -1668,6 +1668,11 @@ salvo las que dan las técnicas ya existentes:
   M13) por su presión de frío; `wear` se puntúa igual y se quita con calor. Se
   aprende al llevarla puesta con frío y se ve en los demás (2b).
 
+
+**2026-10-10:** entrada `foot_wraps` entregada con técnica individual, receta,
+hueco de pies, abrigo real y capa visual. [Contrato y captura](m15_phase14c_foot_wraps.md).
+La red completa y el resto de prendas siguen pendientes.
+
 ### 14d. Estatus (medido; opcional dentro de la fase)
 
 `garment.status` suma al motivo de estatus (fase 5d) de quien la lleva y a la

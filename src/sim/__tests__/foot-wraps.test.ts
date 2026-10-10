@@ -1,0 +1,55 @@
+import { describe, expect, it } from 'vitest';
+import { Simulation } from '../core/Simulation.ts';
+import { changeGarment } from '../core/ToolEquipment.ts';
+import { warmthFrom } from '../knowledge/Tech.ts';
+import { wornGarmentsOf } from '../../render/Renderer.ts';
+import { toCheckpointRecord } from '../persistence/CheckpointRecords.ts';
+
+function fixture() {
+  const sim = new Simulation({ seed: 'foot-wraps', world: { width: 48, height: 48 }, population: { bands: 1, peoplePerBand: 2 } });
+  sim.possessFirst(); const person = sim.player!;
+  person.needs.hunger = person.needs.thirst = person.needs.cold = person.needs.fatigue = 0;
+  return { sim, person };
+}
+describe('foot wraps', () => {
+  it('crafts through the normal executor with individual knowledge and exact material cost', () => {
+    const { sim, person } = fixture();
+    for (const [item, count] of person.inventory.entries()) person.inventory.remove(item, count);
+    person.inventory.add('hide', 1); person.inventory.add('rope', 1);
+    // Orders can be accepted before executor preflight; the first real step
+    // refuses unknown techniques without consuming the supplied materials.
+    expect(sim.order(person, 'craft', { recipeId: 'foot_wraps' })).toBe(true);
+    sim.step();
+    expect(person.inventory.count('foot_wraps')).toBe(0);
+    expect(person.inventory.count('hide')).toBe(1); expect(person.inventory.count('rope')).toBe(1);
+    expect(person.action).not.toBe('craft');
+    person.knownTech.add('foot_wraps');
+    expect(sim.order(person, 'craft', { recipeId: 'foot_wraps' })).toBe(true);
+    for (let tick = 0; tick < 300 && !person.inventory.count('foot_wraps'); tick++) sim.step();
+    expect(person.inventory.count('foot_wraps')).toBe(1);
+    expect(person.inventory.count('hide')).toBe(0); expect(person.inventory.count('rope')).toBe(0);
+    expect(warmthFrom(person)).toBe(0);
+  });
+  it('uses an independent feet slot for warmth and appearance; spare or stale references do neither', () => {
+    const { person } = fixture();
+    person.inventory.add('foot_wraps', 1); person.inventory.add('sewn_tunic', 1);
+    expect(warmthFrom(person)).toBe(0); expect(wornGarmentsOf(person).feet).toBeUndefined();
+    expect(changeGarment(person, 'sewn_tunic', 'wear_garment')).toBeNull();
+    expect(changeGarment(person, 'foot_wraps', 'wear_garment')).toBeNull();
+    expect(warmthFrom(person)).toBeCloseTo(1 - 0.7 * 0.92);
+    expect(wornGarmentsOf(person)).toMatchObject({ torso: 'tunic', feet: 'wraps' });
+    person.inventory.remove('foot_wraps', 1);
+    expect(warmthFrom(person)).toBeCloseTo(0.30); expect(wornGarmentsOf(person).feet).toBeUndefined();
+  });
+  it('preserves the equipped feet and individual knowledge through JSON, then takes them off', () => {
+    const { sim, person } = fixture();
+    person.inventory.add('foot_wraps', 1); person.knownTech.add('foot_wraps');
+    changeGarment(person, 'foot_wraps', 'wear_garment');
+    const loaded = Simulation.fromCheckpointRecord(JSON.parse(JSON.stringify(toCheckpointRecord(sim))));
+    const restored = loaded.peopleById.get(person.id)!;
+    expect(restored.knownTech.has('foot_wraps')).toBe(true);
+    expect(warmthFrom(restored)).toBeCloseTo(0.08); expect(wornGarmentsOf(restored).feet).toBe('wraps');
+    expect(changeGarment(restored, 'foot_wraps', 'take_off_garment')).toBeNull();
+    expect(restored.inventory.count('foot_wraps')).toBe(1); expect(warmthFrom(restored)).toBe(0);
+  });
+});

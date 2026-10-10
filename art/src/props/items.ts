@@ -6,6 +6,9 @@ export type ItemArt = [id: string, label: string, tech: string, draw: () => stri
 export const WOOD = '#86633c', WOOD_D = '#3a2716', STONE = '#a9adb0', STONE_D = '#3d4244', BONE = '#e6dcc0', BONE_D = '#7a6d4e', CORD = '#c9b27f';
 const rot = (inner: string, deg: number, cx = 32, cy = 32): string => `<g transform="rotate(${deg} ${cx} ${cy})">${inner}</g>`;
 export const ITEMS: ItemArt[] = [
+  ['foot_wraps', 'Envolturas de pies', 'foot_wraps', () =>
+    [19, 43].map(x => shape(smooth([[x - 7, 13], [x + 5, 11], [x + 8, 36], [x + 12, 44], [x + 5, 52], [x - 9, 49], [x - 8, 30]]), '#b59a73', '#513a24')
+      + stroke(`M${x - 7},22L${x + 6},25M${x - 7},30L${x + 7},33M${x - 7},38L${x + 8},41`, CORD, 2)).join('')],
   ['salt', 'Sal', 'saltmaking', () =>
     shape(poly([[10, 47], [20, 32], [30, 20], [44, 30], [55, 48]]), '#ece9dc', '#8b8879')
     + stroke('M20,32L30,43L44,30M30,20L30,43L55,48', '#bcb9aa', 1.3)],

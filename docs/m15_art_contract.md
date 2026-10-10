@@ -87,3 +87,5 @@ from art/src/props/items.ts; sheets regenerated with art:build.
 2026-10-10 — preserving: building/drying_rack tiene armazón y tiras colgadas;
 item/dried_meat y item/dried_fish tienen iconos propios generados. Fuentes:
 art/src/buildings/buildings.ts y art/src/props/items.ts; art:build actualizado.
+
+2026-10-10 — foot_wraps: icono generado desde art/src/props/items.ts; prenda de pies en la capa existente feet/wraps, solo cuando el inventario respalda equipment.feet. Ver m15_phase14c_foot_wraps.md.

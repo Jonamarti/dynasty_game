@@ -205,6 +205,7 @@ export const TECHS = [
   'smoking',
   'pemmican',
   'saltmaking', 'salting',
+  'foot_wraps',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -469,6 +470,19 @@ export interface TechDef {
  * catch.
  */
 export const TECH: Record<Tech, TechDef> = {
+  foot_wraps: {
+    id: 'foot_wraps', label: 'Foot wraps', domain: 'cloth',
+    age: 'middle_palaeolithic', firstKnown: 'Hide bound around the feet; the first date is uncertain',
+    kind: 'device', requires: ['clothing', 'cordage'], difficulty: 0.25, skill: 'build',
+    prototype: { hide: 1, rope: 1 }, maxRefinement: 3,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'clothing' }, { kind: 'holding', item: 'hide' }, { kind: 'feeling', need: 'cold' }],
+        weight: 0.8, story: 'wrapped a cold foot in a scrap of hide' },
+      { needs: [{ kind: 'knows', tech: 'cordage' }, { kind: 'holding', item: 'rope' }, { kind: 'season', season: 'winter' }],
+        weight: 0.5, story: 'thought of binding the foot covering so it would stay on' },
+    ],
+    description: 'Hide tied around the feet keeps them warmer only while worn.',
+  },
   saltmaking: {
     id: 'saltmaking', label: 'Saltmaking', domain: 'fire', web: 'preservation',
     age: 'neolithic', firstKnown: 'Neolithic', kind: 'device',
@@ -2638,6 +2652,8 @@ export interface TechEffect {
 }
 
 export const TECH_EFFECTS: Record<Tech, TechEffect> = {
+  foot_wraps: { summary: 'Crafted foot wraps warm the feet only when actually equipped.',
+    site: 'RECIPES.foot_wraps; ITEMS.foot_wraps garment; warmthFrom and Renderer.wornGarmentsOf' },
   preserving: { summary: 'A drying rack makes meat and fish that spoil ten times more slowly.',
     site: 'BUILDINGS.drying_rack and RECIPES.dried_meat/dried_fish; Inventory.spoil reads their spoilTicks' },
   smoking: { summary: 'A rack beside a hearth makes smoked food that keeps longer than dried food.',

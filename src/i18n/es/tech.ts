@@ -1,5 +1,10 @@
 /** Spanish for tech. Keys are the English templates; see `i18n.ts`. */
 export const ES_TECH: Record<string, string> = {
+  'Crafted foot wraps warm the feet only when actually equipped.': 'Las envolturas de pies fabricadas solo abrigan cuando se llevan puestas.',
+  'Hide bound around the feet; the first date is uncertain': 'Piel atada alrededor de los pies; la fecha más antigua es incierta',
+  'wrapped a cold foot in a scrap of hide': 'envolvió un pie frío en un retazo de piel',
+  'thought of binding the foot covering so it would stay on': 'pensó en atar la envoltura del pie para que no se soltara',
+  'Hide tied around the feet keeps them warmer only while worn.': 'La piel atada alrededor de los pies solo abriga mientras se lleva puesta.',
   'Saltmaking': 'Obtener sal',
   'Salting food': 'Salar comida',
   'noticed crystals left behind when brine dried in a vessel': 'observó los cristales que quedaban al secarse la salmuera en una vasija',

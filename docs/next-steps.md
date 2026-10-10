@@ -1678,3 +1678,5 @@ medición discriminante antes de autorizar activación15c. No usar esta semilla
 para afirmar mejora económica. docs/m15_phase15d_salters.md conserva evidencia.
 
 2026-10-10: nights12f tiene tres checks de mecanismos y pruebas negativas; véase m15_phase12f_nights.md. Pendientes adopción autónoma/cohorte de violencia/coste; no cerrar la fase por estas oportunidades ordenadas.
+
+2026-10-10: entrada foot_wraps de14c implementada con técnica, receta, hueco, abrigo y capa de pies; m15_phase14c_foot_wraps.md. Pendientes resto de prendas/red, bolsillos, creencias y desgaste/remiendo.

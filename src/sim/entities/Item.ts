@@ -485,6 +485,8 @@ export const ITEMS: Record<string, ItemDef> = {
   salted_fish: { id: 'salted_fish', label: 'Salted fish', nutrition: 18, spoilTicks: 160000,
     macros: { fat: 0.35, protein: 0.65, carb: 0 }, baseValue: 11,
     class: 'food', hand: { perHand: 3, perArms: 8, hands: 1 } },
+  foot_wraps: { id: 'foot_wraps', label: 'Foot wraps', nutrition: 0, spoilTicks: 0, baseValue: 4,
+    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'feet', warmth: 0.08 } },
 };
 
 export class Inventory {
