@@ -3908,6 +3908,17 @@ Added the moods-move-choices health check, comparing talk frequency in the low a
 
 # Changelog
 
+## 2026-10-10 — M15 34: limitar el crédito de comida al pedido
+
+La retirada fraccionaria de bayas podía acreditar una ULP de nutrición de más
+y violar el guard estricto de CompactBody. El consumidor físico limita el
+crédito al pedido y omite retiradas menores que la precisión del stack.
+Pruebas reproducen ambas condiciones y el cruce corto: 8/8 focales.
+La RangeError original no se reprodujo con su fixture y sigue sin declararse
+resuelta; apareció además un límite de avisos en el codec tras 400 ticks.
+Sin cambios de UI; cohortes/matriz diferidas. Versión 0.15.11-alpha.
+[Contrato](m15_phase34_ration_credit.md).
+
 ## 2026-10-10 — M15 17: gesto visible de pesca somera
 
 La pesca activa ya tiene cuatro poses generadas de alcance y recogida, con

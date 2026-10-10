@@ -3427,6 +3427,12 @@ cultura desde el principio, y el ajuste de partida del mundo (29c).
 
 ## Fase 34 — Salir de la comarca (M14 fase 16)
 
+**Avance 2026-10-10 — raciones fraccionarias acotadas.** El crédito físico
+de comida nunca supera la petición por redondeo y una retirada sub-ULP que
+no cambia el stack no acredita alimento. 8 pruebas focales pasan. No se logró
+reproducir el crash original de comarca aparcada: sigue abierto hasta aislarlo.
+[Contrato y hallazgo independiente](m15_phase34_ration_credit.md).
+
 **Cerrada funcionalmente — 2026-10-09.** Viaje, seguimiento, exploración, migración y libro persistente activados. [Verificación completa y límites](m15_phase34_verification_20261009.md). Continúa fase 35; correspondencia económica y cohortes aplazadas quedan en LOD/M16.
 
 **2026-10-09: política diaria, consenso y fisión.** Motivos priorizados, destinos propios conocidos, exploración cuando falta conocimiento y consenso con presión específica. Una emigración aprobada parcial crea una banda hija; viajar individualmente conserva pertenencia. Control corto de fisión conserva población y parentesco, sin afirmar resultado de cohorte. [Contrato](m15_phase34_migration_policy.md).

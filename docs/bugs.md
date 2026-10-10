@@ -4657,3 +4657,6 @@ aislado todavía qué combinación de `requestedHunger`/`requestedThirst` y el
 callback de ración del coordinador produce un valor fuera de rango. No arreglado
 aquí — queda para quien retome el guard de retorno único / reconciliación de
 raciones ya anotado arriba en este archivo para la fase 34.
+
+## Seguimiento de raciones aparcadas — 2026-10-10
+Se corrigió exceso de una ULP de crédito nutricional con control mínimo y retirada sub-ULP sin alimento gratis; la RangeError original no se reprodujo en el cruce de seis personas y sigue abierta. La exploración a 400 ticks encontró otro TypeError: Invalid ledger record: too many interruption notices; no se ha establecido vínculo causal. Detalle y condiciones: docs/m15_phase34_ration_credit.md.

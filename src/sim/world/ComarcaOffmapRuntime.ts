@@ -98,6 +98,29 @@ export function allocateComarcaOffmapNutrition(
   return { allocations: living.map(member => ({ personId: member.person.id, foodQuota: foodShare, waterQuota: waterShare })) };
 }
 
+/**
+ * Withdraw finite physical food without returning more nutrition than requested.
+ * Item quantities are fractional after spoilage, so `(requested / nutrition) * nutrition`
+ * can exceed `requested` by one floating-point ulp; CompactBody correctly rejects a real
+ * over-credit, but that representation noise must not crash a parked comarca.
+ */
+export function consumeComarcaOffmapNutrition(inventories: readonly Inventory[], requested: number): number {
+  if (!Number.isFinite(requested) || requested < 0) throw new RangeError('requested nutrition must be finite and non-negative');
+  let consumed = 0;
+  for (const inventory of inventories) for (const [item, amount] of inventory.entries()) {
+    const nutrition = ITEMS[item]?.nutrition ?? 0;
+    if (nutrition <= 0 || consumed >= requested) continue;
+    const remaining = requested - consumed;
+    const count = Math.min(amount, remaining / nutrition);
+    if (count <= 0 || amount - count === amount) continue;
+    const actual = inventory.remove(item, count) * nutrition;
+    // Cap the reported relief at the original request; physical stock still reflects
+    // the exact fractional quantity removed from Inventory.
+    consumed = Math.min(requested, consumed + actual);
+  }
+  return consumed;
+}
+
 import { ComarcaEcology, type ComarcaEcologyRecord } from './ComarcaEcology.ts';
 import type { TileLedgerEntry } from '../persistence/TileLedger.ts';
 import type { WorldGeography } from './WorldGeography.ts';
@@ -240,15 +263,8 @@ export class ComarcaOffmapRuntime {
           intake: { model: new IntakeModel(MEASURED_RATES), capacity: () => undefined, childhood: config.childhood },
           nextEventId: () => ids.allocate('socialEvent'),
           ration: (member,_at,hunger,thirst) => {
-            let requested = Math.min(hunger, foodQuota.get(member.person.id) ?? 0), consumed = 0;
-            for (const inventory of inventories(member.person.bandId)) for (const [item,amount] of inventory.entries()) {
-              const value = ITEMS[item]?.nutrition ?? 0;
-              if (value <= 0 || requested <= 0) continue;
-              const count = Math.min(amount, requested/value);
-              if (count <= 0 || amount-count === amount) continue;
-              const actual = inventory.remove(item,count)*value;
-              consumed += actual; requested -= actual;
-            }
+            const requested = Math.min(hunger, foodQuota.get(member.person.id) ?? 0);
+            const consumed = consumeComarcaOffmapNutrition(inventories(member.person.bandId), requested);
             return { hunger: consumed, thirst: world.freshShore.length || objects.buildings.some(b=>b.complete&&!b.ruined&&isWell(b.def)) ? thirst : 0 };
           },
         });
