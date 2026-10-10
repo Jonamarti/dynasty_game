@@ -14279,3 +14279,13 @@ La captura usa sim.order; no verifica el clic físico del radial. La autonomía
 de fabricación/colocación y el resto del catálogo de muebles siguen abiertos.
 Single-seed compartido: 2/147 fallos heredados de dieta/rendimiento; conocimiento
 ya pasa tras 1a0c2a1. Cohortes/matriz diferidas; no se afirma mejora económica.
+
+## 2026-10-10 — M15 15a: medir pérdidas por origen
+
+La barrida de descomposición distingue comida llevada, almacén, materiales
+entregados y montón; conserva fracciones y nutrición por objeto/origen.
+El modo seco conserva el checkpoint completo byte por byte y no cambia RNG.
+Focales 2/2; negativos con contadores retirados fallan 2/2. TypeScript limpio.
+Contrato: docs/m15_phase15a_spoilage_sources.md. La medición de veinte semillas
+exigida en 15a y la activación 15c siguen pendientes por la restricción expresa
+de AGENTS.md. spoilRate continúa a cero; no se afirma mejora económica.

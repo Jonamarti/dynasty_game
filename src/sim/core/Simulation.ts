@@ -5200,7 +5200,7 @@ export class Simulation {
     const elapsed = dry ? ticks : ticks * rate;
     const prefix = dry ? 'would_spoil_' : 'spoiled_';
 
-    const sweep = (inventory: Inventory, keeps: number): void => {
+    const sweep = (inventory: Inventory, keeps: number, source: 'carried' | 'store' | 'site' | 'pile'): void => {
       // What would have gone off with no answer to spoilage at all, measured
       // first and not applied. It is the only honest way to ask whether
       // `preserving` is doing anything: survival across twenty seeds cannot
@@ -5217,7 +5217,14 @@ export class Simulation {
       }
       const lost = inventory.spoil(elapsed, () => keeps, !dry);
       for (const [itemId, count] of lost) {
-        if (count > 0) telemetry.count(prefix + itemId, Math.round(count));
+        if (count > 0) {
+          telemetry.count(prefix + itemId, Math.round(count));
+          // Preserve fractional dry-run estimates in the source ledger: daily
+          // rounding can hide every loss in several small carried stacks.
+          telemetry.count(prefix + source, count);
+          telemetry.count(prefix + source + '_' + itemId, count);
+          telemetry.count(prefix + source + '_nutrition', count * (ITEMS[itemId]?.nutrition ?? 0));
+        }
       }
     };
 
@@ -5227,18 +5234,18 @@ export class Simulation {
     // changes: `sweep(person.inventory, spoilFactor(person))`.
     for (const person of this.people) {
       if (!person.alive) continue;
-      sweep(person.inventory, 1);
+      sweep(person.inventory, 1, 'carried');
     }
     for (const building of this.buildings) {
       const keeps = building.def.preserves ?? 1;
-      sweep(building.store, keeps);
+      sweep(building.store, keeps, 'store');
       // Materials on a site rot too, and a site is exactly where food should
       // not be: nothing delivers berries to a hut, so this is almost always a
       // no-op and is here so that the one day something does, it behaves.
-      sweep(building.delivered, keeps);
+      sweep(building.delivered, keeps, 'site');
     }
     // Dropped goods keep no better than a pack.
-    for (const pile of this.piles) sweep(pile.contents, 1);
+    for (const pile of this.piles) sweep(pile.contents, 1, 'pile');
   }
 
   /**

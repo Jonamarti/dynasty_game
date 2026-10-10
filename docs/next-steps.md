@@ -1,3 +1,5 @@
+**2026-10-10: 15a, instrumento por origen entregado.** Pérdidas secas/reales y nutrición en inventario personal, almacén, obra y montón. [Contrato](m15_phase15a_spoilage_sources.md). Cohortes de veinte semillas y activación15c siguen diferidas por AGENTS.md; tasa por defecto cero.
+
 **2026-10-10: 16d, lechos y camas entregados.** Recetas con materiales alternativos, colocación dentro del hogar, persistencia y recuperación según superficie. [Contrato y captura](m15_phase16d_bedding.md). Autonomía y otros muebles pendientes.
 
 **2026-10-10: conocimiento de madera corregido.** La búsqueda amplia de árboles para obras sólo acepta visión actual o memoria personal. Regresión negativa confirmada; no se relaja people-act-on-what-they-know.

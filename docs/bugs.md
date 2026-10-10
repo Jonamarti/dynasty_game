@@ -4667,3 +4667,5 @@ Se corrigió exceso de una ULP de crédito nutricional con control mínimo y ret
 El sim:check band del árbol compartido (ropa/muebles/luz simultáneos) dio un action_target_knowledge_unknown y people-act-on-what-they-know FAIL. El baseline anterior tenía solo cravings-steer-the-diet/perf-budget. No atribuido ni relajado: aislar con misma semilla y mecanismo de noteKnownTarget; cohortes M15 aplazadas.
 
 **Diagnóstico y arreglo 2026-10-10:** el destino desconocido fue chop (árbol a 5,499 tiles, visión 4,2, sin memoria), no forrajeo. El scorer de madera para obras buscaba a tres radios sin filtrar conocimiento. Se corrige la elegibilidad; regresión negativa confirmada antes del arreglo. La comprobación global pendiente se conserva sin relajar.
+
+**Control corto posterior 2026-10-10:** people-act-on-what-they-know vuelve a PASS tras el filtro de madera. La semilla band conserva sólo cravings-steer-the-diet y perf-budget (2/147), sin rebajar umbrales. Log: artifacts/m15-pending-simcheck-20261010.log.
