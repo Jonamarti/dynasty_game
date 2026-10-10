@@ -9,6 +9,14 @@ import { CORD, WOOD } from '../props/items.ts';
 
 export type BuildingArt = [id: string, label: string, tech: string, width: number, draw: () => string];
 export type PlanArt = [id: string, label: string, width: number, draw: () => string];
+export interface InteriorArt {
+  id: string;
+  width: number;
+  height: number;
+  floor: () => string;
+  walls: (doorSide: 'north' | 'east' | 'south' | 'west') => string;
+  front: (doorSide: 'north' | 'east' | 'south' | 'west') => string;
+}
 
 const B = { L: '#2b1d12', mud: '#a67c52', mudL: '#bd9060', thatch: '#d0b060', thatchD: '#a98a3e', wattle: '#b58d5e', wattleD: '#8a643e', stone: '#9a9690', stoneL: '#b3afa8', stoneD: '#6e6a63', clay: '#c98a5a', dark: '#22160d', roofD: '#7a5a3a' };
 const gShadow = (cx: number, cy: number, rx: number, ry: number): string => ell(cx, cy, rx, ry, 'rgba(0,0,0,0.24)');
@@ -242,6 +250,63 @@ export const BUILDINGS: BuildingArt[] = [
 ];
 
 const FLOOR = '#6b5236', PLANK = '#a4784c';
+const interiorFloor = (width: number, height: number, color: string): string =>
+  shape(poly([[0, 0], [width, 0], [width, height], [0, height]]), color, 'none') +
+  Array.from({ length: Math.floor(width / 20) }, (_, i) => stroke(`M${(i + 1) * 20},0L${(i + 1) * 20},${height}`, shade(color, 0.82), 1)).join('') +
+  Array.from({ length: Math.floor(height / 18) }, (_, i) => stroke(`M0,${(i + 1) * 18}L${width},${(i + 1) * 18}`, shade(color, 0.9), 0.8)).join('');
+const interiorWalls = (width: number, height: number, color: string, texture: string,
+  doorSide: 'north' | 'east' | 'south' | 'west'): string => {
+  const t = 8, door = 24, midX = width / 2, midY = height / 2;
+  const wall = (pts: Pt[]): string => shape(poly(pts), color, B.L) +
+    stroke(`M${pts[0]![0]},${pts[0]![1]}L${pts[1]![0]},${pts[1]![1]}`, texture, 1.1);
+  const horizontal = (y: number, doorHere: boolean): string => doorHere
+    ? wall([[0, y], [midX - door / 2, y], [midX - door / 2, y + t], [0, y + t]]) +
+      wall([[midX + door / 2, y], [width, y], [width, y + t], [midX + door / 2, y + t]]) +
+      stroke(`M${midX - door / 2},${y}L${midX - door / 2},${y + t}M${midX + door / 2},${y}L${midX + door / 2},${y + t}`, B.L, 1.2)
+    : wall([[0, y], [width, y], [width, y + t], [0, y + t]]);
+  const vertical = (x: number, doorHere: boolean): string => doorHere
+    ? wall([[x, 0], [x + t, 0], [x + t, midY - door / 2], [x, midY - door / 2]]) +
+      wall([[x, midY + door / 2], [x + t, midY + door / 2], [x + t, height], [x, height]]) +
+      stroke(`M${x},${midY - door / 2}L${x + t},${midY - door / 2}M${x},${midY + door / 2}L${x + t},${midY + door / 2}`, B.L, 1.2)
+    : wall([[x, 0], [x + t, 0], [x + t, height], [x, height]]);
+  return horizontal(0, doorSide === 'north') +
+    vertical(0, doorSide === 'west') +
+    vertical(width - t, doorSide === 'east') +
+    horizontal(height - t, doorSide === 'south') +
+    stroke(`M${t + 2},${t + 4}L${width - t - 2},${t + 4}`, texture, 0.8) +
+    stroke(`M${t + 2},${height - t - 4}L${width - t - 2},${height - t - 4}`, texture, 0.8);
+};
+const interiorFrontWall = (width: number, height: number, color: string, texture: string,
+  doorSide: 'north' | 'east' | 'south' | 'west'): string => {
+  const t = 8, door = 24, mid = width / 2;
+  const wall = (pts: Pt[]): string => shape(poly(pts), color, B.L) +
+    stroke(`M${pts[0]![0]},${pts[0]![1]}L${pts[1]![0]},${pts[1]![1]}`, texture, 1.1);
+  if (doorSide !== 'south') return wall([[0, height - t], [width, height - t], [width, height], [0, height]]);
+  return wall([[0, height - t], [mid - door / 2, height - t], [mid - door / 2, height], [0, height]]) +
+    wall([[mid + door / 2, height - t], [width, height - t], [width, height], [mid + door / 2, height]]) +
+    stroke(`M${mid - door / 2},${height - t}L${mid - door / 2},${height}M${mid + door / 2},${height - t}L${mid + door / 2},${height}`, B.L, 1.2);
+};
+
+/** Separate room surfaces for the phase-16 roof lift; measurements are tile × 48 px. */
+export const INTERIORS: InteriorArt[] = [
+  { id: 'mud_hut', width: 4 * 48, height: 4 * 48,
+    floor: () => interiorFloor(4 * 48, 4 * 48, '#75583c'),
+    walls: side => interiorWalls(4 * 48, 4 * 48, B.mud, B.mudL, side),
+    front: side => interiorFrontWall(4 * 48, 4 * 48, B.mud, B.mudL, side) },
+  { id: 'wattle_hut', width: 4 * 48, height: 4 * 48,
+    floor: () => interiorFloor(4 * 48, 4 * 48, '#7d6243'),
+    walls: side => interiorWalls(4 * 48, 4 * 48, B.wattle, B.wattleD, side),
+    front: side => interiorFrontWall(4 * 48, 4 * 48, B.wattle, B.wattleD, side) },
+  { id: 'stone_house', width: 5 * 48, height: 5 * 48,
+    floor: () => interiorFloor(5 * 48, 5 * 48, PLANK),
+    walls: side => interiorWalls(5 * 48, 5 * 48, B.stone, B.stoneD, side),
+    front: side => interiorFrontWall(5 * 48, 5 * 48, B.stone, B.stoneD, side) },
+  { id: 'longhouse', width: 8 * 48, height: 4 * 48,
+    floor: () => interiorFloor(8 * 48, 4 * 48, '#795a39'),
+    walls: side => interiorWalls(8 * 48, 4 * 48, B.wattle, B.wattleD, side),
+    front: side => interiorFrontWall(8 * 48, 4 * 48, B.wattle, B.wattleD, side) },
+];
+
 const hearthPlan = (x: number, y: number, r = 8): string => `<circle cx="${x}" cy="${y}" r="${r + 3}" fill="${B.stoneL}" stroke="${B.L}" stroke-width="1.6"/><circle cx="${x}" cy="${y}" r="${r - 1}" fill="#2a1c12"/>`
   + stroke(`M${x - 4},${y - 2}L${x + 4},${y + 2}M${x - 4},${y + 2}L${x + 4},${y - 2}`, '#7d5a36', 2.2) + ell(x, y, 2.6, 2.6, '#f2a03a');
 const ringPlan = (cx: number, cy: number, r: number, wall: number, fill: string, tex: string): string => `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${fill}" stroke="${B.L}" stroke-width="2"/>`

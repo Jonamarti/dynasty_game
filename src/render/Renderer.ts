@@ -25,6 +25,7 @@ import type { ItemPile } from '../sim/entities/ItemPile.ts';
 import type { Animal } from '../sim/entities/Animal.ts';
 import { animalPose, trackAnimal, type AnimalTrack } from './AnimalAnimation.ts';
 import { BUILDINGS, type Building } from '../sim/entities/Building.ts';
+import { houseInteriorContains } from '../sim/world/HouseInterior.ts';
 import type { Tree } from '../sim/entities/Tree.ts';
 import type { TreeSpecies } from '../sim/entities/Tree.ts';
 import { workProgressOf } from '../sim/core/Progress.ts';
@@ -313,6 +314,8 @@ export class Renderer {
   private art: ArtAtlas | null = null;
   /** Presentation only: hides every roof, the way the roof-lift key will once phase 16 lands. */
   hideRoofs = false;
+  /** Last cursor position in world units; presentation input for roof hover only. */
+  cursorWorld: { x: number; y: number } | null = null;
   /** Buildings that stand up out of the ground this frame, depth-sorted with the people. */
   private readonly tallBuildings: Building[] = [];
   private frameHighlight: Highlight | null = null;
@@ -812,7 +815,7 @@ export class Renderer {
           this.drawPerson(baby, highlight?.personId === baby.id,
             { ...d.at!, x: d.at!.x + side * 0.22, y: d.at!.y - 0.06 });
         });
-      } else this.drawBuildingSprite(d.ref as Building, false);
+      } else this.drawDepthBuilding(d.ref as Building);
     }
 
     // --- Build ghost -------------------------------------------------------
@@ -1593,17 +1596,32 @@ export class Renderer {
   /** Buildings the art draws flat on the ground: people walk over them, so they never hide anyone. */
   private static readonly FLAT_BUILDINGS: ReadonlySet<string> = new Set(['stockpile', 'storage_pit', 'fish_trap', 'snare', 'quern', 'hearth']);
 
-  /** Is somebody the player is watching standing inside `b`? Then the roof lifts (phase 16's rule, early). */
+  /** Whether phase 16c should expose a real room under this building's roof. */
   private roofLifted(b: Building): boolean {
     if (this.hideRoofs) return true;
+    if (!b.def.interior) return false;
     const p = this.sim.player;
-    if (p && b.contains(p.x, p.y)) return true;
+    if (p && houseInteriorContains(b, p.x, p.y)) return true;
     const id = this.frameHighlight?.personId;
     if (id !== undefined) {
       const sel = this.sim.peopleById.get(id);
-      if (sel && b.contains(sel.x, sel.y)) return true;
+      if (sel && houseInteriorContains(b, sel.x, sel.y)) return true;
     }
-    return false;
+    return this.cursorWorld !== null && b.contains(this.cursorWorld.x, this.cursorWorld.y);
+  }
+
+  /** Old saves can carry a footprint that no longer matches the generated room sheet. */
+  private hasInteriorArt(building: Building): boolean {
+    if (!building.def.interior) return false;
+    const bm = this.art?.manifest('buildings');
+    if (!bm || !(`b/${building.def.id}/floor` in bm.keys)) return false;
+    if (!(['north', 'east', 'south', 'west'] as const).every(side =>
+      `b/${building.def.id}/walls-${side}` in bm.keys &&
+      `b/${building.def.id}/front-${side}` in bm.keys)) return false;
+    const unit = (bm.meta['unitPerTile'] as number) || 48;
+    const entries = bm.meta['interiors'] as { id: string; width: number; height: number }[] | undefined;
+    const art = entries?.find(entry => entry.id === building.def.id);
+    return art?.width === building.def.width * unit && art.height === building.def.height * unit;
   }
 
   /**
@@ -1645,17 +1663,25 @@ export class Renderer {
     }
 
     const hasPlan = (('b/' + id + '/plan') in bm.keys);
-    if (hasPlan && this.roofLifted(building)) this.drawBuildingSprite(building, true);
-    else if (Renderer.FLAT_BUILDINGS.has(id)) this.drawBuildingSprite(building, false);
+    const hasInteriorLayers = this.hasInteriorArt(building);
+    if (hasInteriorLayers && this.roofLifted(building)) {
+      this.drawInteriorLayer(building, 'floor');
+      // The complete ring sits behind people; the front edge is redrawn in the
+      // depth pass so a person at the threshold is clipped by the near wall.
+      this.drawInteriorLayer(building, 'walls');
+      this.tallBuildings.push(building);
+    } else if (hasPlan && this.roofLifted(building)) this.drawBuildingSprite(building, 'plan');
+    else if (Renderer.FLAT_BUILDINGS.has(id)) this.drawBuildingSprite(building, 'ext');
     else this.tallBuildings.push(building);
     return true;
   }
 
   /** The exterior (or the roofless plan) of a building, its pennant included. */
-  private drawBuildingSprite(building: Building, plan: boolean): void {
+  private drawBuildingSprite(building: Building, layer: 'ext' | 'plan'): void {
     const art = this.art!, { ctx, camera } = this;
     const bm = art.manifest('buildings');
-    const key = 'b/' + building.def.id + (plan ? '/plan' : '/ext');
+    const plan = layer === 'plan';
+    const key = 'b/' + building.def.id + '/' + layer;
     const box = art.assetBox('buildings', key);
     if (!box) return;
     const scale = camera.scale;
@@ -1675,6 +1701,32 @@ export class Renderer {
       art.drawAsset(ctx, 'buildings', 'banner/pole', bx, by, bu);
       art.drawAsset(ctx, 'buildings', 'banner/cloth', bx, by, bu, BAND_COLORS[this.colorIndexOfBand(building.ownerBandId)]!);
     }
+  }
+
+  /** Draw a generated room surface in exact tile coordinates beneath the footprint. */
+  private drawInteriorLayer(building: Building, layer: 'floor' | 'walls' | 'front'): void {
+    const art = this.art!, { ctx, camera } = this;
+    const bm = art.manifest('buildings');
+    const doorSide = building.interiorDoorSide ?? 'south';
+    const key = layer === 'floor'
+      ? `b/${building.def.id}/floor`
+      : `b/${building.def.id}/${layer}-${doorSide}`;
+    const box = art.assetBox('buildings', key);
+    if (!box) return;
+    const unit = (bm.meta['unitPerTile'] as number) || 48;
+    const scale = camera.scale / unit;
+    // House-wall overlays block World tiles [x, x+1), so their pixel corners
+    // start at the integer tile origin (unlike the exterior sprite's centered fit).
+    const left = camera.worldToScreenX(building.x);
+    const top = camera.worldToScreenY(building.y);
+    art.drawAsset(ctx, 'buildings', key, left - box.ox * scale, top - box.oy * scale, scale);
+  }
+
+  /** Room floor is in the ground pass; the wall ring is sorted against people. */
+  private drawDepthBuilding(building: Building): void {
+    const hasInteriorLayers = this.hasInteriorArt(building);
+    if (hasInteriorLayers && this.roofLifted(building)) this.drawInteriorLayer(building, 'front');
+    else this.drawBuildingSprite(building, 'ext');
   }
 
   /**

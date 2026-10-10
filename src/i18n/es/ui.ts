@@ -152,6 +152,7 @@ export const ES_UI: Record<string, string> = {
   "{n} marks": "{n} marcas",
   "the ground here": "el suelo de aquí",
   "toggle fog of war": "alternar niebla de guerra",
+  "lift roof": "levantar el tejado",
   "heard about this place": "se lo contaron sobre este lugar",
   "seen {n} days ago": "visto hace {n} días",
   "{m} m above the sea": "{m} m sobre el mar",

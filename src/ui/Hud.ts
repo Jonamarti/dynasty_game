@@ -420,7 +420,8 @@ export class Hud {
         [t('click'), t('inspect')], [t('right-click'), t('actions')],
         ['B', t('build')], ['M', t('make')], ['C', t('command')],
         ['G', t('tech web')], ['K', t('family tree')], ['T', t('tribe graph')], ['O', t('world')],
-        ['V', t('toggle fog of war')],
+        ['V', t('lift roof')],
+        ['Z', t('toggle fog of war')],
         ['R', t('who steers')],
         ['P', t('fold panel')], ['H', t('hide overlay')], [t('space'), t('pause')],
         ['Esc', t('menu')],
@@ -1133,7 +1134,7 @@ export class Hud {
         '</div>');
 
       if (!own) continue;
-      const verbs = itemActions(itemId, nearby.length, soleRecipientName, nearbyStore);
+      const verbs = itemActions(person, itemId, nearby.length, soleRecipientName, nearbyStore);
       rows.push('<div class="hud-item-verbs">' +
         verbs.map(v =>
           '<button class="hud-verb' + (v.enabled ? '' : ' is-disabled') + '"' +

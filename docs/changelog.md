@@ -3908,6 +3908,16 @@ Added the moods-move-choices health check, comparing talk frequency in the low a
 
 # Changelog
 
+## 2026-10-10 — M15 16c: apartar techos y mostrar habitaciones
+
+Suelo, perímetro y pared delantera se generan para las cuatro orientaciones de
+puerta y se alinean con los tiles bloqueados. El techo se aparta al entrar el
+jugador/personaje seleccionado, al pasar el cursor o con V; la niebla pasa a Z.
+Las huellas antiguas incompatibles conservan su presentación anterior.
+Contrato `m15_roof_lift.md`; art build, typecheck y 28 focales OK. El caso e2e
+completó sus aserciones, pero el cierre del servidor se interrumpió por bloqueo.
+Capturas: `artifacts/screenshots/m15-roof-lift-2026-10-10-final/`.
+
 ## 2026-10-10 — M15 29b/33: mundo generado en el menú
 
 El menú permite elegir una geografía generada con la semilla de la partida,

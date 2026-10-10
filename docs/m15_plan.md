@@ -1,5 +1,9 @@
 # M15 — El plan maestro: de las manos vacías al Estado
 
+**Avance 2026-10-10 — 16c:** habitaciones con suelo/muros generados, cuatro
+puertas y techos apartables por ocupante observado, cursor o V. Niebla en Z.
+Véase [techos](m15_roof_lift.md); muebles y demás lectores 16d siguen abiertos.
+
 **Avance 2026-10-10 — 29b/33:** selección visible de mundo generado con la
 semilla de partida, búsqueda de agua e instalación de pueblos. Contrato
 [selección generada](m15_phase33_generated_choice.md); paleoclima y selección

@@ -13,7 +13,7 @@ import {
   type ArtAge, type ArtSex, type PersonAnchors,
 } from '../../src/render/ArtManifest.ts';
 import { ANIMAL_KINDS, ANIMAL_POSES, paintAnimal } from './animals/animals.ts';
-import { BUILDINGS, PLANS } from './buildings/buildings.ts';
+import { BUILDINGS, INTERIORS, PLANS } from './buildings/buildings.ts';
 import { ell, limb, normalizeIds, poly, shape, stroke, svgDoc } from './lib/draw.ts';
 import { BELLY_COVERS, CARRY_SLOTS, SLOT_ORDER, SLOT_TINT, isWoman, personLayers, type FaceExpr, type HairStyle, type PersonSpec, type Wear } from './people/rig.ts';
 import { BABY_BEDS, HAND, HELD_KINDS, babyLyingLayers, heldSvg } from './props/held.ts';
@@ -149,6 +149,13 @@ export function collectBuildings(): Collected {
     const vw = w === 288 ? 288 : 144;
     bank.add(`b/${id}/plan`, draw(), vw, 116, `0 -2 ${vw} 116`);
   }
+  for (const interior of INTERIORS) {
+    bank.add(`b/${interior.id}/floor`, interior.floor(), interior.width, interior.height);
+    for (const side of ['north', 'east', 'south', 'west'] as const) {
+      bank.add(`b/${interior.id}/walls-${side}`, interior.walls(side), interior.width, interior.height);
+      bank.add(`b/${interior.id}/front-${side}`, interior.front(side), interior.width, interior.height);
+    }
+  }
   // A pennant on a pole: the pole and the cloth are separate so the cloth takes the tribe's colour.
   bank.add('banner/pole', limb([[6, 46], [6, 4]], 2.2, WOOD, WOOD_D) + ell(6, 3, 2.4, 2.4, '#d9b04a', WOOD_D), 32, 48);
   bank.add('banner/cloth', shape(poly([[7, 6], [26, 10], [21, 17], [26, 24], [7, 22]]), '#f2f2f2', '#797979') + stroke('M9,14L21,15', '#b8b8b8', 1), 32, 48);
@@ -163,6 +170,7 @@ export function collectBuildings(): Collected {
       tint: { 'banner/cloth': 'band' },
       buildings: BUILDINGS.map(([id, label, tech]) => ({ id, label, tech })),
       plans: PLANS.map(([id]) => id),
+      interiors: INTERIORS.map(({ id, width, height }) => ({ id, width, height })),
     },
   };
 }

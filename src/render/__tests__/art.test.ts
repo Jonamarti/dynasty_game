@@ -132,6 +132,24 @@ describe('art coverage', () => {
       expect(buildings.keys[`b/${id}/plan`], id).toBeDefined();
     }
   });
+
+  it('gives every house interior separately generated floor and wall layers in tile scale', () => {
+    const unit = buildings.meta['unitPerTile'] as number;
+    const interiorMeta = buildings.meta['interiors'] as { id: string; width: number; height: number }[];
+    const byId = new Map(interiorMeta.map(entry => [entry.id, entry]));
+    for (const [id, def] of Object.entries(BUILDINGS)) {
+      if (!def.interior) continue;
+      expect(buildings.keys[`b/${id}/floor`], `${id} floor`).toBeDefined();
+      for (const side of ['north', 'east', 'south', 'west']) {
+        expect(buildings.keys[`b/${id}/walls-${side}`], `${id} ${side} doorway walls`).toBeDefined();
+        expect(buildings.keys[`b/${id}/front-${side}`], `${id} ${side} front wall`).toBeDefined();
+      }
+      expect(byId.get(id), `${id} dimensions`).toMatchObject({
+        width: def.width * unit,
+        height: def.height * unit,
+      });
+    }
+  });
 });
 
 describe('art build', () => {

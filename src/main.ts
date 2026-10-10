@@ -906,6 +906,15 @@ function handleItemAction(
       say(ordered ? t('changing equipment') : reason ?? t('could not equip that item'), ordered);
       break;
     }
+    case 'wear_garment':
+    case 'take_off_garment': {
+      const ordered = sim.order(person, verb, { itemId });
+      const reason = ordered ? null : sim.lastRefusal;
+      if (!ordered) sim.lastRefusal = null;
+      say(ordered ? t(verb === 'wear_garment' ? 'changing clothes' : 'taking off clothes')
+        : reason ?? t('could not change clothes'), ordered);
+      break;
+    }
     case 'give_item': {
       // Every living neighbour within reach, not just the nearest one — the
       // `findNearest` this replaced is exactly the bug M9's note 1 diagnosed
@@ -1122,8 +1131,12 @@ window.addEventListener('keydown', event => {
     if (sim.player) camera.recentre(sim.player.x, sim.player.y);
     return;
   }
-  if (key === 'v') {
+  if (key === 'z') {
     toggleFogOfWar();
+    return;
+  }
+  if (key === 'v') {
+    renderer.hideRoofs = !renderer.hideRoofs;
     return;
   }
   // Cycles rather than toggles: there are three states and `R` has to be able
@@ -1515,9 +1528,11 @@ canvas.addEventListener('pointermove', event => {
 let lastMapPointer: { x: number; y: number } | null = null;
 canvas.addEventListener('pointermove', event => {
   lastMapPointer = worldPoint(event);
+  renderer.cursorWorld = lastMapPointer;
   canvas.title = renderer.fogDescriptionAt(lastMapPointer.x, lastMapPointer.y) ??
     renderer.groundDescriptionAt(lastMapPointer.x, lastMapPointer.y) ?? '';
 });
+canvas.addEventListener('pointerleave', () => { renderer.cursorWorld = null; });
 
 /** Draws the active design's ghost at a world point, green where it fits. */
 function showBuildGhost(worldX: number, worldY: number): void {
