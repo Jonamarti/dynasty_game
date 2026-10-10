@@ -18,6 +18,24 @@ import {
 const positions = (layout: WebLayout) =>
   new Map(layout.nodes.map(node => [node.tech, node.x + ',' + node.y]));
 
+function reachableWithRequirements(
+  members: readonly Tech[], gate: Tech, externalRoots: readonly Tech[],
+  requiresFor: (tech: Tech) => readonly Tech[],
+): Set<Tech> {
+  const reached = new Set<Tech>([gate, ...externalRoots]);
+  for (let grew = true; grew;) {
+    grew = false;
+    for (const member of members) {
+      if (reached.has(member)) continue;
+      if (requiresFor(member).some(required => reached.has(required))) {
+        reached.add(member);
+        grew = true;
+      }
+    }
+  }
+  return reached;
+}
+
 describe('a web draws only its own nodes', () => {
   it('draws the main web without a single sub-web node', () => {
     const layout = layOutWeb('main');
@@ -40,19 +58,27 @@ describe('a web draws only its own nodes', () => {
         expect(placed, web.id + ' edge from ' + edge.from).toContain(edge.from);
         expect(placed, web.id + ' edge to ' + edge.to).toContain(edge.to);
       }
-      // Every sub-web node hangs off the gate on the picture, or the gate is
-      // there for nothing.
-      const reached = new Set<Tech>([web.gate!]);
-      for (let grew = true; grew;) {
-        grew = false;
-        for (const edge of layout.edges) {
-          if (edge.kind === 'requires' && reached.has(edge.from) && !reached.has(edge.to)) {
-            reached.add(edge.to); grew = true;
-          }
-        }
+      // Some real craft paths start from material knowledge in another web
+      // (cordage, basketry or wool). Seed only those explicit requires edges;
+      // an invented root would hide a missing prerequisite in the picture.
+      const memberSet = new Set(techsOfWeb(web.id));
+      const externalRoots = [...new Set(techsOfWeb(web.id).flatMap(tech =>
+        TECH[tech].requires.filter(required => required !== web.gate && !memberSet.has(required))))];
+      for (const root of externalRoots) {
+        expect(techsOfWeb(web.id).some(tech => TECH[tech].requires.includes(root)), web.id + ': ' + root)
+          .toBe(true);
       }
+      const reached = reachableWithRequirements(
+        techsOfWeb(web.id), web.gate!, externalRoots, tech => TECH[tech].requires,
+      );
       for (const tech of techsOfWeb(web.id)) expect(reached, web.id + ': ' + tech).toContain(tech);
     }
+  });
+
+  it('does not rescue an isolated node by inventing an external root', () => {
+    const isolated = 'wool_cloak' as Tech;
+    const reached = reachableWithRequirements(['wool_cloak'], 'clothing', [], () => []);
+    expect(reached.has(isolated)).toBe(false);
   });
 
   it('puts every technology in exactly one web', () => {

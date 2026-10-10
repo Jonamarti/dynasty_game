@@ -1698,6 +1698,12 @@ paño de lana 2, abrigo 0,35 sólo en el hueco capa. Sustituye la capa de piel
 sin sumar ambas y sin destruirla, con variante visual de lana y JSON.
 [Contrato y captura](m15_phase14c_wool_cloak.md). Sigue integrar la subred Ropa.
 
+**2026-10-10, avance 14c:** subred Ropa entregada con siete recetas y tres
+técnicas. Las cuatro prendas previas pasan a `craft`; hilado/tejido/lana
+conservan sus prerequisitos externos reales. [Contrato y captura](m15_phase14c_clothing_web.md).
+Quedan taparrabos/falda, curtido, bolsillos, desgaste/reparación, creencias,
+retirada por calor y escenario tailors. 14c sigue abierta.
+
 ### 14d. Estatus (medido; opcional dentro de la fase)
 
 `garment.status` suma al motivo de estatus (fase 5d) de quien la lleva y a la

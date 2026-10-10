@@ -24,15 +24,15 @@ test('a toggled coat is worn from the Spanish Kit and visible on the torso', asy
     d.renderer.render(null, 0);
   });
   await page.locator('.hud-tab[data-tab="self"]').click();
-  await expect(page.locator('.hud-panel')).toContainText('torso: Abrigo con alamares ×1');
   await page.locator('.hud-tab[data-tab="kit"]').click();
+  await expect(page.locator('.hud-panel')).toContainText('torso: Abrigo con alamares ×1');
   await expect(page.locator('.hud-panel')).toContainText('Abrigo con alamares');
   expect(await page.evaluate(async () => {
     const d = (window as any).__dynasty, path = '/src/render/Renderer.ts';
     const { wornGarmentsOf } = await import(/* @vite-ignore */ path);
     return { item: d.sim.player.equipment.torso?.item, drawn: wornGarmentsOf(d.sim.player).torso };
   })).toEqual({ item: 'toggled_coat', drawn: 'toggled_coat' });
-  const shots = 'artifacts/screenshots/m15-phase14c-toggled-coat-2026-10-10';
+  const shots = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m15-phase14c-toggled-coat-2026-10-10';
   mkdirSync(shots, { recursive: true });
   await page.screenshot({ path: `${shots}/01-abrigo-con-alamares.png` });
   expect(errors).toEqual([]);

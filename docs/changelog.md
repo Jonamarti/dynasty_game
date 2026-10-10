@@ -1,3 +1,19 @@
+## 2026-10-10 — m15: subred Ropa
+
+`0.15.45-alpha`: puerta Ropa con sastrería, hilado, tejido y siete recetas
+de prendas. Envolturas, polainas, mocasines y gorro pasan a tier `craft`, como
+pide 14c; sus materiales y prerequisitos siguen iguales. Los enlaces externos
+(cordaje, cestería y lana) conservan sus técnicas reales, sin dependencias
+inventadas para dibujar el grafo. La prueba de alcance acepta esas entradas
+externas y sigue rechazando nodos aislados.
+
+Contrato y validación: `docs/m15_phase14c_clothing_web.md`. Captura:
+`artifacts/screenshots/m15-phase14c-clothing-web-2026-10-10/01-red-de-ropa.png`.
+14c sigue abierta: catálogo restante, curtido, bolsillos, desgaste/reparación,
+creencias y retirada por calor, escenario tailors. Cohortes diferidas.
+La regresión conjunta detectó una aserción de alamares en Perfil en vez de
+Equipo; se coloca después de abrir Equipo, sin cambiar comportamiento.
+
 ## 2026-10-10 — m15: manto de lana
 
 `0.15.44-alpha`: receta de dos paños de lana tras conocimiento individual de

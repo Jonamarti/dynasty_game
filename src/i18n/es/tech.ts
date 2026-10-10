@@ -1,5 +1,6 @@
 /** Spanish for tech. Keys are the English templates; see `i18n.ts`. */
 export const ES_TECH: Record<string, string> = {
+  'Clothes': 'Ropa',
   'wrapped woven wool around their shoulders against the cold': 'se envolvió los hombros con lana tejida para protegerse del frío',
   'folded a thick woollen cloth over their shoulders for winter': 'se echó sobre los hombros un paño grueso de lana para el invierno',
   'A woven wool cloak warms the shoulders only while worn.': 'Una capa de lana tejida abriga los hombros solo cuando se lleva puesta.',

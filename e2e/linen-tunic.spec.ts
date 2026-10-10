@@ -31,7 +31,7 @@ test('a linen tunic is worn from the Spanish Kit and visible on the torso', asyn
     const { wornGarmentsOf } = await import(/* @vite-ignore */ path);
     return { item: d.sim.player.equipment.torso?.item, drawn: wornGarmentsOf(d.sim.player).torso };
   })).toEqual({ item: 'linen_tunic', drawn: 'linen_tunic' });
-  const shots = 'artifacts/screenshots/m15-phase14c-linen-tunic-2026-10-10';
+  const shots = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m15-phase14c-linen-tunic-2026-10-10';
   mkdirSync(shots, { recursive: true });
   await page.screenshot({ path: `${shots}/01-tunica-de-lino.png` });
   expect(errors).toEqual([]);

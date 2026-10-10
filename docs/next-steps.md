@@ -1,3 +1,5 @@
+**2026-10-10: 14c, subred Ropa entregada.** Sastrería/hilado/tejido y recetas con entradas externas reales. [Contrato y captura](m15_phase14c_clothing_web.md). Siguen taparrabos/falda de fibra, curtido, bolsillos, desgaste/reparación, creencias de abrigo y retirada por calor, escenario tailors. 14c y M15 siguen abiertos; no se declara mejora económica ni se ejecutan cohortes.
+
 **2026-10-10: 14c, manto de lana entregado.** Paño de lana físico, abrigo sólo puesto y sustitución de capa sin sumar ambas. [Contrato y captura](m15_phase14c_wool_cloak.md). Sigue subred Ropa; catálogo inicial restante, bolsillos/desgaste/reparación pendientes.
 
 **2026-10-10: 14c, túnica de lino entregada.** Tela/hilo, aguja retenida, abrigo del torso y capa visual de lino. [Contrato y captura](m15_phase14c_linen_tunic.md). Sigue manto de lana y subred Ropa; bolsillos/desgaste/reparación pendientes.

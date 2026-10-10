@@ -330,7 +330,7 @@ export type TechKind = 'practice' | 'device';
  * a node lives never changes what anyone can discover, which is why moving a
  * node between webs is bit-identical.
  */
-export type WebId = 'main' | 'arms' | 'field' | 'domestication' | 'kitchen' | 'metal' | 'preservation';
+export type WebId = 'main' | 'arms' | 'field' | 'domestication' | 'kitchen' | 'metal' | 'preservation' | 'clothing';
 
 export interface WebDef {
   id: WebId;
@@ -352,6 +352,8 @@ export const WEBS: Record<WebId, WebDef> = {
   // (`bellows`, 37e) gives it content. The colour is the domain's verdigris.
   metal: { id: 'metal', label: 'Metal', gate: 'native_copper', color: '#3fb8a0' },
   preservation: { id: 'preservation', label: 'Preservation', gate: 'preserving', color: '#a88a52' },
+  // M15 phase 14c: the clothing recipes open from the existing clothing idea.
+  clothing: { id: 'clothing', label: 'Clothes', gate: 'clothing', color: '#b88775' },
 };
 
 /** The webs that hang off a gate, in the order a screen should list them. */
@@ -477,7 +479,7 @@ export interface TechDef {
  */
 export const TECH: Record<Tech, TechDef> = {
   toggles: {
-    id: 'toggles', label: 'Toggles', domain: 'cloth', tier: 'craft',
+    id: 'toggles', label: 'Toggles', domain: 'cloth', tier: 'craft', web: 'clothing',
     age: 'upper_palaeolithic', firstKnown: 'Bone toggles; the first date is uncertain',
     kind: 'device', requires: ['tailoring', 'bone_working'], difficulty: 0.35, skill: 'build',
     prototype: { fur_coat: 1, bone: 2 }, maxRefinement: 3,
@@ -490,7 +492,7 @@ export const TECH: Record<Tech, TechDef> = {
     description: 'Bone toggles fasten a fur coat closed and make it warmer while worn.',
   },
   fur_hat: {
-    id: 'fur_hat', label: 'Fur hat', domain: 'cloth',
+    id: 'fur_hat', label: 'Fur hat', domain: 'cloth', tier: 'craft', web: 'clothing',
     age: 'upper_palaeolithic', firstKnown: 'Sewn hide head coverings; the first date is uncertain',
     kind: 'device', requires: ['tailoring'], difficulty: 0.25, skill: 'build',
     prototype: { hide: 1 }, maxRefinement: 3,
@@ -503,7 +505,7 @@ export const TECH: Record<Tech, TechDef> = {
     description: 'A sewn hide cap warms the head independently of a coat or cloak.',
   },
   linen_tunic: {
-    id: 'linen_tunic', label: 'Linen tunic', domain: 'cloth', tier: 'craft',
+    id: 'linen_tunic', label: 'Linen tunic', domain: 'cloth', tier: 'craft', web: 'clothing',
     age: 'neolithic', firstKnown: 'about 6,000 BC',
     kind: 'device', requires: ['weaving'], difficulty: 0.35, skill: 'build',
     prototype: { cloth: 2, thread: 1 }, maxRefinement: 3,
@@ -516,7 +518,7 @@ export const TECH: Record<Tech, TechDef> = {
     description: 'Woven linen sewn into a light tunic that warms the torso only while worn.',
   },
   wool_cloak: {
-    id: 'wool_cloak', label: 'Wool cloak', domain: 'cloth', tier: 'craft',
+    id: 'wool_cloak', label: 'Wool cloak', domain: 'cloth', tier: 'craft', web: 'clothing',
     age: 'neolithic', firstKnown: 'about 6,000 BC',
     kind: 'device', requires: ['wool'], difficulty: 0.35, skill: 'build',
     prototype: { wool_cloth: 2 }, maxRefinement: 3,
@@ -529,7 +531,7 @@ export const TECH: Record<Tech, TechDef> = {
     description: 'A woven wool cloak warms the shoulders only while worn.',
   },
   moccasins: {
-    id: 'moccasins', label: 'Moccasins', domain: 'cloth',
+    id: 'moccasins', label: 'Moccasins', domain: 'cloth', tier: 'craft', web: 'clothing',
     age: 'upper_palaeolithic', firstKnown: 'Sewn hide shoes; the first date is uncertain',
     kind: 'device', requires: ['tailoring', 'foot_wraps'], difficulty: 0.3, skill: 'build',
     prototype: { hide: 1, sinew: 1 }, maxRefinement: 3,
@@ -542,7 +544,7 @@ export const TECH: Record<Tech, TechDef> = {
     description: 'Sewn hide shoes replace foot wraps with a warmer fitted covering.',
   },
   leggings: {
-    id: 'leggings', label: 'Leggings', domain: 'cloth',
+    id: 'leggings', label: 'Leggings', domain: 'cloth', tier: 'craft', web: 'clothing',
     age: 'upper_palaeolithic', firstKnown: 'Sewn hide leg coverings; the first date is uncertain',
     kind: 'device', requires: ['tailoring'], difficulty: 0.3, skill: 'build',
     prototype: { hide: 1, sinew: 1 }, maxRefinement: 3,
@@ -555,7 +557,7 @@ export const TECH: Record<Tech, TechDef> = {
     description: 'Sewn hide coverings warm the legs without occupying the torso or feet.',
   },
   foot_wraps: {
-    id: 'foot_wraps', label: 'Foot wraps', domain: 'cloth',
+    id: 'foot_wraps', label: 'Foot wraps', domain: 'cloth', tier: 'craft', web: 'clothing',
     age: 'middle_palaeolithic', firstKnown: 'Hide bound around the feet; the first date is uncertain',
     kind: 'device', requires: ['clothing', 'cordage'], difficulty: 0.25, skill: 'build',
     prototype: { hide: 1, rope: 1 }, maxRefinement: 3,
@@ -819,6 +821,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   clothing: {
     id: 'clothing', label: 'Clothing', domain: 'cloth',
+    opens: 'clothing',
     age: 'middle_palaeolithic', firstKnown: 'at least 120,000 years ago',
     kind: 'device',
     requires: ['cordage'], difficulty: 0.4, skill: 'forage',
@@ -1209,7 +1212,7 @@ export const TECH: Record<Tech, TechDef> = {
       'point, and a needle with an eye in it.',
   },
   tailoring: {
-    id: 'tailoring', label: 'Tailoring', domain: 'cloth',
+    id: 'tailoring', label: 'Tailoring', domain: 'cloth', web: 'clothing',
     age: 'upper_palaeolithic', firstKnown: 'about 40,000 years ago',
     kind: 'device',
     requires: ['clothing', 'bone_working'], difficulty: 0.5, skill: 'build',
@@ -1558,7 +1561,7 @@ export const TECH: Record<Tech, TechDef> = {
       'twice the adze — the same idea `stoneworking` had, taken further.',
   },
   spinning: {
-    id: 'spinning', label: 'Spinning', domain: 'cloth',
+    id: 'spinning', label: 'Spinning', domain: 'cloth', web: 'clothing',
     age: 'neolithic', firstKnown: 'about 7,000 BC',
     kind: 'device',
     requires: ['cordage'], difficulty: 0.4, skill: 'build',
@@ -1578,7 +1581,7 @@ export const TECH: Record<Tech, TechDef> = {
       'this is fine enough to sew or to weave.',
   },
   weaving: {
-    id: 'weaving', label: 'Weaving', domain: 'cloth',
+    id: 'weaving', label: 'Weaving', domain: 'cloth', web: 'clothing',
     age: 'neolithic', firstKnown: 'about 6,000 BC',
     kind: 'device',
     requires: ['spinning', 'basketry'], difficulty: 0.55, skill: 'build',

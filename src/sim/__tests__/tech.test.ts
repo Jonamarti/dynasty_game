@@ -582,17 +582,6 @@ describe('recipes', () => {
 });
 
 describe('the sub-webs (M15 phase 13a)', () => {
-  /** True when `tech` cannot be known without first knowing `gate`. */
-  function needs(tech: Tech, gate: Tech, seen = new Set<Tech>()): boolean {
-    for (const parent of TECH[tech].requires) {
-      if (parent === gate) return true;
-      if (seen.has(parent)) continue;
-      seen.add(parent);
-      if (needs(parent, gate, seen)) return true;
-    }
-    return false;
-  }
-
   it('keeps every gate in the main web', () => {
     for (const web of SUB_WEBS) {
       expect(web.gate, web.id + ' needs a gate').not.toBeNull();
@@ -600,12 +589,20 @@ describe('the sub-webs (M15 phase 13a)', () => {
     }
   });
 
-  it('makes every node of a sub-web require its gate, directly or not', () => {
-    for (const web of SUB_WEBS) {
-      for (const tech of techsOfWeb(web.id)) {
-        expect(needs(tech, web.gate!), tech + ' is in ' + web.id + ' without needing ' + web.gate).toBe(true);
-      }
+  it('keeps clothing materials as real external prerequisites, not invented gate edges', () => {
+    expect(TECH.spinning.requires).toEqual(['cordage']);
+    expect(TECH.weaving.requires).toEqual(['spinning', 'basketry']);
+    expect(TECH.wool_cloak.requires).toEqual(['wool']);
+    expect(webOf('wool')).toBe('domestication');
+  });
+
+  it('marks the existing garment variants as craft nodes in Clothes', () => {
+    for (const tech of ['foot_wraps', 'leggings', 'moccasins', 'fur_hat'] as const) {
+      expect(TECH[tech].tier, tech).toBe('craft');
+      expect(webOf(tech), tech).toBe('clothing');
     }
+    expect(WEBS.clothing.label).toBe('Clothes');
+    expect(TECH.clothing.opens).toBe('clothing');
   });
 
   it('never opens a sub-web with fewer than two nodes', () => {
@@ -636,6 +633,6 @@ describe('the sub-webs (M15 phase 13a)', () => {
       expect(web.label.length).toBeGreaterThan(0);
       expect(web.color).toMatch(/^#[0-9a-f]{6}$/i);
     }
-    expect(SUB_WEBS.map(web => web.id)).toEqual(['arms', 'field', 'domestication', 'kitchen', 'metal', 'preservation']);
+    expect(SUB_WEBS.map(web => web.id)).toEqual(['arms', 'field', 'domestication', 'kitchen', 'metal', 'preservation', 'clothing']);
   });
 });
