@@ -11,7 +11,8 @@ import './style.css';
 import { WorldState } from './sim/world/WorldState.ts';
 import { deserializeSave, serializeSave, SaveError, type SaveSummary } from './sim/persistence/SaveFile.ts';
 import { SaveStore, describeSaveFailure } from './ui/SaveStore.ts';
-import { earthWorldGeography, randomWorldGeography, type EarthWorldGeography } from './sim/world/WorldGeography.ts';
+import { earthWorldGeography, randomWorldGeography, type EarthWorldGeography, type RandomWorldGeography } from './sim/world/WorldGeography.ts';
+import { RNG } from './sim/core/RNG.ts';
 import { loadWorldAtlas, type LoadedWorldMap } from './sim/world/WorldAtlas.ts';
 import { findNearestStart, findStartInRegion, findWateredGlobeStart, localWorldConfig, type StartPlace } from './sim/world/StartPlace.ts';
 import { WorldPicker } from './ui/WorldPicker.ts';
@@ -85,7 +86,9 @@ document.documentElement.lang = language();
 onLanguageChange(next => { document.documentElement.lang = next; });
 
 const seedParam = params.get('seed');
-const seed: string | number = seedParam ?? Math.floor(Math.random() * 1e9);
+// Browser entropy names a fresh private stream; Simulation never spends a draw
+// to choose its own seed, and a seed supplied in the URL remains authoritative.
+const seed: string | number = seedParam ?? new RNG(crypto.randomUUID()).int(0, 999_999_999);
 
 /**
  * The player's difficulty and any field they moved by hand, from last time.
@@ -122,7 +125,7 @@ const profilePopulation = Number.isInteger(profileHumans) && profileHumans >= 2 
 // One map is one comarca (owner, 2026-10-08): every cell of the world map is a playable map, like the classic island and like
 // RimWorld's world tiles. It was 4, provisionally (sixteen comarcas squeezed into 128 by 128 tiles under the quotas of one).
 const GLOBE_SPAN = 1;
-let earthChoice: { geography: EarthWorldGeography; start: { x: number; y: number } } | null = null;
+let earthChoice: { geography: EarthWorldGeography | RandomWorldGeography; start: { x: number; y: number } } | null = null;
 function makeWorldState(overrides: Record<string, unknown>): WorldState {
   const config = { ...configFrom(settings), ...overrides, seed };
   if (earthChoice) {
@@ -697,10 +700,16 @@ const settingsScreen = new SettingsOverlay(document.body, {
  * The world built at boot is the island, as a draft; choosing a place on the Earth replaces it before the first step, through the
  * same `rebuildBeforeStart` the settings screen uses, and then the game goes on to the settings and character creation as always.
  */
-let earthMap: EarthWorldGeography | null = null;
+let earthMap: EarthWorldGeography | RandomWorldGeography | null = null;
 let earthAtlas: readonly LoadedWorldMap[] = [];
 const worldPicker = new WorldPicker(document.body, {
   onMap: id => {
+    if (id === 'generated-world') {
+      earthMap = randomWorldGeography(seed);
+      worldPicker.setNote(null);
+      worldPicker.setGeography(earthMap);
+      return;
+    }
     const chosen = earthAtlas.find(map => map.entry.id === id);
     if (!chosen) return;
     earthMap = earthWorldGeography(chosen, 10);
@@ -725,7 +734,7 @@ async function openWorldPicker(): Promise<void> {
     earthAtlas = maps;
     const entry = maps.find(map => map.entry.recommended) ?? maps[0]!;
     earthMap = earthWorldGeography(entry, 10);
-    worldPicker.setMaps(maps.map(map => map.entry), entry.entry.id);
+    worldPicker.setMaps([...maps.map(map => map.entry), { id: 'generated-world' }], entry.entry.id);
     worldPicker.setBusy(null);
     worldPicker.setGeography(earthMap);
   } catch (error) {

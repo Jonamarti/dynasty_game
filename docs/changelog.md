@@ -3908,6 +3908,16 @@ Added the moods-move-choices health check, comparing talk frequency in the low a
 
 # Changelog
 
+## 2026-10-10 — M15 29b/33: mundo generado en el menú
+
+El menú permite elegir una geografía generada con la semilla de la partida,
+buscar agua y comenzar con sus pueblos, sin flags de URL. Cambiar el mapa
+borra el lugar anterior y la confirmación seca; textos ingleses/españoles.
+Se sustituye el Math.random preexistente al elegir semilla por un RNG privado.
+Contrato `m15_phase33_generated_choice.md`. Caso focal de navegador con
+aserciones OK; cierre de servidor interrumpido por bloqueo de Playwright.
+Captura: `artifacts/screenshots/m15-generated-world-choice-2026-10-10T-01/`.
+
 ## 2026-10-10 — M15 11d: equipar desde el Equipo
 
 Los botones mano izquierda/derecha/espalda emiten una orden de tres ticks,

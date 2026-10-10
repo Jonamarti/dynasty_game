@@ -1,5 +1,10 @@
 # M15 — El plan maestro: de las manos vacías al Estado
 
+**Avance 2026-10-10 — 29b/33:** selección visible de mundo generado con la
+semilla de partida, búsqueda de agua e instalación de pueblos. Contrato
+[selección generada](m15_phase33_generated_choice.md); paleoclima y selección
+intraregional siguen pendientes.
+
 **Avance 2026-10-10 — 11d:** control manual de manos/espalda desde Equipo,
 tres ticks con interrupción y revalidación, objetos desplazados al suelo y
 rechazos visibles. Contrato [equipo manual](m15_manual_equipment.md).

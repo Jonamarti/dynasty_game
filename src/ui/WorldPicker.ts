@@ -40,7 +40,7 @@ export class WorldPicker {
   private readonly mapSelect: HTMLSelectElement;
   private readonly mapLabel: HTMLElement;
   private readonly mapCaveat: HTMLElement;
-  private maps: readonly WorldMapEntry[] = [];
+  private maps: readonly Pick<WorldMapEntry, 'id'>[] = [];
   private readonly confirmBox: HTMLElement;
   private readonly confirmText: HTMLElement;
   private readonly confirmAnyway: HTMLButtonElement;
@@ -160,6 +160,7 @@ export class WorldPicker {
       option.value = map.id;
       option.textContent = map.id === 'earth-present' ? t('Earth today')
         : map.id === 'earth-12000-bce' ? t('Earth, about 12,000 years ago')
+        : map.id === 'generated-world' ? t('A generated world')
         : t('World map {id}', { id: map.id });
       return option;
     }));
@@ -167,7 +168,7 @@ export class WorldPicker {
   }
 
   /** Atlas changes clear the old location and any dry-start confirmation. */
-  setMaps(maps: readonly WorldMapEntry[], selected: string): void {
+  setMaps(maps: readonly Pick<WorldMapEntry, 'id'>[], selected: string): void {
     this.maps = maps;
     this.label();
     this.mapSelect.value = selected;
@@ -249,7 +250,9 @@ export class WorldPicker {
   private render(): void {
     if (!this.isOpen) return;
     const grid = this.grid;
-    this.sub.textContent = this.busy ?? (grid ? t('Click a place on the Earth, or take a random island') : '');
+    this.sub.textContent = this.busy ?? (grid ? (this.geography?.kind === 'random'
+      ? t('Click a place on the generated world, or take a random island')
+      : t('Click a place on the Earth, or take a random island')) : '');
     // Both buttons wait for the confirm panel's own choice while it is up: begin-anyway and go-to-nearest are what this
     // click would otherwise have meant, and a second, ordinary click on Begin here behind the panel would bypass it.
     this.islandButton.disabled = this.busy !== null || this.confirm !== null;
