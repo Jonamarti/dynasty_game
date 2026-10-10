@@ -45,6 +45,7 @@ import { setupIronCarburising } from './ironCarburisingFixture.ts';
 import { setupIronTools } from './ironToolsFixture.ts';
 import { setupIronPlough } from './ironPloughFixture.ts';
 import { setupSalters, observeSalters, saltersLosses } from './saltersFixture.ts';
+import { setupTailors, observeTailors, tailorsChecks } from './tailorsFixture.ts';
 import { setupNights, observeNights, nightsMeasurements } from './nightsFixture.ts';
 import { createFrontier, setupFrontier, observeFrontier, createFrontierCohort, observeFrontierCohort } from './frontierFixture.ts';
 
@@ -266,6 +267,14 @@ export const SCENARIOS: Record<string, Scenario> = {
       needs: { spoilRate: 1 }, otherBandThinkInterval: 1,
       population: { bands: 2, peoplePerBand: 8, startingTech: withPrerequisites(['cooking', 'cordage', 'fishing']) } },
     steps: 2400, setup: setupSalters, checks: ['preserved-food-lasts'],
+  },
+  tailors: {
+    name: 'tailors', description: 'Hard winter with clothing technologies and supplied fur hats; records autonomous wearing and a same-person cold-response probe.',
+    config: { seed: 'tailors', world: { width: 48, height: 48 },
+      time: { daysPerSeason: 6, startDay: 18 }, needs: { coldRate: 0.16 },
+      population: { bands: 1, peoplePerBand: 8,
+        startingTech: withPrerequisites(['clothing', 'cordage', 'bone_working', 'tailoring']) } },
+    steps: 2400, setup: setupTailors, checks: ['clothes-are-worn', 'the-clothed-are-warmer'],
   },
   ironsmiths: {
     name: 'ironsmiths',
@@ -1535,6 +1544,10 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
     add('preserved-food-lasts', meals > 0 && kept > 0,
       kept + '/' + meals + ' winter meals preserved; spoiled nutrition knowing=' + (losses?.knowing ?? 0) +
       ', other=' + (losses?.other ?? 0) + '; loss comparison failed negative verification, no check or survival claim');
+  }
+
+  if (base.scenario === 'tailors') {
+    for (const check of tailorsChecks(tel)) add(check.id, check.ok, check.detail);
   }
 
   if (base.scenario === 'frontier') {
@@ -4458,6 +4471,7 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
     if (scenario.name === 'frontier') observeFrontier(sim);
     if (scenario.name === 'frontier-cohort') observeFrontierCohort(sim);
     if (scenario.name === 'salters') observeSalters(sim);
+    if (scenario.name === 'tailors') observeTailors(sim);
     if (scenario.name === 'nights') observeNights(sim);
     for (const person of sim.people) {
       if (!person.alive || !person.pregnant) { wasPregnant.delete(person.id); continue; }

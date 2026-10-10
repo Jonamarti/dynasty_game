@@ -1,3 +1,7 @@
+**2026-10-10: 14e, instrumento tailors entregado.** Vestido autónomo de gorros
+suministrados y abrigo medido en sondas del mismo cuerpo. [Contrato](m15_phase14e_tailors.md).
+Faltan confección autónoma, desgaste/remiendo y cohortes. 14e y M15 siguen abiertos.
+
 **2026-10-10: 14c, subred Ropa entregada.** Sastrería/hilado/tejido y recetas con entradas externas reales. [Contrato y captura](m15_phase14c_clothing_web.md). Siguen taparrabos/falda de fibra, curtido, bolsillos, desgaste/reparación, creencias de abrigo y retirada por calor, escenario tailors. 14c y M15 siguen abiertos; no se declara mejora económica ni se ejecutan cohortes.
 
 **2026-10-10: 14c, manto de lana entregado.** Paño de lana físico, abrigo sólo puesto y sustitución de capa sin sumar ambas. [Contrato y captura](m15_phase14c_wool_cloak.md). Sigue subred Ropa; catálogo inicial restante, bolsillos/desgaste/reparación pendientes.

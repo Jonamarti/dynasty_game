@@ -1,3 +1,13 @@
+## 2026-10-10 — m15: instrumento de ropa en invierno
+
+`tailors` ejercita vestir prendas físicas y el efecto de abrigo. La cobertura
+se cuenta sobre los adultos suministrados; las sondas pareadas usan el mismo
+cuerpo, frío, reloj y suelo, sin refugio ni telemetría ajena al instrumento.
+Los negativos de ropa ausente y lector sin abrigo protegen las dos puertas.
+[Contrato](m15_phase14e_tailors.md). No cambia decisiones de los escenarios
+existentes ni la versión del juego. Desgaste/remiendo y cohortes siguen
+pendientes por AGENTS.md; no se declara mejora económica.
+
 ## 2026-10-10 — m15: verificación conjunta de ropa42–45
 
 [Informe](m15_phase14c_verification_20261010.md), logs y capturas conservados.

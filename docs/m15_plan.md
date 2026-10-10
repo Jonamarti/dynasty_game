@@ -1714,6 +1714,15 @@ Si cuesta, se aparta sin bloquear nada.
 
 ### 14e. Checks y escenario
 
+**Avance del 2026-10-10 — instrumento parcial:** `tailors` ofrece gorros
+físicos a los adultos fundadores en invierno duro. `clothes-are-worn` exige
+que al menos la mitad se vista durante una muestra fría; informa además la
+fracción de muestras. `the-clothed-are-warmer` compara dos copias del mismo
+cuerpo con el lector real de necesidades, con/sin ropa y sin refugio ni hogar.
+Las sondas no alteran el checkpoint ni los contadores del mundo. Contrato:
+[tailors](m15_phase14e_tailors.md). No mide confección autónoma ni mejora de
+supervivencia; desgaste/remiendo y cohortes siguen pendientes.
+
 - Escenario **`tailors`**: invierno duro; fundadores con `clothing`, `cordage`,
   `bone_working` y `tailoring`.
 - `clothes-are-worn`: en invierno, la fracción de muestras frías con alguna
