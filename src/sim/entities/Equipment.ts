@@ -1,20 +1,20 @@
 /**
- * M15 phase 11a. What a body can hold, before anything is worn.
+ * M15 phase 11a and 14a. What a person carries or wears.
  *
- * Five slots exist from this commit: two hands, the back, the belt and one
- * shoulder. The clothing slots (`hips`, `torso`, `legs`, `feet`, `head`,
- * `cloak`) are named in the phase 11 plan but have no reader until phase 14
- * gives them one, so they are not declared here — an unread slot is exactly
- * the kind of inert content this project's house style avoids.
+ * The original five carrying slots are joined by six garment slots in phase
+ * 14a. Unlike the carry slots, a garment slot refers to an item that remains
+ * in inventory; it records which owned item is currently worn.
  *
- * This file is inert on its own: nothing yet writes to `Person.equipment` or
- * reads it to change what a person can carry. `Config.carry.legacyPack`
- * keeps `Person.carryCapacity` on today's formula until phase 11c switches
- * it off and the container ladder (bundle, hide bag, basket, sledge, cart)
- * exists to take over that job.
+ * Carry slots are read by `Carry.ts`; garment slots are read by
+ * `Tech.warmthFrom` and written through `ToolEquipment.changeGarment`.
+ * `Config.carry.legacyPack` preserves the old capacity formula only for the
+ * scenarios that still explicitly request it.
  */
 
-export const SLOTS = ['left', 'right', 'back', 'belt', 'shoulder'] as const;
+export const GARMENT_SLOTS = ['hips', 'torso', 'legs', 'feet', 'head', 'cloak'] as const;
+export type GarmentSlot = (typeof GARMENT_SLOTS)[number];
+export const CARRY_SLOTS = ['left', 'right', 'back', 'belt', 'shoulder'] as const;
+export const SLOTS = [...CARRY_SLOTS, ...GARMENT_SLOTS] as const;
 export type Slot = (typeof SLOTS)[number];
 
 export interface EquippedItem {
@@ -22,7 +22,7 @@ export interface EquippedItem {
   count: number;
   /** Phase 14: wear on a worn garment. Unread until then. */
   wear?: number;
-  /** Phase 12: ticks of fuel left on a lit torch. Unread until then. */
+  /** Phase 12d: ticks of fuel left on a lit torch; reaches zero before the stack is consumed. */
   lit?: number;
 }
 

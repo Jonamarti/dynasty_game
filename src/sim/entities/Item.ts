@@ -43,7 +43,8 @@ export interface ItemDef {
   weapon?: { damage: number; reach: number; hunt: number; tech: string };
   /**
    * M15 phase 21f. How much of a blow on each part of the body this turns
-   * aside, 0 to 1, for a garment worn or carried. Replaces the single `armour`
+   * aside, 0 to 1. Wearable armour applies only while the layer is worn.
+   * Replaces the single `armour`
    * number: a hide cuirass shields the torso best and leaves the head bare, and
    * a blow is now rolled against the part it lands on (`Tech.protectionOf`).
    * Never 1 — a wearer nobody can hurt is a fight nobody can end.
@@ -65,6 +66,11 @@ export interface ItemDef {
    * Required on every entry below; `item.test.ts` enforces it.
    */
   hand: { perHand: number; perArms: number; hands: 1 | 2; shoulder?: number };
+  /** M15 phase 14a. A wearable item and the body slot it occupies. */
+  garment?: {
+    slot: import('./Equipment.ts').GarmentSlot;
+    warmth: number;
+  };
   /**
    * M15 phase 11a. What kind of thing this is for a container's `accepts`
    * list to test against. Unread until phase 11c gives the container ladder
@@ -177,6 +183,7 @@ export const ITEMS: Record<string, ItemDef> = {
     // legs 0.2, head bare.
     protects: { torso: 0.5, left_arm: 0.25, right_arm: 0.25, left_leg: 0.2, right_leg: 0.2 },
     class: 'bulky', hand: { perHand: 1, perArms: 1, hands: 1 },
+    garment: { slot: 'torso', warmth: 0.1 },
   },
   // --- M8.1: what comes off a carcass once you know what to do with it -------
   //
@@ -215,6 +222,7 @@ export const ITEMS: Record<string, ItemDef> = {
     // warmth first, so it is a fifth of what a hide cuirass gives the torso.
     protects: { torso: 0.2, left_arm: 0.12, right_arm: 0.12, left_leg: 0.06, right_leg: 0.06 },
     class: 'bulky', hand: { perHand: 1, perArms: 1, hands: 1 },
+    garment: { slot: 'torso', warmth: 0.4 },
   },
   // The only object in the game that does nothing useful at all, and the most
   // valuable thing a Palaeolithic band owns for exactly that reason.

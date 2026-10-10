@@ -25,7 +25,7 @@ import {
 import { PixelCache } from './PixelCache.ts';
 
 export interface WornGarments {
-  torso?: 'cape' | 'wrap' | 'tunic' | 'longtunic';
+  torso?: 'cape' | 'wrap' | 'tunic' | 'longtunic' | 'hide_armour' | 'fur_coat';
   legs?: 'trousers';
   feet?: 'boots' | 'wraps';
   hands?: 'gloves';
@@ -56,7 +56,7 @@ export interface PersonAspect {
 }
 
 /** Garments that lie over the abdomen, so the belly is drawn in their colours (mirrors `art/src/people/rig.ts`). */
-const BELLY_COVERS: ReadonlySet<string> = new Set(['wrap', 'tunic', 'longtunic']);
+const BELLY_COVERS: ReadonlySet<string> = new Set(['wrap', 'tunic', 'longtunic', 'hide_armour', 'fur_coat']);
 
 /** Slots that stay planted when the upper body bobs in the walk. */
 const GROUNDED = /^(shadow|legs|trousers|feet)/;
@@ -158,8 +158,8 @@ export class ArtAtlas {
     const anchors = (this.people.meta['anchors'] as Record<string, PersonAnchors>);
     const anchor = anchors[anchorKey(a.age, a.sex, dir, a.pose, a.carryBaby)] ?? anchors[anchorKey(a.age, a.sex, dir, a.pose, false)]!;
     const w = a.wear;
-    const covers = !!w.legs || w.torso === 'tunic' || w.torso === 'longtunic';
-    const bandCovered = w.torso === 'tunic' || w.torso === 'longtunic' || w.torso === 'wrap';
+    const covers = !!w.legs || w.torso === 'tunic' || w.torso === 'longtunic' || w.torso === 'hide_armour' || w.torso === 'fur_coat';
+    const bandCovered = w.torso === 'tunic' || w.torso === 'longtunic' || w.torso === 'wrap' || w.torso === 'hide_armour' || w.torso === 'fur_coat';
     const layers: LayerDraw[] = [];
 
     for (const slot of order) {

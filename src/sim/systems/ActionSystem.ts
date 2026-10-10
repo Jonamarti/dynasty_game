@@ -57,8 +57,8 @@ import { animalBlow } from '../entities/AnimalAttack.ts';
 import { claimTransportAnimal } from '../core/TransportAnimals.ts';
 import { canTake, equipContainer, itemCapacityFor, stow } from '../core/Carry.ts';
 import {
-  equipFor as fitToolForAction, equipItemInSlot, manualEquipRefusal,
-  manualEquipSlot, type ToolAction,
+  changeGarment, equipFor as fitToolForAction, equipItemInSlot, manualEquipRefusal,
+  manualEquipSlot, manualGarmentRefusal, type ToolAction, type ManualGarmentVerb,
 } from '../core/ToolEquipment.ts';
 import { RECIPES, hasIngredients, ingredientsFor, recipeTechPower } from '../entities/Recipe.ts';
 import {
@@ -797,6 +797,8 @@ export class ActionSystem {
       case 'equip_left':
       case 'equip_right':
       case 'equip_back': this.doManualEquip(person, ctx); break;
+      case 'wear_garment':
+      case 'take_off_garment': this.doChangeGarment(person, ctx); break;
       case 'shelter': this.doShelter(person, ctx); break;
       case 'sleep': this.doSleep(person, ctx); break;
       case 'talk': this.doTalk(person, ctx); break;
@@ -1571,6 +1573,47 @@ export class ActionSystem {
       return;
     }
     telemetry.count('manual_item_equipped');
+    this.finish(person);
+  }
+
+  /** A small, interruptible change of clothes; ownership stays in inventory. */
+  private doChangeGarment(person: Person, ctx: ActionContext): void {
+    const verb = person.action as ManualGarmentVerb;
+    const itemId = person.targetItemId;
+    if (!itemId) {
+      this.abandon(person, 'equipment_order_lost', ctx);
+      return;
+    }
+    const interrupted = this.interruption(person, ctx, {
+      ignoreLaden: true, answers: verb === 'wear_garment' ? 'cold' : undefined,
+    });
+    if (interrupted) {
+      this.stop(person, interrupted, ctx);
+      return;
+    }
+
+    if (person.toolChangeAction !== person.action) {
+      const refusal = manualGarmentRefusal(person, itemId, verb);
+      if (refusal) {
+        this.abandon(person, refusal, ctx);
+        return;
+      }
+      person.toolChangeAction = person.action;
+      person.toolChangeTicks = Math.max(0, ctx.carry.equipTicks - 1);
+      person.actionTimer = person.toolChangeTicks;
+      person.actionTotal = 0;
+    } else if (person.toolChangeTicks > 0) {
+      person.toolChangeTicks--;
+      person.actionTimer = person.toolChangeTicks;
+    }
+    if (person.toolChangeTicks > 0) return;
+
+    const result = changeGarment(person, itemId, verb);
+    if (result) {
+      this.abandon(person, result, ctx);
+      return;
+    }
+    telemetry.count(verb === 'wear_garment' ? 'garment_worn' : 'garment_taken_off');
     this.finish(person);
   }
 

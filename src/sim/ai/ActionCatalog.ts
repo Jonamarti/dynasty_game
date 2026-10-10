@@ -47,6 +47,7 @@ import { tooHeavyForHer } from '../entities/Pregnancy.ts';
 import { mayNurse } from './Nursing.ts';
 import { swimRefusal, swimRouteRefusal, swimRefusalText } from '../core/Swimming.ts';
 import { houseInteriorContains, houseInteriorTiles } from '../world/HouseInterior.ts';
+import { manualGarmentReasonText, manualGarmentRefusal } from '../core/ToolEquipment.ts';
 
 export type TargetKind =
   'ground' | 'person' | 'node' | 'building' | 'tree' | 'pile' | 'animal' | 'inscription' | 'corpse';
@@ -258,6 +259,7 @@ const NODE_VERBS: Record<string, { label: string; icon: string; action: string }
  * about what is possible.
  */
 export function itemActions(
+  actor: Person,
   itemId: string,
   /**
    * How many living neighbours are within giving reach.
@@ -269,12 +271,18 @@ export function itemActions(
   nearbyCount: number,
   /** The one neighbour's name, as the actor knows it, when `nearbyCount` is 1. */
   soleRecipientName: string | null,
-  nearbyStore: Building | null
+  nearbyStore: Building | null,
 ): ActionOption[] {
   const def = ITEMS[itemId];
   const edible = (def?.nutrition ?? 0) > 0;
+  const garmentVerb = def?.garment
+    ? actor.equipment[def.garment.slot]?.item === itemId ? 'take_off_garment' : 'wear_garment'
+    : null;
+  const garmentRefusal = garmentVerb
+    ? manualGarmentRefusal(actor, itemId, garmentVerb)
+    : null;
 
-  return [
+  const options: ActionOption[] = [
     {
       id: 'eat_item',
       label: t('Eat'),
@@ -310,13 +318,15 @@ export function itemActions(
     },
     {
       id: 'equip_left', label: t('Left hand'), icon: '\u{1F91A}',
-      enabled: !!def?.hand,
-      reason: def?.hand ? undefined : t('That is not something you can equip'),
+      enabled: !!def?.hand && !def.garment,
+      reason: def?.hand && !def.garment ? undefined : def?.garment
+        ? t('Wearable items go in their body slot') : t('That is not something you can equip'),
     },
     {
       id: 'equip_right', label: t('Right hand'), icon: '\u{1F91A}',
-      enabled: !!def?.hand && def.hand.hands === 1,
+      enabled: !!def?.hand && !def.garment && def.hand.hands === 1,
       reason: !def?.hand ? t('That is not something you can equip')
+        : def.garment ? t('Wearable items go in their body slot')
         : def.hand.hands === 2 ? t('Two-handed items need both hands') : undefined,
     },
     {
@@ -325,6 +335,14 @@ export function itemActions(
       reason: def?.container?.slot === 'back' ? undefined : t('That item does not fit there'),
     },
   ];
+  if (garmentVerb) options.push({
+    id: garmentVerb,
+    label: garmentVerb === 'wear_garment' ? t('Wear') : t('Take off'),
+    icon: garmentVerb === 'wear_garment' ? '\u{1F9E5}' : '\u{1F455}',
+    enabled: garmentRefusal === null,
+    reason: garmentRefusal ? manualGarmentReasonText(garmentRefusal) : undefined,
+  });
+  return options;
 }
 
 /**

@@ -114,47 +114,39 @@ describe('the tech table', () => {
     }
   });
 
-  it('makes a sewn coat the largest thing anybody carries against the cold', () => {
-    // M8.1's third term in `warmthFrom`, and the double gate the basket and the
-    // net already use: knowing how is not enough, and carrying one is not
-    // enough either. A coat in the hands of somebody who could not have made it
-    // is a heap of skins — the rule `handaxe` still breaks.
+  it('gets warmth from worn garments, not from knowing or carrying them', () => {
     const bare = someone();
     const sewer = someone();
     sewer.knownTech.add('tailoring');
     const carrier = someone();
     carrier.inventory.add('fur_coat', 1);
     const clad = someone();
-    clad.knownTech.add('tailoring');
     clad.inventory.add('fur_coat', 1);
+    clad.equipment.torso = { item: 'fur_coat', count: 1 };
 
     expect(warmthFrom(sewer)).toBe(warmthFrom(bare));
     expect(warmthFrom(carrier)).toBe(warmthFrom(bare));
     expect(warmthFrom(clad)).toBeGreaterThan(warmthFrom(bare));
-    // And it stacks with the other two answers without ever reaching 1, which
-    // is what would invert the chill into warming.
+    // Clothing, like fire, stacks with diminishing returns and never reaches 1.
     const everything = someone();
-    everything.knownTech.add('tailoring');
     everything.knownTech.add('firemaking');
-    everything.knownTech.add('clothing');
     everything.inventory.add('fur_coat', 1);
+    everything.equipment.torso = { item: 'fur_coat', count: 1 };
     expect(warmthFrom(everything)).toBeGreaterThan(warmthFrom(clad));
     expect(warmthFrom(everything)).toBeLessThan(1);
   });
 
-  it('makes wool cloth warmer than plain cloth, on the same double gate', () => {
+  it('treats woven cloth as material until it is made into a garment', () => {
     const woven = someone();
     woven.knownTech.add('weaving');
     woven.inventory.add('cloth', 1);
     const woollen = someone();
-    woollen.knownTech.add('wool');
     woollen.inventory.add('wool_cloth', 1);
     const bare = someone();
 
-    expect(warmthFrom(woven)).toBeGreaterThan(warmthFrom(bare));
-    expect(warmthFrom(woollen)).toBeGreaterThan(warmthFrom(woven));
-    // Knowing `wool` without a length of it, or carrying one without knowing
-    // how it was made, does nothing — the `handaxe` rule again.
+    expect(warmthFrom(woven)).toBe(warmthFrom(bare));
+    expect(warmthFrom(woollen)).toBe(warmthFrom(bare));
+    // Knowledge and material in a pack do not substitute for clothing worn.
     const knowerOnly = someone();
     knowerOnly.knownTech.add('wool');
     const carrierOnly = someone();
@@ -351,14 +343,14 @@ describe('technology in one person’s hands', () => {
     expect(forageYieldFactor(person, 'flint')).toBeCloseTo(1.5);
   });
 
-  it('stacks fire and clothing without ever reaching total warmth', () => {
+  it('keeps fire warmth without adding a bonus for clothing knowledge', () => {
     // Adding them would put a clothed firemaker past 1, which inverts the chill
     // into warming and makes February the most comfortable month of the year.
     const person = someone();
     person.knownTech.add('firemaking');
     person.knownTech.add('clothing');
     const both = warmthFrom(person);
-    expect(both).toBeGreaterThan(0.45);
+    expect(both).toBeCloseTo(0.45);
     expect(both).toBeLessThan(1);
   });
 

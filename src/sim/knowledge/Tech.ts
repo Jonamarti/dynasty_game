@@ -46,6 +46,7 @@ import type { Idea } from './Synthesis.ts';
 import type { Spark } from './Synthesis.ts';
 import { PROTOTYPE_AT, PROTOTYPE_POWER, REFINEMENT_STEP } from './Synthesis.ts';
 import { ITEMS } from '../entities/Item.ts';
+import { GARMENT_SLOTS } from '../entities/Equipment.ts';
 import { BODY_PARTS, strikeShare, type BodyPart } from '../entities/Body.ts';
 
 export const TECHS = [
@@ -3009,15 +3010,19 @@ export function weaponItemOf(
 }
 
 /**
- * How much of a blow on this part of the body the best garment they carry
- * turns aside, 0 to 1. Only the best piece counts for a part: two cuirasses are
- * not twice the protection.
+ * How much of a blow on this part of the body the best available armour turns
+ * aside, 0 to 1. Wearable garments must be fitted; legacy non-garment armour
+ * retains its inventory reader. Only the best piece counts for a part: two
+ * cuirasses are not twice the protection.
  */
 export function protectionOf(person: Person, part: BodyPart): number {
   let best = 0;
   for (const [itemId, count] of person.inventory.entries()) {
     if (count <= 0) continue;
     const def = ITEMS[itemId];
+    // Carrying a coat is not wearing it. Non-garment armour keeps its existing
+    // inventory reader; wearable armour contributes only from its body slot.
+    if (def?.garment && person.equipment[def.garment.slot]?.item !== itemId) continue;
     const covers = def?.protects?.[part];
     if (covers === undefined) continue;
     // M15 phase 37: "`armourOf` finally goes through `techPower`". A garment that
@@ -3291,39 +3296,9 @@ export function awlFactor(person: Person, recipeId: string): number {
 /** What a coal of charcoal in the pack adds to the warmth carried, at full knowledge of how it is made. */
 export const CHARCOAL_WARMTH = 0.12;
 
-/**
- * Warmth a person carries with them, 0-1, before any roof over their head.
- *
- * Fire and clothing are different answers to the same problem and stack, but
- * with diminishing returns rather than by addition: two answers to cold should
- * be better than one and not twice as good. Summing them would put a clothed
- * firemaker past 1 and invert the chill into warming, which is how you get
- * people who are at their most comfortable in February.
- */
+/** Warmth from fire, a brazier and the garments actually worn, before a roof. */
 export function warmthFrom(person: Person): number {
   const fire = 0.45 * techPower(person, 'firemaking');
-  const cloth = 0.3 * techPower(person, 'clothing');
-  // M8.1's third term, and the largest of the three, because a sewn coat is the
-  // largest of the three. Double-gated on carrying one as well as on knowing
-  // how — the rule the basket and the net already follow, and the one
-  // `handaxe` still breaks.
-  const furs = person.inventory.has('fur_coat')
-    ? 0.4 * techPower(person, 'tailoring')
-    : 0;
-  // M11 phase 10's fourth term. Named `woven` rather than `cloth`, which this
-  // function already uses for the `clothing` technology's own multiplier —
-  // reusing the name would have shadowed one silently.
-  const woven = person.inventory.has('cloth')
-    ? 0.25 * techPower(person, 'weaving')
-    : 0;
-  // M11 phase 10's sixth term, and warmer than `woven` for the reason the
-  // plan states it as `wool`'s whole claim: a fleece keeps the cold out
-  // better than flax does. Reads `wool_cloth`, the recipe's own item, never
-  // plain `cloth` — the two are unrelated garments once woven, and only one
-  // of them needed a sheep.
-  const woollen = person.inventory.has('wool_cloth')
-    ? 0.32 * techPower(person, 'wool')
-    : 0;
   // M15 phase 37: the seventh term. A glowing coal of charcoal in a pot is the
   // oldest brazier there is, and it burns without smoke. Double-gated like the
   // rest — carrying it and knowing how it is made — and the smallest term in
@@ -3331,7 +3306,16 @@ export function warmthFrom(person: Person): number {
   const brazier = person.inventory.has('charcoal')
     ? CHARCOAL_WARMTH * techPower(person, 'charcoal')
     : 0;
-  return 1 - (1 - fire) * (1 - cloth) * (1 - furs) * (1 - woven) * (1 - woollen) * (1 - brazier);
+  let unwarmed = (1 - fire) * (1 - brazier);
+  for (const slot of GARMENT_SLOTS) {
+    const worn = person.equipment[slot];
+    const garment = worn ? ITEMS[worn.item]?.garment : undefined;
+    const warmth = worn && garment?.slot === slot && person.inventory.count(worn.item) >= 1
+      ? garment.warmth
+      : 0;
+    unwarmed *= 1 - Math.max(0, Math.min(1, warmth));
+  }
+  return 1 - unwarmed;
 }
 
 // ---------------------------------------------------------------------------

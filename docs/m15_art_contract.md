@@ -49,11 +49,27 @@ pose «llevado en una mano», reutilizable entre objetos de forma parecida
 (un puñado de bayas y un puñado de grano pueden compartir el mismo gesto de
 mano cerrada, por ejemplo).
 
-## Lo que no entra en este contrato todavía
+## La ropa que ya lee la fase 14a
 
-- **Los huecos de ropa** (`hips`, `torso`, `legs`, `feet`, `head`, `cloak`):
-  no existen hasta la fase 14. El arte de vestimenta se contrata cuando esos
-  huecos tengan lector.
+`Person.equipment` añade seis huecos corporales (`hips`, `torso`, `legs`,
+`feet`, `head`, `cloak`). El renderer deriva la ropa visible solo de esos
+huecos; el contenido guardado en el inventario no se dibuja como si estuviera
+puesto. Los dos artículos existentes que ahora se pueden vestir usan capas de
+`PersonSpec.wear` con el mismo id:
+
+| objeto | hueco | capa del arte |
+|---|---|---|
+| `hide_armour` | `torso` | `art/garment/hide_armour` |
+| `fur_coat` | `torso` | `art/garment/fur_coat` |
+
+Las variantes viven en `art/src/people/rig.ts` y se materializan en la hoja
+`public/art/people-*`; `npm run art:build -- people` la vuelve a generar. Cada
+nuevo `ItemDef.garment` de 14c debe añadir aquí su id, slot y variante en el
+mismo cambio que su lector visual. La hoja puede dibujar capas simultáneas en
+huecos distintos; dos artículos del mismo hueco nunca se dibujan juntos.
+
+## Lo que todavía no entra en este contrato
+
 - **`HeldItemKind` en `Sprites.ts`** sigue con su lista corta de hoy (`spear`,
   `bow`, `atlatl`, `bone_point`, `handaxe`, `net`, `basket`) hasta que la fase
   17 la amplíe a cubrir esta tabla entera. Ampliarla antes sería declarar arte

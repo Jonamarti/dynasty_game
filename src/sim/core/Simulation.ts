@@ -30,7 +30,10 @@ import { ADULT_YEARS, Person } from '../entities/Person.ts';
 import { IdSpace, type IdSpaceSnapshot } from './IdSpace.ts';
 import { ITEMS, Inventory } from '../entities/Item.ts';
 import { equipContainer, itemCapacityFor, reconcileCarry } from './Carry.ts';
-import { manualEquipReasonText, manualEquipRefusal, manualEquipSlot } from './ToolEquipment.ts';
+import {
+  manualEquipReasonText, manualEquipRefusal, manualEquipSlot,
+  manualGarmentReasonText, manualGarmentRefusal,
+} from './ToolEquipment.ts';
 import {
   BUSH_SPECIES, BUSHES, WILD_PLANTS, RESOURCE_KINDS, ORE_COUNTS, bushPhase, ResourceNode, isFoodKind, isPlantFood, seasonLoreKind,
   type BushSpecies, type ResourceKind,
@@ -3118,6 +3121,9 @@ export class Simulation {
     const moved = giver.inventory.remove(itemId, Math.min(room, count, giver.inventory.count(itemId)));
     if (moved === 0) return 0;
     receiver.inventory.add(itemId, moved);
+    // Worn layers are ownership references too. Handing over the last copy
+    // must clear the visible layer and any capacity it supplied immediately.
+    reconcileCarry(giver, this.config.carry, (x, y, id, amount) => this.dropAt(x, y, id, amount));
 
     const nutrition = (ITEMS[itemId]?.nutrition ?? 0) * moved;
     if (nutrition > 0) {
@@ -3161,6 +3167,7 @@ export class Simulation {
     }
     const moved = store.accept(person.inventory, itemId, count);
     if (moved === 0) return 0;
+    reconcileCarry(person, this.config.carry, (x, y, id, amount) => this.dropAt(x, y, id, amount));
     telemetry.count('stored', moved);
     return moved;
   }
@@ -4225,6 +4232,13 @@ export class Simulation {
       }
       if (refusal) {
         this.lastRefusal = manualEquipReasonText(refusal);
+        return false;
+      }
+    }
+    if (action === 'wear_garment' || action === 'take_off_garment') {
+      const refusal = manualGarmentRefusal(person, target.itemId ?? '', action);
+      if (refusal) {
+        this.lastRefusal = manualGarmentReasonText(refusal);
         return false;
       }
     }

@@ -14293,3 +14293,20 @@ de AGENTS.md. spoilRate continúa a cero; no se afirma mejora económica.
 ## 2026-10-10 — M15: completar imports del menú de mobiliario
 
 La integración selectiva había dejado los helpers de interior usados por el radial en el árbol de trabajo pero fuera del commit de camas. Se incorporan a su módulo; sin cambio de reglas. La comprobación TypeScript sobre el árbol completo era insuficiente para detectar este error de staging compartido.
+
+## 2026-10-10 — M15 14a–14b: prendas puestas, calor y protección
+
+Abrigo de piel y armadura de cuero pasan por slots del cuerpo, órdenes de tres
+ticks, rechazo visible y revalidación. El calor y protección de estas prendas
+requieren llevarlas puestas y poseer la unidad; materiales y conocimientos de
+ropa ya no abrigan por sí solos. Renderer muestra capas distintas, y Carry
+borra referencias al entregar/soltar la última copia. Se añade rechazo de ropa
+en manos/espalda y de calor por una ranura equivocada.
+Contrato: docs/m15_phase14_worn_clothing.md; captura revisada en
+artifacts/screenshots/m15-phase14-ab-2026-10-10/01-fur-coat-worn-in-kit.png.
+Focales carry/equipo/ropa 32/32 antes de la última regresión; ropa+i18n 16/16.
+TypeScript también pasa sobre una copia sólo del índice preparado, para no
+ocultar imports pendientes con cambios de otro agente. Catálogo de prendas,
+bolsillos, deterioro y reparación de14c siguen pendientes. Cohortes diferidas.
+
+Revisión final14ab: entregar o almacenar la última prenda limpia la referencia vestida al instante. Regresión de transferencia incluida. El E2E volvió a mostrar ok (22,2s) y dejó captura actual en artifacts/screenshots/m15-phase14-ab-2026-10-10-final/01-fur-coat-worn-in-kit.png; se interrumpió el teardown de Vite que seguía abierto, no se presenta como ejecución global verde.

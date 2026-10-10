@@ -1,5 +1,6 @@
 /** M15 phase 11: hands and the containers that turn hands into carrying. */
 import { ITEMS, type ItemClass } from '../entities/Item.ts';
+import { GARMENT_SLOTS } from '../entities/Equipment.ts';
 import type { Person } from '../entities/Person.ts';
 import { handfulsOnly } from '../entities/Pregnancy.ts';
 import type { CarryConfig } from './Config.ts';
@@ -99,6 +100,10 @@ export function reconcileCarry(
   dropAt: (x: number, y: number, itemId: string, count: number) => void,
 ): number {
   let dropped = 0;
+  // Garment slots are references into owned inventory too. A transfer or a
+  // direct drop of the final coat must not leave warmth, armour or a visible
+  // layer behind after its copy has gone.
+  clearUnownedEquipment(person);
   for (const slot of ['left', 'right', 'back', 'belt', 'shoulder'] as const) {
     const equipped = person.equipment[slot];
     if (equipped && person.inventory.count(equipped.item) === 0) {
@@ -127,16 +132,25 @@ export function reconcileCarry(
     const [itemId, count, amount] = chosen;
     const removed = person.inventory.remove(itemId, Math.min(count, amount));
     if (removed <= 0) break;
-    for (const slot of ['left', 'right', 'back', 'belt', 'shoulder'] as const) {
-      if (person.equipment[slot]?.item === itemId && person.inventory.count(itemId) === 0) {
-        person.carryContainerCapacity -= ITEMS[itemId]?.container?.capacity ?? 0;
-        delete person.equipment[slot];
-      }
-    }
+    clearUnownedEquipment(person);
     dropAt(person.x, person.y, itemId, removed);
     dropped += removed;
     telemetry.count('carry_overflow_dropped', removed);
   }
   if (person.carrying > capacityFor(person, config)) telemetry.count('carry_over_capacity_samples');
   return dropped;
+}
+
+function clearUnownedEquipment(person: Person): void {
+  for (const slot of ['left', 'right', 'back', 'belt', 'shoulder'] as const) {
+    const equipped = person.equipment[slot];
+    if (!equipped || person.inventory.count(equipped.item) > 0) continue;
+    person.carryContainerCapacity = Math.max(0,
+      person.carryContainerCapacity - (ITEMS[equipped.item]?.container?.capacity ?? 0));
+    delete person.equipment[slot];
+  }
+  for (const slot of GARMENT_SLOTS) {
+    const equipped = person.equipment[slot];
+    if (equipped && person.inventory.count(equipped.item) <= 0) delete person.equipment[slot];
+  }
 }

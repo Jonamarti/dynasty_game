@@ -911,7 +911,7 @@ function handleItemAction(
       const ordered = sim.order(person, verb, { itemId });
       const reason = ordered ? null : sim.lastRefusal;
       if (!ordered) sim.lastRefusal = null;
-      say(ordered ? t(verb === 'wear_garment' ? 'changing clothes' : 'taking off clothes')
+      say(ordered ? (verb === 'wear_garment' ? t('changing clothes') : t('taking off clothes'))
         : reason ?? t('could not change clothes'), ordered);
       break;
     }

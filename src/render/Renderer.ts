@@ -15,6 +15,7 @@ import { hearthLight, type LightSource } from '../sim/core/Light.ts';
 import { Interpolator, type Placed } from './Interpolator.ts';
 import type { Inscription } from '../sim/entities/Inscription.ts';
 import type { Person } from '../sim/entities/Person.ts';
+import { ITEMS } from '../sim/entities/Item.ts';
 import type { PlaceRecord, PlaceVisual } from '../sim/social/PlaceMemory.ts';
 import { FogReveal } from './FogReveal.ts';
 import type { World } from '../sim/core/World.ts';
@@ -53,6 +54,16 @@ import {
   SpriteAtlas, BAND_COLORS, bandColorIndex, sizeClassOf, bodyScaleOf, hairVariantOf, hasBeardOf, heldItemFor,
   type SizeClass,
 } from './Sprites.ts';
+
+/** Public appearance only: items in the private inventory do not look worn. */
+export function wornGarmentsOf(person: Person): PersonAspect['wear'] {
+  const torsoId = person.equipment.torso?.item;
+  const torsoDef = torsoId ? ITEMS[torsoId]?.garment : undefined;
+  const torso = torsoDef?.slot === 'torso' && torsoId && person.inventory.count(torsoId) > 0 &&
+    (torsoId === 'fur_coat' || torsoId === 'hide_armour')
+    ? torsoId : undefined;
+  return { torso };
+}
 
 const BIOME_COLORS: Record<Biome, [string, string]> = {
   // [base, speckle] — the speckle is dotted in per-tile to break up flat fields.
@@ -2123,7 +2134,11 @@ export class Renderer {
       hair: hair === 'grey' ? '#a7a197' : person.id % 3 === 0 ? '#5b3d28' : '#2b2018',
       band: BAND_COLORS[colorIndex]!,
       hairStyle, beard: hasBeardOf(person), expression: this.expressionFor(person),
-      wear: {}, carryBaby: false, held: gathering || crafting ? null : heldItemFor(person, this.sim.config.carry.autoEquipTools),
+      // Only an equipped item is drawn as clothing. Inventory ownership is not
+      // visible state; the garment slot is the public observation of what is
+      // being worn.
+      wear: wornGarmentsOf(person),
+      carryBaby: false, held: gathering || crafting ? null : heldItemFor(person, this.sim.config.carry.autoEquipTools),
       // M15 phase 19c: the belly of the last third, which anybody can see
       // (`Pregnancy.showing`); the earlier thirds are not on the sprite.
       belly: showing(person),

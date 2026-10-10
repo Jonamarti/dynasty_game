@@ -239,6 +239,7 @@ export const lastDrives = new Map<number, DrivePressures>();
 interface FoundTargets {
   water: { x: number; y: number } | null;
   foodToEat: string | null;
+  garmentItem: string | null;
   waterQuestionPeer: Person | null;
   explorePoint: { x: number; y: number } | null;
   waterExplorePoint: { x: number; y: number } | null;
@@ -1028,6 +1029,7 @@ export class Brain {
     // something up (a site's missing material) only replaces the target when it
     // is genuinely the better errand rather than whichever was scored last.
     let pickupBest = 0;
+    let garmentItem: string | null = null;
 
     const thirst = drive.thirst;
     const hunger = drive.hunger;
@@ -1059,6 +1061,29 @@ export class Brain {
       ? hydratingFood : carriedFood;
     if (carriedFood) {
       add('eat', hunger * 3.2 + hunger * variety * 0.35);
+    }
+
+    // Clothing is a direct answer to cold only once it is worn. Among the
+    // layers in the pack, choose the largest improvement to this body's slot;
+    // a heavier coat must not cause a person to throw away better warmth from a
+    // different slot. The action is short and remains below every lethal need.
+    if (person.needs.cold > 10 && person.age >= 1) {
+      let bestGain = 0;
+      for (const [itemId, count] of person.inventory.entries()) {
+        const garment = count > 0 ? ITEMS[itemId]?.garment : undefined;
+        if (!garment) continue;
+        const current = person.equipment[garment.slot];
+        if (current?.item === itemId) continue;
+        const currentWarmth = current && person.inventory.count(current.item) > 0
+          ? ITEMS[current.item]?.garment?.warmth ?? 0
+          : 0;
+        const gain = garment.warmth - currentWarmth;
+        if (gain > bestGain) {
+          bestGain = gain;
+          garmentItem = itemId;
+        }
+      }
+      if (garmentItem) add('wear_garment', drive.warmth * 1.4 * bestGain / 0.4);
     }
     if (hydratingFood && person.needs.thirst > 35) {
       // Fruit buys one drink tick at most. It helps when no known source exists,
@@ -3909,7 +3934,7 @@ export class Brain {
     return {
       scores,
       found: {
-        water, foodToEat, waterQuestionPeer, explorePoint, waterExplorePoint, bringFoodPoint, foodNode, pickupPile, pickupItem, matNode, grassSpot, plantSpot, companion, suitor, sparPartner, student, childPupil, mentor, colleague,
+        water, foodToEat, garmentItem, waterQuestionPeer, explorePoint, waterExplorePoint, bringFoodPoint, foodNode, pickupPile, pickupItem, matNode, grassSpot, plantSpot, companion, suitor, sparPartner, student, childPupil, mentor, colleague,
         victim, foe, attackRoute, intruder, restrainee, kinDefence, correctee, amendsTo, complainTo, parleyWith, peaceWith, helpCallerTarget, bindTarget, patrolPoint, investigatePoint, concealCorpse, giftee, giftItem, feastStore, feastHost, beneficiary, nursingChild, playmate, tradePartner, fleeFrom, fleePoint,
         quarry,
         site, shelter, restShelter, storeTarget, storeItemId, storeItemCount, larderTarget, sabotageTarget, fruitTree, fellTree,
@@ -4744,6 +4769,9 @@ export class Brain {
       }
       case 'eat':
         person.targetItemId = found.foodToEat;
+        break;
+      case 'wear_garment':
+        person.targetItemId = found.garmentItem;
         break;
       case 'ask_water':
         if (found.waterQuestionPeer) person.targetPersonId = found.waterQuestionPeer.id;

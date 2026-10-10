@@ -237,6 +237,8 @@ export const ACTION_LABELS: Record<string, string> = {
   gift: 'giving a gift',
   answer_call: 'answering a call for help',
   make_peace: 'making peace',
+  wear_garment: 'putting on clothes',
+  take_off_garment: 'taking off clothes',
   place_furniture: 'placing furniture',
 };
 
@@ -282,6 +284,11 @@ export const STOP_REASONS: Record<string, string> = {
   baby_uses_hand: 'a baby was using that hand',
   already_equipped: 'that item was already equipped there',
   equipment_order_lost: 'the equipment order was lost',
+  unknown_garment: 'that was not a garment',
+  garment_not_owned: 'they no longer had that garment',
+  garment_already_worn: 'that garment was already being worn',
+  garment_not_worn: 'that garment was not being worn',
+  too_young_to_wear: 'they were too young to dress themselves',
   no_furniture: 'they had no furniture to place',
   house_gone: 'the house was no longer there',
   lack_furniture: 'they were no longer carrying that furniture',

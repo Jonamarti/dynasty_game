@@ -1,5 +1,6 @@
 /** M15 phase 11d: move the tool an action needs into the hands doing it. */
 import type { Person } from '../entities/Person.ts';
+import { GARMENT_SLOTS } from '../entities/Equipment.ts';
 import { ITEMS } from '../entities/Item.ts';
 import { axeItemOf, weaponItemOf } from '../knowledge/Tech.ts';
 import type { CarryConfig } from './Config.ts';
@@ -15,6 +16,59 @@ export function manualEquipSlot(action: string): ManualEquipmentSlot | null {
   if (action === 'equip_left') return 'left';
   if (action === 'equip_right') return 'right';
   if (action === 'equip_back') return 'back';
+  return null;
+}
+
+export type ManualGarmentVerb = 'wear_garment' | 'take_off_garment';
+export type ManualGarmentReason = 'unknown_garment' | 'garment_not_owned'
+  | 'garment_already_worn' | 'garment_not_worn' | 'too_young_to_wear';
+
+/** Same preflight for the Kit, Simulation.order and the timer's last tick. */
+export function manualGarmentRefusal(
+  person: Person, itemId: string, verb: ManualGarmentVerb,
+): ManualGarmentReason | null {
+  const garment = ITEMS[itemId]?.garment;
+  if (!garment) return 'unknown_garment';
+  if (person.age < 1) return 'too_young_to_wear';
+  if (person.inventory.count(itemId) <= 0) return 'garment_not_owned';
+  const worn = person.equipment[garment.slot]?.item === itemId;
+  if (verb === 'wear_garment' && worn) return 'garment_already_worn';
+  if (verb === 'take_off_garment' && !worn) return 'garment_not_worn';
+  return null;
+}
+
+export function manualGarmentReasonText(reason: ManualGarmentReason): string {
+  switch (reason) {
+    case 'unknown_garment': return t('That is not a garment');
+    case 'garment_not_owned': return t('You no longer have that garment');
+    case 'garment_already_worn': return t('That garment is already being worn');
+    case 'garment_not_worn': return t('That garment is not being worn');
+    case 'too_young_to_wear': return t('That person is too young to dress themselves');
+  }
+}
+
+/**
+ * Wear or remove an owned garment without changing its inventory count. The
+ * garment slots are references into inventory, so changing clothes never
+ * creates or destroys a copy and replacing a layer leaves the old one packed.
+ */
+export function changeGarment(
+  person: Person, itemId: string, verb: ManualGarmentVerb,
+): ManualGarmentReason | null {
+  const refusal = manualGarmentRefusal(person, itemId, verb);
+  if (refusal) return refusal;
+  const slot = ITEMS[itemId]!.garment!.slot;
+  if (verb === 'take_off_garment') {
+    delete person.equipment[slot];
+    return null;
+  }
+
+  // An item has one canonical wearable reference. This also heals malformed
+  // old state with the same coat copied into two body slots.
+  for (const garmentSlot of GARMENT_SLOTS) {
+    if (person.equipment[garmentSlot]?.item === itemId) delete person.equipment[garmentSlot];
+  }
+  person.equipment[slot] = { item: itemId, count: 1 };
   return null;
 }
 
@@ -41,6 +95,7 @@ export function manualEquipRefusal(
   const def = ITEMS[itemId];
   if (!def) return 'unknown_item';
   if (person.inventory.count(itemId) <= 0) return 'item_not_owned';
+  if (def.garment) return 'wrong_slot';
   if (slot === 'back' && def.container?.slot !== 'back') return 'wrong_slot';
   if (slot !== 'back') {
     if (person.armsTaken >= 2 || def.hand.hands > 2 - person.armsTaken) return 'hands_full';
