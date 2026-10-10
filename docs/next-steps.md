@@ -1,3 +1,8 @@
+**2026-10-10: 14c, taparrabos entregado.** Cadera física, lasca/hacha retenida,
+abrigo sólo puesto y arte generado. [Contrato y captura](m15_phase14c_hip.md).
+Siguiente: falda de fibra; después curtido/desgaste/remiendo, bolsillos,
+creencias y retirada por calor. Se cierra la sesión antes de iniciar otro corte.
+
 **2026-10-10: 14e, instrumento tailors entregado.** Vestido autónomo de gorros
 suministrados y abrigo medido en sondas del mismo cuerpo. [Contrato](m15_phase14e_tailors.md).
 Faltan confección autónoma, desgaste/remiendo y cohortes. 14e y M15 siguen abiertos.

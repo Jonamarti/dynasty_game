@@ -26,6 +26,7 @@ export type FaceExpr = 'neutral' | 'content' | 'warm' | 'stern' | 'frustrated' |
 
 /** One garment per body region; every region is independent of the others. */
 export interface Wear {
+  hips?: 'hide_loincloth';
   torso?: 'cape' | 'wrap' | 'tunic' | 'linen_tunic' | 'longtunic' | 'hide_armour' | 'fur_coat' | 'toggled_coat';
   legs?: 'trousers';
   feet?: 'boots' | 'wraps';
@@ -219,6 +220,22 @@ function handShape(gloves: boolean, hand: Pt, elbow: Pt, g: Geo, skin: string, l
 }
 
 interface FrontG { cx: number; sY: number; hipY: number; sh: number; wa: number; hp: number; T: number; g: Geo; }
+function hideLoinclothFront(G: FrontG, back: boolean): string {
+  const { cx, hipY, hp, g } = G, top = hipY - 1, hem = hipY + g.leg * (back ? 0.2 : 0.28);
+  const shapePts: Pt[] = back
+    ? [[cx - hp * 0.75, top], [cx + hp * 0.75, top], [cx + hp * 0.62, hem], [cx - hp * 0.62, hem]]
+    : [[cx - hp * 0.68, top], [cx + hp * 0.68, top], [cx + hp * 0.58, hem], [cx + 1.5, hipY + 4], [cx - 1.5, hipY + 4], [cx - hp * 0.58, hem]];
+  return shape(poly(shapePts), W.hide, W.hideLine)
+    + stroke(`M${cx - hp * 0.72},${top}Q${cx},${top + 2} ${cx + hp * 0.72},${top}`, W.leatherL, 1.2)
+    + stroke(`M${cx - hp * 0.48},${top + 2}L${cx - hp * 0.42},${hem - 1}M${cx + hp * 0.48},${top + 2}L${cx + hp * 0.42},${hem - 1}`, W.hideD, 0.8);
+}
+
+function hideLoinclothSide(G: SideG, swing: number): string {
+  const { cx, d, hipY, g } = G, top = hipY - 1, hem = hipY + g.leg * 0.28;
+  return shape(poly([[cx - d * 0.55, top], [cx + d * 0.28, top], [cx + d * 0.24 - swing * 0.35, hem], [cx - d * 0.46 - swing * 0.35, hem]]), W.hide, W.hideLine)
+    + stroke(`M${cx - d * 0.55},${top}Q${cx - d * 0.1},${top + 1.6} ${cx + d * 0.28},${top}`, W.leatherL, 1.1)
+    + stroke(`M${cx - d * 0.25},${top + 1.5}L${cx - d * 0.2 - swing * 0.2},${hem - 1}`, W.hideD, 0.8);
+}
 
 function torsoWearFront(t: Wear['torso'], G: FrontG, back: boolean): string {
   const { cx, sY, hipY, sh, wa, hp, T, g } = G;
@@ -560,18 +577,22 @@ function frontLayers(spec: PersonSpec, back: boolean): PersonOut {
   }
   if (!back) add(P, 'torso', ell(cx, sY + T * 0.74, 0.7, 0.9, REF.skinD));
 
-  // Loincloth: belt, a wrap between the legs and a hanging flap. Drawn in the tribe colour.
+  // A hip garment supplies its own layer; the empty hips variant retains
+  // the existing tribe-colour appearance.
   const cl = REF.band, cl2 = REF.band2, clD = REF.bandD, clLine = REF.bandLine;
-  add(P, 'loincloth', clipDef);
-  add(P, 'loincloth', shape(poly([[cx - g.gap - g.limb * 0.6, hipY - 0.5], [cx + g.gap + g.limb * 0.6, hipY - 0.5], [cx + 1.5, hipY + 5], [cx - 1.5, hipY + 5]]), clD, clLine));
-  add(P, 'loincloth', `<g clip-path="url(#${clip})"><rect x="${cx - sh - 4}" y="${hipY - 2.8}" width="${2 * sh + 8}" height="3" fill="${clD}"/></g>`);
-  add(P, 'loincloth', `<path d="${torsoD}" fill="none" stroke="${line}" stroke-width="2.1" stroke-linejoin="round" clip-path="url(#${clip})"/>`);
-  if (!back) {
-    const fl = g.hp * 0.55, drop = g.leg * 0.36;
-    add(P, 'loincloth', shape(poly([[cx - fl, hipY - 0.2], [cx + fl, hipY - 0.2], [cx + fl * 0.85, hipY + drop], [cx + fl * 0.2, hipY + drop - 0.9], [cx - fl * 0.3, hipY + drop + 0.3], [cx - fl * 0.85, hipY + drop - 0.6]]), cl, clLine));
-  } else {
-    const fl = g.hp * 0.8, drop = g.leg * 0.25;
-    add(P, 'loincloth', shape(poly([[cx - fl, hipY - 0.2], [cx + fl, hipY - 0.2], [cx + fl * 0.8, hipY + drop], [cx - fl * 0.8, hipY + drop]]), cl, clLine));
+  if (w.hips) add(P, 'loincloth', hideLoinclothFront(G, back));
+  else {
+    add(P, 'loincloth', clipDef);
+    add(P, 'loincloth', shape(poly([[cx - g.gap - g.limb * 0.6, hipY - 0.5], [cx + g.gap + g.limb * 0.6, hipY - 0.5], [cx + 1.5, hipY + 5], [cx - 1.5, hipY + 5]]), clD, clLine));
+    add(P, 'loincloth', `<g clip-path="url(#${clip})"><rect x="${cx - sh - 4}" y="${hipY - 2.8}" width="${2 * sh + 8}" height="3" fill="${clD}"/></g>`);
+    add(P, 'loincloth', `<path d="${torsoD}" fill="none" stroke="${line}" stroke-width="2.1" stroke-linejoin="round" clip-path="url(#${clip})"/>`);
+    if (!back) {
+      const fl = g.hp * 0.55, drop = g.leg * 0.36;
+      add(P, 'loincloth', shape(poly([[cx - fl, hipY - 0.2], [cx + fl, hipY - 0.2], [cx + fl * 0.85, hipY + drop], [cx + fl * 0.2, hipY + drop - 0.9], [cx - fl * 0.3, hipY + drop + 0.3], [cx - fl * 0.85, hipY + drop - 0.6]]), cl, clLine));
+    } else {
+      const fl = g.hp * 0.8, drop = g.leg * 0.25;
+      add(P, 'loincloth', shape(poly([[cx - fl, hipY - 0.2], [cx + fl, hipY - 0.2], [cx + fl * 0.8, hipY + drop], [cx - fl * 0.8, hipY + drop]]), cl, clLine));
+    }
   }
   // Chest band.
   if (woman) {
@@ -751,11 +772,14 @@ function sideLayers(spec: PersonSpec): PersonOut {
   torso += clipDef + shape(torsoD, skin, line);
   torso += `<g clip-path="url(#${clip})"><path d="M${cx - d},${sY - 2}L${cx - d * 0.1},${sY - 2}L${cx - d * 0.2},${hipY + 3}L${cx - d},${hipY + 3}Z" fill="rgba(60,30,10,0.12)"/></g>`;
   add(P, 'torso', rot(torso));
-  let loin = clipDef + `<g clip-path="url(#${clip})"><rect x="${cx - d}" y="${hipY - 2.8}" width="${2 * d}" height="3" fill="${REF.bandD}"/></g>`;
-  loin += `<path d="${torsoD}" fill="none" stroke="${line}" stroke-width="2.1" clip-path="url(#${clip})"/>`;
-  loin += shape(poly([[cx + d * 0.14, hipY - 0.3], [cx + d * 0.48, hipY - 0.3], [cx + d * 0.46 - sw * 0.8, hipY + g.leg * 0.36], [cx + d * 0.16 - sw * 0.8, hipY + g.leg * 0.34]]), REF.band, REF.bandLine);
-  loin += shape(poly([[cx - d * 0.56, hipY - 0.3], [cx - d * 0.1, hipY - 0.3], [cx - d * 0.16 + sw * 0.6, hipY + g.leg * 0.26], [cx - d * 0.58 + sw * 0.6, hipY + g.leg * 0.28]]), REF.band, REF.bandLine);
-  add(P, 'loincloth', rot(loin));
+  if (w.hips) add(P, 'loincloth', rot(hideLoinclothSide(G, sw)));
+  else {
+    let loin = clipDef + `<g clip-path="url(#${clip})"><rect x="${cx - d}" y="${hipY - 2.8}" width="${2 * d}" height="3" fill="${REF.bandD}"/></g>`;
+    loin += `<path d="${torsoD}" fill="none" stroke="${line}" stroke-width="2.1" clip-path="url(#${clip})"/>`;
+    loin += shape(poly([[cx + d * 0.14, hipY - 0.3], [cx + d * 0.48, hipY - 0.3], [cx + d * 0.46 - sw * 0.8, hipY + g.leg * 0.36], [cx + d * 0.16 - sw * 0.8, hipY + g.leg * 0.34]]), REF.band, REF.bandLine);
+    loin += shape(poly([[cx - d * 0.56, hipY - 0.3], [cx - d * 0.1, hipY - 0.3], [cx - d * 0.16 + sw * 0.6, hipY + g.leg * 0.26], [cx - d * 0.58 + sw * 0.6, hipY + g.leg * 0.28]]), REF.band, REF.bandLine);
+    add(P, 'loincloth', rot(loin));
+  }
   if (woman) {
     add(P, 'chestband', rot(clipDef + `<g clip-path="url(#${clip})"><path d="M${cx - d},${sY + 4}L${cx + d},${sY + 3.4}L${cx + d},${sY + 10}L${cx - d},${sY + 9.2}Z" fill="${REF.band2}"/></g><path d="${torsoD}" fill="none" stroke="${line}" stroke-width="2.1" clip-path="url(#${clip})"/>`));
   }
@@ -796,6 +820,7 @@ function flush(sink: Sink, spec: PersonSpec, P: Pieces): void {
       case 'cloak_back': case 'cloak_front': return w.cloak ?? '';
       case 'torso_wear': case 'sleeve': case 'sleeves': return w.torso ?? '';
       case 'trousers': return w.legs ?? '';
+      case 'loincloth': return w.hips ?? '';
       case 'feet': return w.feet ?? '';
       case 'head_back': case 'head_wear': return w.head ?? '';
       case 'hair': case 'hair_back': return spec.hair;

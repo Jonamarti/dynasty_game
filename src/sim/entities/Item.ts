@@ -487,6 +487,8 @@ export const ITEMS: Record<string, ItemDef> = {
     class: 'food', hand: { perHand: 3, perArms: 8, hands: 1 } },
   foot_wraps: { id: 'foot_wraps', label: 'Foot wraps', nutrition: 0, spoilTicks: 0, baseValue: 4,
     class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'feet', warmth: 0.08 } },
+  hide_loincloth: { id: 'hide_loincloth', label: 'Hide loincloth', nutrition: 0, spoilTicks: 0, baseValue: 3,
+    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'hips', warmth: 0.02 } },
   leggings: { id: 'leggings', label: 'Leggings', nutrition: 0, spoilTicks: 0, baseValue: 7,
     class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'legs', warmth: 0.15 } },
   moccasins: { id: 'moccasins', label: 'Moccasins', nutrition: 0, spoilTicks: 0, baseValue: 6,

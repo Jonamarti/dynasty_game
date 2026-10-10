@@ -6,6 +6,7 @@ export const ES_DATA: Record<string, string> = {
   'Moccasins': 'Mocasines',
   'Leggings': 'Polainas',
   'Foot wraps': 'Envolturas de pies',
+  'Hide loincloth': 'Taparrabos de piel',
   'Salt': 'Sal',
   'Salted meat': 'Carne salada',
   'Salted fish': 'Pescado salado',

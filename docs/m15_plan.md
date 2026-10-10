@@ -8,6 +8,12 @@
 
 # M15 — El plan maestro: de las manos vacías al Estado
 
+**Avance del 2026-10-10 — 14c, taparrabos:** `hide_loincloth` ocupa cadera,
+consume piel con lasca/hacha retenida y abriga sólo puesto. Arte generado,
+persistencia y botones de Equipo verificados. [Contrato y captura](m15_phase14c_hip.md).
+Siguiente corte: falda de fibra. Curtido, bolsillos, desgaste/remiendo,
+creencias y retirada por calor siguen abiertos; no se declara cerrada 14c.
+
 **Avance 2026-10-10 — 12c:** luz nocturna localizada, fuentes visibles por
 hash, capa reutilizable y niebla conforme a sightOf. [Contrato y medida de
 composición](m15_phase12c_night_light.md). Antorchas12d y calor12e implementados; nights12f tiene instrumento; cohortes y coste siguen abiertos.
@@ -1638,6 +1644,10 @@ convierten en túnica y manto (14c). **Es el commit más caro del bloque en
 muertes por frío**; coste declarado: ≤ 5 puntos.
 
 ### 14c. Las prendas (sub-red Ropa; medido)
+
+**Avance del 2026-10-10:** taparrabos `hide_loincloth` entregado desde la
+puerta `clothing`, con herramienta física retenida y calor 0,02 sólo en
+cadera. [Contrato](m15_phase14c_hip.md). Falda de fibra sigue pendiente.
 
 La nota pide escalones: «unas solo piel y un hacha, como las capas; otras
 hilos, botones…». Cada prenda es un nodo `craft` de la sub-red Ropa (13b),

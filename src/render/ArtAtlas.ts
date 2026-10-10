@@ -25,6 +25,7 @@ import {
 import { PixelCache } from './PixelCache.ts';
 
 export interface WornGarments {
+  hips?: 'hide_loincloth';
   torso?: 'cape' | 'wrap' | 'tunic' | 'linen_tunic' | 'longtunic' | 'hide_armour' | 'fur_coat' | 'toggled_coat';
   legs?: 'trousers';
   feet?: 'boots' | 'wraps';
@@ -140,7 +141,7 @@ export class ArtAtlas {
     const w = a.wear;
     return [
       a.age, a.sex, a.dir, a.pose, a.skin, a.hair, a.band, a.hairStyle, a.beard ? 'b' : '-', a.expression,
-      w.torso ?? '', w.legs ?? '', w.feet ?? '', w.hands ?? '', w.head ?? '', w.cloak ?? '',
+      w.torso ?? '', w.legs ?? '', w.feet ?? '', w.hands ?? '', w.head ?? '', w.cloak ?? '', w.hips ?? '',
       a.carryBaby ? 'c' : '', a.held ?? '', a.heldLeft ?? '', a.belly ? 'belly' : '',
     ].join('|');
   }
@@ -168,7 +169,7 @@ export class ArtAtlas {
       const base = slot.replace(/_(far|near)$/, '');
       let variant: string | null = 'base';
       switch (base) {
-        case 'loincloth': if (covers) variant = null; break;
+        case 'loincloth': variant = w.hips ?? (covers ? null : 'base'); break;
         case 'chestband': if (bandCovered) variant = null; break;
         case 'hands': case 'hand': variant = w.hands ?? 'base'; break;
         case 'trousers': variant = w.legs ?? null; break;
@@ -200,9 +201,11 @@ export class ArtAtlas {
       }
       if (a.carryBaby && carrySlots.has(slot)) variant += CARRY_SUFFIX;
       const tintSlot = tintOf[slot];
-      // A glove is leather, not skin: only bare pictures take the skin colour.
+      // Fitted hide keeps its material colour. The presentation-only default
+      // loincloth still takes the band colour, as it did before hips existed.
       const glove = (base === 'hands' || base === 'hand') && w.hands;
-      const colour = glove ? null : tintSlot === 'skin' ? a.skin : tintSlot === 'hair' ? a.hair : tintSlot === 'band' ? a.band : null;
+      const materialColour = glove || (base === 'loincloth' && w.hips);
+      const colour = materialColour ? null : tintSlot === 'skin' ? a.skin : tintSlot === 'hair' ? a.hair : tintSlot === 'band' ? a.band : null;
       layers.push({ manifest: this.people, key: personKey(slot, variant, a.age, a.sex, dir, a.pose), tint: colour, dx: 0, dy });
     }
 

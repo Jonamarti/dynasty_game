@@ -2800,8 +2800,8 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
     site: 'ActionSystem.doCraft and doChop',
   },
   clothing: {
-    summary: 'Hide against the weather, everywhere and always.',
-    site: 'NeedsSystem.update, via warmthFrom',
+    summary: 'Hide and fibre garments warm only their equipped body slot.',
+    site: 'ITEMS garment slot; NeedsSystem.update via warmthFrom; Renderer.wornGarmentsOf',
   },
   pottery: {
     summary: 'Fired vessels, and a granary to keep a year in.',

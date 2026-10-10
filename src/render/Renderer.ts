@@ -76,7 +76,11 @@ export function wornGarmentsOf(person: Person): PersonAspect['wear'] {
     ? 'trousers' as const : undefined;
   const head = person.equipment.head?.item === 'fur_hat' && person.inventory.count('fur_hat') >= 1
     ? 'cap' as const : undefined;
-  return { torso, cloak, ...(feet ? { feet } : {}), ...(legs ? { legs } : {}), ...(head ? { head } : {}) };
+  const hipId = person.equipment.hips?.item;
+  const hips = hipId && person.inventory.count(hipId) >= 1
+    ? hipId === 'hide_loincloth' ? 'hide_loincloth' as const : undefined
+    : undefined;
+  return { torso, cloak, ...(feet ? { feet } : {}), ...(legs ? { legs } : {}), ...(head ? { head } : {}), ...(hips ? { hips } : {}) };
 }
 
 const BIOME_COLORS: Record<Biome, [string, string]> = {

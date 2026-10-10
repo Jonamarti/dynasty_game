@@ -61,6 +61,7 @@ puesto. Los dos artículos existentes que ahora se pueden vestir usan capas de
 |---|---|---|
 | `hide_armour` | `torso` | `art/garment/hide_armour` |
 | `fur_coat` | `torso` | `art/garment/fur_coat` |
+| `hide_loincloth` | `hips` | `p/loincloth/hide_loincloth` |
 
 Las variantes viven en `art/src/people/rig.ts` y se materializan en la hoja
 `public/art/people-*`; `npm run art:build -- people` la vuelve a generar. Cada

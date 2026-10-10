@@ -79,6 +79,7 @@ function person(over: AspectOver, label: string, row: HTMLElement): void {
 {
   const row = section('wear', 'Garments, alone and combined');
   const sets: [string, WornGarments][] = [
+    ['hide loincloth', { hips: 'hide_loincloth' }],
     ['none', {}], ['cape', { torso: 'cape' }], ['wrap', { torso: 'wrap' }], ['tunic', { torso: 'tunic' }], ['longtunic', { torso: 'longtunic' }],
     ['trousers', { legs: 'trousers' }], ['boots', { feet: 'boots' }], ['foot wraps', { feet: 'wraps' }], ['gloves', { hands: 'gloves' }],
     ['cap', { head: 'cap' }], ['hood', { head: 'hood' }], ['cloak', { cloak: 'cloak' }], ['wool cloak', { cloak: 'wool_cloak' }],

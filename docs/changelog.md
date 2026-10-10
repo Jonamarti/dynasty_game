@@ -1,3 +1,19 @@
+## 2026-10-10 — m15: taparrabos físico en la cadera
+
+`0.15.46-alpha`: el primer artículo de cadera usa el hueco ya existente,
+confección compartida y una lasca o hacha retenida. Calor 0,02 sólo puesto;
+quitarlo conserva el artículo. La capa visual sustituye el taparrabos de
+presentación, sin cambiar la cobertura de las demás prendas. Arte regenerado
+y hoja de contacto ampliada para revisar las tres orientaciones.
+
+Typecheck y 35 pruebas focales pasan; navegador 1/1 (vestir/quitar en
+español). El chequeo corto conserva los dos fallos iniciales de dieta y
+rendimiento. Captura inspeccionada:
+`artifacts/screenshots/m15-phase14c-loincloth-2026-10-10T-03/T-01-hide-loincloth.png`.
+[Contrato](m15_phase14c_hip.md). Falda, curtido, bolsillos, desgaste/remiendo
+y lectores de creencias/calor siguen pendientes. Cohortes/matriz diferidas;
+no se afirma mejora de supervivencia. La regresión completa se registra aparte.
+
 ## 2026-10-10 — m15: instrumento de ropa en invierno
 
 `tailors` ejercita vestir prendas físicas y el efecto de abrigo. La cobertura
