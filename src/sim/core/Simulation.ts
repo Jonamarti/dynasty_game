@@ -4032,7 +4032,7 @@ export class Simulation {
    */
   litNear(x: number, y: number, r: number): boolean {
     if (this.buildingHash.queryRadius(x, y, r + 2).some(b =>
-      b.complete && !b.ruined && (b.def.id === 'hearth' || b.def.shelter > 0) &&
+      b.complete && !b.ruined && b.def.id === 'hearth' &&
       Math.hypot(b.centerX - x, b.centerY - y) <= r)) return true;
     return this.peopleHash.queryRadius(x, y, r * 2 + 1).some(person =>
       !!torchLight(person) && Math.hypot(person.x - x, person.y - y) <= r * 2);

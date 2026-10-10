@@ -2115,7 +2115,6 @@ export const TECH: Record<Tech, TechDef> = {
     kind: 'device',
     requires: ['firemaking', 'carpentry'], difficulty: 0.5, skill: 'build',
     prototype: { sticks: 6, flint: 1 }, maxRefinement: 2,
-    answers: ['warmth'],
     sparks: [
       { needs: [{ kind: 'knows', tech: 'firemaking' }, { kind: 'holding', item: 'sticks' },
                 { kind: 'doing', action: 'gather' }],
@@ -2854,8 +2853,8 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
     site: 'BandSystem.chooseChief via Polity.reignsForLife and heirOf',
   },
   charcoal: {
-    summary: 'A fuel that burns hotter than wood: a charcoal pit to make it, and a warmth to carry in the pack.',
-    site: 'BUILDINGS.charcoal_pit and RECIPES.charcoal; NeedsSystem, via warmthFrom, when charcoal is in the pack',
+    summary: 'A fuel that burns hotter than wood: a charcoal pit to make it and furnace recipes that consume it.',
+    site: 'BUILDINGS.charcoal_pit, RECIPES.charcoal and furnace smelting recipes',
   },
   native_copper: {
     summary: 'Copper found as metal, hammered cold: an awl that makes sewn goods faster, and a bead worth giving.',
@@ -3294,21 +3293,10 @@ export function awlFactor(person: Person, recipeId: string): number {
   return scaled(person, 'native_copper', 0.7);
 }
 
-/** What a coal of charcoal in the pack adds to the warmth carried, at full knowledge of how it is made. */
-export const CHARCOAL_WARMTH = 0.12;
-
-/** Warmth from fire, a brazier and the garments actually worn, before a roof. */
+/** Personal insulation and an owned flame; knowing a fuel never creates heat. */
 export function warmthFrom(person: Person): number {
-  const fire = 0.45 * techPower(person, 'firemaking');
-  // M15 phase 37: the seventh term. A glowing coal of charcoal in a pot is the
-  // oldest brazier there is, and it burns without smoke. Double-gated like the
-  // rest — carrying it and knowing how it is made — and the smallest term in
-  // the list, because it is a fuel and not a garment.
-  const brazier = person.inventory.has('charcoal')
-    ? CHARCOAL_WARMTH * techPower(person, 'charcoal')
-    : 0;
   const torch = torchInHand(person) ? 0.2 : 0;
-  let unwarmed = (1 - fire) * (1 - brazier) * (1 - torch);
+  let unwarmed = 1 - torch;
   for (const slot of GARMENT_SLOTS) {
     const worn = person.equipment[slot];
     const garment = worn ? ITEMS[worn.item]?.garment : undefined;

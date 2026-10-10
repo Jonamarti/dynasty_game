@@ -4380,3 +4380,9 @@ combustible persistente en manos, avance detallado/compacto, luz/calor/huida,
 creencias NPC y dibujo de ambas manos. Contrato: m15_phase12d_torches.md.
 Capturas: artifacts/screenshots/m15-phase12d-torches-2026-10-10-close/.
 La medición de cohortes sigue diferida por instrucción M15; 12e/12f pendientes.
+
+2026-10-10 — 12e implementada: desaparece calor por conocimiento de fuego y por
+carbón apagado. Solo ropa puesta/llama real/hoguera próxima; el cuerpo compacto
+recibe el mismo índice de hogueras. m15_phase12e_local_heat.md: tres regresiones
+fallan en12d y pasan ahora. Cota de mortalidad pendiente, cohorte diferida por
+instrucción M15. Continúa12f.

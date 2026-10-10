@@ -58,8 +58,6 @@ describe('the tech table', () => {
   it('only gives motives to technologies whose effects answer them', () => {
     const supported: Partial<Record<Tech, string[]>> = {
       firemaking: ['warmth'], clothing: ['warmth'],
-      // M15 phase 37: a coal in the pack is a brazier (`warmthFrom`).
-      charcoal: ['warmth'],
       cooking: ['hunger', 'variety'], tracking: ['hunger', 'variety'],
       fishing: ['hunger', 'variety'], snares: ['hunger', 'variety'],
       well: ['thirst'], flute: ['company'],
@@ -129,7 +127,8 @@ describe('the tech table', () => {
     expect(warmthFrom(clad)).toBeGreaterThan(warmthFrom(bare));
     // Clothing, like fire, stacks with diminishing returns and never reaches 1.
     const everything = someone();
-    everything.knownTech.add('firemaking');
+    everything.inventory.add('torch', 1);
+    everything.equipment.left = { item: 'torch', count: 1, lit: 10 };
     everything.inventory.add('fur_coat', 1);
     everything.equipment.torso = { item: 'fur_coat', count: 1 };
     expect(warmthFrom(everything)).toBeGreaterThan(warmthFrom(clad));
@@ -343,14 +342,14 @@ describe('technology in one person’s hands', () => {
     expect(forageYieldFactor(person, 'flint')).toBeCloseTo(1.5);
   });
 
-  it('keeps fire warmth without adding a bonus for clothing knowledge', () => {
+  it('does not warm through knowledge of firemaking or clothing alone', () => {
     // Adding them would put a clothed firemaker past 1, which inverts the chill
     // into warming and makes February the most comfortable month of the year.
     const person = someone();
     person.knownTech.add('firemaking');
     person.knownTech.add('clothing');
     const both = warmthFrom(person);
-    expect(both).toBeCloseTo(0.45);
+    expect(both).toBe(0);
     expect(both).toBeLessThan(1);
   });
 

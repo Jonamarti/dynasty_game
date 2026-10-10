@@ -14327,3 +14327,16 @@ automáticas sin combustible se registran por separado en docs/bugs.md.
 Typecheck del índice exacto correcto. Reporte de una semilla: 2/147 fallos,
 cravings-steer-the-diet y perf-budget, los mismos nombres del inicio; no es
 una afirmación de mejora económica. people-act-on-what-they-know permanece PASS.
+
+## 2026-10-10 — m15: calor donde arde el fuego (0.15.27-alpha)
+
+Se retira el abrigo global de firemaking y del carbón apagado, y una casa deja
+de contar como fuego ante fauna. CompactBody usa el lector local de hogueras
+de NeedsSystem mediante hash espacial. Contrato m15_phase12e_local_heat.md.
+Tres pruebas nuevas fallan contra12d; foco de141 pruebas pasa y typecheck pasa.
+Reporte una semilla: mismos dos fallos iniciales (dieta y presupuesto de tiempo).
+Se actualiza la premisa de armadura de piel: debe estar puesta, como exige14b.
+No UI nueva. Cohortes y cota de mortalidad diferidas; no se afirma mejor supervivencia.
+La suite global iniciada durante la integración se interrumpió: leyó archivos
+mientras cambiaban, por lo que ese resultado mixto no sirve como verificación
+final. Se vuelven a ejecutar sus fallos focalmente sobre código fijo.

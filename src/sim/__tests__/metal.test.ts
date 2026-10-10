@@ -110,7 +110,7 @@ describe('charcoal and the pit', () => {
     expect(item.protects).toBeUndefined();
   });
 
-  it('warms only somebody who both knows how it is made and carries some', () => {
+  it('does not warm through unlit charcoal, even when its maker carries it', () => {
     const bare = adult('bare');
     const knower = adult('knower');
     const carrier = adult('carrier');
@@ -121,7 +121,7 @@ describe('charcoal and the pit', () => {
     both.inventory.add('charcoal', 2);
     expect(warmthFrom(knower)).toBe(warmthFrom(bare));
     expect(warmthFrom(carrier)).toBe(warmthFrom(bare));
-    expect(warmthFrom(both)).toBeGreaterThan(warmthFrom(bare));
+    expect(warmthFrom(both)).toBe(warmthFrom(bare));
     // Diminishing returns: never total warmth.
     teach(both, 'firemaking', 'clothing');
     expect(warmthFrom(both)).toBeLessThan(1);
@@ -1034,9 +1034,10 @@ describe('bronze arms', () => {
     expect(protectionOf(smith, 'head')).toBeLessThan(1);
   });
 
-  it('leaves every garment that names no technique exactly as it was', () => {
+  it('uses the declared protection of a garment actually worn', () => {
     const wearer = adult('wearer');
     wearer.inventory.add('hide_armour', 1);
+    wearer.equipment.torso = { item: 'hide_armour', count: 1 };
     teach(wearer, 'leatherwork');
     expect(protectionOf(wearer, 'torso')).toBe(ITEMS.hide_armour!.protects!.torso);
     expect(armourOf(wearer)).toBeGreaterThan(0);

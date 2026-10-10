@@ -200,12 +200,8 @@ export class NeedsSystem {
       // building blunts the chill and, in a good hut, reverses it — which is
       // what makes building one the difference between a band that survives a
       // winter and a band that does not.
-      // Fire and clothing are warmth you carry with you. Someone who knows how
-      // to make fire is never as cold as someone who does not, wherever they
-      // are standing — which is why it is the first thing anyone should work
-      // out, and why a band that loses it feels the loss immediately. Clothing
-      // answers the same problem a second way; `warmthFrom` combines them with
-      // diminishing returns rather than by adding them.
+      // A worn layer and a burning torch travel with the body. Firemaking
+      // knowledge and unlit fuel do not: a fixed hearth warms only nearby.
       const carried = warmthFrom(person);
       const coldBefore = person.needs.cold;
       const shelter = Math.max(carried, this.shelterAt(person, buildings));

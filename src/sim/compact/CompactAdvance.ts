@@ -29,6 +29,7 @@ import type { Household } from '../entities/Household.ts';
 import { LifeSystem, roofOverSleeper } from '../systems/LifeSystem.ts';
 import { TimeManager } from '../core/TimeManager.ts';
 import { advanceTorchBurn } from '../core/Torch.ts';
+import { SpatialHash } from '../core/SpatialHash.ts';
 import { NeedsSystem, thirstDriftPerTick, type NeedsHooks } from '../systems/NeedsSystem.ts';
 import type { Building } from '../entities/Building.ts';
 import type { World } from '../core/World.ts';
@@ -106,6 +107,10 @@ export class CompactBody {
     const events: CompactEvent[] = [];
     const people = [person];
     const buildings = (this.env.buildings ?? []) as Building[];
+    // One index per advance keeps local hearth exposure identical to detailed
+    // needs without scanning every building on each private body tick.
+    const buildingHash = new SpatialHash<Building>();
+    buildingHash.rebuild(buildings);
     const buildingsById = new Map(buildings.map(building => [building.id, building]));
     for (let tick = compact.lastAdvancedTick + 1; tick <= toTick; tick++) {
       if (!person.alive) break;
@@ -122,7 +127,7 @@ export class CompactBody {
             person.needs.hunger, person.needs.thirst, intake.capacity(person), compact.rng, day);
         }
       }
-      this.system.update(people, this.clock, buildings, undefined, this.env.hooks);
+      this.system.update(people, this.clock, buildings, buildingHash, this.env.hooks);
       if (person.alive && this.env.ration) {
         // The measured plan asks for relief; the band's daily ledger decides how much resource exists.
         // With no measured intake configured there is no request, so the callback cannot create food.
