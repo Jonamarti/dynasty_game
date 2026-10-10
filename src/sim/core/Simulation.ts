@@ -5237,7 +5237,8 @@ export class Simulation {
     const elapsed = dry ? ticks : ticks * rate;
     const prefix = dry ? 'would_spoil_' : 'spoiled_';
 
-    const sweep = (inventory: Inventory, keeps: number, source: 'carried' | 'store' | 'site' | 'pile'): void => {
+    const sweep = (inventory: Inventory, keeps: number, source: 'carried' | 'store' | 'site' | 'pile',
+      where: { x: number; y: number }, carrier?: Person, building?: Building): void => {
       // What would have gone off with no answer to spoilage at all, measured
       // first and not applied. It is the only honest way to ask whether
       // `preserving` is doing anything: survival across twenty seeds cannot
@@ -5261,6 +5262,28 @@ export class Simulation {
           telemetry.count(prefix + source, count);
           telemetry.count(prefix + source + '_' + itemId, count);
           telemetry.count(prefix + source + '_nutrition', count * (ITEMS[itemId]?.nutrition ?? 0));
+          if (!dry) {
+            // A dry estimate is not an event anyone experienced. Nor may an
+            // onlooker inspect packed food: only a visible hand or public pile
+            // exposes the loss. Store members learn while actually present.
+            const fraction = Math.min(1, count / Math.max(count, inventory.count(itemId) + count));
+            carrier?.beliefs.learn('spoils:' + itemId, fraction, 0.3, 'own', this.time.tick);
+            if (carrier) telemetry.count('spoilage_learned_own');
+            for (const observer of this.peopleHash.queryRadius(where.x, where.y, this.config.sightRadius)) {
+              if (!observer.alive || observer === carrier ||
+                Math.hypot(observer.x - where.x, observer.y - where.y) > this.sightOf(observer)) continue;
+              const household = observer.householdId === null ? null : this.householdsById.get(observer.householdId);
+              const ownsStore = building && (household?.homeBuildingId === building.id ||
+                building.sponsorId === observer.id);
+              const visibleHand = carrier && (carrier.equipment.left?.item === itemId || carrier.equipment.right?.item === itemId);
+              if (!ownsStore && source !== 'pile' && !visibleHand) continue;
+              // A visible loss teaches that spoilage happens, without revealing
+              // the private fraction of somebody else's packed stack.
+              observer.beliefs.learn('spoils:' + itemId, ownsStore ? fraction : 1, ownsStore ? 0.3 : 0.15,
+                ownsStore ? 'own' : 'seen', this.time.tick);
+              telemetry.count(ownsStore ? 'spoilage_learned_own' : 'spoilage_learned_seen');
+            }
+          }
         }
       }
     };
@@ -5271,18 +5294,18 @@ export class Simulation {
     // changes: `sweep(person.inventory, spoilFactor(person))`.
     for (const person of this.people) {
       if (!person.alive) continue;
-      sweep(person.inventory, 1, 'carried');
+      sweep(person.inventory, 1, 'carried', person, person);
     }
     for (const building of this.buildings) {
       const keeps = building.def.preserves ?? 1;
-      sweep(building.store, keeps, 'store');
+      sweep(building.store, keeps, 'store', { x: building.centerX, y: building.centerY }, undefined, building);
       // Materials on a site rot too, and a site is exactly where food should
       // not be: nothing delivers berries to a hut, so this is almost always a
       // no-op and is here so that the one day something does, it behaves.
-      sweep(building.delivered, keeps, 'site');
+      sweep(building.delivered, keeps, 'site', { x: building.centerX, y: building.centerY }, undefined, building);
     }
     // Dropped goods keep no better than a pack.
-    for (const pile of this.piles) sweep(pile.contents, 1, 'pile');
+    for (const pile of this.piles) sweep(pile.contents, 1, 'pile', pile);
   }
 
   /**

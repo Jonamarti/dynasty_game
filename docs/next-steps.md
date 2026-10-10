@@ -1663,3 +1663,6 @@ registran en bugs.md sin presentarlos como una suite global correcta.
 2026-10-10:14c inicia catálogo con capa/túnica; m15_phase14c_first_layers.md.
 Pendientes otras prendas, creencias, bolsillos y desgaste/remiendo. Ver bugs.md
 para resultado completo de la suite fija28:22 fallos, sin ocultar premisas viejas.
+
+2026-10-10: lector spoils:<item>15b implementado con visibilidad/propiedad;
+continúa la red y recetas de conservación, con tasa general aún0.

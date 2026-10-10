@@ -14389,3 +14389,13 @@ Focos:41/41 y5/5 correctos; typecheck correcto. No reglas nuevas ni bump.
 Estos focos resuelven14 fallos del índice28; la traducción de carbón resuelve
 uno más. Quedan7 fallos de aquel resultado sin resolver; todavía no es una
 suite global verde. Se actualiza la cabecera del plan con avances12d/12e/14c/16d.
+
+## 2026-10-10 — m15: aprender de pérdidas reales de comida (0.15.31-alpha)
+
+El portador aprende de comida realmente perdida; testigos sólo de manos
+expuestas/montones visibles; dueños presentes ven su almacén. Estimaciones
+secas y contenido privado no generan aprendizaje. Lectores compartidos con el
+instrumento por origen. Dos pruebas nuevas fallan sin el lector,4/4 pasan y
+typecheck pasa. Reporte corto mantiene fallos iniciales de dieta y perf-budget.
+Contrato m15_phase15b_spoil_learning.md; recetas/activación pendientes. Sin UI
+nueva ni afirmación de mejora económica; cohortes diferidas.

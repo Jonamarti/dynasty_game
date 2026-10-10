@@ -4396,3 +4396,8 @@ Asignaciones individuales, acopio específico y muebles restantes pendientes.
 retenidas, capas visibles, nombres/huecos ES y demanda por frío/mejora de hueco.
 Contrato m15_phase14c_first_layers.md. Catálogo restante, creencias, bolsillos,
 deterioro y reparación pendientes; no se declara14c completa.
+
+2026-10-10 — 15b lector de pérdidas reales: spoils:<item> propio/observado,
+sin aprender estimaciones secas ni inspeccionar mochilas privadas; dueños de
+almacén presentes y dentro de vista. m15_phase15b_spoil_learning.md. Recetas y
+red Conservación pendientes; tasa por defecto0 y15c sigue diferida.
