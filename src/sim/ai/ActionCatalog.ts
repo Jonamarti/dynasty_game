@@ -46,6 +46,7 @@ import { canWalk, isNursling } from '../entities/LifeStage.ts';
 import { tooHeavyForHer } from '../entities/Pregnancy.ts';
 import { mayNurse } from './Nursing.ts';
 import { swimRefusal, swimRouteRefusal, swimRefusalText } from '../core/Swimming.ts';
+import { houseInteriorContains, houseInteriorTiles } from '../world/HouseInterior.ts';
 
 export type TargetKind =
   'ground' | 'person' | 'node' | 'building' | 'tree' | 'pile' | 'animal' | 'inscription' | 'corpse';

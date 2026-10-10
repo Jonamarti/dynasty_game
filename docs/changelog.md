@@ -14289,3 +14289,7 @@ Focales 2/2; negativos con contadores retirados fallan 2/2. TypeScript limpio.
 Contrato: docs/m15_phase15a_spoilage_sources.md. La medición de veinte semillas
 exigida en 15a y la activación 15c siguen pendientes por la restricción expresa
 de AGENTS.md. spoilRate continúa a cero; no se afirma mejora económica.
+
+## 2026-10-10 — M15: completar imports del menú de mobiliario
+
+La integración selectiva había dejado los helpers de interior usados por el radial en el árbol de trabajo pero fuera del commit de camas. Se incorporan a su módulo; sin cambio de reglas. La comprobación TypeScript sobre el árbol completo era insuficiente para detectar este error de staging compartido.
