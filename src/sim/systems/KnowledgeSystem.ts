@@ -179,6 +179,7 @@ const STALE_DAYS = 90;
 const HEARTH_LESSON_CHANCE = 0.15;
 
 export interface KnowledgeContext {
+  observerSight?: (person: Person) => number;
   rng: RNG;
   tick: number;
   peopleHash: SpatialHash<Person>;
@@ -690,8 +691,10 @@ export class KnowledgeSystem {
     if (!ctx.rng.chance(chance)) return;
 
     const neighbours = ctx.peopleHash.queryRadius(person.x, person.y, WATCHING_RANGE);
+    const visible = Math.min(WATCHING_RANGE, ctx.observerSight?.(person) ?? WATCHING_RANGE);
     for (const other of neighbours) {
       if (!other.alive || other.id === person.id) continue;
+      if (person.distanceTo(other) > visible) continue;
       // People also pick up practical expectations while watching somebody do
       // the work that produced them. Restrict the transfer to the demonstrated
       // activity: a remembered yield is not contagious just because two people

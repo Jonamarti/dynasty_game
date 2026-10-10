@@ -83,7 +83,15 @@ function copyConfig(input: unknown): SimConfig {
     input = { ...input, ai: { ...input.ai, commitmentEntryPressure: DEFAULT_CONFIG.ai.commitmentEntryPressure,
       commitmentBreakMargin: DEFAULT_CONFIG.ai.commitmentBreakMargin, commitmentTieMargin: DEFAULT_CONFIG.ai.commitmentTieMargin } };
   }
+  // Missing light means a save written under daylight-independent rules.
+  // Partial or malformed light settings still fail the exact-key validation.
+  if (object(input) && !Object.hasOwn(input, 'light')) {
+    input = { ...input, light: { ...DEFAULT_CONFIG.light, enabled: false } };
+  }
   const config = visit(input, DEFAULT_CONFIG, 'config') as SimConfig;
+  for (const value of [config.light.nightFloor, config.light.fineWorkDark, config.light.huntDark]) {
+    if (value > 1) invalid('light factors must be between zero and one');
+  }
   for (const value of [config.thinkInterval, config.otherBandThinkInterval, config.time.ticksPerDay, config.time.daysPerSeason,
     config.time.maxTicksPerFrame, config.world.width, config.world.height, config.world.chunkSize]) {
     if (!Number.isSafeInteger(value) || value <= 0) invalid('invalid scheduling or dimension configuration');

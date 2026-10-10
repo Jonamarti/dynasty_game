@@ -108,6 +108,8 @@ import { canWork } from '../knowledge/Ore.ts';
 import { houseInteriorContains } from '../world/HouseInterior.ts';
 
 export interface ActionContext {
+  fineWorkPace?: (person: Person) => number;
+  huntLightFactor?: (person: Person) => number;
   comarcaTravel?: ComarcaTravel;
   world: World;
   movement: MovementSystem;
@@ -3027,7 +3029,7 @@ export class ActionSystem {
         + (1 - animal.stamina) * 0.35
     ));
 
-    if (!ctx.rng.chance(chance)) {
+    if (!ctx.rng.chance(chance * (ctx.huntLightFactor?.(person) ?? 1))) {
       telemetry.count('hunt_missed');
       // A miss costs the stalk: the herd is gone and the hunter is winded.
       person.needs.fatigue = Math.min(100, person.needs.fatigue + 4);
@@ -4569,9 +4571,10 @@ export class ActionSystem {
       person.actionTimer = Math.max(1, total - person.bankedFor(bankKey));
       return;
     }
-    person.actionTimer--;
+    const pace = ctx.fineWorkPace?.(person) ?? 1;
+    person.actionTimer -= pace;
     person.workedTicks++;
-    person.bankWork(bankKey);
+    person.bankWork(bankKey, pace);
     if (person.actionTimer > 0) {
       // `ignoreLaden`, for the same reason felling passes it: nothing is taken
       // out of the pack and nothing is put into it until the final tick, so a
@@ -4777,7 +4780,7 @@ export class ActionSystem {
       return;
     }
     person.workedTicks++;
-    if (!target.addWork(person.skillFactor(target.def.skill))) {
+    if (!target.addWork(person.skillFactor(target.def.skill) * (ctx.fineWorkPace?.(person) ?? 1))) {
       // `ignoreLaden` for the same reason felling passes it: nothing goes into
       // the pack, so a full one is not a reason to put the chisel down. Being
       // stopped here costs only the ticks not yet spent — the work already done
@@ -5181,9 +5184,10 @@ export class ActionSystem {
       person.actionTimer = Math.max(1, total - person.bankedFor(bankKey));
       return;
     }
-    person.actionTimer--;
+    const pace = ctx.fineWorkPace?.(person) ?? 1;
+    person.actionTimer -= pace;
     person.workedTicks++;
-    person.bankWork(bankKey);
+    person.bankWork(bankKey, pace);
     if (person.actionTimer > 0) {
       const stop = this.interruption(person, ctx, {
         ignoreLaden: true,

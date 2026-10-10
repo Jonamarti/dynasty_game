@@ -1,5 +1,10 @@
 # M15 — El plan maestro: de las manos vacías al Estado
 
+**Avance 2026-10-10 — 12b:** lectores de vista/testigos/observación y trabajo
+fino/caza conectados a luz local, con progreso bancado y migración de partidas.
+[Contrato](m15_phase12b_light_readers.md). Antorchas, calor local y escenario
+nights siguen abiertos; se registra un nuevo fallo de destino desconocido.
+
 **Avance 2026-10-10 — 12a:** luz local medida por hash y muestras de
 medianoche, sin alterar decisiones. [Contrato](m15_phase12a_light.md).
 Vista/trabajo/testigos/caza y antorchas todavía no leen esta medida.

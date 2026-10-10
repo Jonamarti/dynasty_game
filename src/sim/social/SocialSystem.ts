@@ -237,6 +237,8 @@ export function resetEventIds(): void {
 }
 
 export class SocialSystem {
+  /** Simulation supplies current observer sight; standalone callers keep their given radius. */
+  observerSight: ((person: Person) => number) | null = null;
   /** Set by the world root; classic maps leave news origins absent. */
   worldOrigin: { cx: number; cy: number } | null = null;
   /** Optional parent-owned archive lookup for a story whose actor left this comarca. */
@@ -401,6 +403,8 @@ export class SocialSystem {
     const saw: Person[] = [];
     for (const bystander of peopleHash.queryRadius(actor.x, actor.y, sightRadius)) {
       if (!bystander.alive) continue;
+      if (Math.hypot(bystander.x - actor.x, bystander.y - actor.y) >
+          (this.observerSight?.(bystander) ?? sightRadius)) continue;
       if (bystander.bandId === ownerBandId && bystander.id !== actor.id) ownerSaw = true;
       if (bystander.id === actor.id) continue;
       if (bystander.id === target?.id) {

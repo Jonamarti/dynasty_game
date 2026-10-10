@@ -153,12 +153,14 @@ export function noticeBloodied(
   people: readonly Person[],
   peopleHash: { queryRadius(x: number, y: number, r: number): Person[] },
   sightRadius: number,
-  tick: number
+  tick: number,
+  observerSight?: (person: Person) => number,
 ): void {
   for (const marked of people) {
     if (!marked.alive || marked.bloodiedUntil < tick) continue;
     for (const onlooker of peopleHash.queryRadius(marked.x, marked.y, sightRadius)) {
       if (!onlooker.alive || onlooker.id === marked.id || onlooker.isChild) continue;
+      if (Math.hypot(onlooker.x - marked.x, onlooker.y - marked.y) > (observerSight?.(onlooker) ?? sightRadius)) continue;
       onlooker.seenBloodied.set(marked.id, tick);
       // Forget what no investigation could still use.
       for (const [id, seen] of onlooker.seenBloodied) {

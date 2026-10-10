@@ -4662,3 +4662,6 @@ raciones ya anotado arriba en este archivo para la fase 34.
 Se corrigió exceso de una ULP de crédito nutricional con control mínimo y retirada sub-ULP sin alimento gratis; la RangeError original no se reprodujo en el cruce de seis personas y sigue abierta. La exploración a 400 ticks encontró otro TypeError: Invalid ledger record: too many interruption notices; no se ha establecido vínculo causal. Detalle y condiciones: docs/m15_phase34_ration_credit.md.
 
 2026-10-10: se aisló un mecanismo del rechazo too many interruption notices: movePersonLedgers concatenaba colas sin cap. Regresión con destino32 y viajero1 falla antes y pasa después; el ledger JSON carga sin aflojar límite. El caso largo400 no se atribuye resuelto sin repetir condiciones; m15_phase34_notice_transfer.md.
+
+### 2026-10-10 — destino desconocido tras lectores nocturnos
+El sim:check band del árbol compartido (ropa/muebles/luz simultáneos) dio un action_target_knowledge_unknown y people-act-on-what-they-know FAIL. El baseline anterior tenía solo cravings-steer-the-diet/perf-budget. No atribuido ni relajado: aislar con misma semilla y mecanismo de noteKnownTarget; cohortes M15 aplazadas.

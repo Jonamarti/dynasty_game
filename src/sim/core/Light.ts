@@ -5,6 +5,11 @@ import type { SpatialHash } from './SpatialHash.ts';
 export interface LightSource { readonly x: number; readonly y: number; readonly radius: number; readonly strength: number }
 export const HEARTH_LIGHT_RADIUS = 4;
 
+/** Continuous work floor, avoiding a discontinuous sunset gate. */
+export function lightFactor(light: number, floor: number): number {
+  return floor + (1 - floor) * Math.max(0, Math.min(1, light));
+}
+
 /** A completed hearth is the existing tended-fire model; roofs are not fires. */
 export function hearthLight(building: Building): LightSource | null {
   return building.complete && !building.ruined && building.def.id === 'hearth'

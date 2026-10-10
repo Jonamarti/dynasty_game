@@ -478,6 +478,7 @@ export interface SimConfig {
   motivation: MotivationConfig;
   carry: CarryConfig;
   childhood: ChildhoodConfig;
+  light: { enabled: boolean; nightFloor: number; fineWorkDark: number; huntDark: number };
   /** Tiles a person can see; the radius of witness and target queries. */
   sightRadius: number;
   /** A person re-scores their action every this many ticks (staggered by id). */
@@ -495,6 +496,7 @@ export interface SimConfig {
 }
 
 export const DEFAULT_CONFIG: SimConfig = {
+  light: { enabled: true, nightFloor: 0.35, fineWorkDark: 0.5, huntDark: 0.65 },
   seed: 1,
   world: {
     width: 128,

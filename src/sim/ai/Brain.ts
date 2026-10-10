@@ -103,6 +103,7 @@ import { handsEmptyForSwimming } from '../core/Swimming.ts';
 import { findDraftPen, claimDraftTeam, hasSeedContainer } from '../systems/Draft.ts';
 
 export interface BrainContext {
+  observerSight?: (person: Person) => number;
   world: World;
   /** Cold/fatigue limit for the estimated swimming route. */
   drownAt?: number;
@@ -1944,7 +1945,8 @@ export class Brain {
           : person.isChild ? conscienceBrake(person, true) : strangerBrake(person);
         const onlookers = ctx.peopleHash
           .queryRadius(carrier.x, carrier.y, ctx.sightRadius)
-          .filter(o => o.alive && o.id !== person.id && o.id !== carrier.id).length;
+          .filter(o => o.alive && o.id !== person.id && o.id !== carrier.id &&
+            o.distanceTo(carrier) <= (ctx.observerSight?.(o) ?? ctx.sightRadius)).length;
         // Thieves prefer privacy but do not require solitude; an opportunist
         // will risk a crowd for something worth having.
         const privacy = 1 / (1 + onlookers * 0.45);
@@ -4270,7 +4272,8 @@ export class Brain {
     ).length;
     const onlookers = ctx.peopleHash
       .queryRadius(prey.x, prey.y, ctx.sightRadius)
-      .filter(o => o.alive && o.id !== person.id && o.id !== prey.id).length;
+      .filter(o => o.alive && o.id !== person.id && o.id !== prey.id &&
+        o.distanceTo(prey) <= (ctx.observerSight?.(o) ?? ctx.sightRadius)).length;
     const unseen = 1 / (1 + onlookers * 0.45);
     // A threshold rather than a square, and a soft divisor rather than a
     // hard one. The first version of this multiplied six suppressors

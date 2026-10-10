@@ -836,12 +836,12 @@ export class Person {
   }
 
   /** Records another tick spent on `key`, discarding any other job's progress. */
-  bankWork(key: string): void {
+  bankWork(key: string, progress = 1): void {
     if (this.workBankKey !== key) {
       this.workBankKey = key;
       this.workBankTicks = 0;
     }
-    this.workBankTicks++;
+    this.workBankTicks += progress;
   }
 
   /** Throws away banked progress, on finishing a job or on giving one up. */

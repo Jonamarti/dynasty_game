@@ -3908,6 +3908,16 @@ Added the moods-move-choices health check, comparing talk frequency in the low a
 
 # Changelog
 
+## 2026-10-10 — M15 12b: visión y trabajo con luz real
+
+Vista por observador, testigos/investigación/observación y privacidad leen luz
+local. Fabricación, prototipos e inscripciones bankean progreso oscuro más
+lento; caza modifica su acierto sin draws añadidos. Config antigua migra con
+lectores apagados. Contrato `m15_phase12b_light_readers.md`, siete focales OK.
+Sim:check compartido 3/147: dos fallos previos y uno nuevo de destino
+desconocido, registrado sin relajar checks. Cohortes aplazadas; no se afirma
+mejora de supervivencia. La presentación/capturas se entrega en 12c.
+
 ## 2026-10-10 — M15 12a: instrumento de luz local
 
 Light.ts y Simulation.lightAt miden luz diurna y hogueras cercanas por hash,

@@ -129,7 +129,7 @@ import { geographicResourceAvailable } from '../world/GeographicResources.ts';
 import { stepMark } from './StepProbe.ts';
 import { approachComarcaEdge, type ComarcaTravel } from '../world/ComarcaTravel.ts';
 import { applyHouseWalls } from '../world/HouseInterior.ts';
-import { lightAt as measuredLightAt } from './Light.ts';
+import { lightAt as measuredLightAt, lightFactor } from './Light.ts';
 import { edgeOfTile, type ComarcaEdge } from '../world/ComarcaNeighbour.ts';
 import type { ComarcaMigrationContext } from '../world/ComarcaMigration.ts';
 import { comarcaResourceProfile, PROFILE_SPAN, type ComarcaResourceProfile } from '../world/ResourceProfile.ts';
@@ -1173,6 +1173,7 @@ export class Simulation {
   }
 
   private bindSocialCallbacks(social: SocialSystem): void {
+    social.observerSight = person => this.sightOf(person);
     social.setMutationGuard(people => {
       this.assertExecutionAuthority();
       this.assertCanonicalSocialPeople(people);
@@ -2397,6 +2398,7 @@ export class Simulation {
       const stage = stageOf(corpse, this.time.tick, perDay);
       for (const finder of this.peopleHash.queryRadius(corpse.x, corpse.y, this.config.sightRadius)) {
         if (!finder.alive || finder.isChild || corpse.foundBy.has(finder.id)) continue;
+        if (Math.hypot(finder.x - corpse.x, finder.y - corpse.y) > this.sightOf(finder)) continue;
         // For `bodies-are-found`: the first time anybody at all comes upon it.
         if (corpse.foundBy.size === 0) telemetry.count('corpse_first_found');
         corpse.foundBy.add(finder.id);
@@ -2423,7 +2425,7 @@ export class Simulation {
           const dead = knowledgeOfPerson(player, corpse.person, this.relationships).displayName;
           if (finder.id === player.id) {
             this.noteInsight(player, t('You found the body of {name}', { name: dead }), 'setback');
-          } else if (player.distanceTo(finder) <= this.config.sightRadius) {
+          } else if (player.distanceTo(finder) <= this.sightOf(player)) {
             const who = knowledgeOfPerson(player, finder, this.relationships).displayName;
             this.noteInsight(player, t('{finder} has found the body of {name}', {
               finder: who.charAt(0).toUpperCase() + who.slice(1), name: dead,
@@ -2887,7 +2889,10 @@ export class Simulation {
    * the dog's hearing too, which multiplies this and not the bare radius.
    */
   sightOf(person: Person): number {
-    return this.config.sightRadius + this.world.sightBonusAt(person.x, person.y);
+    const base = this.config.sightRadius + this.world.sightBonusAt(person.x, person.y);
+    return this.config.light.enabled
+      ? base * Math.max(this.config.light.nightFloor, this.lightAt(person.x, person.y))
+      : base;
   }
 
   /** Local light instrument, shared by later sight/work readers and presentation. */
@@ -2906,7 +2911,7 @@ export class Simulation {
       this.people, this.peopleHash, territories, TERRITORY_RADIUS, this.config.sightRadius,
       this.time.tick, this.sightings, outcast, this.sightingScratch, this.dogSight());
     // M11 phase 16d: the same looking-around sees who has blood on them.
-    noticeBloodied(this.people, this.peopleHash, this.config.sightRadius, this.time.tick);
+    noticeBloodied(this.people, this.peopleHash, this.config.sightRadius, this.time.tick, person => this.sightOf(person));
   }
 
   /** The band of no band. Created the first time anyone is cast out. */
@@ -5628,7 +5633,10 @@ export class Simulation {
     // M11 phase 14a: who is on whose ground, seen by whom. After
     // `rebuildHashes` for the same reason as the pass above.
     stepMark?.('workingAlongside');
-    if (this.time.tick % SIGHTING_EVERY === 0) this.lookForIntruders();
+    if (this.time.tick % SIGHTING_EVERY === 0) {
+      this.lookForIntruders();
+      if (this.config.light.enabled) this.findBodies();
+    }
     stepMark?.('lookForIntruders');
 
     this.wildlifeSystem.update(this.animals, {
@@ -5801,6 +5809,7 @@ export class Simulation {
       this.refreshTemples();
 
       this.knowledgeSystem.daily(this.people, {
+        observerSight: person => this.sightOf(person),
         rng: this.knowledgeRng,
         tick: this.time.tick,
         peopleHash: this.peopleHash,
@@ -5842,7 +5851,7 @@ export class Simulation {
       // See `sabotageCandidatesByBand`'s own comment for why this is cached
       // at all and why once a day is the right cadence for it.
       this.sabotageCache = this.sabotageCandidatesByBand();
-      this.findBodies();
+      if (!this.config.light.enabled) this.findBodies();
       // M11 phase 16b: bones long enough on the ground are scattered, and the
       // body leaves the world. See `GONE_AFTER`.
       const gone = this.corpses.filter(c =>
@@ -5880,6 +5889,7 @@ export class Simulation {
     stepMark?.('daily (all blocks)');
 
     const brainCtx = {
+      observerSight: (person: Person) => this.sightOf(person),
       world: this.world,
       drownAt: this.config.world.drownAt,
       time: this.time,
@@ -5950,6 +5960,10 @@ export class Simulation {
       homes: this.bandHomes(),
     };
     const actionCtx = {
+      fineWorkPace: (person: Person) => this.config.light.enabled
+        ? lightFactor(this.lightAt(person.x, person.y), this.config.light.fineWorkDark) : 1,
+      huntLightFactor: (person: Person) => this.config.light.enabled
+        ? lightFactor(this.lightAt(person.x, person.y), this.config.light.huntDark) : 1,
       world: this.world,
       movement: this.movementSystem,
       nodesById: this.nodesById,
