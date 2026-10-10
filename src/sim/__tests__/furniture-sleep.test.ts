@@ -82,7 +82,7 @@ describe('bedding and beds', () => {
     const spy = vi.spyOn(brain, 'score').mockImplementation((actor, ctx) => {
       const result = score(actor, ctx);
       if (actor === person) for (const action of result.scores) {
-        if (action.action === 'place_furniture') action.score = 100;
+        if (action.id === 'place_furniture') action.score = 100;
       }
       return result;
     });

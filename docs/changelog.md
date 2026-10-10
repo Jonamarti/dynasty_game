@@ -14351,3 +14351,12 @@ Contrato y límites en m15_phase16d_bedding.md; la fase16d completa sigue abiert
 Dos pruebas nuevas fallan en el build12d anterior y pasan ahora. Typecheck
 final correcto; reporte una semilla mantiene los dos fallos iniciales de dieta
  y perf-budget. No se mide mejora de economía con una sola semilla.
+
+## 2026-10-10 — prueba de selección de mobiliario
+
+Corrección de prueba: ScoredAction se identifica por id, no por action. La
+primera prueba pasó sin aplicar su peso forzado, y el typecheck posterior
+rechazó esa propiedad. La frase «typecheck final correcto» del apunte anterior
+fue prematura. Corregida la prueba, ahora typecheck y6/6 furniture pasan.
+No cambia reglas de juego ni versión. La suite global corre en una copia fija
+del índice28 para evitar resultados mezclados mientras continúa el desarrollo.
