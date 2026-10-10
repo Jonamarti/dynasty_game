@@ -6929,15 +6929,19 @@ function movePersonLedgers(source: Simulation, destination: Simulation, travelle
     destination.succession = source.succession;
     source.succession = null;
   }
-  const take = <T>(from: T[], to: T[], predicate: (value: T) => boolean) => {
+  const take = <T>(from: T[], to: T[], predicate: (value: T) => boolean, limit = Infinity) => {
     const moved = from.filter(predicate);
     for (let i = from.length - 1; i >= 0; i--) if (predicate(from[i]!)) from.splice(i, 1);
     to.push(...moved);
+    // Each motor caps these presentation queues while running. Combining two
+    // full queues on arrival must preserve that cap or its own checkpoint
+    // becomes unloadable (LedgerRecord rejects a 33rd interruption notice).
+    if (to.length > limit) to.splice(0, to.length - limit);
   };
-  take(source.interruptions, destination.interruptions, item => travellerIds.has(item.personId));
-  take(source.insights, destination.insights, item => travellerIds.has(item.personId));
-  take(source.helpCalls, destination.helpCalls, item => travellerIds.has(item.callerId));
-  take(source.watchedUses, destination.watchedUses, item => travellerIds.has(item.personId) || (!!item.use.seen && travellerIds.has(item.use.seen.id)));
+  take(source.interruptions, destination.interruptions, item => travellerIds.has(item.personId), 32);
+  take(source.insights, destination.insights, item => travellerIds.has(item.personId), 32);
+  take(source.helpCalls, destination.helpCalls, item => travellerIds.has(item.callerId), 32);
+  take(source.watchedUses, destination.watchedUses, item => travellerIds.has(item.personId) || (!!item.use.seen && travellerIds.has(item.use.seen.id)), 32);
   take(source.pendingVerdicts, destination.pendingVerdicts, item => travellerIds.has(item.plaintiffId) || travellerIds.has(item.accusedId));
   for (const [tech, personId] of source.techHolders) if (travellerIds.has(personId)) destination.techHolders.set(tech, personId);
 }

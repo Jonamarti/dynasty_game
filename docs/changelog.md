@@ -3908,6 +3908,15 @@ Added the moods-move-choices health check, comparing talk frequency in the low a
 
 # Changelog
 
+## 2026-10-10 — M15 34: preservar el límite de avisos al cruzar
+
+La llegada podía unir dos colas de avisos válidas en una de 33 entradas que
+el propio codec rechazaba. La transferencia conserva las 32 más recientes
+en los cuatro canales de presentación y deja completos los veredictos.
+La regresión falla en el build anterior y pasa con el arreglo, junto con
+las tres pruebas del codec. Sin cambio UI ni ajuste del límite de carga.
+Versión 0.15.14-alpha; [contrato](m15_phase34_notice_transfer.md).
+
 ## 2026-10-10 — M15 17: gesto de extracción de piedra, arcilla y mineral
 
 La extracción activa usa cuatro poses generadas con pies quietos; el selector

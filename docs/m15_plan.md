@@ -3442,6 +3442,11 @@ cultura desde el principio, y el ajuste de partida del mundo (29c).
 
 ## Fase 34 — Salir de la comarca (M14 fase 16)
 
+**Avance 2026-10-10 — avisos del viajero acotados.** Combinar colas al llegar
+ya conserva el límite de 32 del motor/codec; la regresión detectaba 33 en el
+build anterior y ahora el ledger JSON carga. Cuatro focales pasan.
+[Contrato](m15_phase34_notice_transfer.md). Los veredictos no se recortan.
+
 **Avance 2026-10-10 — raciones fraccionarias acotadas.** El crédito físico
 de comida nunca supera la petición por redondeo y una retirada sub-ULP que
 no cambia el stack no acredita alimento. 8 pruebas focales pasan. No se logró

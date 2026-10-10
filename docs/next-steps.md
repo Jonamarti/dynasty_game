@@ -1625,3 +1625,5 @@ perfil corregido y materialización antes de leave_comarca/follow_me/scout.
 2026-10-10: 11d recogida de herramientas de oficio entregada; ciclo autónomo pickup/equipar/cazar y negativas propiedad/conocimiento/brazos. 14 focales y typecheck pasan. Siguen controles manuales y medición; m15_npc_tool_pickup.md.
 
 2026-10-10: fase17 extracción sílex/arcilla/minerales animada desde trabajo real. 38 focales y typecheck pasan; captura artifacts/screenshots/m15-extraction-animation-2026-10-10/. Otras familias/sueño animal pendientes; m15_extraction_animation.md.
+
+2026-10-10: frontera conserva32 avisos al unir colas y el ledger vuelve a cargar. Regresión detecta33 en build previo; cuatro focales pasan. Ver m15_phase34_notice_transfer.md; veredictos completos.
