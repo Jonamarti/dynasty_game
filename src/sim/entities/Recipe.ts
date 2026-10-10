@@ -812,6 +812,8 @@ export const RECIPES: Record<string, RecipeDef> = {
     workTicks: 70, ingredients: { hide: 1, rope: 1 }, output: { foot_wraps: 1 }, keep: 1 },
   hide_loincloth: { id: 'hide_loincloth', label: 'Hide loincloth', icon: '🩳', tech: 'clothing', skill: 'build',
     workTicks: 45, ingredients: { hide: 1 }, toolOptions: ['flint', 'handaxe'], output: { hide_loincloth: 1 }, keep: 1 },
+  fibre_skirt: { id: 'fibre_skirt', label: 'Fibre skirt', icon: '🌾', tech: 'fibre_skirt', skill: 'build',
+    workTicks: 55, ingredients: { thatch: 3 }, output: { fibre_skirt: 1 }, keep: 1 },
   leggings: { id: 'leggings', label: 'Leggings', icon: '🪡', tech: 'leggings', skill: 'build',
     workTicks: 120, ingredients: { hide: 2, sinew: 1 }, toolOptions: ['needle'], output: { leggings: 1 }, keep: 1 },
   moccasins: { id: 'moccasins', label: 'Moccasins', icon: '👣', tech: 'moccasins', skill: 'build',

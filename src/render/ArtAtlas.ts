@@ -25,7 +25,7 @@ import {
 import { PixelCache } from './PixelCache.ts';
 
 export interface WornGarments {
-  hips?: 'hide_loincloth';
+  hips?: 'hide_loincloth' | 'fibre_skirt';
   torso?: 'cape' | 'wrap' | 'tunic' | 'linen_tunic' | 'longtunic' | 'hide_armour' | 'fur_coat' | 'toggled_coat';
   legs?: 'trousers';
   feet?: 'boots' | 'wraps';

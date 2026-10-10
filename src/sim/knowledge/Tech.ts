@@ -212,6 +212,8 @@ export const TECHS = [
   'toggles',
   'linen_tunic',
   'wool_cloak',
+  // M15 phase 14c: bound thatch makes the first plant-fibre hip garment.
+  'fibre_skirt',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -568,6 +570,19 @@ export const TECH: Record<Tech, TechDef> = {
         weight: 0.5, story: 'thought of binding the foot covering so it would stay on' },
     ],
     description: 'Hide tied around the feet keeps them warmer only while worn.',
+  },
+  fibre_skirt: {
+    id: 'fibre_skirt', label: 'Fibre skirt', domain: 'cloth', tier: 'craft', web: 'clothing',
+    age: 'upper_palaeolithic', firstKnown: 'about 25,000 BC',
+    kind: 'device', requires: ['clothing', 'cordage'], difficulty: 0.25, skill: 'build',
+    prototype: { thatch: 3 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'clothing' }, { kind: 'knows', tech: 'cordage' }, { kind: 'holding', item: 'thatch' }],
+        weight: 0.8, story: 'bound dry grass into a skirt that would stay around the hips' },
+      { needs: [{ kind: 'knows', tech: 'cordage' }, { kind: 'feeling', need: 'cold' }, { kind: 'season', season: 'winter' }],
+        weight: 0.5, story: 'thought of weaving grass around the hips against the cold' },
+    ],
+    description: 'Dry plant fibres bound into a light skirt that warms the hips only while worn.',
   },
   saltmaking: {
     id: 'saltmaking', label: 'Saltmaking', domain: 'fire', web: 'preservation',
@@ -2753,6 +2768,8 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
     site: 'RECIPES.leggings retained needle; ITEMS.leggings garment; warmthFrom and Renderer.wornGarmentsOf' },
   foot_wraps: { summary: 'Crafted foot wraps warm the feet only when actually equipped.',
     site: 'RECIPES.foot_wraps; ITEMS.foot_wraps garment; warmthFrom and Renderer.wornGarmentsOf' },
+  fibre_skirt: { summary: 'Bound plant fibres warm the hips only while worn.',
+    site: 'RECIPES.fibre_skirt; ITEMS.fibre_skirt garment; warmthFrom and Renderer.wornGarmentsOf' },
   preserving: { summary: 'A drying rack makes meat and fish that spoil ten times more slowly.',
     site: 'BUILDINGS.drying_rack and RECIPES.dried_meat/dried_fish; Inventory.spoil reads their spoilTicks' },
   smoking: { summary: 'A rack beside a hearth makes smoked food that keeps longer than dried food.',

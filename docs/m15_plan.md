@@ -8,6 +8,15 @@
 
 # M15 — El plan maestro: de las manos vacías al Estado
 
+**Avance del 2026-10-10 — 14c, falda de fibra:** `fibre_skirt` completa el
+catálogo inicial de prendas de la tabla de 14c: técnica de Ropa tras
+`clothing` y `cordage`, tres unidades físicas de paja y abrigo 0,03 sólo
+puesta en cadera. Sustituye el taparrabos sin sumar ni destruir prendas.
+[Contrato y verificación](m15_phase14c_fibre_skirt.md). Siguen curtido,
+bolsillos, desgaste/remiendo, creencias de abrigo y retirada por calor.
+El curtido requiere primero un lector real de desgaste; se reserva para la
+siguiente sesión. 14c/14e y M15 continúan abiertos; cohortes/matriz diferidas.
+
 **Avance del 2026-10-10 — 14c, taparrabos:** `hide_loincloth` ocupa cadera,
 consume piel con lasca/hacha retenida y abriga sólo puesto. Arte generado,
 persistencia y botones de Equipo verificados. [Contrato y captura](m15_phase14c_hip.md).
@@ -1653,7 +1662,9 @@ muertes por frío**; coste declarado: ≤ 5 puntos.
 
 **Avance del 2026-10-10:** taparrabos `hide_loincloth` entregado desde la
 puerta `clothing`, con herramienta física retenida y calor 0,02 sólo en
-cadera. [Contrato](m15_phase14c_hip.md). Falda de fibra sigue pendiente.
+cadera. [Contrato](m15_phase14c_hip.md). La falda de fibra se entrega después
+en [su propio contrato](m15_phase14c_fibre_skirt.md); el catálogo inicial ya
+está implementado, sin cerrar los restantes mecanismos de 14c.
 
 La nota pide escalones: «unas solo piel y un hacha, como las capas; otras
 hilos, botones…». Cada prenda es un nodo `craft` de la sub-red Ropa (13b),

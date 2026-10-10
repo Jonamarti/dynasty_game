@@ -6,6 +6,10 @@ export type ItemArt = [id: string, label: string, tech: string, draw: () => stri
 export const WOOD = '#86633c', WOOD_D = '#3a2716', STONE = '#a9adb0', STONE_D = '#3d4244', BONE = '#e6dcc0', BONE_D = '#7a6d4e', CORD = '#c9b27f';
 const rot = (inner: string, deg: number, cx = 32, cy = 32): string => `<g transform="rotate(${deg} ${cx} ${cy})">${inner}</g>`;
 export const ITEMS: ItemArt[] = [
+  ['fibre_skirt', 'Falda de fibra', 'fibre_skirt', () =>
+    shape(smooth([[9, 19], [21, 14], [43, 14], [55, 19], [59, 49], [45, 55], [32, 51], [19, 55], [5, 49]]), '#a89558', '#594728')
+      + stroke('M10,20Q32,27 54,20M18,26L13,47M31,27L31,49M45,26L51,47', '#796640', 1.8)
+      + stroke('M9,48Q32,55 57,48', '#d0bd87', 2)],
   ['hide_loincloth', 'Taparrabos de piel', 'clothing', () =>
     shape(smooth([[12, 22], [23, 16], [41, 16], [52, 22], [46, 48], [34, 53], [20, 48]]), '#aa875a', '#513a24')
       + stroke('M13,22Q32,29 51,22M21,27L24,46M43,27L40,46', CORD, 1.8)],

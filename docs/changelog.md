@@ -1,3 +1,27 @@
+## 2026-10-10 — m15: falda de fibra física
+
+`0.15.48-alpha`: `fibre_skirt` completa el catálogo inicial de prendas de
+14c. Requiere ropa/cordelería, consume tres unidades de paja y aporta abrigo
+0,03 sólo puesta en cadera. Sustituye el taparrabos conservando ambos objetos;
+el guardado JSON y el arte de tres orientaciones conservan ese estado.
+[Contrato y resultados](m15_phase14c_fibre_skirt.md). Subagentes Luna 6 high
+implementaron la prenda, el navegador y la revisión de pendientes.
+
+Typecheck y 36 focales pasan; fabricación/vestido/retirada ES pasa 1/1,
+combinación de prendas y versión 3/3, paridad original de 360 píxeles 1/1.
+Captura final inspeccionada, conservando el intento previo:
+`artifacts/screenshots/m15-phase14c-fibre-skirt-2026-10-10T-02/T-01-fibre-skirt-es.png`.
+El chequeo corto retiene dieta/rendimiento iniciales. La regresión unitaria
+inicial da 2.029 correctas, 8 fallidas y 1 omitida: siete incidencias heredadas
+y claves ES duplicadas ya corregidas y repetidas en las 36 focales finales.
+No se repite la suite completa ni se afirma una suite global verde.
+
+Siguen desgaste/remiendo, curtido, bolsillos y lectores de creencias/calor.
+Se para antes de esa base de estado más amplia para reservar presupuesto;
+14c/14e y M15 siguen abiertos. Cohortes/matriz diferidas por AGENTS.md,
+sin afirmar mejora económica. Los cambios locales previos de M16 se conservan
+fuera de este commit.
+
 ## 2026-10-10 — m15: restaurar la capa base tras añadir ropa de cadera
 
 `0.15.47-alpha`: la regresión completa `.46` descubrió que `flush` omitía el

@@ -1,3 +1,13 @@
+**2026-10-10: 14c, falda de fibra entregada.** Técnica propia de Ropa,
+paja física, abrigo sólo puesto, sustitución en cadera y arte generado.
+[Contrato y captura](m15_phase14c_fibre_skirt.md). El catálogo inicial de
+prendas está implementado. Siguiente: desgaste y remiendo con estado
+persistido; después curtido con lector real. También quedan bolsillos,
+creencias de abrigo y retirada por calor. Se para antes de iniciar esa
+base más amplia para reservar presupuesto de verificación. 14c/14e y M15
+siguen abiertos; cohortes y matriz pesada diferidas. Las entradas inferiores
+conservan el estado histórico de cada entrega.
+
 **2026-10-10: 14c, taparrabos entregado.** Cadera física, lasca/hacha retenida,
 abrigo sólo puesto y arte generado. [Contrato y captura](m15_phase14c_hip.md).
 Siguiente: falda de fibra; después curtido/desgaste/remiendo, bolsillos,

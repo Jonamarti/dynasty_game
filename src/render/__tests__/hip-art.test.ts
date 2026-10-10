@@ -15,6 +15,11 @@ describe('hip garment layer identity', () => {
           .filter(layer => layer.slot === 'loincloth');
         expect(fitted).toHaveLength(1);
         expect(fitted[0]!.variant).toBe('hide_loincloth');
+        const skirt = personLayers({ ...spec, wear: { hips: 'fibre_skirt' } }).layers
+          .filter(layer => layer.slot === 'loincloth');
+        expect(skirt).toHaveLength(1);
+        expect(skirt[0]!.variant).toBe('fibre_skirt');
+        expect(skirt[0]!.svg).not.toBe(fitted[0]!.svg);
       }
     }
   });

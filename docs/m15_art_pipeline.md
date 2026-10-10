@@ -41,7 +41,8 @@ Key: `p/<slot>/<variant>/<age>.<sex>/<dir>/<pose>` (`personKey`).
   | slot | variant | tint |
   |---|---|---|
   | `shadow`, `legs`, `torso`, `arms`, `hands`, `head` (`_far`/`_near` in profile) | `base` (`hands`: `base` or `gloves`) | skin (not gloves) |
-  | `loincloth`, `chestband` | `base` | tribe colour |
+  | `loincloth` | `base hide_loincloth fibre_skirt` | tribe colour (base); garment colours for fitted layers |
+  | `chestband` | `base` | tribe colour |
   | `hair`, `hair_back`, `beard` | `short long balding bald` / `beard` | hair colour |
   | `shine` | as hair | none (a highlight on a bald head) |
   | `face` | an `Expression` | none |

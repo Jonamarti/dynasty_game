@@ -26,7 +26,7 @@ export type FaceExpr = 'neutral' | 'content' | 'warm' | 'stern' | 'frustrated' |
 
 /** One garment per body region; every region is independent of the others. */
 export interface Wear {
-  hips?: 'hide_loincloth';
+  hips?: 'hide_loincloth' | 'fibre_skirt';
   torso?: 'cape' | 'wrap' | 'tunic' | 'linen_tunic' | 'longtunic' | 'hide_armour' | 'fur_coat' | 'toggled_coat';
   legs?: 'trousers';
   feet?: 'boots' | 'wraps';
@@ -235,6 +235,25 @@ function hideLoinclothSide(G: SideG, swing: number): string {
   return shape(poly([[cx - d * 0.55, top], [cx + d * 0.28, top], [cx + d * 0.24 - swing * 0.35, hem], [cx - d * 0.46 - swing * 0.35, hem]]), W.hide, W.hideLine)
     + stroke(`M${cx - d * 0.55},${top}Q${cx - d * 0.1},${top + 1.6} ${cx + d * 0.28},${top}`, W.leatherL, 1.1)
     + stroke(`M${cx - d * 0.25},${top + 1.5}L${cx - d * 0.2 - swing * 0.2},${hem - 1}`, W.hideD, 0.8);
+}
+
+/** Plant fibres flare below the waist; the skirt owns its layer like hide does. */
+function fibreSkirtFront(G: FrontG, back: boolean): string {
+  const { cx, hipY, hp, g } = G, top = hipY - 1, hem = hipY + g.leg * (back ? 0.43 : 0.5);
+  const width = hp * (back ? 1.18 : 1.35), hemWidth = width * 0.86;
+  const points: Pt[] = back
+    ? [[cx - width, top], [cx + width, top], [cx + hemWidth, hem], [cx, hem + 1], [cx - hemWidth, hem]]
+    : [[cx - width, top], [cx + width, top], [cx + hemWidth, hem], [cx + width * 0.42, hem - 1], [cx, hem + 1], [cx - width * 0.42, hem - 1], [cx - hemWidth, hem]];
+  return shape(poly(points), '#a89558', '#594728')
+    + stroke(`M${cx - width},${top + 1}Q${cx},${top + 3} ${cx + width},${top + 1}`, '#d0bd87', 1.3)
+    + stroke(`M${cx - width * 0.55},${top + 3}L${cx - hemWidth * 0.65},${hem - 2}M${cx},${top + 2}L${cx},${hem - 2}M${cx + width * 0.55},${top + 3}L${cx + hemWidth * 0.65},${hem - 2}`, '#796640', 0.8);
+}
+
+function fibreSkirtSide(G: SideG, swing: number): string {
+  const { cx, d, hipY, g } = G, top = hipY - 1, hem = hipY + g.leg * 0.49;
+  return shape(poly([[cx - d * 0.7, top], [cx + d * 0.38, top], [cx + d * 0.6 - swing * 0.35, hem], [cx - d * 0.75 - swing * 0.35, hem]]), '#a89558', '#594728')
+    + stroke(`M${cx - d * 0.7},${top + 1}Q${cx - d * 0.1},${top + 2.5} ${cx + d * 0.38},${top + 1}`, '#d0bd87', 1.2)
+    + stroke(`M${cx - d * 0.38},${top + 3}L${cx - d * 0.48 - swing * 0.2},${hem - 1}M${cx + d * 0.12},${top + 3}L${cx + d * 0.22 - swing * 0.25},${hem - 1}`, '#796640', 0.8);
 }
 
 function torsoWearFront(t: Wear['torso'], G: FrontG, back: boolean): string {
@@ -580,7 +599,7 @@ function frontLayers(spec: PersonSpec, back: boolean): PersonOut {
   // A hip garment supplies its own layer; the empty hips variant retains
   // the existing tribe-colour appearance.
   const cl = REF.band, cl2 = REF.band2, clD = REF.bandD, clLine = REF.bandLine;
-  if (w.hips) add(P, 'loincloth', hideLoinclothFront(G, back));
+  if (w.hips) add(P, 'loincloth', w.hips === 'fibre_skirt' ? fibreSkirtFront(G, back) : hideLoinclothFront(G, back));
   else {
     add(P, 'loincloth', clipDef);
     add(P, 'loincloth', shape(poly([[cx - g.gap - g.limb * 0.6, hipY - 0.5], [cx + g.gap + g.limb * 0.6, hipY - 0.5], [cx + 1.5, hipY + 5], [cx - 1.5, hipY + 5]]), clD, clLine));
@@ -772,7 +791,7 @@ function sideLayers(spec: PersonSpec): PersonOut {
   torso += clipDef + shape(torsoD, skin, line);
   torso += `<g clip-path="url(#${clip})"><path d="M${cx - d},${sY - 2}L${cx - d * 0.1},${sY - 2}L${cx - d * 0.2},${hipY + 3}L${cx - d},${hipY + 3}Z" fill="rgba(60,30,10,0.12)"/></g>`;
   add(P, 'torso', rot(torso));
-  if (w.hips) add(P, 'loincloth', rot(hideLoinclothSide(G, sw)));
+  if (w.hips) add(P, 'loincloth', rot(w.hips === 'fibre_skirt' ? fibreSkirtSide(G, sw) : hideLoinclothSide(G, sw)));
   else {
     let loin = clipDef + `<g clip-path="url(#${clip})"><rect x="${cx - d}" y="${hipY - 2.8}" width="${2 * d}" height="3" fill="${REF.bandD}"/></g>`;
     loin += `<path d="${torsoD}" fill="none" stroke="${line}" stroke-width="2.1" clip-path="url(#${clip})"/>`;

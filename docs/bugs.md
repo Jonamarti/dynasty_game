@@ -1,3 +1,19 @@
+## 2026-10-10 — M15 14c, falda: verificación y pendientes
+
+La regresión de esta entrega conserva las siete incidencias de la pasada
+anterior (correspondencia compacta, actividad de comida, diggers, difusión,
+tributo, conspiración y muerte por sed). La ejecución inicial registró además
+dos claves ES duplicadas en un único test; corregidas en las tablas finales,
+la aserción original y los otros tres archivos focales pasan 36/36. Resultado
+completo inicial: 2.029 correctas, 8 fallidas, 1 omitida; no se describe como
+verde ni se repite tras el arreglo. Dieta/rendimiento siguen fallando en el
+chequeo corto. [Informe y límites](m15_phase14c_fibre_skirt.md).
+
+El catálogo inicial de prendas está implementado. Siguen bolsillos,
+desgaste/remiendo, creencias de abrigo y retirada por calor; `hide_dressing`
+requiere primero un lector real de desgaste para no dejar tecnología inerte.
+Cohortes/matriz pesada diferidas; no se declara 14c/14e ni M15 completos.
+
 ## 2026-10-10 — M15 14c/14e: verificación de taparrabos y tailors
 
 La suite `.46` reproduce las siete aserciones fallidas ya registradas en `.45`:

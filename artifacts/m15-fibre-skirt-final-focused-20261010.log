@@ -1,0 +1,13 @@
+
+> dynasty@0.15.48-alpha test
+> vitest run --maxWorkers=1 --testTimeout=15000 src/sim/__tests__/fibre-skirt.test.ts src/render/__tests__/hip-art.test.ts src/render/__tests__/art.test.ts src/sim/__tests__/i18n.test.ts
+
+
+ RUN  v4.1.11 C:/Users/Marty/Documents/Work/Programs/dynastyGame
+
+
+ Test Files  4 passed (4)
+      Tests  36 passed (36)
+   Start at  23:35:24
+   Duration  13.58s (transform 2.85s, setup 0ms, import 6.11s, tests 6.58s, environment 1ms)
+

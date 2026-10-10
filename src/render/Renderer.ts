@@ -78,7 +78,7 @@ export function wornGarmentsOf(person: Person): PersonAspect['wear'] {
     ? 'cap' as const : undefined;
   const hipId = person.equipment.hips?.item;
   const hips = hipId && person.inventory.count(hipId) >= 1
-    ? hipId === 'hide_loincloth' ? 'hide_loincloth' as const : undefined
+    ? hipId === 'hide_loincloth' || hipId === 'fibre_skirt' ? hipId : undefined
     : undefined;
   return { torso, cloak, ...(feet ? { feet } : {}), ...(legs ? { legs } : {}), ...(head ? { head } : {}), ...(hips ? { hips } : {}) };
 }
