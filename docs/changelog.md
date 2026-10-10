@@ -3908,6 +3908,16 @@ Added the moods-move-choices health check, comparing talk frequency in the low a
 
 # Changelog
 
+## 2026-10-10 — M15 12c: hogueras iluminan la noche
+
+Una capa reutilizable oscurece la escena y abre degradados alrededor de fuegos
+completos visibles, consultados por hash y filtrados por vista/viewport. El
+renderer usa sightOf para su niebla y compone luz sin borrar escena ni memoria.
+Contrato `m15_phase12c_night_light.md`; typecheck y caso e2e focal con aserciones
+OK. Medida de 120 composiciones, 31 personas/un fuego/1280×800: mediana1,5ms,
+p95 2,7ms para esa escena, sin generalizar FPS. Capturas españolas:
+`artifacts/screenshots/m15-phase12c-light-2026-10-10-final/`.
+
 ## 2026-10-10 — M15 12b: visión y trabajo con luz real
 
 Vista por observador, testigos/investigación/observación y privacidad leen luz

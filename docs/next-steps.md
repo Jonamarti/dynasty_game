@@ -1639,3 +1639,5 @@ perfil corregido y materialización antes de leave_comarca/follow_me/scout.
 2026-10-10: instrumento luz12a entregado (m15_phase12a_light.md); lectores12b/antorchas12d y calor12e siguen pendientes.
 
 2026-10-10: lectores luz12b activos; contrato m15_phase12b_light_readers.md. Diagnosticar nuevo destino desconocido del reporte corto; antorchas12d/calor12e/nights12f pendientes.
+
+2026-10-10: presentación luz12c capturada m15-phase12c-light-2026-10-10-final; contrato m15_phase12c_night_light.md. Antorchas12d sigue siguiente.

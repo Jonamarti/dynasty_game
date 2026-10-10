@@ -1,5 +1,9 @@
 # M15 — El plan maestro: de las manos vacías al Estado
 
+**Avance 2026-10-10 — 12c:** luz nocturna localizada, fuentes visibles por
+hash, capa reutilizable y niebla conforme a sightOf. [Contrato y medida de
+composición](m15_phase12c_night_light.md). Antorchas/calor/nights siguen abiertos.
+
 **Avance 2026-10-10 — 12b:** lectores de vista/testigos/observación y trabajo
 fino/caza conectados a luz local, con progreso bancado y migración de partidas.
 [Contrato](m15_phase12b_light_readers.md). Antorchas, calor local y escenario

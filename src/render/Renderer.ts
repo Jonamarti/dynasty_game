@@ -11,6 +11,7 @@
  */
 import { stageOf, type Corpse } from '../sim/entities/Corpse.ts';
 import type { Simulation } from '../sim/core/Simulation.ts';
+import { hearthLight, type LightSource } from '../sim/core/Light.ts';
 import { Interpolator, type Placed } from './Interpolator.ts';
 import type { Inscription } from '../sim/entities/Inscription.ts';
 import type { Person } from '../sim/entities/Person.ts';
@@ -350,6 +351,9 @@ export class Renderer {
   private fogLayerKey = '';
   private fogFrame: HTMLCanvasElement | null = null;
   private fogFrameCtx: CanvasRenderingContext2D | null = null;
+  /** Viewport-sized darkness layer; resized only when the viewport changes. */
+  private nightLayer: HTMLCanvasElement | null = null;
+  private nightLayerCtx: CanvasRenderingContext2D | null = null;
   private fogRecordsFor = -1;
   /** After a change of character the fog shows only what they see now (`FogReveal`). */
   private readonly fogReveal = new FogReveal();
@@ -567,8 +571,23 @@ export class Renderer {
     // Noticed even with the fog off, or a swap made meanwhile would not count.
     this.fogReveal.follow(sim.player?.id ?? null);
     const observer = this.fogEnabled ? sim.player : null;
+    const sightRadius = observer ? sim.sightOf(observer) : sim.config.sightRadius;
     const inSight = (x: number, y: number): boolean =>
-      canSeePlace(observer, x, y, sim.config.sightRadius);
+      canSeePlace(observer, x, y, sightRadius);
+    const nightSources: { source: LightSource; centerLight: number }[] = [];
+    // Lights may reach the edge from just offscreen, so query the spatial hash
+    // by the viewport's diagonal plus the source radius instead of scanning all
+    // buildings or relying only on the entity draw list.
+    const viewRadius = Math.hypot(camera.viewWidth / (2 * scale), camera.viewHeight / (2 * scale));
+    for (const building of sim.buildingHash.queryRadius(camera.x, camera.y, viewRadius + 5)) {
+      const source = hearthLight(building);
+      if (!source || !inSight(source.x, source.y)) continue;
+      const px = camera.worldToScreenX(source.x), py = camera.worldToScreenY(source.y);
+      const radius = source.radius * scale;
+      if (px + radius < 0 || px - radius > camera.viewWidth ||
+          py + radius < 0 || py - radius > camera.viewHeight) continue;
+      nightSources.push({ source, centerLight: sim.lightAt(source.x, source.y) });
+    }
 
     // Repaint the whole terrain canvas only when the season (or a hard
     // freeze threshold within winter) actually changes — a few times a game
@@ -872,21 +891,60 @@ export class Renderer {
     if (observer) this.drawFog(observer, view, alpha);
 
     // --- Night overlay -----------------------------------------------------
-    const darkness = (1 - sim.time.daylight) * 0.55;
-    if (darkness > 0.02) {
-      ctx.fillStyle = 'rgba(10, 16, 40, ' + darkness.toFixed(3) + ')';
-      ctx.fillRect(0, 0, camera.viewWidth, camera.viewHeight);
-    }
+    this.drawNightOverlay(nightSources);
 
     // Floaters last, over the night overlay: an action label that dims with
     // nightfall is exactly the label you most need to read.
     this.floaters.draw(ctx, camera);
   }
 
+  /** Tint the finished scene, then erase a linear light falloff on this layer only. */
+  private drawNightOverlay(sources: readonly { source: LightSource; centerLight: number }[]): void {
+    const { camera, sim, ctx } = this;
+    const daylight = sim.time.daylight;
+    const darkness = (1 - daylight) * 0.55;
+    if (darkness <= 0.02) return;
+    const width = Math.ceil(camera.viewWidth), height = Math.ceil(camera.viewHeight);
+    if (!this.nightLayer || this.nightLayer.width !== width || this.nightLayer.height !== height) {
+      this.nightLayer = document.createElement('canvas');
+      this.nightLayer.width = width;
+      this.nightLayer.height = height;
+      this.nightLayerCtx = this.nightLayer.getContext('2d');
+    }
+    const night = this.nightLayerCtx;
+    if (!night || !this.nightLayer) return;
+    night.globalCompositeOperation = 'source-over';
+    night.clearRect(0, 0, width, height);
+    night.fillStyle = `rgba(10, 16, 40, ${darkness})`;
+    night.fillRect(0, 0, width, height);
+
+    // Erase proportionally to the amount of measured light above daylight. The
+    // remaining radius is where Light.ts's linear falloff reaches daylight.
+    if (daylight < 1) {
+      night.globalCompositeOperation = 'destination-out';
+      for (const { source, centerLight } of sources) {
+        if (centerLight <= daylight || source.strength <= daylight) continue;
+        const x = camera.worldToScreenX(source.x), y = camera.worldToScreenY(source.y);
+        const radius = source.radius * (1 - daylight / source.strength) * camera.scale;
+        if (radius <= 0 || x + radius < 0 || x - radius > camera.viewWidth ||
+            y + radius < 0 || y - radius > camera.viewHeight) continue;
+        const lift = Math.max(0, Math.min(1, (centerLight - daylight) / (1 - daylight)));
+        const gradient = night.createRadialGradient(x, y, 0, x, y, radius);
+        gradient.addColorStop(0, `rgba(0, 0, 0, ${lift})`);
+        gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        night.fillStyle = gradient;
+        night.beginPath();
+        night.arc(x, y, radius, 0, Math.PI * 2);
+        night.fill();
+      }
+    }
+    ctx.drawImage(this.nightLayer, 0, 0, camera.viewWidth, camera.viewHeight);
+  }
+
   /** Text for a remembered marker under the pointer, without touching live entities. */
   fogDescriptionAt(x: number, y: number): string | null {
     const observer = this.fogEnabled ? this.sim.player : null;
-    if (!observer || Math.hypot(x - observer.x, y - observer.y) <= this.sim.config.sightRadius) return null;
+    if (!observer || Math.hypot(x - observer.x, y - observer.y) <= this.sim.sightOf(observer)) return null;
     if (observer.placeMemory.seenDayAt(x, y) === 0 || !this.fogReveal.shows(x, y)) return null;
     const place = observer.placeMemory.nearestAny(x, y, 0.65);
     if (!place) return null;
@@ -905,7 +963,7 @@ export class Renderer {
     const world = this.sim.world;
     if (!world.inBounds(x, y)) return null;
     const observer = this.fogEnabled ? this.sim.player : null;
-    if (observer && Math.hypot(x - observer.x, y - observer.y) > this.sim.config.sightRadius) return null;
+    if (observer && Math.hypot(x - observer.x, y - observer.y) > this.sim.sightOf(observer)) return null;
     const metres = Math.round(world.metresAt(x, y));
     // Earth moved by a spade (phase 26) is said in its own words, in metres to
     // a tenth, because a trench is a metre deep and rounds to nothing otherwise.
@@ -921,7 +979,7 @@ export class Renderer {
     const { canvas, camera, sim } = this;
     const memory = observer.placeMemory;
     const reveal = this.fogReveal;
-    reveal.observe(observer.x, observer.y, sim.config.sightRadius, sim.world.width, sim.world.height);
+    reveal.observe(observer.x, observer.y, sim.sightOf(observer), sim.world.width, sim.world.height);
     const key = observer.id + ':' + sim.world.width + 'x' + sim.world.height + ':' + memory.revision +
       ':' + reveal.revision;
     if (!this.fogLayer || this.fogLayer.width !== sim.world.width * TILE || this.fogLayer.height !== sim.world.height * TILE) {
@@ -994,7 +1052,7 @@ export class Renderer {
     frameCtx.globalCompositeOperation = 'destination-out';
     frameCtx.beginPath();
     frameCtx.arc(camera.worldToScreenX(at.x), camera.worldToScreenY(at.y),
-      sim.config.sightRadius * camera.scale, 0, Math.PI * 2);
+      sim.sightOf(observer) * camera.scale, 0, Math.PI * 2);
     frameCtx.fill();
     frameCtx.globalCompositeOperation = 'source-over';
     this.ctx.drawImage(frame, 0, 0, frame.width, frame.height,
