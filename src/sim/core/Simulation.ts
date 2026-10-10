@@ -129,6 +129,7 @@ import { geographicResourceAvailable } from '../world/GeographicResources.ts';
 import { stepMark } from './StepProbe.ts';
 import { approachComarcaEdge, type ComarcaTravel } from '../world/ComarcaTravel.ts';
 import { applyHouseWalls } from '../world/HouseInterior.ts';
+import { lightAt as measuredLightAt } from './Light.ts';
 import { edgeOfTile, type ComarcaEdge } from '../world/ComarcaNeighbour.ts';
 import type { ComarcaMigrationContext } from '../world/ComarcaMigration.ts';
 import { comarcaResourceProfile, PROFILE_SPAN, type ComarcaResourceProfile } from '../world/ResourceProfile.ts';
@@ -2889,6 +2890,11 @@ export class Simulation {
     return this.config.sightRadius + this.world.sightBonusAt(person.x, person.y);
   }
 
+  /** Local light instrument, shared by later sight/work readers and presentation. */
+  lightAt(x: number, y: number): number {
+    return measuredLightAt(x, y, this.time.daylight, this.buildingHash);
+  }
+
   private lookForIntruders(): void {
     const territories = new Map<number, Territory>();
     for (const band of this.bands) {
@@ -3938,6 +3944,13 @@ export class Simulation {
    */
   private shareTheHearth(): void {
     const byRoof = new Map<number, Person[]>();
+    // A midnight sample makes local illumination measurable without changing
+    // decisions, consuming RNG, or querying lights once per person per tick.
+    if (telemetry.isEnabled()) for (const person of this.people) {
+      if (!person.alive) continue;
+      telemetry.count('night_light_sum', this.lightAt(person.x, person.y));
+      telemetry.count('night_light_samples');
+    }
     // M15 phase 18: rebuilt from nothing every midnight, so a person who is
     // not asleep tonight is simply absent rather than carrying last night's roof.
     this.roofTonight.clear();

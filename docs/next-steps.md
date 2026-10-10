@@ -1635,3 +1635,5 @@ perfil corregido y materialización antes de leave_comarca/follow_me/scout.
 2026-10-10: selector de mundo generado M15 29b/33 disponible en el inicio; contrato m15_phase33_generated_choice.md. Quedan paleoclima y selección intraregional.
 
 2026-10-10: M15 16c techos/interiores presentado y capturado en m15-roof-lift-2026-10-10-final; contrato m15_roof_lift.md. Continúa mobiliario16d.
+
+2026-10-10: instrumento luz12a entregado (m15_phase12a_light.md); lectores12b/antorchas12d y calor12e siguen pendientes.

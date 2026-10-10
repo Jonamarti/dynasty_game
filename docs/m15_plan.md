@@ -1,5 +1,9 @@
 # M15 — El plan maestro: de las manos vacías al Estado
 
+**Avance 2026-10-10 — 12a:** luz local medida por hash y muestras de
+medianoche, sin alterar decisiones. [Contrato](m15_phase12a_light.md).
+Vista/trabajo/testigos/caza y antorchas todavía no leen esta medida.
+
 **Avance 2026-10-10 — 16c:** habitaciones con suelo/muros generados, cuatro
 puertas y techos apartables por ocupante observado, cursor o V. Niebla en Z.
 Véase [techos](m15_roof_lift.md); muebles y demás lectores 16d siguen abiertos.

@@ -3908,6 +3908,13 @@ Added the moods-move-choices health check, comparing talk frequency in the low a
 
 # Changelog
 
+## 2026-10-10 — M15 12a: instrumento de luz local
+
+Light.ts y Simulation.lightAt miden luz diurna y hogueras cercanas por hash,
+con caída lineal y máximo entre fuentes. Telemetría de medianoche obtiene
+suma/muestras sin RNG ni decisiones nuevas. Tres focales pasaron; los lectores
+de 12b/12d siguen pendientes. Contrato `m15_phase12a_light.md`.
+
 ## 2026-10-10 — M15 16c: apartar techos y mostrar habitaciones
 
 Suelo, perímetro y pared delantera se generan para las cuatro orientaciones de
