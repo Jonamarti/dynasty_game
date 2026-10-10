@@ -3672,8 +3672,16 @@ export class Brain {
       // day would turn the recipe's keep target into a permanent material tax.
       const wantsTorch = person.inventory.count('torch') + person.inventory.count('fat_torch') < 1 &&
         (ctx.time.daylight < 0.35 || person.needs.cold > 10 && person.beliefs.expect('warm:torch').value > 0);
+      const garment = ITEMS[output]?.garment;
+      const worn = garment ? person.equipment[garment.slot] : undefined;
+      const currentWarmth = worn && person.inventory.count(worn.item) >= 1
+        ? ITEMS[worn.item]?.garment?.warmth ?? 0 : 0;
+      // Making every layer merely because keep=1 creates a permanent summer
+      // tax. A garment must answer cold and improve its actual worn slot.
+      const wantsGarment = garment && person.needs.cold > 10 && garment.warmth > currentWarmth &&
+        person.inventory.count(output) < recipe.keep;
       const forSelf = ITEMS[output]?.furniture ? recipe.id === furnitureRecipe :
-        isTorchRecipe ? wantsTorch : person.inventory.count(output) < recipe.keep;
+        garment ? wantsGarment : isTorchRecipe ? wantsTorch : person.inventory.count(output) < recipe.keep;
       const forSite = site !== null && site.stillNeeds(output) > 0;
       if (!forSelf && !forSite) continue;
 

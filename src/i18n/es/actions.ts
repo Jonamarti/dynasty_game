@@ -1,5 +1,6 @@
 /** Spanish for actions. Keys are the English templates; see `i18n.ts`. */
 export const ES_ACTIONS: Record<string, string> = {
+  'You need a tool: {tools}': 'Necesitas una herramienta: {tools}',
   "You no longer have that item": "Ya no tienes ese objeto",
   "That is not something you can equip": "No puedes equiparte ese objeto",
   "That item does not fit there": "Ese objeto no cabe ahí",

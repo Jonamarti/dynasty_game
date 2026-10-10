@@ -4687,3 +4687,14 @@ tras30 días en start-place. No se atribuyen al cambio de calor local, pero no
 se ha demostrado que existieran antes de este conjunto de trabajo M15.
 Comparación fija: artifacts/m15-12d-regression-comparison.log. Investigación y
 calibración pendientes para M16; no se ha relajado ningún umbral para dar verde.
+
+### 2026-10-10 — suite global sobre índice fijo28
+Resultado real:263 archivos,250 correctos y13 fallidos;1940 pruebas correctas,
+22 fallidas y1 omitida. Log artifacts/m15-full-unit-28.log. Además de los cinco
+fallos focales ya listados: difusión tecnológica0.68>0.6, correspondencia
+compacta (necesidades), id-space (espera crecimiento de población), cinco
+fixtures iron-tools que exigen cuatro adultos pero no los obtienen, y dos
+proyecciones rival-house-view con más nombres conocidos que su premisa.
+Cuatro pruebas de daño llevan armadura solo en inventory (premisa anterior14b);
+dos water-model esperan versiones1/2 aunque16b exporta3; i18n faltaba una
+traducción de carbón (corregida124c410). No se presenta esta suite como verde.

@@ -4391,3 +4391,8 @@ instrucción M15. Continúa12f.
 materiales propios, colocar en hogar propio, detener demanda al existir la
 superficie y caminar al interior con interrupciones. m15_phase16d_bedding.md.
 Asignaciones individuales, acopio específico y muebles restantes pendientes.
+
+2026-10-10 — 14c primeras recetas: capa de piel y túnica cosida, herramientas
+retenidas, capas visibles, nombres/huecos ES y demanda por frío/mejora de hueco.
+Contrato m15_phase14c_first_layers.md. Catálogo restante, creencias, bolsillos,
+deterioro y reparación pendientes; no se declara14c completa.

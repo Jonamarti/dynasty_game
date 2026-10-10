@@ -13,6 +13,8 @@ export const ES_DATA: Record<string, string> = {
   "Fat": "Grasa",
   "Torch": "Antorcha",
   "Fat torch": "Antorcha de grasa",
+  "Hide cape": "Capa de piel",
+  "Sewn tunic": "Túnica cosida",
   "Fish": "Pescado",
   "Hide": "Piel",
   "Spear": "Lanza",

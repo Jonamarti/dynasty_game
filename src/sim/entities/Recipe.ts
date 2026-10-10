@@ -54,6 +54,8 @@ export interface RecipeDef {
   ingredients: Record<string, number>;
   /** Alternative ingredient loads for one output, tried in declaration order. */
   ingredientOptions?: Record<string, number>[];
+  /** One of these owned tools is required and retained after work completes. */
+  toolOptions?: string[];
   output: Record<string, number>;
   /**
    * A `BUILDINGS` id this must be made at, or undefined for anywhere.
@@ -774,6 +776,12 @@ export const RECIPES: Record<string, RecipeDef> = {
     id: 'fat_torch', label: 'Fat torch', icon: '\u{1F525}', tech: 'firemaking', skill: 'build',
     workTicks: 60, ingredients: { sticks: 1, fat: 1 }, output: { fat_torch: 1 }, keep: 1,
   },
+  hide_cape: { id: 'hide_cape', label: 'Hide cape', icon: '🧥', tech: 'clothing', skill: 'build',
+    workTicks: 100, ingredients: { hide: 2, rope: 1 }, toolOptions: ['flint', 'handaxe'],
+    output: { hide_cape: 1 }, keep: 1 },
+  sewn_tunic: { id: 'sewn_tunic', label: 'Sewn tunic', icon: '👕', tech: 'tailoring', skill: 'build',
+    workTicks: 130, ingredients: { hide: 3, sinew: 2 }, toolOptions: ['needle'],
+    output: { sewn_tunic: 1 }, keep: 1 },
 };
 
 /** Every item any recipe can produce. Used by the "is this reachable?" tests. */
@@ -851,6 +859,7 @@ export function recipeTechPower(person: Person, recipe: RecipeDef): number {
 
 /** Resolve one complete load, preferring the recipe's primary ingredients. */
 export function ingredientsFor(recipe: RecipeDef, inventory: Inventory): Record<string, number> | null {
+  if (recipe.toolOptions && !recipe.toolOptions.some(item => inventory.count(item) >= 1)) return null;
   for (const ingredients of [recipe.ingredients, ...(recipe.ingredientOptions ?? [])]) {
     if (Object.entries(ingredients).every(([itemId, count]) => inventory.count(itemId) >= count)) return ingredients;
   }
@@ -865,6 +874,9 @@ export function ingredientsFor(recipe: RecipeDef, inventory: Inventory): Record<
  * fourth hand-written copy of a recipe's contents.
  */
 export function missingIngredients(inventory: Inventory, recipe: RecipeDef): string {
+  if (recipe.toolOptions && !recipe.toolOptions.some(item => inventory.count(item) >= 1)) {
+    return t('You need a tool: {tools}', { tools: recipe.toolOptions.map(item => t(ITEMS[item]!.label)).join(' / ') });
+  }
   if (recipe.ingredientOptions?.some(option => Object.entries(option)
     .every(([itemId, count]) => inventory.count(itemId) >= count))) return '';
   const format = (ingredients: Record<string, number>): string[] => Object.entries(ingredients)

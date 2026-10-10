@@ -77,3 +77,9 @@ huecos distintos; dos artículos del mismo hueco nunca se dibujan juntos.
   inertes en el árbol tecnológico.
 - **El desgaste (`wear`) y la mecha encendida (`lit`)** de `EquippedItem` no
   tienen efecto visual todavía; llegan con sus lectores en las fases 14 y 12.
+
+2026-10-10 — clothing14c first layers: hide_cape uses the generated rig's
+cloak_back/cloak_front variants cloak; sewn_tunic uses torso_wear/sleeves
+variant tunic, including belly_wear for pregnancy. Ownership and actual slots
+control visibility. Inventory icons item/hide_cape and item/sewn_tunic come
+from art/src/props/items.ts; sheets regenerated with art:build.

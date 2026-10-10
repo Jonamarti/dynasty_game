@@ -60,9 +60,11 @@ export function wornGarmentsOf(person: Person): PersonAspect['wear'] {
   const torsoId = person.equipment.torso?.item;
   const torsoDef = torsoId ? ITEMS[torsoId]?.garment : undefined;
   const torso = torsoDef?.slot === 'torso' && torsoId && person.inventory.count(torsoId) > 0 &&
-    (torsoId === 'fur_coat' || torsoId === 'hide_armour')
-    ? torsoId : undefined;
-  return { torso };
+    (torsoId === 'fur_coat' || torsoId === 'hide_armour' || torsoId === 'sewn_tunic')
+    ? torsoId === 'sewn_tunic' ? 'tunic' : torsoId : undefined;
+  const cloak = person.equipment.cloak?.item === 'hide_cape' && person.inventory.count('hide_cape') >= 1
+    ? 'cloak' as const : undefined;
+  return { torso, cloak };
 }
 
 const BIOME_COLORS: Record<Biome, [string, string]> = {

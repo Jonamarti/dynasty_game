@@ -6,6 +6,12 @@ export type ItemArt = [id: string, label: string, tech: string, draw: () => stri
 export const WOOD = '#86633c', WOOD_D = '#3a2716', STONE = '#a9adb0', STONE_D = '#3d4244', BONE = '#e6dcc0', BONE_D = '#7a6d4e', CORD = '#c9b27f';
 const rot = (inner: string, deg: number, cx = 32, cy = 32): string => `<g transform="rotate(${deg} ${cx} ${cy})">${inner}</g>`;
 export const ITEMS: ItemArt[] = [
+  ['hide_cape', 'Capa de piel', 'clothing', () =>
+    shape(smooth([[20, 10], [32, 16], [44, 10], [58, 48], [44, 55], [20, 55], [6, 48]]), '#aa875a', '#513a24')
+    + stroke('M20,10Q32,22 44,10M32,18L32,49', CORD, 1.6)],
+  ['sewn_tunic', 'Túnica cosida', 'tailoring', () =>
+    shape(poly([[18, 9], [26, 14], [38, 14], [46, 9], [59, 26], [48, 32], [44, 25], [47, 55], [17, 55], [20, 25], [16, 32], [5, 26]]), '#ba9b6f', '#513a24')
+    + stroke('M25,16L25,51M39,16L39,51M18,51L46,51', '#e5d4b0', 1.2)],
   ['bedding', 'Lecho', 'cordage', () =>
     ell(32, 51, 24, 5, 'rgba(0,0,0,0.18)')
     + shape(poly([[8, 31], [31, 18], [56, 31], [32, 45]]), '#c2a36a', WOOD_D)

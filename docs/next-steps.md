@@ -1659,3 +1659,7 @@ la cota de supervivencia cuando el propietario autorice la cohorte nombrada.
 2026-10-10: primera superficie autónoma16d implementada; continúan asignaciones,
 acopio y catálogo de muebles. Cinco fallos focales confirmados en12d/12e se
 registran en bugs.md sin presentarlos como una suite global correcta.
+
+2026-10-10:14c inicia catálogo con capa/túnica; m15_phase14c_first_layers.md.
+Pendientes otras prendas, creencias, bolsillos y desgaste/remiendo. Ver bugs.md
+para resultado completo de la suite fija28:22 fallos, sin ocultar premisas viejas.

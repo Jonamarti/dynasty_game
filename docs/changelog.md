@@ -14366,3 +14366,14 @@ del índice28 para evitar resultados mezclados mientras continúa el desarrollo.
 La prueba i18n detectó que12e había cambiado el texto inglés de la tecnología
 sin sustituir su traducción. Se alinea la descripción con su función real:
 combustible de fundición, sin prometer calor por llevarlo apagado.
+
+## 2026-10-10 — m15: capa de piel y túnica cosida (0.15.30-alpha)
+
+Dos prendas fabricables con herramientas que se conservan, capas observables
+y demanda NPC por frío/mejora del hueco. Resolver de recetas compartido para
+materiales/herramientas. Nombres y seis huecos de ropa traducidos al español;
+iconos generados. Contrato m15_phase14c_first_layers.md. Pruebas focales43
+correctas y nueva prueba de demanda correcta; typecheck correcto. Reporte corto
+mantiene fallos iniciales de dieta/rendimiento, sin afirmar mejora económica.
+Captura revisada: artifacts/screenshots/m15-phase14c-layers-2026-10-10-final/01-tunica-y-capa.png.
+E2E focal ok14,5s; cierre Vite bloqueado e interrumpido, no salida global limpia.

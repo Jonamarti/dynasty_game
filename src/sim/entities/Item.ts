@@ -458,6 +458,10 @@ export const ITEMS: Record<string, ItemDef> = {
     class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 } },
   fat_torch: { id: 'fat_torch', label: 'Fat torch', nutrition: 0, spoilTicks: 0, baseValue: 8,
     class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 } },
+  hide_cape: { id: 'hide_cape', label: 'Hide cape', nutrition: 0, spoilTicks: 0, baseValue: 6,
+    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'cloak', warmth: 0.25 } },
+  sewn_tunic: { id: 'sewn_tunic', label: 'Sewn tunic', nutrition: 0, spoilTicks: 0, baseValue: 9,
+    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'torso', warmth: 0.30 } },
 };
 
 export class Inventory {
