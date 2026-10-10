@@ -1,5 +1,14 @@
 # M16 — Notas diferidas durante M15
 
+## Temperatura exterior e interior (plan solicitado, 2026-10-10)
+
+Pendiente de implementar en M16: [plan detallado de temperatura y calor de
+habitaciones ocupadas](m16_room_temp_plan.md). Divide clima reproducible,
+ocupación/inercia, persistencia y autoridad compacta, necesidades/fuego, UI e IA
+en entregas pequeñas con pruebas discriminantes. Estimación: 4–7 jornadas.
+No inicia M16 ni autoriza cohortes; las amplitudes y ganancias propuestas son
+parámetros de diseño pendientes de validación, no resultados medidos.
+
 ## Hierro: sensibilidad y calibración (2026-10-08)
 
 - La difusión entre pueblos cambia al ampliar el catálogo: 40c pasaba,
