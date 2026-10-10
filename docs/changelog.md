@@ -3908,6 +3908,16 @@ Added the moods-move-choices health check, comparing talk frequency in the low a
 
 # Changelog
 
+## 2026-10-10 — M15 17: gesto de extracción de piedra, arcilla y mineral
+
+La extracción activa usa cuatro poses generadas con pies quietos; el selector
+observa progreso real y descarta preparación, viaje, agotamiento o cancelación.
+No consulta inventario/tecnologías ni cambia rendimiento o RNG. Typecheck y
+38 focales pasan. El e2e de extracción reporta OK y se revisó su captura;
+el cierre del servidor fue interrumpido tras quedar atascado.
+`artifacts/screenshots/m15-extraction-animation-2026-10-10/`.
+Versión 0.15.13-alpha; [contrato](m15_extraction_animation.md).
+
 ## 2026-10-10 — M15 11d: recoger herramientas para una tarea real
 
 Los NPC pueden recoger hachas o armas conocidas cuando ya tienen una tala o

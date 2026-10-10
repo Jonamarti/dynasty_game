@@ -1845,6 +1845,13 @@ más arriba.
 
 ## Fase 17 — El arte: personas pre-renderizadas por capas (nota 6; decisión 9)
 
+**Avance 2026-10-10 — extracción de materiales.** Cuatro poses `x0`–`x3`
+para sílex, arcilla y minerales de cobre/estaño/hierro, solo con trabajo real
+iniciado y nodo alcanzado/disponible. 38 focales y typecheck pasan; el caso
+de navegador reporta OK, con cierre del servidor interrumpido como en pesca.
+Captura revisada: `artifacts/screenshots/m15-extraction-animation-2026-10-10/`.
+[Contrato](m15_extraction_animation.md). Fase abierta por otras familias.
+
 **Avance 2026-10-10 — gesto de pesca.** Cuatro poses `f0`–`f3` generadas
 para pescar en un banco somero realmente alcanzado y en trabajo activo.
 Movimiento, agotamiento, preparación y cancelación retiran el gesto; pausa

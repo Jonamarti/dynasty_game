@@ -1623,3 +1623,5 @@ perfil corregido y materialización antes de leave_comarca/follow_me/scout.
 2026-10-10: raciones físicas fuera del mapa limitan crédito al pedido y omiten retiradas sub-ULP. 8 focales pasan. Crash original no reproducido; codec de avisos falla al aparcar a 400 ticks, requiere diagnóstico. Contrato m15_phase34_ration_credit.md.
 
 2026-10-10: 11d recogida de herramientas de oficio entregada; ciclo autónomo pickup/equipar/cazar y negativas propiedad/conocimiento/brazos. 14 focales y typecheck pasan. Siguen controles manuales y medición; m15_npc_tool_pickup.md.
+
+2026-10-10: fase17 extracción sílex/arcilla/minerales animada desde trabajo real. 38 focales y typecheck pasan; captura artifacts/screenshots/m15-extraction-animation-2026-10-10/. Otras familias/sueño animal pendientes; m15_extraction_animation.md.

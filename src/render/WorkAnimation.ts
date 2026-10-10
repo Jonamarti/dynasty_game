@@ -2,7 +2,7 @@
 import type { Simulation } from '../sim/core/Simulation.ts';
 import type { Person } from '../sim/entities/Person.ts';
 import { ARRIVAL_RADIUS } from '../sim/systems/MovementSystem.ts';
-import { CHOP_POSES, DIG_POSES, FISH_POSES, GATHER_POSES, MAKE_POSES, type ArtPose } from './ArtManifest.ts';
+import { CHOP_POSES, DIG_POSES, EXTRACT_POSES, FISH_POSES, GATHER_POSES, MAKE_POSES, type ArtPose } from './ArtManifest.ts';
 import { RECIPES } from '../sim/entities/Recipe.ts';
 
 /** Shared clock contract: two work ticks per frame, with a bounded accumulator. */
@@ -13,6 +13,7 @@ function workFrame(poses: readonly ArtPose[], workedTicks: number, alpha: number
 
 /** A forage order also covers clay and flint. Those need their own gestures. */
 const HAND_GATHERED = new Set(['berries', 'sticks', 'reeds', 'wild_grain']);
+const EXTRACTED = new Set(['flint', 'clay', 'copper_ore', 'tin_ore', 'iron_ore']);
 
 export function gatheringPose(
   person: Person, sim: Pick<Simulation, 'nodesById' | 'treesById'>,
@@ -45,6 +46,20 @@ export function fishingPose(
   if (!node || node.kind !== 'fish' || node.depleted || person.distanceTo(node) >= ARRIVAL_RADIUS ||
       !sim.world.isShallow(node.x, node.y)) return null;
   return workFrame(FISH_POSES, person.workedTicks, alpha);
+}
+
+/** Shared fracture-and-collect gesture for active flint, clay and ore pulls. */
+export function extractionPose(
+  person: Person, sim: Pick<Simulation, 'nodesById'>,
+  moving: boolean, alpha = 1,
+): ArtPose | null {
+  if (moving || !person.alive || (person.action !== 'forage' && person.action !== 'gather') ||
+      person.actionTimer <= 0 || person.actionTotal <= 0 || person.workedTicks <= 0 || person.targetNodeId === null) return null;
+  const node = sim.nodesById.get(person.targetNodeId);
+  if (!node || !EXTRACTED.has(node.kind) || node.depleted || person.distanceTo(node) >= ARRIVAL_RADIUS) return null;
+  // `doHarvest` increments workedTicks only after its reach and knowledge gates;
+  // presentation does not read the worker's private mining knowledge itself.
+  return workFrame(EXTRACT_POSES, person.workedTicks, alpha);
 }
 
 /** A digging gesture is shown only for real work at a reachable, valid tile. */

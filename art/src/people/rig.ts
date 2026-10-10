@@ -122,7 +122,7 @@ export function geometry(age: ArtAge, sex: ArtSex): Geo {
 }
 
 /** Whole-pixel upper-body dip; gathering keeps its feet planted like idle. */
-export const POSE_BOB: Record<ArtPose, number> = { idle: 0, w0: 0, w1: 1, w2: 0, w3: 1, g0: 0, g1: 1, g2: 2, g3: 1, f0: 0, f1: 0, f2: 0, f3: 0, d0: 0, d1: 0, d2: 0, d3: 0, c0: 0, c1: 0, c2: 0, c3: 0, m0: 1, m1: 2, m2: 1, m3: 0 };
+export const POSE_BOB: Record<ArtPose, number> = { idle: 0, w0: 0, w1: 1, w2: 0, w3: 1, g0: 0, g1: 1, g2: 2, g3: 1, f0: 0, f1: 0, f2: 0, f3: 0, x0: 0, x1: 0, x2: 0, x3: 0, d0: 0, d1: 0, d2: 0, d3: 0, c0: 0, c1: 0, c2: 0, c3: 0, m0: 1, m1: 2, m2: 1, m3: 0 };
 
 const DIG_FRONT: readonly { reach: number; handY: number; elbowY: number }[] = [
   { reach: 0.4, handY: -0.3, elbowY: 0.05 }, { reach: 0.25, handY: -0.6, elbowY: -0.1 },
@@ -143,6 +143,13 @@ const FISH_FRONT: readonly { reach: number; handY: number; elbowY: number }[] = 
   { reach: 0.8, handY: 0.65, elbowY: 0.45 }, { reach: 0.45, handY: 0.8, elbowY: 0.55 },
 ];
 const FISH_SIDE: readonly (readonly [number, number])[] = [[28, 76], [55, 110], [10, 52], [24, 70]];
+// A common fracture/collect cycle: set the hand tool, strike, lift material,
+// then reset. Geology is selected by the node, so these poses remain generic.
+const EXTRACT_FRONT: readonly { reach: number; handY: number; elbowY: number }[] = [
+  { reach: -0.2, handY: 0.55, elbowY: 0.3 }, { reach: 0.2, handY: 0.1, elbowY: 0.05 },
+  { reach: 1, handY: 0.6, elbowY: 0.35 }, { reach: 0.45, handY: 0.8, elbowY: 0.48 },
+];
+const EXTRACT_SIDE: readonly (readonly [number, number])[] = [[20, 50], [-28, -50], [58, 98], [36, 74]];
 
 function poseSwing(pose: ArtPose): { walk: boolean; f: number; sw: number } {
   if (!pose.startsWith('w')) return { walk: false, f: 0, sw: 0 };
@@ -592,6 +599,10 @@ function frontLayers(spec: PersonSpec, back: boolean): PersonOut {
       const { reach, handY, elbowY } = FISH_FRONT[Number(spec.pose.slice(1))]!;
       hand = [cx + side * (sh + g.arm * 0.42 * reach), sY + g.arm * handY];
       elbow = [cx + side * (sh + g.arm * 0.27), sY + g.arm * elbowY];
+    } else if (spec.pose.startsWith('x') && isRight) {
+      const { reach, handY, elbowY } = EXTRACT_FRONT[Number(spec.pose.slice(1))]!;
+      hand = [cx + side * (sh + g.arm * 0.4 * reach), sY + g.arm * handY];
+      elbow = [cx + side * (sh + g.arm * 0.25), sY + g.arm * elbowY];
     } else if (spec.pose.startsWith('g') && isRight) {
       const reach = [0.25, 0.8, 1, 0.45][Number(spec.pose.slice(1))]!;
       hand = [cx + side * (sh + g.arm * 0.35 * reach), sY + g.arm * (0.7 - 0.38 * reach)];
@@ -672,6 +683,8 @@ function sideLayers(spec: PersonSpec): PersonOut {
       [a1, a2] = poses[Number(spec.pose.slice(1))]!;
     } else if (spec.pose.startsWith('f') && near) {
       [a1, a2] = FISH_SIDE[Number(spec.pose.slice(1))]!;
+    } else if (spec.pose.startsWith('x') && near) {
+      [a1, a2] = EXTRACT_SIDE[Number(spec.pose.slice(1))]!;
     } else if (spec.pose.startsWith('g') && near) {
       const phase = Number(spec.pose.slice(1));
       a1 = [20, 48, 62, 28][phase]!;

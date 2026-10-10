@@ -44,7 +44,7 @@ import { Floaters } from './Floaters.ts';
 import { t, tc } from '../i18n/i18n.ts';
 import { ArtAtlas, type PersonAspect } from './ArtAtlas.ts';
 import type { ArtDir, ArtPose } from './ArtManifest.ts';
-import { choppingPose, craftingPose, diggingPose, fishingPose, gatheringPose } from './WorkAnimation.ts';
+import { choppingPose, craftingPose, diggingPose, extractionPose, fishingPose, gatheringPose } from './WorkAnimation.ts';
 import { ADULT_YEARS } from '../sim/entities/Person.ts';
 import { showing } from '../sim/entities/Pregnancy.ts';
 import {
@@ -2001,10 +2001,11 @@ export class Renderer {
     const hairStyle = hair === 'bald' || hair === 'balding' ? hair : person.sex === 'female' ? 'long' : 'short';
     const gathering = gatheringPose(person, this.sim, moving, this.workAlpha);
     const fishing = fishingPose(person, this.sim, moving, this.workAlpha);
+    const extraction = extractionPose(person, this.sim, moving, this.workAlpha);
     const digging = diggingPose(person, this.sim, moving, this.workAlpha);
     const chopping = choppingPose(person, this.sim, moving, this.workAlpha);
     const crafting = craftingPose(person, this.sim, moving, this.workAlpha);
-    const workPose = gathering ?? fishing ?? digging ?? chopping ?? crafting;
+    const workPose = gathering ?? fishing ?? extraction ?? digging ?? chopping ?? crafting;
     const aspect: PersonAspect = {
       age: sizeClass, sex: person.sex === 'male' ? 'm' : 'f', dir,
       pose: moving ? (('w' + frame) as ArtPose) : workPose ?? 'idle',
