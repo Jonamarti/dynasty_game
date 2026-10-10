@@ -3908,6 +3908,16 @@ Added the moods-move-choices health check, comparing talk frequency in the low a
 
 # Changelog
 
+## 2026-10-10 — M15 11d: equipar desde el Equipo
+
+Los botones mano izquierda/derecha/espalda emiten una orden de tres ticks,
+interrumpible y validada al terminar. Lo desplazado cae como pila física y
+soltar la última unidad limpia todas sus referencias. Rechazos traducidos;
+contrato `m15_manual_equipment.md`. Typecheck y 23 pruebas focales pasaron.
+El caso e2e completó sus aserciones; el cierre del servidor de Playwright
+quedó colgado y se interrumpió, sin declarar pasada la suite completa.
+Capturas: `artifacts/screenshots/m15-manual-equipment-2026-10-10/`.
+
 ## 2026-10-10 — M15 16b: muros y habitaciones físicas
 
 Las viviendas nuevas tienen un perímetro bloqueado y una puerta fija orientada

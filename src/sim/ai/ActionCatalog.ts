@@ -305,6 +305,22 @@ export function itemActions(
       icon: '\u{1F53B}',
       enabled: true,
     },
+    {
+      id: 'equip_left', label: t('Left hand'), icon: '\u{1F91A}',
+      enabled: !!def?.hand,
+      reason: def?.hand ? undefined : t('That is not something you can equip'),
+    },
+    {
+      id: 'equip_right', label: t('Right hand'), icon: '\u{1F91A}',
+      enabled: !!def?.hand && def.hand.hands === 1,
+      reason: !def?.hand ? t('That is not something you can equip')
+        : def.hand.hands === 2 ? t('Two-handed items need both hands') : undefined,
+    },
+    {
+      id: 'equip_back', label: t('Back slot'), icon: '\u{1F392}',
+      enabled: def?.container?.slot === 'back',
+      reason: def?.container?.slot === 'back' ? undefined : t('That item does not fit there'),
+    },
   ];
 }
 

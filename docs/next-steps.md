@@ -1629,3 +1629,5 @@ perfil corregido y materialización antes de leave_comarca/follow_me/scout.
 2026-10-10: frontera conserva32 avisos al unir colas y el ledger vuelve a cargar. Regresión detecta33 en build previo; cuatro focales pasan. Ver m15_phase34_notice_transfer.md; veredictos completos.
 
 2026-10-10: entregado M15 16b, muros y habitación física; contrato m15_phase16b_house_walls.md. Continúan techos/mobiliario. Verificación focal20/20 y typecheck; sim:check conserva dos fallos conocidos.
+
+2026-10-10: entregado control manual de equipo M15 11d; contrato m15_manual_equipment.md y capturas m15-manual-equipment-2026-10-10. Continúa fase14 ropa.

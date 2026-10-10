@@ -56,7 +56,10 @@ import { ITEMS } from '../entities/Item.ts';
 import { animalBlow } from '../entities/AnimalAttack.ts';
 import { claimTransportAnimal } from '../core/TransportAnimals.ts';
 import { canTake, equipContainer, itemCapacityFor, stow } from '../core/Carry.ts';
-import { equipFor as fitToolForAction, type ToolAction } from '../core/ToolEquipment.ts';
+import {
+  equipFor as fitToolForAction, equipItemInSlot, manualEquipRefusal,
+  manualEquipSlot, type ToolAction,
+} from '../core/ToolEquipment.ts';
 import { RECIPES, hasIngredients } from '../entities/Recipe.ts';
 import {
   INSCRIPTIONS, type Inscription, type InscriptionDef, type InscriptionForm,
@@ -787,6 +790,9 @@ export class ActionSystem {
       case 'store': this.doStore(person, ctx); break;
       case 'take': this.doTake(person, ctx); break;
       case 'pickup': this.doPickup(person, ctx); break;
+      case 'equip_left':
+      case 'equip_right':
+      case 'equip_back': this.doManualEquip(person, ctx); break;
       case 'shelter': this.doShelter(person, ctx); break;
       case 'sleep': this.doSleep(person, ctx); break;
       case 'talk': this.doTalk(person, ctx); break;
@@ -1518,6 +1524,49 @@ export class ActionSystem {
       person.toolChangeAction = null;
     }
     return false;
+  }
+
+  /** A manual kit order changes equipment only after its full setup time. */
+  private doManualEquip(person: Person, ctx: ActionContext): void {
+    const slot = manualEquipSlot(person.action);
+    const itemId = person.targetItemId;
+    if (!slot || itemId === null) {
+      this.abandon(person, 'equipment_order_lost', ctx);
+      return;
+    }
+    const interrupted = this.interruption(person, ctx, { ignoreLaden: true });
+    if (interrupted) {
+      this.stop(person, interrupted, ctx);
+      return;
+    }
+
+    // The first call counts as the first setup tick. The action string and
+    // targetItemId already live on Person, so saves need no parallel slot field.
+    if (person.toolChangeAction !== person.action) {
+      const refusal = manualEquipRefusal(person, itemId, slot);
+      if (refusal) {
+        this.abandon(person, refusal, ctx);
+        return;
+      }
+      person.toolChangeAction = person.action;
+      person.toolChangeTicks = Math.max(0, ctx.carry.equipTicks - 1);
+      person.actionTimer = person.toolChangeTicks;
+      person.actionTotal = 0;
+    } else if (person.toolChangeTicks > 0) {
+      person.toolChangeTicks--;
+      person.actionTimer = person.toolChangeTicks;
+    }
+    if (person.toolChangeTicks > 0) return;
+
+    // Possession, hands and the intended slot can all change during those
+    // three ticks (for example, the item may be given away mid-change).
+    const result = equipItemInSlot(person, itemId, slot, ctx.carry, ctx.dropAt);
+    if (result) {
+      this.abandon(person, result, ctx);
+      return;
+    }
+    telemetry.count('manual_item_equipped');
+    this.finish(person);
   }
 
   private doHarvest(person: Person, ctx: ActionContext): void {

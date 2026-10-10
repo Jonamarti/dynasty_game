@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Simulation } from '../core/Simulation.ts';
 import { DEFAULT_CONFIG } from '../core/Config.ts';
-import { equipFor } from '../core/ToolEquipment.ts';
+import { equipFor, equipItemInSlot } from '../core/ToolEquipment.ts';
 import { RNG } from '../core/RNG.ts';
 import { Person } from '../entities/Person.ts';
 import { axeFactor } from '../knowledge/Tech.ts';
@@ -209,5 +209,150 @@ describe('automatic tool fitting', () => {
     expect(worker.equipment.right).toBeUndefined();
     expect(axeFactor(worker)).toBe(0.5);
     expect(axeFactor(worker, true)).toBe(1);
+  });
+});
+
+describe('manual equipment orders', () => {
+  function smallSimulation() {
+    return new Simulation({
+      seed: 'manual-equipment',
+      world: { width: 48, height: 48, berryBushes: 12, flintOutcrops: 4, deadwood: 8, gameHerds: 2 },
+      population: { bands: 1, peoplePerBand: 4 },
+    });
+  }
+
+  it('equips after exactly equipTicks, retains the owned item, and drops a displaced stack', () => {
+    const sim = smallSimulation();
+    const worker = sim.livingPeople()[0]!;
+    worker.isPlayer = true;
+    worker.inventory.add('handaxe', 1);
+    worker.inventory.add('sticks', 1);
+    worker.equipment.right = { item: 'sticks', count: 1 };
+
+    expect(sim.order(worker, 'equip_right', { itemId: 'handaxe' })).toBe(true);
+    for (let i = 0; i < DEFAULT_CONFIG.carry.equipTicks - 1; i++) {
+      sim.step();
+      expect(worker.equipment.right?.item).toBe('sticks');
+    }
+    sim.step();
+    expect(worker.equipment.right?.item).toBe('handaxe');
+    expect(worker.inventory.count('handaxe')).toBe(1);
+    expect(worker.inventory.count('sticks')).toBe(0);
+    expect(sim.piles.some(pile => pile.contents.count('sticks') === 1)).toBe(true);
+    expect(worker.action).toBe('idle');
+  });
+
+  it('rejects unowned property, a hand occupied by a baby, two-handed items with one free arm, and a retired actor', () => {
+    const sim = smallSimulation();
+    const worker = sim.livingPeople()[0]!;
+    worker.isPlayer = true;
+    worker.inventory.add('handaxe', 1);
+    worker.inventory.add('bow', 1);
+
+    expect(sim.order(worker, 'equip_right', { itemId: 'basket' })).toBe(false);
+    expect(sim.lastRefusal).toBe('You no longer have that item');
+    expect(sim.order(worker, 'equip_left', { itemId: 'handaxe' })).toBe(true);
+
+    worker.clearTarget(); worker.action = 'idle'; worker.order = null;
+    worker.armsTaken = 1;
+    expect(sim.order(worker, 'equip_left', { itemId: 'bow' })).toBe(false);
+    expect(sim.lastRefusal).toContain('hands');
+    expect(sim.order(worker, 'equip_right', { itemId: 'bow' })).toBe(false);
+    expect(sim.lastRefusal).toContain('hands');
+    expect(worker.inventory.count('bow')).toBe(1);
+
+    worker.armsTaken = 0;
+    worker.alive = false;
+    expect(sim.order(worker, 'equip_right', { itemId: 'handaxe' })).toBe(false);
+    expect(sim.lastRefusal).toBe('That owner is no longer alive');
+  });
+
+  it('allows the basket on the back and reconciles capacity when its last copy is dropped', () => {
+    const sim = smallSimulation();
+    const worker = sim.livingPeople()[0]!;
+    worker.isPlayer = true;
+    worker.inventory.add('basket', 1);
+    worker.inventory.add('berries', 20);
+    expect(sim.order(worker, 'equip_back', { itemId: 'basket' })).toBe(true);
+    for (let i = 0; i < DEFAULT_CONFIG.carry.equipTicks; i++) sim.step();
+    expect(worker.equipment.back?.item).toBe('basket');
+    expect(worker.inventory.count('basket')).toBe(1);
+    expect(worker.carryContainerCapacity).toBe(24);
+
+    expect(sim.drop(worker, 'basket', 1)).not.toBeNull();
+    expect(worker.equipment.back).toBeUndefined();
+    expect(worker.carryContainerCapacity).toBe(0);
+    expect(worker.carrying).toBeLessThanOrEqual(worker.carryCapacity);
+    expect(worker.inventory.count('berries') + sim.piles.reduce((sum, pile) =>
+      sum + pile.contents.count('berries'), 0)).toBe(20);
+  });
+
+  it('shares the same atomic fitting helper and refuses an incompatible back slot without mutations', () => {
+    const worker = person();
+    worker.inventory.add('handaxe', 1);
+    worker.inventory.add('sticks', 1);
+    worker.equipment.right = { item: 'sticks', count: 1 };
+    const before = JSON.stringify(worker.equipment);
+    const drops: string[] = [];
+    expect(equipItemInSlot(worker, 'handaxe', 'back', DEFAULT_CONFIG.carry,
+      (_x, _y, item) => drops.push(item))).toBe('wrong_slot');
+    expect(JSON.stringify(worker.equipment)).toBe(before);
+    expect(worker.inventory.count('handaxe')).toBe(1);
+    expect(worker.inventory.count('sticks')).toBe(1);
+    expect(drops).toEqual([]);
+  });
+
+  it('clears both references when a one-handed item replaces one side of a two-handed tool', () => {
+    const worker = person();
+    worker.inventory.add('bow', 1);
+    worker.inventory.add('handaxe', 1);
+    worker.equipment.left = { item: 'bow', count: 1 };
+    worker.equipment.right = { item: 'bow', count: 1 };
+    const drops: [string, number][] = [];
+    expect(equipItemInSlot(worker, 'handaxe', 'left', DEFAULT_CONFIG.carry,
+      (_x, _y, item, count) => drops.push([item, count]))).toBeNull();
+    expect(worker.equipment.left?.item).toBe('handaxe');
+    expect(worker.equipment.right).toBeUndefined();
+    expect(worker.inventory.count('bow')).toBe(0);
+    expect(worker.inventory.count('handaxe')).toBe(1);
+    expect(drops).toEqual([['bow', 1]]);
+  });
+
+  it('clears a fitted hand tool when the player drops its last copy', () => {
+    const sim = smallSimulation();
+    const worker = sim.livingPeople()[0]!;
+    worker.inventory.add('handaxe', 1);
+    worker.equipment.right = { item: 'handaxe', count: 1 };
+    expect(sim.drop(worker, 'handaxe', 1)).not.toBeNull();
+    expect(worker.equipment.right).toBeUndefined();
+    expect(sim.piles.some(pile => pile.contents.count('handaxe') === 1)).toBe(true);
+  });
+
+  it('revalidates possession after the setup timer when ownership changes', () => {
+    const sim = smallSimulation();
+    const worker = sim.livingPeople()[0]!;
+    worker.isPlayer = true;
+    worker.inventory.add('handaxe', 1);
+    expect(sim.order(worker, 'equip_right', { itemId: 'handaxe' })).toBe(true);
+    sim.step();
+    expect(worker.toolChangeTicks).toBe(DEFAULT_CONFIG.carry.equipTicks - 1);
+    worker.inventory.remove('handaxe', 1);
+    for (let i = 0; i < DEFAULT_CONFIG.carry.equipTicks - 1; i++) sim.step();
+    expect(worker.action).toBe('idle');
+    expect(worker.equipment.right).toBeUndefined();
+    expect(worker.inventory.count('handaxe')).toBe(0);
+  });
+
+  it('lets a need interrupt the timer before any equipment changes', () => {
+    const sim = smallSimulation();
+    const worker = sim.livingPeople()[0]!;
+    worker.isPlayer = true;
+    worker.inventory.add('handaxe', 1);
+    worker.needs.hunger = 100;
+    expect(sim.order(worker, 'equip_right', { itemId: 'handaxe' })).toBe(true);
+    sim.step();
+    expect(worker.action).toBe('idle');
+    expect(worker.equipment.right).toBeUndefined();
+    expect(worker.inventory.count('handaxe')).toBe(1);
   });
 });

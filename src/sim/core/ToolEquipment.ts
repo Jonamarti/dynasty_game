@@ -4,6 +4,19 @@ import { ITEMS } from '../entities/Item.ts';
 import { axeItemOf, weaponItemOf } from '../knowledge/Tech.ts';
 import type { CarryConfig } from './Config.ts';
 import { reconcileCarry } from './Carry.ts';
+import { t } from '../../i18n/i18n.ts';
+
+export type ManualEquipmentSlot = 'left' | 'right' | 'back';
+export type ManualEquipReason =
+  | 'item_not_owned' | 'unknown_item' | 'wrong_slot' | 'hands_full' | 'baby_uses_hand'
+  | 'already_equipped';
+
+export function manualEquipSlot(action: string): ManualEquipmentSlot | null {
+  if (action === 'equip_left') return 'left';
+  if (action === 'equip_right') return 'right';
+  if (action === 'equip_back') return 'back';
+  return null;
+}
 
 export type ToolAction = 'chop' | 'hunt' | 'forage';
 
@@ -18,6 +31,95 @@ export function toolForAction(person: Person, action: ToolAction): string | null
   if (action === 'chop') return axeItemOf(person);
   if (action === 'hunt') return weaponItemOf(person, true, false,
     person.armsTaken === 0 ? 2 : 1);
+  return null;
+}
+
+/** The same preflight is used when the UI asks and when the timer completes. */
+export function manualEquipRefusal(
+  person: Person, itemId: string, slot: ManualEquipmentSlot,
+): ManualEquipReason | null {
+  const def = ITEMS[itemId];
+  if (!def) return 'unknown_item';
+  if (person.inventory.count(itemId) <= 0) return 'item_not_owned';
+  if (slot === 'back' && def.container?.slot !== 'back') return 'wrong_slot';
+  if (slot !== 'back') {
+    if (person.armsTaken >= 2 || def.hand.hands > 2 - person.armsTaken) return 'hands_full';
+    // Babies take the same left-to-right hand assignment the kit shows. A
+    // manual equip never moves one to make room for an object.
+    if ((slot === 'left' && person.armsTaken > 0) ||
+      (slot === 'right' && person.armsTaken > 1)) return 'baby_uses_hand';
+    if (def.hand.hands === 2 && (person.armsTaken > 0 || slot !== 'left')) return 'hands_full';
+  }
+  if (person.equipment[slot]?.item === itemId &&
+    (slot === 'back' || def.hand.hands === 1 || person.equipment.left?.item === itemId &&
+      person.equipment.right?.item === itemId)) return 'already_equipped';
+  return null;
+}
+
+/** Player-facing sentence for a failed manual equipment order. */
+export function manualEquipReasonText(reason: ManualEquipReason): string {
+  switch (reason) {
+    case 'item_not_owned': return t('You no longer have that item');
+    case 'unknown_item': return t('That is not something you can equip');
+    case 'wrong_slot': return t('That item does not fit there');
+    case 'hands_full': return t('There are not enough free hands for that item');
+    case 'baby_uses_hand': return t('A baby is using that hand');
+    case 'already_equipped': return t('That item is already equipped there');
+  }
+}
+
+/**
+ * Equip one owned item, dropping displaced objects as real piles. Inventory is
+ * the ownership record, so the fitted item remains in its stack; displaced
+ * items leave the stack exactly once and any lost container room is reconciled.
+ */
+export function equipItemInSlot(
+  person: Person,
+  itemId: string,
+  slot: ManualEquipmentSlot,
+  config: CarryConfig,
+  dropAt: (x: number, y: number, itemId: string, count: number) => void,
+): ManualEquipReason | null {
+  const refusal = manualEquipRefusal(person, itemId, slot);
+  if (refusal) return refusal;
+
+  const desired = ITEMS[itemId]!;
+  const wasEquipped = Object.values(person.equipment).some(entry => entry?.item === itemId);
+  const targets: ManualEquipmentSlot[] = slot === 'back' || desired.hand.hands === 1
+    ? [slot] : ['left', 'right'];
+  const displaced = new Set<string>();
+
+  // Moving a fitted object is not a second copy. Remove all of its old slot
+  // references while retaining its capacity contribution.
+  for (const oldSlot of ['left', 'right', 'back', 'belt', 'shoulder'] as const) {
+    if (person.equipment[oldSlot]?.item === itemId) delete person.equipment[oldSlot];
+  }
+
+  // A two-handed object occupies both hands. A container fitted on the back
+  // occupies only that slot and may displace its former contents safely.
+  for (const target of targets) {
+    const current = person.equipment[target];
+    if (current && current.item !== itemId) displaced.add(current.item);
+    if (current?.item !== itemId) delete person.equipment[target];
+  }
+  // Two-handed equipment has a reference in both hands. Replacing just one
+  // side must clear the other side too, or the dropped item remains fitted
+  // after its only inventory copy has left.
+  for (const oldSlot of ['left', 'right', 'back', 'belt', 'shoulder'] as const) {
+    const held = person.equipment[oldSlot];
+    if (held && displaced.has(held.item)) delete person.equipment[oldSlot];
+  }
+  for (const displacedId of displaced) {
+    const count = person.inventory.remove(displacedId, 1);
+    if (count <= 0) continue;
+    const container = ITEMS[displacedId]?.container;
+    if (container) person.carryContainerCapacity = Math.max(0,
+      person.carryContainerCapacity - container.capacity);
+    dropAt(person.x, person.y, displacedId, count);
+  }
+  if (desired.container && !wasEquipped) person.carryContainerCapacity += desired.container.capacity;
+  for (const target of targets) person.equipment[target] = { item: itemId, count: 1 };
+  if (displaced.size > 0) reconcileCarry(person, config, dropAt);
   return null;
 }
 

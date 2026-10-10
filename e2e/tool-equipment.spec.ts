@@ -77,6 +77,21 @@ test('a real chop order renders the fitted axe and keeps the packed spear out of
   await page.screenshot({ path: `${shots}/01-axe-fitted-spear-packed.png` });
   await page.locator('.hud-tab[data-tab="kit"]').click();
   await expect(page.locator('.hud-tab[data-tab="kit"]')).toHaveClass(/is-active/);
+  const manual = page.locator('.hud-item-verbs [data-item="spear"][data-verb="equip_right"]');
+  await expect(manual).toBeVisible();
+  await manual.click();
+  await page.evaluate(() => {
+    const d = (window as any).__dynasty;
+    for (let tick = 0; tick < d.sim.config.carry.equipTicks; tick++) d.sim.step();
+    d.renderer.render(null, 0);
+  });
+  const manuallyEquipped = await page.evaluate(() => {
+    const d = (window as any).__dynasty, p = d.sim.player;
+    return { action: p.action, right: p.equipment.right?.item,
+      spearStillOwned: p.inventory.count('spear'),
+      displacedOnGround: d.sim.piles.some((pile: any) => pile.contents.count('handaxe') > 0) };
+  });
+  expect(manuallyEquipped).toEqual({ action: 'idle', right: 'spear', spearStillOwned: 1, displacedOnGround: true });
   await page.screenshot({ path: `${shots}/02-fitted-hand-in-kit.png` });
 
   const ablation = await page.evaluate(() => {

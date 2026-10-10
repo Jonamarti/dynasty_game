@@ -134,6 +134,9 @@ export const ACTION_LABELS: Record<string, string> = {
   // showed "thinking" for somebody doing nothing, and had no word left for
   // somebody actually doing it. `reflect` below now has that word.
   idle: 'at a loose end',
+  equip_left: 'equipping an item',
+  equip_right: 'equipping an item',
+  equip_back: 'equipping an item',
   wander: 'wandering',
   goto: 'walking',
   leave_comarca: 'leaving the comarca',
@@ -272,6 +275,12 @@ export function actionLabel(
 export const STOP_REASONS: Record<string, string> = {
   // Ran out of room, need or patience.
   hands_full: 'their hands are full',
+  item_not_owned: 'they no longer had that item',
+  unknown_item: 'that was not something they could equip',
+  wrong_slot: 'that item did not fit there',
+  baby_uses_hand: 'a baby was using that hand',
+  already_equipped: 'that item was already equipped there',
+  equipment_order_lost: 'the equipment order was lost',
   hands_not_empty: 'they had to put down what they were carrying',
   too_deep: 'the water was too deep to swim',
   too_cold_to_swim: 'they were too cold or tired to swim safely',

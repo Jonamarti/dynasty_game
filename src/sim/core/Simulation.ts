@@ -30,6 +30,7 @@ import { ADULT_YEARS, Person } from '../entities/Person.ts';
 import { IdSpace, type IdSpaceSnapshot } from './IdSpace.ts';
 import { ITEMS, Inventory } from '../entities/Item.ts';
 import { equipContainer, itemCapacityFor, reconcileCarry } from './Carry.ts';
+import { manualEquipReasonText, manualEquipRefusal, manualEquipSlot } from './ToolEquipment.ts';
 import {
   BUSH_SPECIES, BUSHES, WILD_PLANTS, RESOURCE_KINDS, ORE_COUNTS, bushPhase, ResourceNode, isFoodKind, isPlantFood, seasonLoreKind,
   type BushSpecies, type ResourceKind,
@@ -2996,6 +2997,11 @@ export class Simulation {
       this.pileHash.rebuild(this.piles);
     }
     pile.contents.add(itemId, taken);
+    // Dropping the final copy of a fitted container ends its capacity too.
+    // Reconcile through the same carry rule as transfers so no slot points at
+    // a container the person no longer owns and any overflow becomes a pile.
+    reconcileCarry(person, this.config.carry, (x, y, droppedId, amount) =>
+      this.dropAt(x, y, droppedId, amount));
     telemetry.count('dropped', taken);
     return pile;
   }
@@ -4182,10 +4188,27 @@ export class Simulation {
   ): boolean {
     this.assertExecutionAuthority();
     this.assertCanonical(this.peopleById, person, 'person');
-    if (!person.alive) return false;
+    if (!person.alive) {
+      if (action.startsWith('equip_')) this.lastRefusal = t('That owner is no longer alive');
+      return false;
+    }
     if (!canWalk(person, this.config.childhood)) {
       this.lastRefusal = t('babies cannot act on their own');
       return false;
+    }
+    const equipmentSlot = manualEquipSlot(action);
+    if (action.startsWith('equip_')) {
+      const refusal = !equipmentSlot
+        ? null
+        : manualEquipRefusal(person, target.itemId ?? '', equipmentSlot);
+      if (!equipmentSlot) {
+        this.lastRefusal = t('That is not an equipment slot');
+        return false;
+      }
+      if (refusal) {
+        this.lastRefusal = manualEquipReasonText(refusal);
+        return false;
+      }
     }
     // M15 phase 19b: the heavy work is refused her in the last third of a
     // pregnancy, with the reason. Before any state is touched, so a refused

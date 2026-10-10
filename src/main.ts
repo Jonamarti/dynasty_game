@@ -888,6 +888,15 @@ function handleItemAction(
         });
       break;
     }
+    case 'equip_left':
+    case 'equip_right':
+    case 'equip_back': {
+      const ordered = sim.order(person, verb, { itemId });
+      const reason = ordered ? null : sim.lastRefusal;
+      if (!ordered) sim.lastRefusal = null;
+      say(ordered ? t('changing equipment') : reason ?? t('could not equip that item'), ordered);
+      break;
+    }
     case 'give_item': {
       // Every living neighbour within reach, not just the nearest one — the
       // `findNearest` this replaced is exactly the bug M9's note 1 diagnosed

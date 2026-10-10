@@ -1,5 +1,9 @@
 # M15 — El plan maestro: de las manos vacías al Estado
 
+**Avance 2026-10-10 — 11d:** control manual de manos/espalda desde Equipo,
+tres ticks con interrupción y revalidación, objetos desplazados al suelo y
+rechazos visibles. Contrato [equipo manual](m15_manual_equipment.md).
+
 **Avance 2026-10-10 — 16b:** viviendas nuevas con muros físicos, puerta fija,
 habitación que determina abrigo/sueño y ciclo construir–ruina–reparación.
 Terreno base preservado y guardado v3 compatible con v1/v2. Véase
