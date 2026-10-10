@@ -8,8 +8,10 @@ import type { NeedsConfig } from '../core/Config.ts';
 import type { TimeManager } from '../core/TimeManager.ts';
 import type { Person } from '../entities/Person.ts';
 import type { Building } from '../entities/Building.ts';
+import { ITEMS } from '../entities/Item.ts';
 import type { SpatialHash } from '../core/SpatialHash.ts';
 import type { World } from '../core/World.ts';
+import { GARMENT_SLOTS } from '../entities/Equipment.ts';
 import { houseInteriorContains } from '../world/HouseInterior.ts';
 import { bleeding, feverDrain, mendBody, poisonDrain, poisonHunger, poisonThirst } from '../entities/Body.ts';
 import { LETHAL_NEEDS } from '../entities/Person.ts';
@@ -204,7 +206,8 @@ export class NeedsSystem {
       // knowledge and unlit fuel do not: a fixed hearth warms only nearby.
       const carried = warmthFrom(person);
       const coldBefore = person.needs.cold;
-      const shelter = Math.max(carried, this.shelterAt(person, buildings));
+      const buildingShelter = this.shelterAt(person, buildings);
+      const shelter = Math.max(carried, buildingShelter);
       let hearth = 0;
       if (buildingHash) {
         for (const fire of buildingHash.queryRadius(person.x, person.y, 3, [])) {
@@ -240,6 +243,24 @@ export class NeedsSystem {
           person.needs.cold + effectiveChill * cfg.coldRate - effectiveWarming * cfg.coldRate
         )
       );
+      // M15 phase 14c: a person learns a garment's warmth from its marginal
+      // effect on their own exposure. Compare the same body with that layer
+      // omitted, after fixed shelter and hearth are applied; the layer can
+      // teach by preventing a rise, so a falling cold meter is not required.
+      const coldExposure = chill * (swimming ? 3 : 1) + wetChill;
+      if (coldBefore > 0 && coldExposure > 0 && cfg.coldRate > 0) {
+        for (const slot of GARMENT_SLOTS) {
+          const worn = person.equipment[slot];
+          const garment = worn ? ITEMS[worn.item]?.garment : undefined;
+          if (!worn || !garment || garment.slot !== slot || person.inventory.count(worn.item) < 1) continue;
+          const withoutGarment = warmthFrom(person, worn.item);
+          const baselineShelter = Math.max(withoutGarment, buildingShelter, hearth);
+          const marginalWarmth = effectiveShelter - baselineShelter;
+          if (marginalWarmth > 0) {
+            person.beliefs.learn('warm:' + worn.item, marginalWarmth, 0.2, 'own', time.tick);
+          }
+        }
+      }
       if (hearth > 0 && coldBefore > 0) {
         telemetry.count('hearth_cold_samples');
         if (person.needs.cold < coldBefore) telemetry.count('hearth_cold_relieved');

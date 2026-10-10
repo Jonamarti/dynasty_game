@@ -1,0 +1,13 @@
+[WebServer] (node:22352) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:21008) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 4 tests using 1 worker
+
+(node:21868) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 1 e2e\garment-layers.spec.ts:4:1 › a hide cape and sewn tunic can be worn together from the Kit (20.6s)
+  ok 2 e2e\garment-warm-beliefs.spec.ts:4:1 › garment warmth is learned from wearing and only seen in public view (3.6s)
+  ok 3 e2e\version.spec.ts:9:1 › the main menu shows the package version and checked-out commit (2.9s)
+  ok 4 e2e\version.spec.ts:24:1 › the version label survives into the in-game screen (2.7s)

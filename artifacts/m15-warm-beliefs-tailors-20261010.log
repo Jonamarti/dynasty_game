@@ -1,0 +1,238 @@
+
+> dynasty@0.15.49-alpha sim:check
+> vite-node tools/headless.ts -- --scenario tailors
+
+
+WORLD HEALTH REPORT  -  scenario "tailors"  seed "tailors"
+==============================================================================
+2400 steps in 3658ms  (656 steps/s)
+
+POPULATION OVER TIME
+  step    day   alive  hunger  thirst  tired   cold   lonely  health  food   bare  store  trees  grown  fruit  kids  wed  age   oob  
+  0       18    8      0.0     0.0     0.0     0.0    0.0     100.0   935    278   0      215    187    0      1     6    20    0    
+  240     19    8      13.2    17.8    5.5     20.3   13.9    100.0   957    280   0      195    167    0      1     6    21    0    
+  480     20    8      18.5    18.0    6.3     45.2   24.1    100.0   986    281   0      195    167    0      1     6    21    0    
+  720     21    8      22.1    10.8    3.5     71.7   38.6    100.0   1009   281   0      195    167    0      1     6    21    0    
+  960     22    8      16.1    19.9    2.1     97.2   55.0    98.3    1035   281   0      195    167    0      1     6    21    0    
+  1200    23    8      13.5    13.1    1.0     100.0  70.9    95.2    1050   282   0      195    167    0      1     6    21    0    
+  1440    24    8      10.2    11.8    0.0     100.0  86.5    93.3    817    310   0      195    167    0      1     6    21    0    
+  1680    25    8      14.3    16.5    0.0     100.0  98.7    91.3    971    253   0      195    167    0      1     6    21    0    
+  1920    26    8      16.1    11.9    0.0     100.0  99.8    89.3    1113   174   0      197    166    0      1     6    21    0    
+  2160    27    8      10.1    11.6    1.0     100.0  99.9    87.3    1258   171   0      197    166    0      1     6    21    0    
+  2400    28    8      11.2    9.9     2.2     97.7   100.0   85.5    1396   177   0      198    166    0      1     6    21    0    
+
+EVENTS
+  step_slope_up           22259
+  step_slope_up_ratio     20208.582941865945
+  malnutrition_samples    19200
+  step_slope_down_ratio   18877.56552188104
+  step_slope_down         18272
+  cold_damage_ticks       13254
+  remembered_node_candidate12260
+  tailors_cold_samples    10073
+  walk_arrived            6670
+  rest                    4987
+  tailors_cold_worn_samples4154
+  tailors_paired_probes   4154
+  water_memory_candidate  3954
+  food_accessible_at_think3862
+  water_visible_candidate 3520
+  malnutrition_sum        3438.2363783032615
+  step_slope_flat_ratio   3173.211999016385
+  step_slope_flat         3169
+  yield_obs_yield_forage_sum3127.123457011583
+  place_memory_age_sum_band_03006.907924007808
+  craving_protein_search  2769
+  relocation_food_nodes   2750
+  walk_tick               2440
+  compact_food_work_ticks_gather2412
+  path_expanded           2241
+  place_memory_samples_band_02234
+  relocation_food_depleted1934
+  compact_food_nutrition_gather1736
+  craving_protein_absent  1583
+  action_target_knowledge_checked1471
+  action_target_knowledge_known1471
+  work_ended_cold         1324
+  diet_nutrition_total    1246
+  action_target_knowledge_visible_chop1243
+  remembered_node_target  1214
+  craving_protein_reachable1186
+  grazer_samples          986
+  interrupted_teach_cold  919
+  sleeping_open           747
+  place_exploration_fraction_band_0702.6527777777791
+  animal_alarmed          642
+  path_denied_cooldown    619
+  grazer_samples_on_poor  608
+  hunter_samples          600
+  step_blocked            500
+  would_spoil_carried_nutrition407.40000000000015
+  would_spoil_band_0_nutrition407.40000000000015
+  path_found              311
+  cold_damage_sum         303.12117673774975
+  fruit_thirst_relief     250.35434397324016
+  belief_seen_eat_berries 213
+  action_target_knowledge_visible_forage182
+  drink_fresh             178
+  drink                   178
+  shared_resource_depletion_seen130
+  interrupted_give_cold   119
+  mood_security_sum       115.18312523278982
+  step_slide              115
+  harvest_berries         113
+  tailors_paired_cold_benefit99.01020101887
+  food_absent_in_search_at_think99
+  ate_berries             89
+  eat                     89
+  eaten_berries           89
+  work_ended_hands_full   83
+  water_exploration_offered83
+  night_light_samples     80
+  mood_samples            80
+  macro_samples           80
+  worked_alongside        77
+  macro_exertion_sum      73.1117117598521
+  yield_obs_yield_forage_n70
+  hand_capacity_blocked   62
+  eat_craving_protein     61
+  route_arrived           58
+  macro_carb_sum          57.37028068851916
+  explore_ended_cold      43
+  water_exploration_offered_adult42
+  water_exploration_offered_child41
+  pushed_on_cold_propose  39
+  harvest_sticks          38
+  sought_out_chief_give   38
+  work_ended_node_empty   36
+  drink_finished          36
+  action_target_knowledge_visible_drink35
+  would_spoil_berries     33
+  soil_tiles_recovering   31
+  would_spoil_carried     29.099999999999998
+  would_spoil_carried_berries29.099999999999998
+  materials_delivered     23
+  haul_units_band_0       23
+  pushed_on_cold_wear_garment21
+  tree_died_old           20
+  wood_cut                20
+  stale_memory_resource_empty19
+  abandoned_remembered_wrong19
+  mood_belonging_sum      18.901475073746298
+  eat_calm_protein        17
+  dropped                 17
+  water_exploration_no_frontier16
+  macro_fat_sum           12.120316112215214
+  meadow_poor_share_samples12
+  yield_obs_yield_pick_n  11
+  haul_trip_band_0        11
+  action_target_from_memory_forage11
+  macro_protein_sum       10.509403199265616
+  action_target_knowledge_remembered_forage10
+  proposed_cold           10
+  picked_up               9
+  pickup_ordered          9
+  npc_pickup              9
+  settled_over_work       8
+  sought_out_chief_spar   8
+  earth_dug               8
+  tailors_adult_founders  7
+  sparred                 7
+  garment_worn            7
+  tailors_people_wore     7
+  meadow_poor_share_sum   6.302746148693905
+  witnessed               6
+  craft_interrupted       6
+  interrupted_spar_cold   6
+  earthwork_lifts         6
+  pushed_on_cold_gather   6
+  conception_no_roof      4
+  crafted_rope            4
+  abandoned_no_food       4
+  tree_seeded             4
+  site_placed             3
+  marriage                3
+  founding_households     3
+  project_backer_added    3
+  ask_refused             2
+  asked_would_not_teach   2
+  crafted_bundle          2
+  earth_piled             2
+  relocation_scarcity_days2
+  harvest_reeds           2
+  harvest_flint           2
+  action_target_from_memory_gather_for_site2
+  animal_born             2
+  chief_chosen            1
+  raid_for_need_nowhere   1
+  sought_out_chief_ask    1
+  taught_cordage          1
+  child_taught            1
+  child_taught_by_parent  1
+  ask_taught              1
+  event_teach             1
+  reflected               1
+  action_target_knowledge_remembered_drink1
+  hollow_dug              1
+  tree_felled             1
+  site_abandoned          1
+  hunter_samples_expected_in_firelight0
+  night_light_sum         0
+  yield_obs_yield_pick_sum0
+  mood_comfort_sum        -106.91819748375856
+  mood_purpose_sum        -2244.400813775013
+
+ACTIONS (summed over samples)
+  rest                    4987
+  forage                  2851
+  idle                    2677
+  gather                  2324
+  craft                   1241
+  teach                   1226
+  chop                    749
+  sleep                   747
+  drink                   452
+  dig                     449
+  spar                    381
+  haul                    311
+  ask                     294
+  give                    184
+  propose                 153
+  pickup                  60
+  eat                     53
+  reflect                 37
+  wear_garment            14
+  go_home                 5
+  wander                  4
+  build                   1
+
+KNOWLEDGE
+  era: Lower Palaeolithic  ·  5 things known to somebody  ·  0 can make fire
+
+BANDS
+  1 chiefs  ·  0 outcast  ·  0 exiled  ·  0 orders obeyed, 0 refused
+
+BUILDINGS
+  0 of 2 finished  ·  0 items in store
+
+RELATIONSHIPS
+  56 edges across 8 people  ·  56 warm  ·  0 hostile
+  Torva band            theft tolerance 1.35   murder 1.17
+
+TERRAIN
+  water=575  beach=209  grass=666  forest=827  hills=27  rock=0
+
+TRAVEL
+  311 routes found  ·  7.2 mean / 144 worst expansions  ·  129.6 searches per 1,000 ticks
+  route_arrived=58  walk_blocked=0  abandoned_cannot_reach=0
+  everything that walks: step_blocked=500  ·  axis_null=0  ·  slides=115
+  people only: 0 stuck of 2440 walk ticks (0.0 per 1,000)  ·  denied: cooldown=619 budget=0
+  recoveries=0 (0 found a route)
+
+CHECKS
+  PASS  clothes-are-worn        7/7 supplied adult founders wore a garment during a winter cold sample; 4154/10073 cold person-ticks (41.2%)
+  PASS  the-clothed-are-warmer  4154 same-person winter cold probes; mean one-tick cold avoided with the worn garment=0.02383; no-benefit pairs=0 (isolated NeedsSystem pairs, outdoor with no hearth or shelter)
+
+==============================================================================
+ALL 2 APPLICABLE CHECKS PASSED
+

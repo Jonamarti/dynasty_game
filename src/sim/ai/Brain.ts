@@ -100,7 +100,7 @@ import type { PlaceRecord } from '../social/PlaceMemory.ts';
 import { CHILD_FEED_AT, feederRole, starvingInCare } from './Feeding.ts';
 import { canForage, canHunt, isNursling } from '../entities/LifeStage.ts';
 import { HEAVY_ACTIONS, trimesterOf } from '../entities/Pregnancy.ts';
-import { expectationRatio, techAppeal } from './Beliefs.ts';
+import { expectationRatio, garmentWarmthGain, techAppeal } from './Beliefs.ts';
 import { bondBetween } from './Bond.ts';
 import { support } from '../social/Persuasion.ts';
 import { handsEmptyForSwimming } from '../core/Swimming.ts';
@@ -1071,10 +1071,10 @@ export class Brain {
       add('eat', hunger * 3.2 + hunger * variety * 0.35);
     }
 
-    // Clothing is a direct answer to cold only once it is worn. Among the
-    // layers in the pack, choose the largest improvement to this body's slot;
-    // a heavier coat must not cause a person to throw away better warmth from a
-    // different slot. The action is short and remains below every lethal need.
+    // Clothing is a direct answer to cold only once it is worn. Compare learned
+    // estimates within the same slot, with a bounded curiosity trial for
+    // untested layers. Replacing a layer leaves the displaced item in inventory.
+    // The action is short and remains below every lethal need.
     if (person.needs.cold > 10 && person.age >= 1) {
       let bestGain = 0;
       for (const [itemId, count] of person.inventory.entries()) {
@@ -1082,10 +1082,8 @@ export class Brain {
         if (!garment) continue;
         const current = person.equipment[garment.slot];
         if (current?.item === itemId) continue;
-        const currentWarmth = current && person.inventory.count(current.item) > 0
-          ? ITEMS[current.item]?.garment?.warmth ?? 0
-          : 0;
-        const gain = garment.warmth - currentWarmth;
+        const gain = garmentWarmthGain(person, itemId,
+          current && person.inventory.count(current.item) > 0 ? current.item : null);
         if (gain > bestGain) {
           bestGain = gain;
           garmentItem = itemId;
@@ -3676,11 +3674,11 @@ export class Brain {
         (ctx.time.daylight < 0.35 || person.needs.cold > 10 && person.beliefs.expect('warm:torch').value > 0);
       const garment = ITEMS[output]?.garment;
       const worn = garment ? person.equipment[garment.slot] : undefined;
-      const currentWarmth = worn && person.inventory.count(worn.item) >= 1
-        ? ITEMS[worn.item]?.garment?.warmth ?? 0 : 0;
       // Making every layer merely because keep=1 creates a permanent summer
-      // tax. A garment must answer cold and improve its actual worn slot.
-      const wantsGarment = garment && person.needs.cold > 10 && garment.warmth > currentWarmth &&
+      // tax. A garment must answer cold and improve its expected same slot.
+      const garmentGain = garment ? garmentWarmthGain(person, output,
+        worn && person.inventory.count(worn.item) >= 1 ? worn.item : null) : 0;
+      const wantsGarment = garment && person.needs.cold > 10 && garmentGain > 0 &&
         person.inventory.count(output) < recipe.keep;
       const forSelf = ITEMS[output]?.furniture ? recipe.id === furnitureRecipe :
         recipe.preservesInput ? person.beliefs.expect('spoils:' + recipe.preservesInput).value > 0 &&

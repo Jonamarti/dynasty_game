@@ -1,3 +1,25 @@
+## 2026-10-11 — M15 14c, creencias de abrigo: límites y verificación
+
+El chequeo normal conserva los fallos previos de dieta/rendimiento; `tailors`
+pasa sus dos checks. El navegador final termina 4/4: la primera ejecución
+completó sus cuatro aserciones pero quedó esperando en el cierre de Vite y se
+interrumpió; repetir con el servidor activo terminó correctamente. La suite
+unitaria inicial da 2.040 correctas, ocho fallidas y una omitida: las siete
+incidencias heredadas y una regresión nueva del instrumento `tailors`, cuyas
+sondas compartían creencias y enseñaban a la persona real. Se copia esa
+memoria sin su callback; el test original de checkpoint y los otros focales
+pasan 23/23, y `tailors` pasa de nuevo. [Logs y límites](m15_phase14c_warm_beliefs.md).
+No se repite la suite completa, ajustan umbrales ni afirma verificación global verde.
+
+La experiencia de abrigo sólo registra contribución positiva atribuible:
+techo u hogar dominantes no enseñan ni protección ni un cero artificial. La
+memoria reciente del vestido limita repetir una prueba sin evidencia; no es
+una calibración de adopción ni garantiza mejores resultados demográficos.
+Quedan retirada por calor, bolsillos, condición física, desgaste/remiendo y
+curtido. La condición necesita propiedad por unidad/cohorte y transferencias
+conservativas antes de activarse; [diseño](m15_garment_condition_design.md).
+No se declara cerrada 14c/14e ni M15; cohortes y matriz quedan diferidas.
+
 ## 2026-10-10 — M15 14c, falda: verificación y pendientes
 
 La regresión de esta entrega conserva las siete incidencias de la pasada

@@ -26,6 +26,9 @@ function detached(person: Person): Person {
     needs: { ...person.needs },
     exertionToday: { ...person.exertionToday },
     equipment: { ...person.equipment },
+    // Cold now teaches personal garment warmth. A paired diagnostic must
+    // neither train the live person nor fire their onNewBelief callback.
+    beliefs: person.beliefs.inherit(1),
     body: Object.fromEntries(Object.entries(person.body).map(([part, state]) => [part, { ...state }])),
     conditions: [...person.conditions],
   }) as Person;

@@ -1,3 +1,30 @@
+## 2026-10-11 — m15: expectativas personales de abrigo
+
+`0.15.49-alpha`: vestido y confección consultan `warm:<prenda>` en vez de
+conocer de entrada el abrigo de cada definición. La experiencia propia mide
+la protección atribuible a la capa, descontando techo y hogar; ver ropa en
+invierno sólo transmite una hipótesis débil. Una prueba por curiosidad deja
+memoria reciente al completar el vestido para evitar alternancias sin
+aprendizaje bajo techo. [Contrato y resultados](m15_phase14c_warm_beliefs.md).
+Subagentes Luna 6 high implementaron, revisaron y probaron el corte.
+
+Typecheck y las 23 focales finales pasan; navegador final 4/4, incluyendo
+combinación de prendas y versión. `tailors` conserva sus dos checks; el chequeo
+normal mantiene dieta/rendimiento previos. La suite completa inicial da
+2.040 correctas, ocho fallidas y una omitida: siete incidencias heredadas y
+una nueva de sondas compartiendo creencias, corregida y repetida en las 23
+focales. No se repite ni se afirma una suite global verde. Captura inspeccionada:
+`artifacts/screenshots/m15-phase14c-garment-warm-beliefs-2026-10-10T-03/01-fur-coat-worn-in-kit.png`.
+El primer navegador completó las cuatro aserciones pero se interrumpió durante
+el cierre de Vite; la repetición con servidor activo terminó correctamente.
+
+Se documenta [la propiedad de condición por prenda](m15_garment_condition_design.md)
+antes de desgaste/remiendo para conservarla en transferencias. Siguen retirada
+por calor, bolsillos, condición, desgaste/remiendo y curtido. Se para antes de
+la siguiente funcionalidad para reservar presupuesto; 14c/14e y M15 permanecen
+abiertos. Cohortes/matriz diferidas por AGENTS.md, sin afirmar mejora económica.
+Los cambios locales previos de M16 se conservan fuera de este commit.
+
 ## 2026-10-10 — m15: falda de fibra física
 
 `0.15.48-alpha`: `fibre_skirt` completa el catálogo inicial de prendas de

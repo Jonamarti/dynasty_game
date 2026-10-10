@@ -1619,6 +1619,10 @@ export class ActionSystem {
       this.abandon(person, result, ctx);
       return;
     }
+    // An exploratory layer that teaches nothing under a roof or hearth would
+    // otherwise be put on and taken off again every time the old layer wins
+    // the scorer. Keep the attempt in the ordinary decaying recency map.
+    if (verb === 'wear_garment') person.lately.set('warm-tried:' + itemId, 1);
     telemetry.count(verb === 'wear_garment' ? 'garment_worn' : 'garment_taken_off');
     this.finish(person);
   }

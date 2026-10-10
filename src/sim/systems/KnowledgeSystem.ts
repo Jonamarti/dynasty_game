@@ -41,12 +41,13 @@ import { BUILDINGS, type Building } from '../entities/Building.ts';
 import type { ItemPile } from '../entities/ItemPile.ts';
 import { RECIPES } from '../entities/Recipe.ts';
 import { ITEMS } from '../entities/Item.ts';
+import { GARMENT_SLOTS } from '../entities/Equipment.ts';
 import {
   MAX_IDEAS, TRIES_TO_TEST, sparkFires, type Idea, type Notice, type Spark,
 } from '../knowledge/Synthesis.ts';
 import { telemetry } from '../core/Telemetry.ts';
 import { t, aNoun, genderOf } from '../../i18n/i18n.ts';
-import { techAppeal } from '../ai/Beliefs.ts';
+import { GARMENT_WARMTH_PRIOR, techAppeal } from '../ai/Beliefs.ts';
 import { curiosityNeed } from '../ai/Temperament.ts';
 
 // `CONCEPTION_BASE`, `TEST_CHANCE`, the number of trials a design needs and what
@@ -712,6 +713,21 @@ export class KnowledgeSystem {
           if (!own || own.confidence < lesson.confidence) {
             person.beliefs.learn(key, lesson.value, 0.1 * lesson.confidence, 'seen', ctx.tick);
             telemetry.count('belief_seen_' + key.replace(':', '_'));
+          }
+        }
+      }
+      // A visibly worn layer in winter is public evidence that people use it
+      // for warmth. The observer learns only a small prior from the visible
+      // outfit; the only ownership check validates that visible equipment is
+      // still real. The wearer's needs and private beliefs are never read.
+      if (ctx.season === 'winter') {
+        for (const slot of GARMENT_SLOTS) {
+          const worn = other.equipment[slot];
+          const garment = worn ? ITEMS[worn.item]?.garment : undefined;
+          if (!worn || !garment || garment.slot !== slot || other.inventory.count(worn.item) < 1) continue;
+          const key = 'warm:' + worn.item;
+          if (person.beliefs.expect(key).confidence < 0.1) {
+            person.beliefs.learn(key, GARMENT_WARMTH_PRIOR, 0.1, 'seen', ctx.tick);
           }
         }
       }

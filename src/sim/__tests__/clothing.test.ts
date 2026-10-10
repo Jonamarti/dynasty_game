@@ -166,7 +166,7 @@ describe('M15 phase 14a: wearable garments', () => {
     expect(wearer.inventory.count('fur_coat')).toBe(1);
   });
 
-  it('lets the autonomous scorer wear a carried coat for cold without an order', () => {
+  it('lets the autonomous scorer wear a personally learned coat for cold', () => {
     const sim = new Simulation(makeConfig({
       seed: 'npc-clothing',
       world: { width: 48, height: 48, berryBushes: 0, flintOutcrops: 0, deadwood: 0, gameHerds: 0 },
@@ -176,6 +176,7 @@ describe('M15 phase 14a: wearable garments', () => {
     wearer.age = 30 * wearer.daysPerYear;
     wearer.inventory.add('fur_coat', 1);
     wearer.needs = { hunger: 0, thirst: 0, fatigue: 0, cold: 95, company: 0 };
+    wearer.beliefs.learn('warm:fur_coat', 0.4, 1, 'own', 1);
     wearer.action = 'idle';
     wearer.order = null;
     for (let i = 0; i < 40 && wearer.equipment.torso?.item !== 'fur_coat'; i++) sim.step();
@@ -183,5 +184,43 @@ describe('M15 phase 14a: wearable garments', () => {
     expect(lastScores.get(wearer.id)?.some(row => row.id === 'wear_garment')).toBe(true);
     expect(wearer.equipment.torso?.item).toBe('fur_coat');
     expect(wearer.inventory.count('fur_coat')).toBe(1);
+  });
+
+  it('scores an unknown carried coat for a curiosity trial in cold', () => {
+    const sim = new Simulation(makeConfig({
+      seed: 'npc-clothing-unknown',
+      world: { width: 48, height: 48, berryBushes: 0, flintOutcrops: 0, deadwood: 0, gameHerds: 0 },
+      population: { bands: 1, peoplePerBand: 2 },
+    }));
+    const wearer = sim.livingPeople().find(candidate => !candidate.isPlayer)!;
+    wearer.age = 30 * wearer.daysPerYear;
+    wearer.inventory.add('fur_coat', 1);
+    wearer.needs = { hunger: 0, thirst: 0, fatigue: 0, cold: 95, company: 0 };
+    wearer.curiosityDays = 30;
+    wearer.action = 'idle';
+    wearer.order = null;
+    sim.step();
+    const score = lastScores.get(wearer.id)?.find(row => row.id === 'wear_garment')?.score ?? 0;
+    expect(score).toBeGreaterThan(0);
+  });
+
+  it('does not wear a coat after personal testing found no warmth', () => {
+    const sim = new Simulation(makeConfig({
+      seed: 'npc-clothing-no-warmth',
+      world: { width: 48, height: 48, berryBushes: 0, flintOutcrops: 0, deadwood: 0, gameHerds: 0 },
+      population: { bands: 1, peoplePerBand: 2 },
+    }));
+    const wearer = sim.livingPeople().find(candidate => !candidate.isPlayer)!;
+    wearer.age = 30 * wearer.daysPerYear;
+    wearer.inventory.add('fur_coat', 1);
+    wearer.beliefs.learn('warm:fur_coat', 0, 1, 'own', 1);
+    wearer.needs = { hunger: 0, thirst: 0, fatigue: 0, cold: 95, company: 0 };
+    wearer.curiosityDays = 30;
+    wearer.action = 'idle';
+    wearer.order = null;
+    sim.step();
+    const score = lastScores.get(wearer.id)?.find(row => row.id === 'wear_garment')?.score ?? 0;
+    expect(score).toBe(0);
+    expect(wearer.equipment.torso?.item).not.toBe('fur_coat');
   });
 });

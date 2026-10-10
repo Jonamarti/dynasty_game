@@ -3496,13 +3496,13 @@ export function awlFactor(person: Person, recipeId: string): number {
 }
 
 /** Personal insulation and an owned flame; knowing a fuel never creates heat. */
-export function warmthFrom(person: Person): number {
+export function warmthFrom(person: Person, omitGarmentId?: string): number {
   const torch = torchInHand(person) ? 0.2 : 0;
   let unwarmed = 1 - torch;
   for (const slot of GARMENT_SLOTS) {
     const worn = person.equipment[slot];
     const garment = worn ? ITEMS[worn.item]?.garment : undefined;
-    const warmth = worn && garment?.slot === slot && person.inventory.count(worn.item) >= 1
+    const warmth = worn && worn.item !== omitGarmentId && garment?.slot === slot && person.inventory.count(worn.item) >= 1
       ? garment.warmth
       : 0;
     unwarmed *= 1 - Math.max(0, Math.min(1, warmth));

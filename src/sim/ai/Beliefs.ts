@@ -12,6 +12,8 @@ export const BELIEF_KEYS = [
   'yield:forage', 'yield:fish', 'yield:pick', 'yield:hunt',
 ] as const;
 export const BELIEF_CAPACITY = 48;
+/** An untried garment is worth trying once, but nobody starts knowing its real warmth. */
+export const GARMENT_WARMTH_PRIOR = 0.08;
 /** First-cohort instrument baselines: keeping an untried action neutral makes
  * this reader respond only after personal experience supplies evidence. */
 export const YIELD_INSTINCT: Readonly<Record<string, number>> = {
@@ -33,6 +35,12 @@ export class Beliefs {
   expect(key: string): { value: number; confidence: number } {
     const learned = this.values.get(key);
     if (learned) return { value: learned.value, confidence: learned.confidence };
+    if (key.startsWith('warm:') && ITEMS[key.slice(5)]?.garment) {
+      // This small, uncertain prior permits experimentation from an empty
+      // slot. Brain must read the learned value after use; garment definitions
+      // themselves are not evidence available to an untested person.
+      return { value: GARMENT_WARMTH_PRIOR, confidence: 0.05 };
+    }
     if (key.startsWith('eat:')) {
       const itemId = key.slice(4);
       const item = ITEMS[itemId];
@@ -113,6 +121,20 @@ export function expectedFood(person: Person, itemId: string, unknownFood = 10): 
     if (best > 0) return best;
   }
   return unknownFood;
+}
+
+/** A bounded curiosity nudge to try clothing whose warmth has not been personally tested. */
+export function garmentWarmthTrial(person: Person, itemId: string): number {
+  const key = 'warm:' + itemId;
+  if (!ITEMS[itemId]?.garment || person.beliefs.get(key)?.source === 'own' ||
+      (person.lately.get('warm-tried:' + itemId) ?? 0) > 0.1) return 0;
+  return GARMENT_WARMTH_PRIOR * curiosityNeed(person);
+}
+
+/** Expected same-slot improvement plus one curiosity-bounded first-trial nudge. */
+export function garmentWarmthGain(person: Person, itemId: string, currentItemId: string | null): number {
+  const current = currentItemId ? person.beliefs.expect('warm:' + currentItemId).value : 0;
+  return Math.max(person.beliefs.expect('warm:' + itemId).value - current, garmentWarmthTrial(person, itemId));
 }
 
 /** Expected return relative to an untried person's instinct, with room for curiosity. */

@@ -1,3 +1,13 @@
+**2026-10-10: 14c, creencias de abrigo entregadas.** Experiencia propia
+atribuible a la ropa, hipótesis de observación pública y decisiones de
+vestido/confección por expectativa con prueba de curiosidad acotada.
+[Contrato](m15_phase14c_warm_beliefs.md). Siguiente corte pequeño: retirada
+autónoma por calor. Desgaste/remiendo necesitan primero
+[condición y transferencias por prenda](m15_garment_condition_design.md),
+para no renovar ropa al quitarla o cambiar de dueño. Quedan bolsillos y
+curtido; 14c/14e y M15 siguen abiertos. Se reserva el presupuesto restante
+para verificar y guardar esta funcionalidad. Notas inferiores históricas.
+
 **2026-10-10: 14c, falda de fibra entregada.** Técnica propia de Ropa,
 paja física, abrigo sólo puesto, sustitución en cadera y arte generado.
 [Contrato y captura](m15_phase14c_fibre_skirt.md). El catálogo inicial de
