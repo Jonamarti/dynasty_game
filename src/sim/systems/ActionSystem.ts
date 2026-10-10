@@ -56,7 +56,7 @@ import type { RNG } from '../core/RNG.ts';
 import { ITEMS } from '../entities/Item.ts';
 import { animalBlow } from '../entities/AnimalAttack.ts';
 import { claimTransportAnimal } from '../core/TransportAnimals.ts';
-import { canTake, equipContainer, itemCapacityFor, stow } from '../core/Carry.ts';
+import { canTake, equipContainer, itemCapacityFor, reconcileCarry, stow } from '../core/Carry.ts';
 import {
   changeGarment, equipFor as fitToolForAction, equipItemInSlot, manualEquipRefusal,
   manualEquipSlot, manualGarmentRefusal, type ToolAction, type ManualGarmentVerb,
@@ -1619,6 +1619,7 @@ export class ActionSystem {
       this.abandon(person, result, ctx);
       return;
     }
+    reconcileCarry(person, ctx.carry, ctx.dropAt);
     // An exploratory layer that teaches nothing under a roof or hearth would
     // otherwise be put on and taken off again every time the old layer wins
     // the scorer. Keep the attempt in the ordinary decaying recency map.

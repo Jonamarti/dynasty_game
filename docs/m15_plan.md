@@ -1,3 +1,5 @@
+**Avance del 2026-10-11 — 14c, bolsillos:** túnica cosida y de lino y abrigo con alamares aportan cuatro unidades; parka, dos. Sólo cuenta la prenda propia en su hueco vestido. El lector compartido aumenta capacidad agregada y límites por objeto pequeño, sin aumentar los límites de comida o cargas grandes. Cambiarse o perder la última prenda reconcilia el exceso en montones físicos; el guardado deriva la capacidad del equipo canónico. [Contrato](m15_phase14c_pockets.md). Siguen propiedad de condición, desgaste/remiendo, curtido y estatus opcional; no se cierra 14c/14e ni M15, ni se afirma mejora económica.
+
 **Avance del 2026-10-11 — 14c, retirada por calor:** los NPC pueden quitarse una capa cuyo abrigo han probado cuando el ambiente es cálido y la deuda de frío ya es baja. Se conserva la prenda, las órdenes del jugador y las armaduras dedicadas; los umbrales están en configuración. [Contrato](m15_phase14c_heat_removal.md). No existe aún una necesidad de sobrecalentamiento ni se afirma mejora demográfica. Bolsillos y propiedad física para desgaste/remiendo siguen pendientes; 14c/14e y M15 continúan abiertos, con cohortes/matriz diferidas.
 **2026-10-10: 14a–14b, ropa puesta entregada.** Abrigo/armadura en slots del cuerpo, calor y protección sólo vestidos, órdenes cortas, apariencia y limpieza al perder propiedad. [Contrato](m15_phase14_worn_clothing.md). Catálogo con capa, túnica, envolturas de pies, polainas, mocasines y gorro; quedan otras prendas, creencias, bolsillos, deterioro y reparación14c.
 
@@ -1678,6 +1680,8 @@ convierten en túnica y manto (14c). **Es el commit más caro del bloque en
 muertes por frío**; coste declarado: ≤ 5 puntos.
 
 ### 14c. Las prendas (sub-red Ropa; medido)
+
+**Avance del 2026-10-11:** retirada autónoma por calor y bolsillos entregados en commits separados, con pruebas y capturas de hito. [Calor](m15_phase14c_heat_removal.md) y [bolsillos](m15_phase14c_pockets.md) detallan la política y los resultados. Quedan propiedad de condición, desgaste/remiendo, curtido, estatus opcional y las mediciones diferidas. No se declara cerrada 14c/14e ni M15.
 
 **Avance del 2026-10-10:** taparrabos `hide_loincloth` entregado desde la
 puerta `clothing`, con herramienta física retenida y calor 0,02 sólo en

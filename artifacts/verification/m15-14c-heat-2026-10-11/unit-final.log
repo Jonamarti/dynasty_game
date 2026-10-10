@@ -1,0 +1,175 @@
+
+> dynasty@0.15.51-alpha test
+> vitest run --maxWorkers=2 --testTimeout=15000
+
+
+ RUN  v4.1.11 C:/Users/Marty/.codex/worktrees/m15-clothing-heat-pockets/dynastyGame
+
+ ❯ src/sim/__tests__/people-knowledge.test.ts (35 tests | 1 failed) 23904ms
+     × the model is honest that sustained full contact does homogenise, over generations 165ms
+ ❯ src/sim/__tests__/polity.test.ts (32 tests | 2 failed) 5238ms
+     × arrives at the overlord's store 1473ms
+     × is broken by a king with soldiers, and its instigator cast out 187ms
+ ❯ src/sim/__tests__/start-place.test.ts (16 tests | 1 failed) 41557ms
+     × no band is camped away from fresh water, and nobody dies of thirst in a month 29437ms
+ ❯ src/sim/__tests__/world-state-peoples.test.ts (10 tests | 1 failed) 28443ms
+     × save, load, advance equals not having saved: comarca and peoples, bit for bit 15223ms
+ ❯ src/sim/__tests__/determinism.test.ts (9 tests | 1 failed) 4621ms
+     × food observation counters do not change the seeded world 1167ms
+ ❯ src/sim/__tests__/toggled-coat.test.ts (4 tests | 1 failed) 518ms
+     × is gated on tailoring and bone working and costs one coat plus two bones 14ms
+ ❯ src/sim/__tests__/compact-correspondence.test.ts (3 tests | 1 failed | 1 skipped) 79408ms
+     × lean/delta: survival and needs of an equivalent cohort agree within the declared tolerances 62722ms
+ ❯ src/sim/__tests__/earthwork-checks.test.ts (3 tests | 1 failed) 27750ms
+     × passes in diggers, where the band finishes what the chief marked out 20815ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 9 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/sim/__tests__/compact-correspondence.test.ts > compact vs detailed correspondence (small cohort, 10 days; seeds not used to measure the table) > lean/delta: survival and needs of an equivalent cohort agree within the declared tolerances
+AssertionError: expected 100 to be greater than 101.20321428571548
+ ❯ src/sim/__tests__/compact-correspondence.test.ts:36:31
+     34|       // Negative control: the same cohort with no intake is far from …
+     35|       expect(surv(r.detailed) - surv(r.closed)).toBeGreaterThanOrEqual…
+     36|       expect(r.closed.hunger).toBeGreaterThan(r.detailed.hunger + 30);
+       |                               ^
+     37|     }, 180000);
+     38|   }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/9]⎯
+
+ FAIL  src/sim/__tests__/determinism.test.ts > Simulation determinism > food observation counters do not change the seeded world
+AssertionError: expected 0 to be greater than 0
+ ❯ src/sim/__tests__/determinism.test.ts:101:62
+     99|       for (let i = 0; i < 1200; i++) observed.step();
+    100|       expect(fingerprint(observed)).toBe(fingerprint(quiet));
+    101|       expect(telemetry.get('compact_food_nutrition_gather')).toBeGreat…
+       |                                                              ^
+    102|     } finally {
+    103|       telemetry.disable();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/9]⎯
+
+ FAIL  src/sim/__tests__/earthwork-checks.test.ts > earthworks-are-dug > passes in diggers, where the band finishes what the chief marked out
+AssertionError: expected { id: 'earthworks-are-dug', …(2) } to match object { ok: true }
+(2 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+-   "ok": true,
++   "ok": false,
+  }
+
+ ❯ src/sim/__tests__/earthwork-checks.test.ts:35:26
+     33|   it('passes in diggers, where the band finishes what the chief marked…
+     34|     const report = runScenario(SCENARIOS.diggers!);
+     35|     expect(find(report)).toMatchObject({ ok: true });
+       |                          ^
+     36|     expect(find(report)?.skipped).not.toBe(true);
+     37|     // The other invariants hold with earth being moved.
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/9]⎯
+
+ FAIL  src/sim/__tests__/people-knowledge.test.ts > a technological gap persists (owner decision 2026-10-06: diffusion must be small) > the model is honest that sustained full contact does homogenise, over generations
+AssertionError: expected 0.77 to be less than 0.6
+ ❯ src/sim/__tests__/people-knowledge.test.ts:418:67
+    416|     // the table, not concentrated in the one that is new. Still a hal…
+    417|     // ten-year figure above and clear of the hot build's 0.1.
+    418|     expect(dispersion(1, LEARN_MU_START, PARTIAL_START, 120, 20)).toBe…
+       |                                                                   ^
+    419|   });
+    420| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/9]⎯
+
+ FAIL  src/sim/__tests__/polity.test.ts > tribute: carried to the overlord > arrives at the overlord's store
+AssertionError: expected 0 to be greater than 0
+ ❯ src/sim/__tests__/polity.test.ts:447:48
+    445|     }
+    446|     expect(telemetry.get('tribute_ordered')).toBeGreaterThan(0);
+    447|     expect(telemetry.get('tribute_delivered')).toBeGreaterThan(0);
+       |                                                ^
+    448|   });
+    449| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/9]⎯
+
+ FAIL  src/sim/__tests__/polity.test.ts > plots against the king > is broken by a king with soldiers, and its instigator cast out
+AssertionError: expected 2 to be 1 // Object.is equality
+
+- Expected
++ Received
+
+- 1
++ 2
+
+ ❯ src/sim/__tests__/polity.test.ts:485:26
+    483|     const { sim, band, king, instigator } = plot(2);
+    484|     for (let i = 0; i <= sim.config.time.ticksPerDay; i++) sim.step();
+    485|     expect(band.chiefId).toBe(king.id);
+       |                          ^
+    486|     expect(instigator.bandId).not.toBe(band.id);
+    487|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/9]⎯
+
+ FAIL  src/sim/__tests__/start-place.test.ts > every band camps by the water, and drinks it > no band is camped away from fresh water, and nobody dies of thirst in a month
+AssertionError: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ src/sim/__tests__/start-place.test.ts:84:28
+     82|     for (let i = 0; i < sim.config.time.ticksPerDay * 30; i++) sim.ste…
+     83|     const thirsty = [...sim.peopleById.values()].filter(p => !p.alive …
+     84|     expect(thirsty.length).toBe(0);
+       |                            ^
+     85|   }, 120_000);
+     86| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/9]⎯
+
+ FAIL  src/sim/__tests__/toggled-coat.test.ts > toggled_coat > is gated on tailoring and bone working and costs one coat plus two bones
+AssertionError: expected { slot: 'torso', warmth: 0.48, …(1) } to deeply equal { slot: 'torso', warmth: 0.48 }
+
+- Expected
++ Received
+
+  {
++   "pocket": 4,
+    "slot": "torso",
+    "warmth": 0.48,
+  }
+
+ ❯ src/sim/__tests__/toggled-coat.test.ts:23:41
+     21|     expect(TECH.toggles!.tier).toBe('craft');
+     22|     expect(RECIPES.toggled_coat!.ingredients).toEqual({ fur_coat: 1, b…
+     23|     expect(ITEMS.toggled_coat!.garment).toEqual({ slot: 'torso', warmt…
+       |                                         ^
+     24|     const { person } = fixture();
+     25|     person.inventory.add('fur_coat', 1); person.inventory.add('bone', …
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/9]⎯
+
+ FAIL  src/sim/__tests__/world-state-peoples.test.ts > saving the whole game (phase 33c) > save, load, advance equals not having saved: comarca and peoples, bit for bit
+Error: Test timed out in 15000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ src/sim/__tests__/world-state-peoples.test.ts:85:3
+     83|   };
+     84|
+     85|   it('save, load, advance equals not having saved: comarca and peoples…
+       |   ^
+     86|     const live = globe('wsp-1');
+     87|     live.current.possessFirst();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/9]⎯
+
+
+ Test Files  8 failed | 277 passed (285)
+      Tests  9 failed | 2052 passed | 1 skipped (2062)
+   Start at  00:47:23
+   Duration  506.06s (transform 16.55s, setup 0ms, import 229.55s, tests 675.85s, environment 61ms)

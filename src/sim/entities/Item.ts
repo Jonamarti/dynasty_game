@@ -70,6 +70,8 @@ export interface ItemDef {
   garment?: {
     slot: import('./Equipment.ts').GarmentSlot;
     warmth: number;
+    /** M15 phase 14c: extra room for `small` items, only while worn and owned. */
+    pocket?: number;
   };
   /**
    * M15 phase 11a. What kind of thing this is for a container's `accepts`
@@ -222,7 +224,7 @@ export const ITEMS: Record<string, ItemDef> = {
     // warmth first, so it is a fifth of what a hide cuirass gives the torso.
     protects: { torso: 0.2, left_arm: 0.12, right_arm: 0.12, left_leg: 0.06, right_leg: 0.06 },
     class: 'bulky', hand: { perHand: 1, perArms: 1, hands: 1 },
-    garment: { slot: 'torso', warmth: 0.4 },
+    garment: { slot: 'torso', warmth: 0.4, pocket: 2 },
   },
   // The only object in the game that does nothing useful at all, and the most
   // valuable thing a Palaeolithic band owns for exactly that reason.
@@ -461,7 +463,7 @@ export const ITEMS: Record<string, ItemDef> = {
   hide_cape: { id: 'hide_cape', label: 'Hide cape', nutrition: 0, spoilTicks: 0, baseValue: 6,
     class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'cloak', warmth: 0.25 } },
   sewn_tunic: { id: 'sewn_tunic', label: 'Sewn tunic', nutrition: 0, spoilTicks: 0, baseValue: 9,
-    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'torso', warmth: 0.30 } },
+    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'torso', warmth: 0.30, pocket: 4 } },
   dried_meat: { id: 'dried_meat', label: 'Dried meat', nutrition: 30, spoilTicks: 12000,
     macros: { fat: 0.45, protein: 0.55, carb: 0 }, baseValue: 8,
     class: 'food', hand: { perHand: 3, perArms: 8, hands: 1 } },
@@ -502,11 +504,11 @@ export const ITEMS: Record<string, ItemDef> = {
   // M15 phase 14c: bone toggles close a fur coat, adding torso warmth only
   // after the garment has been crafted and equipped.
   toggled_coat: { id: 'toggled_coat', label: 'Toggled coat', nutrition: 0, spoilTicks: 0, baseValue: 18,
-    class: 'bulky', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'torso', warmth: 0.48 } },
-  // M15 phase 14c: the first woven garment is warmer only when worn; pockets
-  // wait for a garment-capacity model rather than borrowing a generic slot.
+    class: 'bulky', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'torso', warmth: 0.48, pocket: 4 } },
+  // M15 phase 14c: the first woven garment is warmer and carries a few small
+  // things only when worn; packed cloth does not grant extra carrying room.
   linen_tunic: { id: 'linen_tunic', label: 'Linen tunic', nutrition: 0, spoilTicks: 0, baseValue: 10,
-    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'torso', warmth: 0.20 } },
+    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'torso', warmth: 0.20, pocket: 4 } },
 };
 
 export class Inventory {

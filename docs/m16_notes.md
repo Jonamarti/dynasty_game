@@ -1,3 +1,7 @@
+## 2026-10-11 — Observaciones heredadas al integrar bolsillos 14c
+
+`Person.age` está en días, pero el preflight existente de ropa y el gate del Brain comparan con 1, no con `daysPerYear`. La retirada por calor mantiene esa misma elegibilidad; no equivale a exigir adultez. Queda revisar en M16 la autonomía de vestido infantil y la ruta de ayuda de cuidadores, sin alterar ahora la política de edades. Las capacidades de bolsillos usan el modelo agregado de Carry, no un inventario por contenedor: aumentan límites por tipo pequeño y el techo total, sin localizar objetos individualmente. Las fechas firstKnown existentes corresponden a tecnologías de ropa, no a una datación específica de bolsas cosidas/atadas. Desgaste/remiendo necesita la propiedad física descrita en `m15_garment_condition_design.md`.
+
 # M16 — Notas diferidas durante M15
 
 ## Hierro: sensibilidad y calibración (2026-10-08)

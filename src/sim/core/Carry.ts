@@ -6,6 +6,7 @@ import { handfulsOnly } from '../entities/Pregnancy.ts';
 import type { CarryConfig } from './Config.ts';
 import { carryFactor } from '../knowledge/Tech.ts';
 import { telemetry } from './Telemetry.ts';
+import { garmentPocketCapacity } from './GarmentPockets.ts';
 
 const BARE_HANDS = 10;
 
@@ -27,7 +28,7 @@ function equippedCapacity(person: Person, itemClass?: ItemClass): number {
     if (!def?.container) continue;
     if (!itemClass || def.container.accepts.includes(itemClass)) capacity += def.container.capacity;
   }
-  return capacity;
+  return capacity + garmentPocketCapacity(person, itemClass);
 }
 
 /** Total carrying room, in units, from hands and containers actually equipped. */

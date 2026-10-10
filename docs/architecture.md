@@ -1,6 +1,6 @@
 # Architecture
 
-Current as of 2026-10-09 (M15 off-map compact band engine). No runtime
+Current as of 2026-10-11 (M15 garment heat removal and pockets). No runtime
 dependencies, Vite + a 2D canvas.
 
 ## Layout
@@ -809,3 +809,8 @@ La vista RivalHouseView recibe archivo mundial, pero cada nombre pasa por Knowle
 ## Ropa y calor — M15 14c, 2026-10-11
 
 Brain añade take_off_garment para NPC con experiencia propia de abrigo, ambiente cálido y frío bajo. Usa el temporizador e interrupciones existentes de Equipo, sin nuevas tiradas. Los umbrales se guardan en AiConfig; los checkpoints anteriores reciben los defaults completos y rechazan grupos parciales. Las armaduras dedicadas conservan su función. Ver m15_phase14c_heat_removal.md.
+
+
+## Bolsillos vestidos — M15 14c, 2026-10-11
+
+GarmentPockets comparte el cálculo entre Carry y Person. La prenda debe estar poseída en su hueco canónico; pocket aumenta capacidad agregada y límites de small, sin otro ledger de contenidos. ActionSystem reconcilia al completar cualquier cambio de ropa; transferir o dejar la última prenda usa la reconciliación existente y deposita exceso físico. La capacidad se deriva al cargar, sin campo mutable ni cambios en streams. Ver m15_phase14c_pockets.md.

@@ -1,3 +1,11 @@
+## 2026-10-11 — M15 14c, verificación de calor y bolsillos
+
+La suite completa de unidad mantiene los siete fallos heredados y añade una premisa de definición sin pocket (corregida, original repetida en 48/48 focales) y un timeout de continuidad. La misma continuidad, mismo límite y aserciones, pasa aislada en 9,83 s. Navegador 157/159: niebla heredada y preparación incorrecta de la carga en la nueva prueba de bolsillo; corregida, vestir/retirar/conservar carga pasa en la focal. Las ejecuciones completas fallidas no se describen como verdes ni se repiten. [Informe](m15_phase14c_pockets.md). Sin cohortes ni matriz pesada y sin declarar cerrada M15.
+
+## 2026-10-11 — Observaciones heredadas al integrar bolsillos 14c
+
+`Person.age` está en días, pero el preflight existente de ropa y el gate del Brain comparan con 1, no con `daysPerYear`. La retirada por calor mantiene esa misma elegibilidad; no equivale a exigir adultez. Queda revisar en M16 la autonomía de vestido infantil y la ruta de ayuda de cuidadores, sin alterar ahora la política de edades. Las capacidades de bolsillos usan el modelo agregado de Carry, no un inventario por contenedor: aumentan límites por tipo pequeño y el techo total, sin localizar objetos individualmente. Las fechas firstKnown existentes corresponden a tecnologías de ropa, no a una datación específica de bolsas cosidas/atadas. Desgaste/remiendo necesita la propiedad física descrita en `m15_garment_condition_design.md`.
+
 ## 2026-10-11 — M15 14c, retirada por calor: límites conservados
 
 El modelo todavía no tiene una necesidad de sobrecalentamiento: la retirada usa temperatura exterior positiva y deuda de frío baja, con umbrales provisionales. Una observación social que cambie el origen de la creencia de abrigo puede aplazar la retirada hasta una nueva experiencia propia; no se activa desgaste/remiendo ni curtido. El chequeo corto conserva `cravings-steer-the-diet` y `perf-budget`; la verificación de cohortes sigue diferida. Contrato y alcance en [14c calor](m15_phase14c_heat_removal.md). No se declara M15 completa.

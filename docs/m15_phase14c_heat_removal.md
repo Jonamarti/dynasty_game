@@ -1,6 +1,6 @@
 # M15 phase 14c — autonomous garment removal in heat
 
-An autonomous adult may take off a proven insulating garment when outdoor
+An autonomous NPC eligible for the existing dressing action may take off a proven insulating garment when outdoor
 temperature is clearly warm and the existing cold meter is almost settled.
 This reuses the `take_off_garment` Kit action and its short equipment timer;
 ownership stays in inventory. The scorer reads the person's own positive

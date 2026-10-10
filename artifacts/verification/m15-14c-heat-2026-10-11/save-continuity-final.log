@@ -1,0 +1,12 @@
+
+> dynasty@0.15.51-alpha test
+> vitest run src/sim/__tests__/world-state-peoples.test.ts --maxWorkers=1 --testTimeout=15000 -t save, load, advance equals
+
+
+ RUN  v4.1.11 C:/Users/Marty/.codex/worktrees/m15-clothing-heat-pockets/dynastyGame
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed | 9 skipped (10)
+   Start at  00:56:13
+   Duration  17.91s (transform 4.05s, setup 0ms, import 7.76s, tests 9.83s, environment 0ms)
