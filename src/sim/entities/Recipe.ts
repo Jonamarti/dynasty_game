@@ -798,6 +798,8 @@ export const RECIPES: Record<string, RecipeDef> = {
   smoked_fish: { id: 'smoked_fish', label: 'Smoke fish', icon: '🐟', tech: 'smoking', skill: 'cook',
     workTicks: 160, ingredients: { fish: 2, sticks: 1 }, output: { smoked_fish: 2 }, station: 'drying_rack',
     preservesInput: 'fish', requiresFire: true, keep: 4 },
+  pemmican: { id: 'pemmican', label: 'Make pemmican', icon: '🥩', tech: 'pemmican', skill: 'cook',
+    workTicks: 120, ingredients: { dried_meat: 2, fat: 1 }, output: { pemmican: 2 }, keep: 4 },
 };
 
 /** Every item any recipe can produce. Used by the "is this reachable?" tests. */

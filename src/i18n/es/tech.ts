@@ -1,5 +1,12 @@
 /** Spanish for tech. Keys are the English templates; see `i18n.ts`. */
 export const ES_TECH: Record<string, string> = {
+  'wanted a smaller, richer ration for the road': 'quería una ración más pequeña y nutritiva para el camino',
+  'wondered whether smoke would help food keep longer': 'se preguntó si el humo ayudaría a conservar la comida',
+  'thought of hanging fish on cord to keep them for another day': 'pensó en colgar pescado de una cuerda para conservarlo otro día',
+  'Preservation': 'Conservación',
+  'Pound dried meat with fat to make nourishing travel food.': 'Machacar carne seca con grasa para preparar comida nutritiva de viaje.',
+  'Dried meat and fat become nourishing food for long journeys.': 'La carne seca y la grasa se convierten en comida nutritiva para viajes largos.',
+  'pounded dried meat with fat into food that could be carried for a long journey': 'machacó carne seca con grasa para preparar comida que pudiera llevar en un viaje largo',
   'Smoking food': 'Ahumar comida',
   'Smoke meat and fish on a drying rack beside a hearth.': 'Ahumar carne y pescado en un secadero junto a una hoguera.',
   'A rack beside a hearth makes smoked food that keeps longer than dried food.': 'Un secadero junto a una hoguera produce comida ahumada que dura más que la comida seca.',

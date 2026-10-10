@@ -30,6 +30,7 @@ artifacts/screenshots/m15-phase15b-drying-2026-10-10/01-secadero-y-comida-seca.p
 The fixture orders crafts through Simulation; it does not claim a radial-menu
 click test. Vite teardown was interrupted after hanging, not a clean E2E exit.
 
-Indoor placement, smoking and the preservation sub-web, salt/pemmican and15d
-scenario/checks remain open. The era's existing netting gate remains unchanged
+Smoking, pemmican and the populated Preservation sub-web subsequently shipped
+(m15_phase15b_smoking.md and m15_phase15b_pemmican.md). Indoor placement,
+saltmaking/salting and15d scenario/checks remain open. The era's netting gate remains unchanged
 until spoilage activation is measured; no promise of survival improvement.

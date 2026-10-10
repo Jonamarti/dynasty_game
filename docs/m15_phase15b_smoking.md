@@ -15,8 +15,9 @@ learned spoils:<raw> demand gate. No new random stream or spawn draw.
 Smoked food lasts twice as long as dried food (twenty times raw) and offers
 35/23 nutrition instead of dried meat/fish's30/18. These are initial design
 values with actual Inventory.spoil/food readers, not a measured survival gain.
-Smoking stays in main until preservation has two effective child nodes.
-Salt, pemmican, indoor racks and15d remain pending;15c activation and cohorts
+Smoking initially stayed in main; pemmican subsequently supplies the second
+child and opens Preservation (m15_phase15b_pemmican.md).
+Salt, indoor racks and15d remain pending;15c activation and cohorts
 remain deferred under the owner's fast-verification instruction.
 
 ## Verification

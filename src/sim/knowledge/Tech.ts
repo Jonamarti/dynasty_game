@@ -203,6 +203,7 @@ export const TECHS = [
   'sledge', 'pack_animals', 'horse_riding', 'sail',
   'preserving',
   'smoking',
+  'pemmican',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -321,7 +322,7 @@ export type TechKind = 'practice' | 'device';
  * a node lives never changes what anyone can discover, which is why moving a
  * node between webs is bit-identical.
  */
-export type WebId = 'main' | 'arms' | 'field' | 'domestication' | 'kitchen' | 'metal';
+export type WebId = 'main' | 'arms' | 'field' | 'domestication' | 'kitchen' | 'metal' | 'preservation';
 
 export interface WebDef {
   id: WebId;
@@ -342,6 +343,7 @@ export const WEBS: Record<WebId, WebDef> = {
   // M15 phase 37: opened by the first metal anyone used, once a second node
   // (`bellows`, 37e) gives it content. The colour is the domain's verdigris.
   metal: { id: 'metal', label: 'Metal', gate: 'native_copper', color: '#3fb8a0' },
+  preservation: { id: 'preservation', label: 'Preservation', gate: 'preserving', color: '#a88a52' },
 };
 
 /** The webs that hang off a gate, in the order a screen should list them. */
@@ -466,22 +468,37 @@ export interface TechDef {
  * catch.
  */
 export const TECH: Record<Tech, TechDef> = {
+  pemmican: {
+    id: 'pemmican', label: 'Pemmican', domain: 'fire', tier: 'craft', web: 'preservation',
+    age: 'mesolithic', firstKnown: 'Mesolithic', kind: 'device',
+    requires: ['preserving'], difficulty: 0.35, skill: 'cook',
+    prototype: { dried_meat: 1, fat: 1 }, maxRefinement: 2,
+    sparks: [{ needs: [{ kind: 'knows', tech: 'preserving' }, { kind: 'holding', item: 'fat' }],
+      weight: 0.6, story: 'pounded dried meat with fat into food that could be carried for a long journey' },
+      { needs: [{ kind: 'knows', tech: 'preserving' }, { kind: 'feeling', need: 'hunger' }, { kind: 'doing', action: 'craft' }],
+        weight: 0.4, story: 'wanted a smaller, richer ration for the road' }],
+    description: 'Pound dried meat with fat to make nourishing travel food.',
+  },
   smoking: {
     id: 'smoking', label: 'Smoking food', domain: 'fire',
-    age: 'mesolithic', firstKnown: 'Mesolithic', kind: 'device',
+    age: 'mesolithic', firstKnown: 'Mesolithic', kind: 'device', web: 'preservation',
     requires: ['preserving', 'firemaking'], difficulty: 0.4, skill: 'cook',
     prototype: { meat: 1, sticks: 2 }, maxRefinement: 2,
     sparks: [{ needs: [{ kind: 'knows', tech: 'preserving' }, { kind: 'holding', item: 'dried_meat' }],
-      weight: 0.6, story: 'noticed that strips hung above the fire kept better than strips left in the air' }],
+      weight: 0.6, story: 'noticed that strips hung above the fire kept better than strips left in the air' },
+      { needs: [{ kind: 'knows', tech: 'preserving' }, { kind: 'knows', tech: 'firemaking' }, { kind: 'holding', item: 'sticks' }],
+        weight: 0.4, story: 'wondered whether smoke would help food keep longer' }],
     description: 'Smoke meat and fish on a drying rack beside a hearth.',
   },
   preserving: {
     id: 'preserving', label: 'Preserving food', domain: 'fire',
-    age: 'mesolithic', firstKnown: 'Mesolithic', kind: 'device',
+    age: 'mesolithic', firstKnown: 'Mesolithic', kind: 'device', opens: 'preservation',
     requires: ['cooking', 'cordage'], difficulty: 0.35, skill: 'cook',
     prototype: { meat: 1, rope: 1, sticks: 2 }, maxRefinement: 2,
     sparks: [{ needs: [{ kind: 'knows', tech: 'cooking' }, { kind: 'holding', item: 'meat' }],
-      weight: 0.6, story: 'hung strips of meat in the air and found that they kept longer' }],
+      weight: 0.6, story: 'hung strips of meat in the air and found that they kept longer' },
+      { needs: [{ kind: 'knows', tech: 'cooking' }, { kind: 'knows', tech: 'cordage' }, { kind: 'holding', item: 'fish' }],
+        weight: 0.4, story: 'thought of hanging fish on cord to keep them for another day' }],
     description: 'Dry meat and fish on a rack so they keep longer.',
   },
   firemaking: {
@@ -2602,6 +2619,8 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
     site: 'BUILDINGS.drying_rack and RECIPES.dried_meat/dried_fish; Inventory.spoil reads their spoilTicks' },
   smoking: { summary: 'A rack beside a hearth makes smoked food that keeps longer than dried food.',
     site: 'RECIPES.smoked_meat/smoked_fish; order, craft and Brain require a physical hearth' },
+  pemmican: { summary: 'Dried meat and fat become nourishing food for long journeys.',
+    site: 'RECIPES.pemmican and ITEMS.pemmican; ordinary eating and ComarcaInventoryTransfer ration readers' },
   spear: {
     summary: 'A blade at the end of a shaft: harder blows, first strikes, and more fish when harpooned.',
     site: 'ActionSystem.doAttack, doHunt and doHarvest; RECIPES.spear',

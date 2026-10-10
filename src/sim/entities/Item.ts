@@ -474,6 +474,9 @@ export const ITEMS: Record<string, ItemDef> = {
   smoked_fish: { id: 'smoked_fish', label: 'Smoked fish', nutrition: 23, spoilTicks: 16000,
     macros: { fat: 0.35, protein: 0.65, carb: 0 }, baseValue: 9,
     class: 'food', hand: { perHand: 3, perArms: 8, hands: 1 } },
+  pemmican: { id: 'pemmican', label: 'Pemmican', nutrition: 60, spoilTicks: 120000,
+    macros: { fat: 0.6, protein: 0.4, carb: 0 }, baseValue: 15,
+    class: 'food', hand: { perHand: 3, perArms: 8, hands: 1 } },
 };
 
 export class Inventory {

@@ -14425,3 +14425,16 @@ Captura: artifacts/screenshots/m15-phase15b-smoking-2026-10-10/01-ahumado-junto-
 82 pruebas focales y seis finales de ahumado correctas; typecheck correcto;
 E2E 1 passed con salida limpia. Single-seed conserva cravings-steer-the-diet y
 perf-budget; no cohorte ni afirmación de mejor supervivencia.15b continúa.
+
+## 2026-10-10 — m15: pemmican y sub-red Conservación (0.15.34-alpha)
+
+Carne seca y grasa producen pemmican comestible, de larga duración, con lectores
+normales de nutrición y raciones fuera de mapa. preserving abre Conservación
+al disponer de dos hijos efectivos: smoking/pemmican. Dos rutas de descubrimiento
+por nodo; se corrigen las rutas únicas de preserving/smoking que la suite global
+33 detectó como regresiones nuevas. No se relaja ninguna puerta de synthesis.
+Contrato docs/m15_phase15b_pemmican.md:112 pruebas focales y typecheck correctos;
+E2E1 passed con salida limpia, captura Equipo y clic real a Conservación.
+Capturas: artifacts/screenshots/m15-phase15b-pemmican-2026-10-10/.
+Single-seed conserva dos fallos nombrados; tasa0 y cohortes siguen diferidas.
+No se afirma mejora de supervivencia ni cierre completo de15b.

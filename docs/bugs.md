@@ -4704,3 +4704,10 @@ y fixture ironworkers corregidas;41/41+5/5 pruebas focales correctas. Junto con
 la traducción de carbón resuelven15 de los22 fallos de la copia28. Quedan los
 7 fallos del contador de comida, difusión, correspondencia, tierra, tributo,
 conspiración y sed, sin afirmar resultado global actualizado.
+
+### 2026-10-10 — descubrimiento de conservación, corregido
+La suite fija33 encontró dos regresiones nuevas de los nodos preserving/smoking:
+ruta única y preserving solo concebible con carne rara. La apertura real de
+Conservación añade rutas alternativas pescado/palos y dos rutas a pemmican.
+Synthesis y el conjunto focal pasan (112/112). La ejecución global33 se conserva
+como evidencia de los fallos originales; no se presenta como suite verde.

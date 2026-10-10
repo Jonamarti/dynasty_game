@@ -6,6 +6,10 @@ export type ItemArt = [id: string, label: string, tech: string, draw: () => stri
 export const WOOD = '#86633c', WOOD_D = '#3a2716', STONE = '#a9adb0', STONE_D = '#3d4244', BONE = '#e6dcc0', BONE_D = '#7a6d4e', CORD = '#c9b27f';
 const rot = (inner: string, deg: number, cx = 32, cy = 32): string => `<g transform="rotate(${deg} ${cx} ${cy})">${inner}</g>`;
 export const ITEMS: ItemArt[] = [
+  ['pemmican', 'Pemmican', 'pemmican', () =>
+    ell(32, 50, 23, 5, 'rgba(0,0,0,0.18)')
+    + shape(smooth([[9, 31], [19, 19], [42, 17], [55, 29], [49, 46], [25, 51], [12, 43]]), '#825433', '#3f291c')
+    + [19, 28, 37, 45].map(x => ell(x, 31 + x % 7, 3, 2, '#d4b878')).join('')],
   ['smoked_meat', 'Carne ahumada', 'smoking', () =>
     [18, 32, 46].map(x => shape(smooth([[x - 5, 13], [x + 5, 10], [x + 7, 42], [x + 2, 53], [x - 6, 45]]), '#683b29', '#301c15')
       + stroke(`M${x - 3},23L${x + 4},25M${x - 3},35L${x + 4},37`, '#b77544', 1.5)).join('')],

@@ -4414,3 +4414,10 @@ IA filtra estaciones sin fuego antes de elegir; pérdida del fuego conserva
 progreso y alimentos, con razón visible. m15_phase15b_smoking.md y captura.
 Sal/pemmican, red con dos hijos efectivos, interiores y15d siguen pendientes;
 15c y cohortes diferidas. No se declara cerrada15b.
+
+2026-10-10 — 15b pemmican y red Conservación implementados: carne seca2/grasa1,
+comida real nutritiva/duradera, consumo exacto de raciones después de JSON,
+puerta preserving en main y dos hijos efectivos smoking/pemmican. Capturas,
+112 pruebas y contrato m15_phase15b_pemmican.md. Rutas múltiples de descubrimiento
+corregidas sin relajar synthesis. Salina/salazón, interiores y15d siguen abiertos;
+15c/cohortes diferidas.15b aún no completa.
