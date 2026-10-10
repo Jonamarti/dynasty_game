@@ -14360,3 +14360,9 @@ rechazó esa propiedad. La frase «typecheck final correcto» del apunte anterio
 fue prematura. Corregida la prueba, ahora typecheck y6/6 furniture pasan.
 No cambia reglas de juego ni versión. La suite global corre en una copia fija
 del índice28 para evitar resultados mezclados mientras continúa el desarrollo.
+
+## 2026-10-10 — m15: descripción del carbón en español (0.15.29-alpha)
+
+La prueba i18n detectó que12e había cambiado el texto inglés de la tecnología
+sin sustituir su traducción. Se alinea la descripción con su función real:
+combustible de fundición, sin prometer calor por llevarlo apagado.

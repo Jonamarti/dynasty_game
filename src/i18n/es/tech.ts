@@ -415,7 +415,7 @@ export const ES_TECH: Record<string, string> = {
   "banked a fire under turf and found, come morning, black sticks that burned hotter than the wood had": "tapó un fuego con césped y al amanecer encontró palos negros que ardían más que la leña",
   "burned the chips from a felling to keep warm, and smothered the fire by accident": "quemó las astillas de una tala para entrar en calor, y ahogó el fuego sin querer",
   "wanted a fire that would last the night without being fed": "quiso un fuego que durara la noche sin darle de comer",
-  "A fuel that burns hotter than wood: a charcoal pit to make it, and a warmth to carry in the pack.": "Un combustible que arde más que la leña: una carbonera para hacerlo, y un calor que llevar en la mochila.",
+  "A fuel that burns hotter than wood: a charcoal pit to make it and furnace recipes that consume it.": "Un combustible que arde más que la leña: una carbonera para hacerlo y recetas de fundición que lo consumen.",
   "domain|metal": "metal",
   "Native copper": "Cobre nativo",
   "about 7000 BC": "hacia el 7000 a. C.",
