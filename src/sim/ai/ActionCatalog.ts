@@ -1634,7 +1634,7 @@ function craftOption(
   const label = recipe.station === undefined
     ? t('Make {thing}', { thing: aNoun(recipe.label.toLowerCase()) })
     : t('Make {thing}', { thing: t(recipe.label).toLowerCase() });
-  if (recipe.station !== undefined && !station) {
+  if (recipe.station !== undefined && (!station || !station.complete || station.ruined)) {
     // The station is missing, and saying which one is the whole point: a greyed
     // entry reading "you cannot do that" is the refusal channel failing at the
     // one moment it is easiest to get right.

@@ -3681,6 +3681,8 @@ export class Brain {
       const wantsGarment = garment && person.needs.cold > 10 && garment.warmth > currentWarmth &&
         person.inventory.count(output) < recipe.keep;
       const forSelf = ITEMS[output]?.furniture ? recipe.id === furnitureRecipe :
+        recipe.preservesInput ? person.beliefs.expect('spoils:' + recipe.preservesInput).value > 0 &&
+          person.inventory.count(output) < recipe.keep :
         garment ? wantsGarment : isTorchRecipe ? wantsTorch : person.inventory.count(output) < recipe.keep;
       const forSite = site !== null && site.stillNeeds(output) > 0;
       if (!forSelf && !forSite) continue;
@@ -3701,7 +3703,7 @@ export class Brain {
         const stationId = recipe.station;
         station = this.pickBest(
           ctx.buildings.filter(b =>
-            b.complete && b.def.id === stationId && this.canUse(person, b, ctx)),
+            b.complete && !b.ruined && b.def.id === stationId && this.canUse(person, b, ctx)),
           b => -person.distanceTo({ x: b.centerX, y: b.centerY })
         );
         if (!station) continue;

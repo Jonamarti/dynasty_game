@@ -4401,3 +4401,9 @@ deterioro y reparación pendientes; no se declara14c completa.
 sin aprender estimaciones secas ni inspeccionar mochilas privadas; dueños de
 almacén presentes y dentro de vista. m15_phase15b_spoil_learning.md. Recetas y
 red Conservación pendientes; tasa por defecto0 y15c sigue diferida.
+
+2026-10-10 — 15b secadero exterior y preserving implementados: dos recetas
+comestibles duran10×, misma nutrición/macros, demanda por creencia de pérdida,
+estación usable, progreso/interrupciones compartidos. m15_phase15b_drying.md.
+78 pruebas focales y typecheck correctos; captura en contrato. Ahumado/red,
+sal/pemmican, interiores y15d pendientes;15c sigue diferida.

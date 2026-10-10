@@ -14399,3 +14399,15 @@ instrumento por origen. Dos pruebas nuevas fallan sin el lector,4/4 pasan y
 typecheck pasa. Reporte corto mantiene fallos iniciales de dieta y perf-budget.
 Contrato m15_phase15b_spoil_learning.md; recetas/activación pendientes. Sin UI
 nueva ni afirmación de mejora económica; cohortes diferidas.
+
+## 2026-10-10 — m15: secadero y comida seca (0.15.32-alpha)
+
+Preserving y estación exterior producen carne/pescado secos con duración10×
+y nutrición conservada. NPC conserva por creencia de pérdida real, no por
+estación del año. Los lectores de craft rechazan estaciones arruinadas y
+reportan motivo antes de consumir materiales. Arte generado, traducciones,
+persistencia e interrupciones. Contrato m15_phase15b_drying.md;78/78 focales y
+typecheck correctos. Reporte corto mantiene fallos iniciales dieta/perf-budget.
+Captura: artifacts/screenshots/m15-phase15b-drying-2026-10-10/01-secadero-y-comida-seca.png.
+Caso E2E ok15,2s; teardown Vite bloqueado/interrumpido. Sin cohorte ni afirmación
+de mejora económica. Ahumado, sal/pemmican, interiores y15d siguen abiertos.

@@ -741,6 +741,12 @@ export const BUILDINGS: Record<string, BuildingDef> = {
       'A stack of deadwood sealed under turf and left to smoulder. What comes ' +
       'out is black, light, and burns hotter than the wood that went in.',
   },
+  drying_rack: {
+    id: 'drying_rack', label: 'Drying rack', icon: '🥩', width: 2, height: 1,
+    materials: { wood: 2, rope: 2 }, workTicks: 120, shelter: 0, storage: 0,
+    station: true, requiresTech: 'preserving',
+    description: 'An open wooden frame for drying strips of meat and fish.',
+  },
 };
 
 // --- M15 phase 26c: designs that move ground -----------------------------------

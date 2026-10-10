@@ -4732,7 +4732,7 @@ export class ActionSystem {
     if (recipe.station !== undefined) {
       const stationId = recipe.station;
       const station = this.reachBuilding(person, ctx, {
-        ok: building => building.complete && building.def.id === stationId,
+        ok: building => building.complete && !building.ruined && building.def.id === stationId,
         reason: 'no_station_' + stationId,
       }, 'trespass');
       if (!station) return;

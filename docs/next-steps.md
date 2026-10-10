@@ -1666,3 +1666,6 @@ para resultado completo de la suite fija28:22 fallos, sin ocultar premisas vieja
 
 2026-10-10: lector spoils:<item>15b implementado con visibilidad/propiedad;
 continúa la red y recetas de conservación, con tasa general aún0.
+
+2026-10-10: preserving/secadero exterior15b entregado; faltan ahumado/red,
+sal y pemmican, colocación interior y15d. No cambia activación15c ni gate de era.

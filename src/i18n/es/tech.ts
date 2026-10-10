@@ -1,5 +1,9 @@
 /** Spanish for tech. Keys are the English templates; see `i18n.ts`. */
 export const ES_TECH: Record<string, string> = {
+  'Preserving food': 'Conservar comida',
+  'Dry meat and fish on a rack so they keep longer.': 'Secar carne y pescado en un secadero para que duren más.',
+  'A drying rack makes meat and fish that spoil ten times more slowly.': 'El secadero produce carne y pescado que se estropean diez veces más despacio.',
+  'hung strips of meat in the air and found that they kept longer': 'colgó tiras de carne al aire y descubrió que duraban más',
   "Firemaking": "Hacer fuego",
   "about 400,000 years ago": "hace unos 400.000 años",
   "about 15,000 years ago": "hace unos 15.000 años",

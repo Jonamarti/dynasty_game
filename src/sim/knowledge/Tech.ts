@@ -201,6 +201,7 @@ export const TECHS = [
   'ploughshare',
   // M15 phase 35: physical transport and its journey policy ship together.
   'sledge', 'pack_animals', 'horse_riding', 'sail',
+  'preserving',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -464,6 +465,15 @@ export interface TechDef {
  * catch.
  */
 export const TECH: Record<Tech, TechDef> = {
+  preserving: {
+    id: 'preserving', label: 'Preserving food', domain: 'fire',
+    age: 'mesolithic', firstKnown: 'Mesolithic', kind: 'device',
+    requires: ['cooking', 'cordage'], difficulty: 0.35, skill: 'cook',
+    prototype: { meat: 1, rope: 1, sticks: 2 }, maxRefinement: 2,
+    sparks: [{ needs: [{ kind: 'knows', tech: 'cooking' }, { kind: 'holding', item: 'meat' }],
+      weight: 0.6, story: 'hung strips of meat in the air and found that they kept longer' }],
+    description: 'Dry meat and fish on a rack so they keep longer.',
+  },
   firemaking: {
     id: 'firemaking', label: 'Firemaking', domain: 'fire',
     age: 'middle_palaeolithic', firstKnown: 'about 400,000 years ago',
@@ -2578,6 +2588,8 @@ export interface TechEffect {
 }
 
 export const TECH_EFFECTS: Record<Tech, TechEffect> = {
+  preserving: { summary: 'A drying rack makes meat and fish that spoil ten times more slowly.',
+    site: 'BUILDINGS.drying_rack and RECIPES.dried_meat/dried_fish; Inventory.spoil reads their spoilTicks' },
   spear: {
     summary: 'A blade at the end of a shaft: harder blows, first strikes, and more fish when harpooned.',
     site: 'ActionSystem.doAttack, doHunt and doHarvest; RECIPES.spear',
@@ -3350,10 +3362,9 @@ export function warmthFrom(person: Person): number {
  * marker of the period, so the rung is honest as well as useful.
  *
  * **The Mesolithic asks for `netting` where the plan asked for `preserving`**,
- * because `preserving` is the one node of M8.1's fourteen that was deliberately
- * held back — see `docs/next-steps.md` §0b, spoilage is built and switched off.
- * Nets and the fish they take are as Mesolithic as anything in the tier, and
- * the rung can be revisited if spoilage is ever switched on.
+ * because preserving was held back when this era contract was pinned. M15
+ * now supplies actual drying, but default spoilage activation still awaits
+ * measurement. Keep the existing era gate until that separate activation.
  */
 export interface EraDef {
   /** One of `AGES`: the ladder and `TechDef.age` share a vocabulary. */

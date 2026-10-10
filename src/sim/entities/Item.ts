@@ -462,6 +462,12 @@ export const ITEMS: Record<string, ItemDef> = {
     class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'cloak', warmth: 0.25 } },
   sewn_tunic: { id: 'sewn_tunic', label: 'Sewn tunic', nutrition: 0, spoilTicks: 0, baseValue: 9,
     class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'torso', warmth: 0.30 } },
+  dried_meat: { id: 'dried_meat', label: 'Dried meat', nutrition: 30, spoilTicks: 12000,
+    macros: { fat: 0.45, protein: 0.55, carb: 0 }, baseValue: 8,
+    class: 'food', hand: { perHand: 3, perArms: 8, hands: 1 } },
+  dried_fish: { id: 'dried_fish', label: 'Dried fish', nutrition: 18, spoilTicks: 8000,
+    macros: { fat: 0.35, protein: 0.65, carb: 0 }, baseValue: 7,
+    class: 'food', hand: { perHand: 3, perArms: 8, hands: 1 } },
 };
 
 export class Inventory {

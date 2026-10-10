@@ -42,6 +42,14 @@ const flame = (x: number, y: number, s = 1): string => shape(smooth([[x, y - 20 
 const smoke = (x: number, y: number): string => `<path d="M${x},${y}Q${x - 8},${y - 10} ${x},${y - 20}T${x + 2},${y - 40}" fill="none" stroke="rgba(230,230,230,0.5)" stroke-width="5" stroke-linecap="round"/>`;
 
 export const BUILDINGS: BuildingArt[] = [
+  ['drying_rack', 'Secadero', 'preserving', 128, () =>
+    gShadow(64, 104, 50, 9)
+    + limb([[20, 105], [20, 30]], 5, WOOD, B.L)
+    + limb([[106, 105], [106, 30]], 5, WOOD, B.L)
+    + limb([[16, 34], [111, 34]], 5, WOOD, B.L)
+    + [32, 52, 74, 94].map(x => stroke(`M${x},34L${x},49`, CORD, 1.6)
+      + shape(smooth([[x - 5, 48], [x + 5, 48], [x + 7, 70], [x + 2, 83], [x - 6, 74]]), '#914d32', '#4a2719')).join('')
+    + stroke('M20,88L106,88', WOOD, 3)],
   ['mud_hut', 'Choza de barro', 'wattle_daub / hoy: “mud_hut”', 144, () =>
     gShadow(74, 100, 58, 12)
     + shape('M18,98C18,50 42,26 72,26C102,26 126,50 126,98Z', B.mud, B.L)

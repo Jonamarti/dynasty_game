@@ -6,6 +6,12 @@ export type ItemArt = [id: string, label: string, tech: string, draw: () => stri
 export const WOOD = '#86633c', WOOD_D = '#3a2716', STONE = '#a9adb0', STONE_D = '#3d4244', BONE = '#e6dcc0', BONE_D = '#7a6d4e', CORD = '#c9b27f';
 const rot = (inner: string, deg: number, cx = 32, cy = 32): string => `<g transform="rotate(${deg} ${cx} ${cy})">${inner}</g>`;
 export const ITEMS: ItemArt[] = [
+  ['dried_meat', 'Carne seca', 'preserving', () =>
+    [18, 32, 46].map(x => shape(smooth([[x - 5, 13], [x + 5, 10], [x + 7, 42], [x + 2, 53], [x - 6, 45]]), '#914d32', '#4a2719')).join('')],
+  ['dried_fish', 'Pescado seco', 'preserving', () =>
+    shape(smooth([[8, 32], [19, 20], [37, 21], [49, 32], [37, 44], [19, 43]]), '#a3a086', '#4f4a32')
+    + shape(poly([[46, 32], [58, 20], [58, 44]]), '#807b60', '#4f4a32')
+    + ell(18, 29, 2, 2, '#27251b') + stroke('M26,24L26,39M34,24L34,39', '#665e43', 1.2)],
   ['hide_cape', 'Capa de piel', 'clothing', () =>
     shape(smooth([[20, 10], [32, 16], [44, 10], [58, 48], [44, 55], [20, 55], [6, 48]]), '#aa875a', '#513a24')
     + stroke('M20,10Q32,22 44,10M32,18L32,49', CORD, 1.6)],

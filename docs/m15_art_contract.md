@@ -83,3 +83,7 @@ cloak_back/cloak_front variants cloak; sewn_tunic uses torso_wear/sleeves
 variant tunic, including belly_wear for pregnancy. Ownership and actual slots
 control visibility. Inventory icons item/hide_cape and item/sewn_tunic come
 from art/src/props/items.ts; sheets regenerated with art:build.
+
+2026-10-10 — preserving: building/drying_rack tiene armazón y tiras colgadas;
+item/dried_meat y item/dried_fish tienen iconos propios generados. Fuentes:
+art/src/buildings/buildings.ts y art/src/props/items.ts; art:build actualizado.

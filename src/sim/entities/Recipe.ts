@@ -56,6 +56,8 @@ export interface RecipeDef {
   ingredientOptions?: Record<string, number>[];
   /** One of these owned tools is required and retained after work completes. */
   toolOptions?: string[];
+  /** Preservation demand is learned from actual loss of this raw input. */
+  preservesInput?: string;
   output: Record<string, number>;
   /**
    * A `BUILDINGS` id this must be made at, or undefined for anywhere.
@@ -782,6 +784,12 @@ export const RECIPES: Record<string, RecipeDef> = {
   sewn_tunic: { id: 'sewn_tunic', label: 'Sewn tunic', icon: '👕', tech: 'tailoring', skill: 'build',
     workTicks: 130, ingredients: { hide: 3, sinew: 2 }, toolOptions: ['needle'],
     output: { sewn_tunic: 1 }, keep: 1 },
+  dried_meat: { id: 'dried_meat', label: 'Dry meat', icon: '🥩', tech: 'preserving', skill: 'cook',
+    workTicks: 120, ingredients: { meat: 2 }, output: { dried_meat: 2 }, station: 'drying_rack',
+    preservesInput: 'meat', keep: 4 },
+  dried_fish: { id: 'dried_fish', label: 'Dry fish', icon: '🐟', tech: 'preserving', skill: 'cook',
+    workTicks: 120, ingredients: { fish: 2 }, output: { dried_fish: 2 }, station: 'drying_rack',
+    preservesInput: 'fish', keep: 4 },
 };
 
 /** Every item any recipe can produce. Used by the "is this reachable?" tests. */
