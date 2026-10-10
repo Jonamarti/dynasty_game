@@ -3908,6 +3908,18 @@ Added the moods-move-choices health check, comparing talk frequency in the low a
 
 # Changelog
 
+## 2026-10-10 — M15 11d: recoger herramientas para una tarea real
+
+Los NPC pueden recoger hachas o armas conocidas cuando ya tienen una tala o
+caza útil y les falta herramienta. Buscan por pileHash, respetan propiedad,
+región y carga; el trabajo prepara la herramienta con el retraso existente.
+Comida, materiales y herramientas compiten en una sola fila pickup, con score
+de su oportunidad compatible. La regresión autónoma recoge, equipa y caza;
+14 focales y typecheck pasan. La semilla mantiene dieta/rendimiento en rojo,
+sin nuevos checks fallidos; rendimiento bajo concurrencia no es comparación.
+Sin cambios UI. Cohortes/matriz diferidas. Versión 0.15.12-alpha.
+[Contrato](m15_npc_tool_pickup.md).
+
 ## 2026-10-10 — M15 34: limitar el crédito de comida al pedido
 
 La retirada fraccionaria de bayas podía acreditar una ULP de nutrición de más

@@ -46,6 +46,7 @@ import { chooseCravingFood } from './FoodChoice.ts';
 import { ITEMS } from '../entities/Item.ts';
 import {
   TECH, techPower, prerequisitesMet, answerPressure, workableIdea as chooseWorkableIdea, type Tech,
+  AXE_TOOLS, weaponItemOf,
 } from '../knowledge/Tech.ts';
 import { wantedOreKinds } from '../knowledge/Ore.ts';
 import {
@@ -361,6 +362,20 @@ interface FoundTargets {
   praiseSubjectId: number | null;
   proposalListener: Person | null;
   proposalSite: Building | null;
+}
+
+/** Match a ground tool only to the kind of work that can use it. */
+export function toolOpportunityScore(
+  itemId: string,
+  needsAxe: boolean,
+  needsWeapon: boolean,
+  chopScore: number,
+  huntScore: number,
+  handsForWeapon: 1 | 2,
+): number {
+  if (AXE_TOOLS.some(tool => tool.item === itemId)) return needsAxe ? chopScore : 0;
+  const item = ITEMS[itemId];
+  return needsWeapon && item?.weapon && item.hand.hands <= handsForWeapon ? huntScore : 0;
 }
 
 /** A drive may retain only an action whose chosen target actually answers it. */
@@ -1193,7 +1208,6 @@ export class Brain {
           pickupItem = itemId;
         }
       }
-      if (pickupPile) add('pickup', pickupBest);
     }
 
     // --- Pick fruit --------------------------------------------------------
@@ -2911,7 +2925,6 @@ export class Brain {
                 pickupBest = score;
                 pickupPile = pile;
                 pickupItem = itemId;
-                add('pickup', score);
               }
             }
           }
@@ -3304,6 +3317,56 @@ export class Brain {
           * this.proximityBonus(person, quarry, ctx.sightRadius));
       }
     }
+
+    // M15 phase 11d: a useful tool on the ground should be reachable by the
+    // worker who has a real job for it. Keep this tied to an already-scored
+    // chop/hunt opportunity; otherwise tools become another stockpiling urge.
+    // The selected item is still transferred by the ordinary `pickup` action,
+    // which rechecks ownership rules and carry capacity at execution time.
+    if (!person.isPlayer && ctx.pileHash && ctx.pilesById?.size && ctx.carry &&
+        person.carrying < person.carryCapacity && (fellTree || quarry)) {
+      const chopScore = fellTree ? scores.find(row => row.id === 'chop')?.score ?? 0 : 0;
+      const huntScore = quarry ? scores.find(row => row.id === 'hunt')?.score ?? 0 : 0;
+      const needsAxe = chopScore > 0 && !AXE_TOOLS.some(tool =>
+        person.inventory.has(tool.item) && techPower(person, tool.tech) > 0);
+      const handsForWeapon = person.armsTaken === 0 ? 2 : 1;
+      const needsWeapon = huntScore > 0 &&
+        weaponItemOf(person, true, false, handsForWeapon) === null;
+      if (needsAxe || needsWeapon) {
+        const wantedTools = new Set<string>();
+        if (needsAxe) for (const tool of AXE_TOOLS) {
+          if (techPower(person, tool.tech) > 0) wantedTools.add(tool.item);
+        }
+        if (needsWeapon) for (const [itemId, def] of Object.entries(ITEMS)) {
+          if (def.weapon && def.hand.hands <= handsForWeapon &&
+              techPower(person, def.weapon.tech as Tech) > 0) wantedTools.add(itemId);
+        }
+        if (wantedTools.size > 0) {
+          for (const pile of ctx.pileHash.queryRadius(person.x, person.y, ctx.sightRadius, this.nearbyPiles)) {
+            if (pile.empty || !ctx.world.sameRegion(person.x, person.y, pile.x, pile.y) ||
+                !mayTakeFromPile(person, pile, ctx.peopleById, ctx)) continue;
+            for (const [itemId, count] of pile.contents.entries()) {
+              if (count <= 0 || !wantedTools.has(itemId) || !canTake(person, ctx.carry, itemId, 1)) continue;
+              const workScore = toolOpportunityScore(
+                itemId, needsAxe, needsWeapon, chopScore, huntScore, handsForWeapon);
+              if (workScore <= 0) continue;
+              // Acquiring the missing tool must win over beginning the same job;
+              // after pickup, the ordinary work score becomes selectable again.
+              const score = workScore * 1.15 * this.proximityBonus(person, pile, ctx.sightRadius);
+              if (score > pickupBest) {
+                pickupBest = score;
+                pickupPile = pile;
+                pickupItem = itemId;
+              }
+            }
+          }
+        }
+      }
+    }
+    // All pickup motives share one action row and the target with the best
+    // matching score. Adding one row per motive inflated its choice weight and
+    // could pair a high food score with a lower-scoring building/tool target.
+    if (pickupPile && pickupItem && pickupBest > 0) add('pickup', pickupBest);
 
     // --- Shelter and sleep -------------------------------------------------
     // Fatigue can call for a nap in daylight too. Use a local spatial query,

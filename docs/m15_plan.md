@@ -1250,6 +1250,14 @@ sesiones a tiempo antes de tocar los pesos de recolección.
 
 ### 11d. Lo que hace un NPC con las manos (medido)
 
+**Avance 2026-10-10 — recoger herramientas de oficio.** Una oportunidad real
+de tala/caza permite buscar la herramienta conocida que falta en pilas locales
+con propiedad y carga válidas. Una sola fila pickup conserva score y objetivo;
+un hacha no recibe urgencia de caza ni un arma urgencia de tala. Control
+autónomo recoge, equipa y caza; 14 focales pasan y TypeScript limpio.
+[Contrato](m15_npc_tool_pickup.md). Quedan controles manuales de huecos;
+cohortes aplazadas, sin afirmación de mejora económica.
+
 - **Avance 2026-10-03 — preparar herramienta:** hacha efectiva para talar,
   arma para cazar y manos vacías para recolectar. La preparación cuesta tres
   ticks en un contador propio y vuelve a comprobar posesión y brazos; un bebé
