@@ -30,7 +30,7 @@ export interface WornGarments {
   feet?: 'boots' | 'wraps';
   hands?: 'gloves';
   head?: 'cap' | 'hood';
-  cloak?: 'cloak';
+  cloak?: 'cloak' | 'wool_cloak';
 }
 
 export interface PersonAspect {

@@ -62,8 +62,10 @@ export function wornGarmentsOf(person: Person): PersonAspect['wear'] {
   const torso = torsoDef?.slot === 'torso' && torsoId && person.inventory.count(torsoId) > 0 &&
     (torsoId === 'fur_coat' || torsoId === 'toggled_coat' || torsoId === 'hide_armour' || torsoId === 'sewn_tunic' || torsoId === 'linen_tunic')
     ? torsoId === 'sewn_tunic' ? 'tunic' : torsoId : undefined;
-  const cloak = person.equipment.cloak?.item === 'hide_cape' && person.inventory.count('hide_cape') >= 1
-    ? 'cloak' as const : undefined;
+  const cloakId = person.equipment.cloak?.item;
+  const cloak = cloakId && person.inventory.count(cloakId) >= 1
+    ? cloakId === 'hide_cape' ? 'cloak' as const : cloakId === 'wool_cloak' ? 'wool_cloak' as const : undefined
+    : undefined;
   const feetId = person.equipment.feet?.item;
   const feet = feetId && person.inventory.count(feetId) >= 1
     ? feetId === 'foot_wraps' ? 'wraps' as const : feetId === 'moccasins' ? 'boots' as const : undefined

@@ -1,3 +1,5 @@
+**2026-10-10: 14c, manto de lana entregado.** Paño de lana físico, abrigo sólo puesto y sustitución de capa sin sumar ambas. [Contrato y captura](m15_phase14c_wool_cloak.md). Sigue subred Ropa; catálogo inicial restante, bolsillos/desgaste/reparación pendientes.
+
 **2026-10-10: 14c, túnica de lino entregada.** Tela/hilo, aguja retenida, abrigo del torso y capa visual de lino. [Contrato y captura](m15_phase14c_linen_tunic.md). Sigue manto de lana y subred Ropa; bolsillos/desgaste/reparación pendientes.
 
 **2026-10-10: 14c, parka con alamares entregada.** Nodo de receta, materiales físicos, abrigo sólo puesto y capa con cierres de hueso. [Contrato y captura](m15_phase14c_toggles.md). Siguen túnica de lino y manto de lana; bolsillos/desgaste/reparación pendientes.

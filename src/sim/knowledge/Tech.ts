@@ -211,6 +211,7 @@ export const TECHS = [
   'fur_hat',
   'toggles',
   'linen_tunic',
+  'wool_cloak',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -513,6 +514,19 @@ export const TECH: Record<Tech, TechDef> = {
         weight: 0.5, story: 'sewed a woven tunic to keep the warmth from escaping' },
     ],
     description: 'Woven linen sewn into a light tunic that warms the torso only while worn.',
+  },
+  wool_cloak: {
+    id: 'wool_cloak', label: 'Wool cloak', domain: 'cloth', tier: 'craft',
+    age: 'neolithic', firstKnown: 'about 6,000 BC',
+    kind: 'device', requires: ['wool'], difficulty: 0.35, skill: 'build',
+    prototype: { wool_cloth: 2 }, maxRefinement: 3,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'wool' }, { kind: 'holding', item: 'wool_cloth' }, { kind: 'feeling', need: 'cold' }],
+        weight: 0.8, story: 'wrapped woven wool around their shoulders against the cold' },
+      { needs: [{ kind: 'knows', tech: 'wool' }, { kind: 'holding', item: 'wool_cloth' }, { kind: 'season', season: 'winter' }],
+        weight: 0.5, story: 'folded a thick woollen cloth over their shoulders for winter' },
+    ],
+    description: 'A woven wool cloak warms the shoulders only while worn.',
   },
   moccasins: {
     id: 'moccasins', label: 'Moccasins', domain: 'cloth',
@@ -2722,6 +2736,8 @@ export interface TechEffect {
 }
 
 export const TECH_EFFECTS: Record<Tech, TechEffect> = {
+  wool_cloak: { summary: 'A wool cloak warms the shoulders only while worn.',
+    site: 'RECIPES.wool_cloak; ITEMS.wool_cloak garment; warmthFrom and Renderer.wornGarmentsOf' },
   linen_tunic: { summary: 'A linen tunic warms the torso only while worn.',
     site: 'RECIPES.linen_tunic retained needle; ITEMS.linen_tunic garment; warmthFrom and Renderer.wornGarmentsOf' },
   toggles: { summary: 'Bone toggles fasten a fur coat closed and warm the torso only while worn.',

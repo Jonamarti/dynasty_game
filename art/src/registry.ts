@@ -57,7 +57,7 @@ export function collectPeople(): Collected {
   const wears: Wear[] = [
     ...TORSO.map(torso => ({ torso })),
     { legs: 'trousers' }, { feet: 'boots' }, { feet: 'wraps' }, { hands: 'gloves' },
-    { head: 'cap' }, { head: 'hood' }, { cloak: 'cloak' },
+    { head: 'cap' }, { head: 'hood' }, { cloak: 'cloak' }, { cloak: 'wool_cloak' },
   ];
   for (const age of ART_AGES) {
     for (const sex of ART_SEXES) {

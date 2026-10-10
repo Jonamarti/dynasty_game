@@ -81,9 +81,10 @@ function person(over: AspectOver, label: string, row: HTMLElement): void {
   const sets: [string, WornGarments][] = [
     ['none', {}], ['cape', { torso: 'cape' }], ['wrap', { torso: 'wrap' }], ['tunic', { torso: 'tunic' }], ['longtunic', { torso: 'longtunic' }],
     ['trousers', { legs: 'trousers' }], ['boots', { feet: 'boots' }], ['foot wraps', { feet: 'wraps' }], ['gloves', { hands: 'gloves' }],
-    ['cap', { head: 'cap' }], ['hood', { head: 'hood' }], ['cloak', { cloak: 'cloak' }],
+    ['cap', { head: 'cap' }], ['hood', { head: 'hood' }], ['cloak', { cloak: 'cloak' }], ['wool cloak', { cloak: 'wool_cloak' }],
     ['gloves+cape', { hands: 'gloves', torso: 'cape' }], ['tunic+trousers+boots+cap', { torso: 'tunic', legs: 'trousers', feet: 'boots', head: 'cap' }],
     ['everything (wool)', { torso: 'longtunic', legs: 'trousers', feet: 'boots', hands: 'gloves', head: 'hood', cloak: 'cloak' }],
+    ['everything (wool cloak)', { torso: 'longtunic', legs: 'trousers', feet: 'boots', hands: 'gloves', head: 'hood', cloak: 'wool_cloak' }],
   ];
   for (const [label, wear] of sets) {
     for (const dir of ['S', 'E', 'N'] as ArtDir[]) {

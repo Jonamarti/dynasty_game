@@ -1693,8 +1693,12 @@ tela 2 e hilo 1, aguja retenida, torso con abrigo 0,20 sólo puesto. Su capa
 usa lino natural y conserva la ropa sustituida y el equipo en JSON.
 [Contrato y captura](m15_phase14c_linen_tunic.md). Bolsillos todavía pendientes.
 
-### 14d. Estatus (medido; opcional dentro de la fase)
+**2026-10-10, avance 14c:** manto de lana `wool_cloak` entregado tras lana:
+paño de lana 2, abrigo 0,35 sólo en el hueco capa. Sustituye la capa de piel
+sin sumar ambas y sin destruirla, con variante visual de lana y JSON.
+[Contrato y captura](m15_phase14c_wool_cloak.md). Sigue integrar la subred Ropa.
 
+### 14d. Estatus (medido; opcional dentro de la fase)
 
 `garment.status` suma al motivo de estatus (fase 5d) de quien la lleva y a la
 primera impresión que causa (`firstImpression`, M11 fase 7). Nodos: `beads`

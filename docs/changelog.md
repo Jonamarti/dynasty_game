@@ -1,3 +1,17 @@
+## 2026-10-10 — m15: manto de lana
+
+`0.15.44-alpha`: receta de dos paños de lana tras conocimiento individual de
+lana, sin volver a pedir telar al trabajar el paño terminado. Prenda de capa
+con abrigo 0,35 sólo puesta; sustituye la piel y conserva su copia, sin sumar
+ambas. Capa visible de lana, icono generado, español y JSON incluidos.
+
+Contrato: `docs/m15_phase14c_wool_cloak.md`. Captura nueva:
+`artifacts/screenshots/m15-phase14c-wool-cloak-2026-10-10/01-manto-de-lana.png`.
+Typecheck y 104 pruebas focales pasan; el e2e español reporta 1/1 y verifica
+la versión .44. Su cierre de servidor quedó abierto y se interrumpió después
+de guardar la captura. El chequeo corto conserva 2/147 fallos conocidos de antojos y rendimiento.
+No se declara mejora de supervivencia; cohortes y matriz pesada diferidas.
+
 ## 2026-10-10 — m15: túnica de lino
 
 `0.15.43-alpha`: nodo de receta tras tejido, tela 2 e hilo 1 con aguja

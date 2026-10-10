@@ -1,5 +1,10 @@
 /** Spanish for tech. Keys are the English templates; see `i18n.ts`. */
 export const ES_TECH: Record<string, string> = {
+  'wrapped woven wool around their shoulders against the cold': 'se envolvió los hombros con lana tejida para protegerse del frío',
+  'folded a thick woollen cloth over their shoulders for winter': 'se echó sobre los hombros un paño grueso de lana para el invierno',
+  'A woven wool cloak warms the shoulders only while worn.': 'Una capa de lana tejida abriga los hombros solo cuando se lleva puesta.',
+  'A wool cloak warms the shoulders only while worn.': 'Una capa de lana abriga los hombros solo cuando se lleva puesta.',
+  'RECIPES.wool_cloak; ITEMS.wool_cloak garment; warmthFrom and Renderer.wornGarmentsOf': 'RECIPES.wool_cloak; prenda ITEMS.wool_cloak; warmthFrom y Renderer.wornGarmentsOf',
   'Linen tunic': 'Túnica de lino',
   'cut woven flax cloth and stitched it into a tunic': 'cortó tela de lino tejida y la cosió para hacer una túnica',
   'sewed a woven tunic to keep the warmth from escaping': 'cosió una túnica tejida para conservar el calor',

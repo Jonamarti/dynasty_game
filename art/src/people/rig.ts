@@ -31,7 +31,7 @@ export interface Wear {
   feet?: 'boots' | 'wraps';
   hands?: 'gloves';
   head?: 'cap' | 'hood';
-  cloak?: 'cloak';
+  cloak?: 'cloak' | 'wool_cloak';
 }
 
 export interface PersonSpec {
@@ -260,20 +260,22 @@ function torsoWearFront(t: Wear['torso'], G: FrontG, back: boolean): string {
   return out.join('');
 }
 
-function cloakOverFront(G: FrontG, back: boolean): string {
+function cloakOverFront(G: FrontG, back: boolean, wool: boolean): string {
   const { cx, sY, hipY, sh, g } = G;
+  const fill = wool ? W.wool : W.hide, line = wool ? W.woolLine : W.hideLine;
+  const dark = wool ? W.woolD : W.hideD;
   if (back) {
     const y2 = hipY + g.leg * 0.55;
-    return shape(poly([[cx - sh - 1, sY + 0.4], [cx + sh + 1, sY + 0.4], [cx + sh + 6, y2], [cx - sh - 6, y2]]), W.wool, W.woolLine)
-      + stroke(`M${cx},${sY + 3}L${cx},${y2 - 1.5}`, W.woolD, 0.9);
+    return shape(poly([[cx - sh - 1, sY + 0.4], [cx + sh + 1, sY + 0.4], [cx + sh + 6, y2], [cx - sh - 6, y2]]), fill, line)
+      + stroke(`M${cx},${sY + 3}L${cx},${y2 - 1.5}`, dark, 0.9);
   }
-  return shape(`M${cx - sh - 2.4},${sY + 0.8}Q${cx},${sY + 5.4} ${cx + sh + 2.4},${sY + 0.8}L${cx + sh + 3},${sY + 5}Q${cx},${sY + 9.6} ${cx - sh - 3},${sY + 5}Z`, W.wool, W.woolLine)
-    + ell(cx, sY + 5.6, 1.7, 1.7, W.gold, W.woolLine);
+  return shape(`M${cx - sh - 2.4},${sY + 0.8}Q${cx},${sY + 5.4} ${cx + sh + 2.4},${sY + 0.8}L${cx + sh + 3},${sY + 5}Q${cx},${sY + 9.6} ${cx - sh - 3},${sY + 5}Z`, fill, line)
+    + ell(cx, sY + 5.6, 1.7, 1.7, dark, line);
 }
 
-const cloakPanelFront = (G: FrontG): string => {
+const cloakPanelFront = (G: FrontG, wool: boolean): string => {
   const { cx, sY, hipY, sh, g } = G;
-  return shape(poly([[cx - sh - 1.5, sY + 1], [cx + sh + 1.5, sY + 1], [cx + sh + 7.5, hipY + g.leg * 0.5], [cx - sh - 7.5, hipY + g.leg * 0.5]]), shade(W.wool, 0.8), W.woolLine);
+  return shape(poly([[cx - sh - 1.5, sY + 1], [cx + sh + 1.5, sY + 1], [cx + sh + 7.5, hipY + g.leg * 0.5], [cx - sh - 7.5, hipY + g.leg * 0.5]]), shade(wool ? W.wool : W.hide, 0.8), wool ? W.woolLine : W.hideLine);
 };
 
 interface SideG { cx: number; d: number; sY: number; hipY: number; T: number; g: Geo; }
@@ -306,14 +308,16 @@ function torsoWearSide(t: Wear['torso'], G: SideG): string {
   return out.join('');
 }
 
-const cloakOverSide = (G: SideG): string => {
+const cloakOverSide = (G: SideG, wool: boolean): string => {
   const { cx, d, sY } = G;
-  return shape(`M${cx - d * 0.6},${sY - 0.4}L${cx + d * 0.4},${sY - 0.2}L${cx + d * 0.5},${sY + 4}L${cx - d * 0.6},${sY + 5}Z`, W.wool, W.woolLine)
-    + ell(cx + d * 0.3, sY + 2.6, 1.6, 1.6, W.gold, W.woolLine);
+  const fill = wool ? W.wool : W.hide, line = wool ? W.woolLine : W.hideLine;
+  const dark = wool ? W.woolD : W.hideD;
+  return shape(`M${cx - d * 0.6},${sY - 0.4}L${cx + d * 0.4},${sY - 0.2}L${cx + d * 0.5},${sY + 4}L${cx - d * 0.6},${sY + 5}Z`, fill, line)
+    + ell(cx + d * 0.3, sY + 2.6, 1.6, 1.6, dark, line);
 };
-const cloakPanelSide = (G: SideG, sw: number): string => {
+const cloakPanelSide = (G: SideG, sw: number, wool: boolean): string => {
   const { cx, d, sY, hipY, g } = G;
-  return shape(poly([[cx - d * 0.3, sY + 1], [cx - d * 0.7, sY + 3], [cx - d * 1.5 + sw * 1.4, hipY + g.leg * 0.55], [cx - d * 0.5, hipY + g.leg * 0.6]]), shade(W.wool, 0.82), W.woolLine);
+  return shape(poly([[cx - d * 0.3, sY + 1], [cx - d * 0.7, sY + 3], [cx - d * 1.5 + sw * 1.4, hipY + g.leg * 0.55], [cx - d * 0.5, hipY + g.leg * 0.6]]), shade(wool ? W.wool : W.hide, 0.82), wool ? W.woolLine : W.hideLine);
 };
 
 function hoodBackFront(g: Geo, cx: number, hy: number, sY: number): string {
@@ -520,7 +524,7 @@ function frontLayers(spec: PersonSpec, back: boolean): PersonOut {
   add(P, 'shadow', ell(cx, g.foot + 0.6, g.sh + 1.5, 3, 'rgba(0,0,0,0.26)'));
   const T = g.torso, sh = g.sh, wa = g.wa, hp = g.hp;
   const G: FrontG = { cx, sY, hipY, sh, wa, hp, T, g };
-  if (w.cloak) add(P, 'cloak_back', cloakPanelFront(G));
+  if (w.cloak) add(P, 'cloak_back', cloakPanelFront(G, w.cloak === 'wool_cloak'));
   if (!back && spec.hair === 'long') add(P, 'hair_back', longHairBackFront(g, cx, headCy, sY));
 
   // Legs.
@@ -587,7 +591,7 @@ function frontLayers(spec: PersonSpec, back: boolean): PersonOut {
       add(P, 'belly_wear', bellyFront(G, fill, edge, crease));
     } else add(P, 'belly', bellyFront(G, skin, line, REF.skinD));
   }
-  if (w.cloak) add(P, 'cloak_front', cloakOverFront(G, back));
+  if (w.cloak) add(P, 'cloak_front', cloakOverFront(G, back, w.cloak === 'wool_cloak'));
   if (spec.carry && !back) {
     const b = babyFrontPieces(G);
     add(P, 'baby', b.blanket);
@@ -733,7 +737,7 @@ function sideLayers(spec: PersonSpec): PersonOut {
     add(P, 'hand_' + s + ':gloves', near ? rot(hGlove) : hGlove);
   }
 
-  if (w.cloak) add(P, 'cloak_back', rot(cloakPanelSide(G, sw)));
+  if (w.cloak) add(P, 'cloak_back', rot(cloakPanelSide(G, sw, w.cloak === 'wool_cloak')));
   if (spec.hair === 'long') add(P, 'hair_back', rot(longHairBackSide(g, hx, headCy, sY)));
   let torso = limb([[hx - 0.6, headCy + 2.5], [cx + 0.6, sY + 2]], g.limb * 1.05, REF.skinD, line);
   const chest = woman ? 0.62 : 0.52, seat = woman ? 0.66 : 0.6;
@@ -762,7 +766,7 @@ function sideLayers(spec: PersonSpec): PersonOut {
       add(P, 'belly_wear', rot(bellySide(G, fill, edge, crease)));
     } else add(P, 'belly', rot(bellySide(G, skin, line, REF.skinD)));
   }
-  if (w.cloak) add(P, 'cloak_front', rot(cloakOverSide(G)));
+  if (w.cloak) add(P, 'cloak_front', rot(cloakOverSide(G, w.cloak === 'wool_cloak')));
   if (spec.carry) {
     const b = babySidePieces(G);
     add(P, 'baby', rot(b.blanket));
@@ -789,7 +793,7 @@ function flush(sink: Sink, spec: PersonSpec, P: Pieces): void {
   const variantOf = (slot: string): string => {
     const base = slot.replace(/_(far|near)$/, '');
     switch (base) {
-      case 'cloak_back': case 'cloak_front': return 'cloak';
+      case 'cloak_back': case 'cloak_front': return w.cloak ?? '';
       case 'torso_wear': case 'sleeve': case 'sleeves': return w.torso ?? '';
       case 'trousers': return w.legs ?? '';
       case 'feet': return w.feet ?? '';
