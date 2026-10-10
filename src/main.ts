@@ -12,7 +12,7 @@ import { WorldState } from './sim/world/WorldState.ts';
 import { deserializeSave, serializeSave, SaveError, type SaveSummary } from './sim/persistence/SaveFile.ts';
 import { SaveStore, describeSaveFailure } from './ui/SaveStore.ts';
 import { earthWorldGeography, randomWorldGeography, type EarthWorldGeography } from './sim/world/WorldGeography.ts';
-import { loadWorldAtlas } from './sim/world/WorldAtlas.ts';
+import { loadWorldAtlas, type LoadedWorldMap } from './sim/world/WorldAtlas.ts';
 import { findNearestStart, findStartInRegion, findWateredGlobeStart, localWorldConfig, type StartPlace } from './sim/world/StartPlace.ts';
 import { WorldPicker } from './ui/WorldPicker.ts';
 import { GAME_VERSION_LABEL } from './ui/GameVersion.ts';
@@ -698,7 +698,15 @@ const settingsScreen = new SettingsOverlay(document.body, {
  * same `rebuildBeforeStart` the settings screen uses, and then the game goes on to the settings and character creation as always.
  */
 let earthMap: EarthWorldGeography | null = null;
+let earthAtlas: readonly LoadedWorldMap[] = [];
 const worldPicker = new WorldPicker(document.body, {
+  onMap: id => {
+    const chosen = earthAtlas.find(map => map.entry.id === id);
+    if (!chosen) return;
+    earthMap = earthWorldGeography(chosen, 10);
+    worldPicker.setNote(null);
+    worldPicker.setGeography(earthMap);
+  },
   onBegin: region => { void beginOnEarth(region); },
   onIsland: () => {
     // The island is the draft already built, unless an earlier choice replaced it.
@@ -714,8 +722,10 @@ async function openWorldPicker(): Promise<void> {
   worldPicker.setBusy(t('Loading the world…'));
   try {
     const maps = await loadWorldAtlas('world/');
+    earthAtlas = maps;
     const entry = maps.find(map => map.entry.recommended) ?? maps[0]!;
     earthMap = earthWorldGeography(entry, 10);
+    worldPicker.setMaps(maps.map(map => map.entry), entry.entry.id);
     worldPicker.setBusy(null);
     worldPicker.setGeography(earthMap);
   } catch (error) {

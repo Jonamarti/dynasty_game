@@ -1,5 +1,10 @@
 /** Spanish for ui. Keys are the English templates; see `i18n.ts`. */
 export const ES_UI: Record<string, string> = {
+  'World map': 'Mapa del mundo',
+  'Earth today': 'La Tierra actual',
+  'Earth, about 12,000 years ago': 'La Tierra, hace unos 12.000 años',
+  'World map {id}': 'Mapa del mundo {id}',
+  'Ancient coastlines; climate and resource ranges use present-day data.': 'Costas antiguas; el clima y la distribución de recursos usan datos actuales.',
   "Being wet makes you colder until you dry off.": "La humedad aumenta el frío hasta que te seques.",
   "Before you begin": "Antes de empezar",
   "Settings": "Ajustes",

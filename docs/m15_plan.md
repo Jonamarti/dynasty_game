@@ -3386,6 +3386,14 @@ diagnóstico y las decisiones que necesita del propietario en [el doc de 32c](m1
 
 ## Fase 33 — Poblar el mundo y guardar la partida (M14 fase 15 y decisión 6)
 
+**Avance 2026-10-10 — selección de atlas entregada.** La pantalla inicial
+permite elegir los dos mapas comprometidos y reconstruye la partida con la
+geografía elegida; cambiar de mapa invalida la localización anterior. El atlas
+antiguo declara su limitación de clima/recursos actuales. Prueba de navegador
+y capturas en `artifacts/screenshots/m15-map-choice-2026-10-10T-01/`.
+[Contrato](m15_phase33_map_choice.md). Siguen comarca dentro de región,
+nombres de pueblos materializados y calibración; no se cierra 29c/33.
+
 **Detalle en `m14_plan.md` fase 15.** Pueblos en otras partes del mundo, con su
 cultura desde el principio, y el ajuste de partida del mundo (29c).
 

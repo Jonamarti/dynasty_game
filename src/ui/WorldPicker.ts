@@ -12,6 +12,7 @@
  * through `setNote` why a choice was refused.
  */
 import type { WorldGeography } from '../sim/world/WorldGeography.ts';
+import type { WorldMapEntry } from '../sim/world/WorldAtlas.ts';
 import { globeGridOf, worldTerrainOf, type GlobeGrid, type WorldTerrain } from '../sim/world/WorldTerrain.ts';
 import { isCoastalRegion, regionWater } from '../sim/world/StartPlace.ts';
 import { TERRAIN_COLOR, terrainLabel } from './WorldMapView.ts';
@@ -24,6 +25,7 @@ export interface WorldPickerCallbacks {
   onBegin: (region: { x: number; y: number }) => void;
   /** The player chose the random island instead. */
   onIsland: () => void;
+  onMap?: (id: string) => void;
 }
 
 export class WorldPicker {
@@ -35,6 +37,10 @@ export class WorldPicker {
   private readonly islandButton: HTMLButtonElement;
   private readonly title: HTMLElement;
   private readonly sub: HTMLElement;
+  private readonly mapSelect: HTMLSelectElement;
+  private readonly mapLabel: HTMLElement;
+  private readonly mapCaveat: HTMLElement;
+  private maps: readonly WorldMapEntry[] = [];
   private readonly confirmBox: HTMLElement;
   private readonly confirmText: HTMLElement;
   private readonly confirmAnyway: HTMLButtonElement;
@@ -64,6 +70,9 @@ export class WorldPicker {
         '<div class="worldpicker-body">' +
           '<div class="worldpicker-stage"><canvas class="worldpicker-canvas" hidden></canvas></div>' +
           '<div class="worldpicker-side">' +
+            '<label class="worldpicker-map-label" for="worldpicker-map"></label>' +
+            '<select id="worldpicker-map" class="hud-button worldpicker-map"></select>' +
+            '<div class="worldpicker-map-caveat"></div>' +
             '<div class="worldpicker-info"></div>' +
             '<div class="worldpicker-note" role="status" aria-live="polite"></div>' +
             '<div class="worldpicker-confirm" role="alert" hidden>' +
@@ -85,11 +94,17 @@ export class WorldPicker {
     this.islandButton = q<HTMLButtonElement>('.worldpicker-island');
     this.title = q('.worldpicker-title');
     this.sub = q('.worldpicker-sub');
+    this.mapSelect = q<HTMLSelectElement>('.worldpicker-map');
+    this.mapLabel = q('.worldpicker-map-label');
+    this.mapCaveat = q('.worldpicker-map-caveat');
     this.confirmBox = q('.worldpicker-confirm');
     this.confirmText = q('.worldpicker-confirm-text');
     this.confirmAnyway = q<HTMLButtonElement>('.worldpicker-confirm-anyway');
     this.confirmNearest = q<HTMLButtonElement>('.worldpicker-confirm-nearest');
     this.label();
+    this.mapSelect.addEventListener('change', () => {
+      if (!this.busy) this.callbacks.onMap?.(this.mapSelect.value);
+    });
 
     this.beginButton.addEventListener('click', () => { if (this.picked && !this.busy && !this.confirm) this.callbacks.onBegin({ ...this.picked }); });
     this.islandButton.addEventListener('click', () => { if (!this.busy && !this.confirm) this.callbacks.onIsland(); });
@@ -138,6 +153,25 @@ export class WorldPicker {
     this.title.textContent = t('Where does your story begin?');
     this.beginButton.textContent = t('Begin here');
     this.islandButton.textContent = t('A random island instead');
+    this.mapLabel.textContent = t('World map');
+    const selected = this.mapSelect.value;
+    this.mapSelect.replaceChildren(...this.maps.map(map => {
+      const option = document.createElement('option');
+      option.value = map.id;
+      option.textContent = map.id === 'earth-present' ? t('Earth today')
+        : map.id === 'earth-12000-bce' ? t('Earth, about 12,000 years ago')
+        : t('World map {id}', { id: map.id });
+      return option;
+    }));
+    this.mapSelect.value = selected;
+  }
+
+  /** Atlas changes clear the old location and any dry-start confirmation. */
+  setMaps(maps: readonly WorldMapEntry[], selected: string): void {
+    this.maps = maps;
+    this.label();
+    this.mapSelect.value = selected;
+    this.render();
   }
 
   open(): void { this.root.hidden = false; this.render(); }
@@ -220,6 +254,11 @@ export class WorldPicker {
     // click would otherwise have meant, and a second, ordinary click on Begin here behind the panel would bypass it.
     this.islandButton.disabled = this.busy !== null || this.confirm !== null;
     this.beginButton.disabled = this.busy !== null || this.confirm !== null || !this.picked || !this.canBegin(this.picked);
+    this.mapSelect.disabled = this.busy !== null || this.maps.length === 0;
+    this.mapSelect.hidden = this.maps.length === 0;
+    this.mapLabel.hidden = this.maps.length === 0;
+    const ancient = this.geography?.kind === 'earth' && this.geography.entry.id === 'earth-12000-bce';
+    this.mapCaveat.textContent = ancient ? t('Ancient coastlines; climate and resource ranges use present-day data.') : '';
     this.note.textContent = this.message?.text ?? '';
     this.note.classList.toggle('is-bad', this.message?.bad ?? false);
     this.renderConfirm();

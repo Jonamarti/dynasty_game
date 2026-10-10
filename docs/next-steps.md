@@ -1615,3 +1615,5 @@ tipos y pudrición pendiente; libro y primer día parcial están entregados.
 Siguiente: coordinador de autoridad, reparto material tras consumo compacto,
 perfil corregido y materialización antes de leave_comarca/follow_me/scout.
 [Contrato](m15_phase34_inventory.md). Puertas drought/fisión todavía pendientes.
+
+2026-10-10: selección de atlas (29c/33) entregada. Tierra actual/antigua en el selector inicial; el cambio invalida el lugar anterior y se conserva al construir la partida. Capturas: artifacts/screenshots/m15-map-choice-2026-10-10T-01/. Siguen selección de comarca, nombres y calibración; contrato m15_phase33_map_choice.md.

@@ -3908,6 +3908,18 @@ Added the moods-move-choices health check, comparing talk frequency in the low a
 
 # Changelog
 
+## 2026-10-10 — M15 29c/33: elegir el mapa terrestre inicial
+
+El atlas tenía dos mapas y el arranque siempre instalaba el recomendado.
+Ahora el jugador puede elegir Tierra actual o antigua, con textos traducidos
+y un aviso sobre el clima/recursos actuales del atlas antiguo. Cambiar de mapa
+borra el lugar/confirmación anterior; la partida instala el mapId seleccionado.
+Typecheck y e2e de elección pasan; capturas revisadas:
+`artifacts/screenshots/m15-map-choice-2026-10-10T-01/`.
+La semilla inicial conserva los dos fallos previos de dieta/rendimiento.
+Cohortes y matriz larga diferidas por AGENTS.md. Versión 0.15.9-alpha.
+Detalles y pendientes: [contrato](m15_phase33_map_choice.md).
+
 ## 2026-09-29 - M15 phase 11b: ideas draw on what's been handled
 
 `Notice.holding` — what a spark of invention can see as "present" — used to
