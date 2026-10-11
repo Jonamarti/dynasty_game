@@ -2582,7 +2582,11 @@ lleva agua a beber junto al campamento: un valor que la banda descubre sola.
   a atacar va más lento (25b). Es la defensa que la fase 38 convierte en
   muralla.
 - **Canal y riego:** las casillas de un campo a menos de 3 de agua dulce de un
-  canal crecen más (un término en `Field` o `Soil`, con `irrigation`).
+  canal crecen más (un término en `Field` o `Soil`, con `irrigation`). **Avance
+  2026-10-11:** los campos próximos a un canal terminado que aún contiene agua
+  dulce reciben un factor provisional de crecimiento 1,25. Se deriva del mundo
+  y de `buildingHash`, sin estado duplicado ni draws; el factor no está
+  calibrado. Siguen pendientes la puerta/nodo `irrigation` y la medición final.
 - **Bancal:** un campo en pendiente que no pierde fertilidad por la ladera.
 
 ### 26f. Checks y escenario

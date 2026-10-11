@@ -4852,3 +4852,10 @@ La causa de ese píxel sigue sin confirmar; no se rebaja el umbral ni se
 declara resuelta la niebla. La comprobación posterior de selección no llega
 a ejecutarse en ese test. El error nuevo de alamares era una aserción en
 Perfil en vez de Equipo: se corrigió el test y su repetición pasa.
+
+### 2026-10-11 — riego de canal sin calibrar
+El primer lector de la fase 26e aplica un factor 1,25 al crecimiento diario de
+campos próximos a canales con agua dulce. Es un mecanismo funcional, no una
+medición económica: no se ejecutaron cohortes y no se afirma que mejore la
+supervivencia. La puerta tecnológica `irrigation`, el lector de bancales y la
+calibración agrícola siguen pendientes para el cierre de 26e/M15.

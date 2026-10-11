@@ -1,6 +1,6 @@
 ## 2026-10-11 — m15: lámpara de grasa interior
 
-`0.15.56-alpha`: lámpara de fuego como mueble colocable en el hogar, con 1200
+`0.15.60-alpha`: lámpara de fuego como mueble colocable en el hogar, con 1200
 ticks de carga por dos grasas, recarga contextual, combustión por reloj y
 combustible persistente. Su luz radial usa `lightAt`/el overlay nocturno; no
 aporta calor ni cuenta como fuego para recetas. Arte generado desde `art/src`,
@@ -12,7 +12,7 @@ ejecutaron cohortes ni matrices largas.
 
 ## 2026-10-11 — m15: pertenencia al conversar sentado
 
-`0.15.55-alpha`: hablar con un familiar que descansa en un banco doméstico
+`0.15.59-alpha`: hablar con un familiar que descansa en un banco doméstico
 actualiza la pertenencia de ambas personas. El scorer reconoce ese interlocutor
 y lo prefiere ante una necesidad de pertenencia; personas de pie y conversaciones
 fuera del hogar no reciben el efecto. Prueba focal en `furniture-sleep.test.ts`;
@@ -20,7 +20,7 @@ no cambia la interfaz. Contrato y pendientes en `docs/m15_phase16d_bedding.md`.
 
 ## 2026-10-11 — m15: banco y descanso sentado
 
-`0.15.54-alpha`: `bench` es una receta de carpintería de dos maderas,
+`0.15.58-alpha`: `bench` es una receta de carpintería de dos maderas,
 colocable dentro del hogar, persistente por `hostId` y visible en los
 generadores de arte. NPC con carpintería pueden fabricar y colocar el banco de
 su casa cuando falta; cansados pueden elegirlo para descansar. El viaje y la
@@ -14867,3 +14867,13 @@ spoilage-is-answered se elimina: su supuesto PASS sigue apareciendo al quitar
 todas las recetas de conservación. Las pérdidas764/1381 quedan como diagnóstico;
 no coste de supervivencia ni mejora económica afirmados. Contrato/evidencia en
 docs/m15_phase15d_salters.md.15d parcialmente entregada;15c/cohortes diferidas.
+
+## 2026-10-11 — Fase 26e, riego por canal
+
+Los campos reciben un factor provisional de crecimiento 1,25 cuando un canal
+terminado conserva agua dulce a tres casillas o menos. La consulta usa el hash
+espacial de edificios y comprueba el agua real del canal; los canales secos o
+salados no riegan. No añade estado guardado ni draws. Pruebas focales cubren el
+límite de distancia, canal incompleto y fuente salada/seca. La calibración
+agrícola completa y la matriz larga quedan diferidas por AGENTS.md; no se afirma
+una mejora de cosecha o supervivencia. No cambia la UI.

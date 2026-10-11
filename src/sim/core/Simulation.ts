@@ -69,6 +69,7 @@ import {
   Building, BUILDINGS, isTrap, isHerd, isStructure, type BuildingDef,
 } from '../entities/Building.ts';
 import { earthworkTiles, slopeAcross } from '../entities/Earthwork.ts';
+import { fieldSeasonGrowth } from '../entities/Irrigation.ts';
 import { accrueUnits } from './Progress.ts';
 import { decayMood } from './Mood.ts';
 import { appealOf, bestFoodFor, consumeFood, decayMacroBalance, decayMacroTarget, hydrationOf } from './Macros.ts';
@@ -5381,7 +5382,10 @@ export class Simulation {
     for (const building of this.buildings) {
       const crop = building.crop;
       if (!crop || !building.complete) continue;
-      if (crop.advance(this.time.day, growth)) {
+      // M15 phase 26e: a completed freshwater canal extends the growing
+      // season's useful work for nearby plots; the multiplier is a first-pass
+      // mechanism and remains part of the deferred agricultural calibration.
+      if (crop.advance(this.time.day, fieldSeasonGrowth(building, growth, this.world, this.buildingHash))) {
         // A harvest nobody came for. Loud on purpose: it is the clearest way
         // the game can say that a field is a commitment rather than a store,
         // and a band that keeps losing them is a band that has planted more
