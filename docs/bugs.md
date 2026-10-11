@@ -10,9 +10,11 @@ selectores autónomos sólo eligen comida segura. La fusión de hogares es la
 única transferencia directa local entre almacenes y revierte ambos inventarios
 si una inserción falla. Otros recorridos entre almacenes llevan la carga por
 una persona. `ComarcaInventoryTransfer` conserva filas en el escrow JSON y
-restaura de forma transaccional; la copia persistida no concede autoridad ni
-está conectada todavía al tráfico activo. El tráfico fuera del mapa sigue
-pendiente y puede destruir o recrear la unidad. `unitId` sigue
+restaura de forma transaccional. El tráfico de personas conserva ya las filas
+durante staging, checkpoint, llegada y regreso, y la hidratación rechaza estados
+con unidades ausentes o duplicadas. Los manifiestos de mercancía de caravana
+siguen siendo count-only: rechazan prendas y el trueque/retorno las deja con el
+viajero hasta que el manifiesto tenga soporte para unidades físicas. `unitId` sigue
 siendo local al inventario y se reemite al colisionar durante una fusión; una
 identidad global antes de referenciar copias entre inventarios sigue pendiente.
 Por eso no se habilita desgaste ni remiendo. Véase el

@@ -61,7 +61,7 @@ function ident(v:unknown):ComarcaIdentity {
 function route(v:unknown,s:string):JourneyPoint[] { if(!Array.isArray(v)||v.length<2) invalid(s); return v.map((p,i)=>point(p,s+'['+i+']')); }
 function goods(v:unknown):CaravanGoods[] {
  if(!Array.isArray(v)) invalid('cargo'); const seen=new Set<string>();
- return v.map(x=>{ if(!x||typeof x!=='object'||Array.isArray(x)||Object.keys(x).length!==2||typeof x.itemId!=='string'||!Object.hasOwn(ITEMS,x.itemId)||!Number.isSafeInteger(x.count)||x.count<=0||seen.has(x.itemId)) invalid('cargo stack'); seen.add(x.itemId); return {itemId:x.itemId,count:x.count}; }).sort((a,b)=>a.itemId.localeCompare(b.itemId));
+ return v.map(x=>{ if(!x||typeof x!=='object'||Array.isArray(x)||Object.keys(x).length!==2||typeof x.itemId!=='string'||!Object.hasOwn(ITEMS,x.itemId)||ITEMS[x.itemId]!.garment||!Number.isSafeInteger(x.count)||x.count<=0||seen.has(x.itemId)) invalid('cargo stack'); seen.add(x.itemId); return {itemId:x.itemId,count:x.count}; }).sort((a,b)=>a.itemId.localeCompare(b.itemId));
 }
 function ids(v:unknown,s:string):number[] { if(!Array.isArray(v)) invalid(s); const out=v.map((x,i)=>id(x,s+'['+i+']')); if(new Set(out).size!==out.length) invalid(s+' duplicate'); return out.sort((a,b)=>a-b); }
 function sameIdentity(a:ComarcaIdentity,b:ComarcaIdentity):boolean { return JSON.stringify(a)===JSON.stringify(b); }

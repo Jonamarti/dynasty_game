@@ -41,8 +41,20 @@ store mover: household home-store consolidation is the sole seam and uses
 `Inventory.transferAllTo`. Other store trips have a person as the carrier.
 The Comarca escrow graph also retains garment rows through `take`, food
 consumption, validated JSON, and `restore`; partial failures during multi-source
-extraction or restore roll back the inventories. The live off-map traveller
-route is still a separate unresolved ownership boundary.
+extraction or restore roll back the inventories. Traveller ownership through
+world traffic is covered below; quantity-only caravan manifests remain a
+separate restriction on garment barter.
+
+The 2026-10-12 phase 35 traveller route now carries garments inside each
+traveller's validated `Inventory` checkpoint from staging through save/load,
+arrival, and return. Person graph hydration validates physical row/count
+agreement and unique unit identity, so missing or duplicated traveller rows
+reject the enclosing world save before it can become an owner. Caravan manifests
+remain quantity-only: garment offers are rejected and garments are excluded
+from camp barter/return manifests, keeping their physical rows on the named
+traveller. The focused test covers a worn unit with banked repair progress over
+the full out-and-back trip. See the
+[phase 35 contract](m15_phase35_journeys.md).
 
 This is still a foundation: some gameplay transfer seams listed below use
 generic count-based `add`/`remove`. Wear/remending must not be activated until
@@ -103,8 +115,8 @@ The main movement seams found in the current tree are:
 | Store and withdraw | `Building.accept`, `Simulation.storeItem` / `takeItem`, `ActionSystem.doStore` / `doTake` / `doRender`, `Simulation.mergeHouseholdsImpl` | **Delivered for person↔building store**, household home-store merges, and the store-to-bearer leg of tribute: explicit transfer preserves condition and snapshots; whole-inventory merge is validated and rolls back both sides on failure, including colliding local IDs. Audit found no other direct local store-to-store route; cross-building errands move through a person. |
 | Drop, pickup, carry overflow | `Simulation.drop`, `Simulation.takeFromPile`, `Simulation.dropAt`, `Carry.reconcileCarry` | **Delivered:** worn slot references an exact unit; drop, pickup and carry overflow move unit rows and preserve condition/progress. Generic `dropAt` still creates pristine garments for produced goods. |
 | Death and inheritance | `LifeSystem.settleEstate`, called from `Simulation` death handling | **Delivered:** whole estate moves atomically to heir/home, or garment rows drop intact at the deceased's feet. |
-| Comarca staging and restore | `ComarcaInventoryTransfer.take`, `consume`, `restore`, `toRecord` | **Delivered for escrow records:** validated graphs preserve unit ID, wear, and repair progress through JSON and food consumption; malformed or incomplete present rows and duplicate identities are rejected, and multi-source take/restore roll back on later failure. Consuming a garment itself is explicit destruction. The record codec is not yet wired into live world traffic. |
-| World traffic / traveller cargo | `WorldTrafficCoordinator` plus `WorldState` cargo staging and return | Preserve condition through transit inventory and both directions of travel. |
+| Comarca staging and restore | `ComarcaInventoryTransfer.take`, `consume`, `restore`, `toRecord` | **Delivered for escrow records:** validated graphs preserve unit ID, wear, and repair progress through JSON and food consumption; malformed or incomplete present rows and duplicate identities are rejected, and multi-source take/restore roll back on later failure. Consuming a garment itself is explicit destruction. |
+| World traffic / traveller cargo | `WorldTrafficCoordinator` plus `WorldState` cargo staging and return | **Delivered for traveller inventories:** exact rows survive staging, checkpoint save/load, arrival and return; checkpoint hydration rejects missing/duplicate rows. Quantity-only caravan manifests reject garments and camp barter/return selection leaves garment stacks on the traveller. |
 | Crafting and explicit consumption | `ActionSystem.doCraft` and other `inventory.remove` consumers | New garment outputs are pristine; a garment used as an ingredient is explicitly destroyed, not silently detached from its condition. |
 
 Other `remove`/`add` pairs exist for food, tools, earth, and materials. They

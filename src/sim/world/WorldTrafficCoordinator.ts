@@ -7,7 +7,7 @@
 import { Simulation, worldFrameOf } from '../core/Simulation.ts';
 import { IdSpace } from '../core/IdSpace.ts';
 import { ITEMS } from '../entities/Item.ts';
-import { toCheckpointRecord, type CheckpointRecord } from '../persistence/CheckpointRecords.ts';
+import { fromCheckpointRecord, toCheckpointRecord, type CheckpointRecord } from '../persistence/CheckpointRecords.ts';
 import { fromPersonRecord, toPersonRecord } from '../persistence/EntityRecords.ts';
 import { TileLedger, comarcaIdentityAt, type ComarcaIdentity, type TileLedgerEntry } from '../persistence/TileLedger.ts';
 import { knowledgeOfWorld } from '../social/Knowledge.ts';
@@ -53,7 +53,7 @@ function startsAt(state:TrafficWorld,identity:ComarcaIdentity):WorldStateGeograp
 function isLand(state:TrafficWorld,p:JourneyPoint):boolean { const profile=state.geography.profileAt(p.cx,p.cy); return profile.kind==='earth'?profile.land:profile.kind==='random'&&profile.biome!=='ocean'; }
 function cargo(value:readonly CaravanGoods[]|undefined):CaravanGoods[] {
  const result=[...(value??[])].map(v=>({itemId:v.itemId,count:v.count})).sort((a,b)=>a.itemId.localeCompare(b.itemId));
- const seen=new Set<string>();for(const stack of result){if(!Object.hasOwn(ITEMS,stack.itemId)||!Number.isSafeInteger(stack.count)||stack.count<=0||seen.has(stack.itemId))invalid('invalid cargo offer');seen.add(stack.itemId);}return result;
+ const seen=new Set<string>();for(const stack of result){if(!Object.hasOwn(ITEMS,stack.itemId)||!Number.isSafeInteger(stack.count)||stack.count<=0||seen.has(stack.itemId))invalid('invalid cargo offer');if(ITEMS[stack.itemId]!.garment)invalid('garments must remain attached to traveller inventory');seen.add(stack.itemId);}return result;
 }
 function partyIds(sim:Simulation,actorId:number,requested:readonly number[]):number[] {
  const selected=new Set<number>([actorId,...requested]);
@@ -231,7 +231,9 @@ export class WorldTrafficCoordinator {
    state.ids.restore(ids.snapshot());
    if(active){state.current.parkForTransfer();state.installCurrent(Simulation.fromCheckpointRecordWithSharedIds(toCheckpointRecord(owner),state.ids),state.initialGeographicStart);}
    else{state.tileLedger.update(tile!);state.frontier.park(ticket.destination,parkedRecord!,runtimeRecord!);}
-   const returnCargo=actor.inventory.entries().filter(([itemId,count])=>count>0&&!!ITEMS[itemId]&&ITEMS[itemId]!.baseValue>0&&ITEMS[itemId]!.nutrition===0).map(([itemId,count])=>({itemId,count}));
+   // The manifest is count-only. Keep garments in the traveller's checkpoint
+   // inventory so their physical unit rows cannot be replaced by pristine adds.
+   const returnCargo=actor.inventory.entries().filter(([itemId,count])=>count>0&&!!ITEMS[itemId]&&ITEMS[itemId]!.baseValue>0&&ITEMS[itemId]!.nutrition===0&&!ITEMS[itemId]!.garment).map(([itemId,count])=>({itemId,count}));
    this.beginReturn(state,ticket.caravanId,returnCargo);
   }
  }
@@ -241,11 +243,11 @@ export class WorldTrafficCoordinator {
    .filter(person=>person.id!==actor.id&&person.alive&&person.inventory.total>0&&owner.peopleById.get(person.id)===person)
    .sort((a,b)=>(Math.abs(a.x-actor.x)+Math.abs(a.y-actor.y))-(Math.abs(b.x-actor.x)+Math.abs(b.y-actor.y))||a.id-b.id);
   for(const other of nearby){
-   const offer=actor.inventory.entries().filter(([itemId,count])=>count>0&&(ITEMS[itemId]?.baseValue??0)>0&&(ITEMS[itemId]?.nutrition??0)===0)
+   const offer=actor.inventory.entries().filter(([itemId,count])=>count>0&&(ITEMS[itemId]?.baseValue??0)>0&&(ITEMS[itemId]?.nutrition??0)===0&&!ITEMS[itemId]?.garment)
     .map(([itemId])=>({itemId,count:1})).sort((a,b)=>ITEMS[b.itemId]!.baseValue-ITEMS[a.itemId]!.baseValue||a.itemId.localeCompare(b.itemId))[0];
    if(!offer) return;
    const worth=ITEMS[offer.itemId]!.baseValue;
-   const request=other.inventory.entries().filter(([itemId,count])=>count>0&&(ITEMS[itemId]?.baseValue??0)>0&&(ITEMS[itemId]?.baseValue??0)<=worth)
+   const request=other.inventory.entries().filter(([itemId,count])=>count>0&&(ITEMS[itemId]?.baseValue??0)>0&&!ITEMS[itemId]?.garment&&(ITEMS[itemId]?.baseValue??0)<=worth)
     .map(([itemId])=>({itemId,count:Math.min(other.inventory.count(itemId),Math.floor(worth/ITEMS[itemId]!.baseValue))}))
     .filter(row=>row.count>0).sort((a,b)=>ITEMS[b.itemId]!.baseValue*b.count-ITEMS[a.itemId]!.baseValue*a.count||a.itemId.localeCompare(b.itemId))[0];
    if(!request)continue;
@@ -316,6 +318,7 @@ export class WorldTrafficCoordinator {
   if(v.recordType!=='WorldTrafficRecord'||v.version!==1||!Number.isSafeInteger(v.tick)||v.tick!<0||!Number.isSafeInteger(v.nextId)||v.nextId!<1||!Array.isArray(v.parties))invalid('traffic record shape');
   const traffic=new WorldTrafficCoordinator();traffic.clock=v.tick!;traffic.nextId=v.nextId!;traffic.scheduler=WorldCaravans.fromRecord(v.caravans);
   for(const p of v.parties){if(!p||!Number.isSafeInteger(p.caravanId)||p.caravanId<1||traffic.parties.has(p.caravanId)||!['caravan','raid'].includes(p.kind)||!Number.isSafeInteger(p.actorId)||!Array.isArray(p.travellerIds)||!Number.isSafeInteger(p.lastAdvancedTick)||!Number.isSafeInteger(p.arrivalTick)||p.lastAdvancedTick!>p.arrivalTick!||(p.party!==null&&(!p.party||p.party.recordType!=='CheckpointRecord')))invalid('party record');
+   if(p.party)fromCheckpointRecord(p.party);
    const ids=[...p.travellerIds].sort((a,b)=>a-b),owned=p.party?.roster.activePersonIds;
    if(new Set(ids).size!==ids.length||(owned&&(owned.length!==ids.length||[...owned].sort((a,b)=>a-b).some((id,index)=>id!==ids[index]))))invalid('party checkpoint ownership');
    traffic.parties.set(p.caravanId,clone({...p,travellerIds:ids}) as TrafficPartyRecord);

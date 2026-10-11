@@ -18,3 +18,17 @@ The default global spoilage rate is zero, so journey ticks apply a journey-only 
 **Cadencia del coordinador.** Mientras haya un viaje pendiente, el consumidor debe llamar WorldState.advancePeoples después de cada step; el navegador ya lo hace. El avance de origen en bloque cruzando la llegada aún no se admite: una reproducción de nueve steps para una ruta de ocho instala tick 8, dejando un ledger de origen en tick 9 que no vuelve a cargar. Se registra en bugs y M16; no se presenta como reanudación válida de cualquier salto temporal.
 
 Encounter coverage also drives the real coordinator per tick: storm delays, five health points of wildlife damage, settlement observations without delay, and encounter stream parity after save/load. Date/transport tampering is rejected. Final browser captures are in artifacts/screenshots/m15-phase35-final-2026-10-09T-02/.
+
+## Garment ownership through world traffic
+
+Traveller inventories remain part of the canonical party `CheckpointRecord`.
+Their garment unit IDs, wear, and repair progress therefore travel with the
+named people through staging, JSON save/load, arrival, camp, and return. Person
+record hydration validates garment row/count agreement and rejects duplicate
+unit IDs; invalid traffic records fail before ownership can be installed. The
+phase 35 regression carries a worn garment with banked repair progress on a
+full round trip. Caravan manifests use count-only goods rows, so garment offers
+are rejected and camp barter/return manifests leave garments on the traveller
+until a physical-unit manifest is implemented. Wear and mending remain
+disabled pending the full consumption audit. See
+[`m15_garment_condition_design.md`](m15_garment_condition_design.md).

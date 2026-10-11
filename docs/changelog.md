@@ -1,3 +1,16 @@
+## 2026-10-12 — m15: prendas físicas en el tráfico de mundo (0.15.74-alpha)
+
+Los inventarios de las personas viajan dentro del checkpoint del grupo y ahora
+validan filas de prendas al hidratar. Una unidad desgastada con progreso de
+remiendo sobrevive staging, JSON save/load, llegada, campamento y regreso;
+filas perdidas o duplicadas rechazan la carga antes de instalar propietarios.
+Los manifiestos de mercancías aún usan cantidades, así que rechazan prendas y
+el trueque/retorno del campamento las deja en el inventario del viajero. Pruebas
+focales añadidas a `world-traffic.test.ts`; no se activan desgaste ni remiendo
+hasta completar la auditoría de consumo. [Contrato de prendas](m15_garment_condition_design.md),
+[contrato de fase 35](m15_phase35_journeys.md). Dependencias no instaladas en
+este worktree; verificación local limitada a checks disponibles.
+
 ## 2026-10-11 — M15 herencia física de prendas
 
 La muerte ya transfiere los bienes al heredero o almacén con `transferAllTo`,
