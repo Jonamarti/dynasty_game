@@ -1,3 +1,12 @@
+**Avance del 2026-10-12 — 16e, muestra de sueño:** la recuperación lee la
+calidad de la superficie también al raso (0,7; 0,8 junto a una hoguera).
+La muestra única de medianoche escribe `mood.comfort` según superficie, frío
+y nieve, y `mood.security` según campamento propio, compañía cercana, guardia
+y territorio reclamado. El mapa de techo que usa concepción sigue saliendo de
+esa misma pasada; no se añadió otro muestreo. Tests cubren cambios y negativas.
+No se ajustaron amplitudes con cohortes. Sigue abierta la motivación `comfort`
+en `Drives.ts` y toda calibración/escenario de 16f.
+
 **Avance del 2026-10-12 — 16d, hogar interior:** `fireplace` usa barro 4 y
 sílex 2 y solo se coloca dentro de la casa terminada del hogar propio. Como
 hogar permanente sin `fuelRemaining`, da calor y luz local, sirve a las recetas
@@ -2035,15 +2044,15 @@ es posible si nadie del hogar lo ve.
 | lecho | 1,0 |
 | cama | 1,1 |
 
-- La recuperación del sueño se multiplica por la calidad.
-- **`mood.comfort` por fin se escribe** (`m9_6_plan.md` fase 4; M14 4b): al
-  despertar, según la calidad, el frío de la noche (`Snow.ts`) y la seguridad
-  (campamento propio, dormir apiñados, el guardia y la casilla reclamada, los
-  cuatro términos que M14 4b pedía).
-- **El motivo `comfort`** entra en `Drives.ts` con su lector: `go_home` al
-  atardecer pesa más si en casa hay cama, colocar y fabricar muebles (16d), y
-  elegir dónde dormir. Sensibilidad 1 (ningún rasgo lo modula todavía; si hace
-  falta, se añade con su fila).
+- **Entregado:** la recuperación del sueño se multiplica por la calidad,
+  incluida la mejora de 0,7 a 0,8 al raso cerca de una hoguera.
+- **Entregado:** la muestra única de medianoche escribe `mood.comfort` por
+  calidad, deuda de frío y nieve; y `mood.security` por campamento propio,
+  compañía cercana, guardia y casilla reclamada. Es la misma pasada que
+  construye el mapa de techo usado por concepción, no una segunda muestra.
+- **Pendiente:** el motivo `comfort` en `Drives.ts` debe leer el canal: `go_home`
+  al atardecer pesa más si en casa hay cama, colocar/fabricar muebles y elegir
+  dónde dormir. Su sensibilidad aún no se calibró.
 - La concepción (fase 18) lee **la misma muestra de medianoche**.
 
 ### 16f. Checks y escenario

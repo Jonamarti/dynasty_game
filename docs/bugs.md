@@ -4933,3 +4933,11 @@ si queda al otro lado de un muro. El fuego funciona correctamente dentro de la
 habitación y el plan no prescribe propagación de humo a través de paredes. Se
 deja registrado para una futura lectura de luz/temperatura con oclusión; no se
 afirma que la casa bloquee esos radios.
+
+## 2026-10-12 — M15 fase 16e, amplitudes de ánimo aún sin calibrar
+
+El muestreo determinista de sueño escribe `comfort` y `security`, pero las
+amplitudes de calidad, frío/nieve y seguridad todavía no se han contrastado
+con cohortes. No es un fallo funcional observado: calibración y escenario
+`homes` quedan diferidos a 16f, y no se deben presentar los valores actuales
+como una mejora demográfica medida.

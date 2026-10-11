@@ -4255,7 +4255,8 @@ export class ActionSystem {
 
     telemetry.count(building ? 'sleeping' : 'sleeping_open');
     person.needs.fatigue = Math.max(0, person.needs.fatigue -
-      SLEEP_RECOVERY * (building ? 1 : 0.7));
+      SLEEP_RECOVERY * (building ? 1 : sleepQualityAt(null, person.x, person.y, [],
+        ctx.hearthNear?.(person.x, person.y, 3) ?? false)));
 
     // Note what is *not* here: `person.workedTicks++`. Sleeping is not work, and
     // counting it toward `MAX_WORK_STRETCH` would eventually report that

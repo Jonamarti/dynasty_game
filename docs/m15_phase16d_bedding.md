@@ -183,5 +183,26 @@ sprite and carried item icon are generated from `art/src`; the capture is
 NPCs already receive the warmth, light and station behavior from these shared
 readers, but this slice does not make them gather fireplace materials or
 autonomously furnish a home with one. Other comfort furniture, autonomous
-lamp refuelling, and phase 16e/16f remain open. No fuel balance, economy
+lamp refuelling, and the comfort-motive reader remain open. No fuel balance, economy
 improvement, or cohort result is claimed.
+
+## 2026-10-12: phase 16e, one midnight sleep and safety sample
+
+Sleep recovery and the mood writer use the same surface-quality ladder: open
+ground is 0.7, open ground near a physical hearth is 0.8, a bare interior is
+0.9, bedding is 1.0 and a bed is 1.1. The existing interior recovery reader
+remains authoritative; the outdoor action now also reads its nearby hearth.
+
+`shareTheHearth` already runs once per day and records the roof used by
+conception. It now uses that same pass to write comfort from sleep quality,
+the sleeper's cold need and exposed snow, and security from four observable
+terms: proximity to the band's camp, band members nearby, a nearby band guard,
+and sleeping on a cell claimed by the band. Non-sleepers receive no nightly
+nudge. These are direct, deterministic samples with no added state or RNG.
+Focused tests cover surface/cold/snow direction, each safety term, the sleeping
+gate and outdoor hearth quality. The coefficients are mechanisms only; no
+cohort or calibration is claimed.
+
+Still open in 16e/16f: wiring `mood.comfort` into the `comfort` drive, NPC
+autonomous fireplace construction and lamp refuelling, the `homes` scenario,
+sleep-surface/check measurements, and the deferred calibration.

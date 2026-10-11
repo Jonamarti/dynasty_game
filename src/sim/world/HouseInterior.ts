@@ -23,9 +23,11 @@ export function houseInteriorTiles(building: Building): { x: number; y: number }
 
 /** Fatigue multiplier for the room tile somebody actually lies on. */
 export function sleepQualityAt(
-  host: Building | null, x: number, y: number, furnishings: readonly Building[] = []
+  host: Building | null, x: number, y: number, furnishings: readonly Building[] = [], nearHearth = false
 ): number {
-  if (!host) return 0.7;
+  // M15 phase 16e: a fire makes the open ground marginally better, but it is
+  // still worse than a roof. Callers share the same physical hearth reader.
+  if (!host) return nearHearth ? 0.8 : 0.7;
   if (!host.def.interior) return 1;
   if (!houseInteriorContains(host, x, y)) return 0.7;
   const tileX = Math.floor(x), tileY = Math.floor(y);

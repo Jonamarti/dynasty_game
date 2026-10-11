@@ -45,6 +45,33 @@ function fixture() {
 }
 
 describe('bedding and beds', () => {
+  it('samples a sleeping household member once for comfort and security, not an awake one', () => {
+    const { sim, person, house } = fixture();
+    person.action = 'sleep';
+    person.targetBuildingId = house.id;
+    person.mood.recent = [];
+    const sample = (sim as unknown as { shareTheHearth(): void }).shareTheHearth.bind(sim);
+
+    sample();
+
+    expect(person.mood.recent.map(entry => entry.channel)).toContain('comfort');
+    expect(person.mood.recent.map(entry => entry.channel)).toContain('security');
+    expect(person.mood.recent.some(entry => entry.reason === 'slept comfortably')).toBe(true);
+    person.mood.recent = [];
+    const comfort = person.mood.comfort;
+    const security = person.mood.security;
+    person.action = 'idle';
+    sample();
+    expect(person.mood.comfort).toBe(comfort);
+    expect(person.mood.security).toBe(security);
+    expect(person.mood.recent).toHaveLength(0);
+  });
+
+  it('gives exposed sleepers the planned hearth quality while bare ground remains lower', () => {
+    expect(sleepQualityAt(null, 0, 0)).toBe(0.7);
+    expect(sleepQualityAt(null, 0, 0, [], true)).toBe(0.8);
+  });
+
   it('assigns household members to distinct surfaces in stable person/building order', () => {
     const { sim, person, house } = fixture();
     if (person.householdId === null) throw new Error('fixture person has no household');

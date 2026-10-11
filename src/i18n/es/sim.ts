@@ -1,6 +1,10 @@
 /** Spanish for sim. Keys are the English templates; see `i18n.ts`. */
 export const ES_SIM: Record<string, string> = {
   'The {item} they wore wore out': 'Se le rompió la prenda {item}',
+  "slept comfortably": "durmió a gusto",
+  "slept through a cold night": "pasó una noche fría",
+  "slept in safety": "durmió con seguridad",
+  "slept without enough protection": "durmió sin suficiente protección",
   "they need a reed raft or logboat and its knowledge": "necesitan una balsa de juncos o una canoa de tronco y conocer su técnica",
   "Variety drive": "Motivo de variedad",
   "Safety drive": "Motivo de seguridad",

@@ -133,8 +133,9 @@ import type { WorldGeography } from '../world/WorldGeography.ts';
 import { geographicResourceAvailable } from '../world/GeographicResources.ts';
 import { stepMark } from './StepProbe.ts';
 import { approachComarcaEdge, type ComarcaTravel } from '../world/ComarcaTravel.ts';
-import { applyHouseWalls, houseInteriorContains, houseInteriorTiles, houseContainsFootprint, houseForFootprint } from '../world/HouseInterior.ts';
+import { applyHouseWalls, houseInteriorContains, houseInteriorTiles, houseContainsFootprint, houseForFootprint, sleepQualityAt } from '../world/HouseInterior.ts';
 import { lightAt as measuredLightAt, lightFactor, torchLight, hearthNear, hearthLight } from './Light.ts';
+import { sleepMoodChange } from './SleepComfort.ts';
 import { saltSourceNear } from './Preservation.ts';
 import { advanceTorchBurn, torchIgnitionRefusal, torchRefusalText, transferableUnits, burningTorchRefusalText } from './Torch.ts';
 import { advanceFatLamps, FAT_LAMP_FUEL_TICKS, fatLampRefusal, fatLampRefusalText } from './FatLamp.ts';
@@ -4005,6 +4006,35 @@ export class Simulation {
       const roof = roofOverSleeper(person, this.buildingsById);
       const sheltered = roof !== null;
       const household = person.householdId === null ? null : this.householdsById.get(person.householdId);
+      const band = this.bands.find(candidate => candidate.id === person.bandId && !candidate.outcast);
+      const ownCamp = (roof !== null && roof.ownerBandId === person.bandId) ||
+        (!!band && Math.hypot(person.x - band.homeX, person.y - band.homeY) <= this.config.motivation.nightRadius);
+      const huddled = this.peopleHash.queryRadius(person.x, person.y, 3).some(other =>
+        other.id !== person.id && other.alive && other.bandId === person.bandId);
+      const guarded = this.peopleHash.queryRadius(person.x, person.y, this.config.sightRadius).some(other =>
+        other.id !== person.id && other.alive && other.bandId === person.bandId && other.job === 'guard');
+      const claimed = this.territoryOwnerAt(person.x, person.y) === person.bandId;
+      const furnishings = roof?.def.interior
+        ? this.buildingHash.queryRadius(roof.centerX, roof.centerY,
+          Math.max(roof.def.width, roof.def.height) + 1).filter(piece => piece.hostId === roof.id)
+        : [];
+      const quality = roof
+        ? sleepQualityAt(roof, person.x, person.y, furnishings,
+          hearthNear(this.buildingHash, person.x, person.y, 3))
+        : sleepQualityAt(null, person.x, person.y, [], hearthNear(this.buildingHash, person.x, person.y, 3));
+      const moodChange = sleepMoodChange({
+        quality,
+        cold: person.needs.cold,
+        snow: !sheltered && isBuried(person.x, person.y, this.snowDepth, this.treeHash),
+        ownCamp,
+        huddled,
+        guarded,
+        claimed,
+      });
+      person.mood.add('comfort', moodChange.comfort,
+        t(moodChange.comfort >= 0 ? 'slept comfortably' : 'slept through a cold night'), this.time.tick);
+      person.mood.add('security', moodChange.security,
+        t(moodChange.security >= 0 ? 'slept in safety' : 'slept without enough protection'), this.time.tick);
       if (sheltered && household?.homeBuildingId === roof!.id) {
         person.mood.add('belonging', 3, 'slept at home', this.time.tick);
       } else {

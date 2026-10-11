@@ -15189,3 +15189,12 @@ La luz y el calor todavía cruzan paredes por el lector radial; queda anotado en
 lámpara y 16e/16f siguen abiertas. No se ejecutaron cohortes ni se afirma
 calibración económica. Typecheck y los cuatro archivos focales (94 pruebas de
 furniture/sleep, tech, arte e i18n) pasan; la captura Playwright fechada pasa.
+## 2026-10-12 — m15: muestra nocturna de sueño y seguridad
+
+`0.15.70-alpha`: la recuperación del sueño lee la calidad de su superficie,
+incluida la mejora de hoguera al raso. La muestra de medianoche que ya usa
+concepción escribe `mood.comfort` por superficie, frío y nieve y
+`mood.security` por campamento, compañía, guardia y territorio. No añade
+estado ni tiradas. Tests focales cubren casos favorables y negativos; se
+difieren calibración y escenario `homes`. No hubo cambio visual ni captura.
+El motivo `comfort` aún no está conectado a `Drives.ts`.
