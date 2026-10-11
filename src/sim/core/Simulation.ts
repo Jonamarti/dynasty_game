@@ -4193,6 +4193,17 @@ export class Simulation {
 
   /** Takes a killed animal out of the world and its index. */
   private removeAnimal(animal: Animal, counter = 'animal_killed'): void {
+    const wasPresent = this.animalsById.has(animal.id);
+    // Natural predator deaths leave goods people can gather. This is not a
+    // carcass entity or animal scavenging: use the species' established meat
+    // yield and the one hide already harvested by doHunt. Edge departures and
+    // human kills have separate accounting and must not create duplicate goods.
+    if (wasPresent && animal.def.predator &&
+        (counter === 'animal_starved_out' || counter === 'animal_predated')) {
+      this.dropAt(animal.x, animal.y, 'meat', animal.def.meat);
+      this.dropAt(animal.x, animal.y, 'hide', 1);
+      telemetry.count('predator_remains_dropped');
+    }
     this.animalsById.delete(animal.id);
     this.animals = this.animals.filter(a => a.id !== animal.id);
     telemetry.count(counter);

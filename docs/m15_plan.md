@@ -2475,6 +2475,16 @@ Solo cuenta `job: guard` con `action: patrol`; un guardia inactivo no protege.
 La consulta usa `peopleHash`, sin pesos ni RNG nuevos. Pruebas focales positivas
 y negativas; sin cohortes, calibración ni cambio de UI.
 
+**Avance del 2026-10-12 — restos físicos de depredadores.** Cuando un depredador
+muere por hambre o depredación, el suelo recibe la carne de `SpeciesDef.meat`
+y una piel, el rendimiento ya usado por la caza humana. Son bienes en una
+`ItemPile` que las personas pueden recoger; no se añade entidad de cadáver,
+descomposición nueva ni conducta de carroñero. Una salida por el borde y la
+retirada tras caza humana no generan copias. La muerte de un depredador por
+otro depredador aún no es alcanzable con las presas declaradas hoy; el callback
+de depredación queda cubierto sin ampliar esa red ni gastar RNG. Pruebas focales
+positivas y negativas; no hubo cohortes ni calibración ni cambio de UI.
+
 **Detalle en `m14_plan.md` fase 9.** La hierba como capa (`World.grass`), segar
 para paja y cuerda, herbívoros que pastan y se reproducen con un techo que sale
 del pasto, depredadores (lobo en jauría, oso, lince) en su propia pasada,

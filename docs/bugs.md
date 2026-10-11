@@ -1003,8 +1003,14 @@ investigó el selector en este cambio.
 - **Quien es mordido huye a un fuego, pero nadie lo defiende.** No hay
   respuesta de la banda (las `kin_defence` miran a personas). Un lobo que
   persigue a un niño solo no tiene contraparte.
-- **Los depredadores no tienen carroña ni cadáver**: al morir (cazados,
-  hambre) simplemente salen del mundo, como los demás animales.
+- **Resuelto el 2026-10-12 — recursos de depredadores muertos por causas
+  naturales.** Hambre o depredación deja una pile recogible por personas con la
+  carne de `SpeciesDef.meat` y una piel. Las bajas por borde y la caza humana
+  quedan fuera para no crear drops falsos o duplicados. Esto no es un cadáver
+  ni carroña: no hay entidad, deterioro especial, ni animales que consuman los
+  restos. Sigue abierto para M16 el modelo de cadáveres, descomposición y
+  carroñeros; hoy ningún depredador caza a otro según `SpeciesDef.prey`, así
+  que ese tipo concreto de muerte solo está cubierto en el callback.
 - **Resuelto el 2026-10-12 — defensa local de patrulla.** Depredadores no eligen
   a una persona dentro de siete tiles de un adulto de su banda que tenga el
   trabajo de guardia y esté patrullando; también bloquea la irrupción cercana

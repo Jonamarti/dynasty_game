@@ -69,6 +69,17 @@ lección falsa. Prueba con especie de verano agotada dos años consecutivos;
 dependencias instaladas.
 ## 2026-10-12 — m15: la caza puede herir y hacer huir a la presa (0.15.84-alpha)
 ## 2026-10-12 — m15: la patrulla mantiene a los depredadores a distancia (0.15.85-alpha)
+## 2026-10-12 — m15: restos físicos de depredadores (0.15.87-alpha)
+
+La retirada de un depredador por hambre o depredación deja en el suelo su yield
+existente de carne y una piel, disponibles para que una persona los recoja. Son
+bienes en piles, no un modelo de cadáver o carroñeo; los animales no comen estos
+restos. La salida por el borde y la retirada después de una caza humana no
+duplican recursos. Se añadieron pruebas focales de ambas muertes y exclusiones;
+no hubo cohortes ni calibración. No cambia la UI visible ni requiere captura.
+Queda abierto el modelo de cadáveres, descomposición y carroñeros animales para
+M16.
+
 
 Un adulto de la banda que esté patrullando protege a quienes se encuentren a
 siete tiles. Los depredadores ya no seleccionan a esas personas, incluido el
