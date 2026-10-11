@@ -418,14 +418,14 @@ verde. Falta decidir si se alarga el escenario, si los fundadores de `craft`
 empiezan con una receta, o si hace falta una fuente de hueso.
 [Fase 13d](m15_phase13_subwebs.md).
 
-## M15 fase 13d: munición de honda resuelta; arco y átlatl pendientes (2026-10-12)
+## M15 fase 13d: munición física para las tres armas de proyectiles (2026-10-12)
 
-Resuelto para `sling`: las piedras son unidades de `flint` que debe llevar el
-cazador; una se consume en el impacto exitoso, y sin una la caza de liebre se
-abandona antes de perseguir o tirar RNG, con motivo visible. El selector permite
-la honda solo contra liebres; ciervos y jabalíes usan otro arma disponible o
-ningún arma. No se tocó el comportamiento del arco ni del átlatl: ambos aún
-carecen de munición consumible y límite de presa. [Fase 13d](m15_phase13_subwebs.md).
+Resuelto: `sling` consume `flint`, `bow` consume `arrow` y `atlatl` consume
+`atlatl_dart`, siempre de la propia mochila. Flechas y dardos tienen recetas
+con palos, sílex y paja. El coste compartido se cobra en el impacto exitoso;
+sin munición, la caza abandona antes de perseguir o tirar RNG, y con alcance
+insuficiente no gasta el proyectil. La honda sigue limitada a liebres. No se ha
+medido ni calibrado la cadencia de fabricación/consumo. [Fase 13d](m15_phase13_subwebs.md).
 
 ## M15 fase 30: límites conservados tras el cierre (2026-10-06)
 

@@ -148,6 +148,13 @@ export const RECIPES: Record<string, RecipeDef> = {
     output: { bow: 1 },
     keep: 1,
   },
+  // M15 phase 13d. A small batch keeps a bow useful for more than one hunt:
+  // the shafts are sticks, the flint makes the point and thatch binds it on.
+  arrows: {
+    id: 'arrows', label: 'Arrows', icon: '➶', tech: 'bow', skill: 'hunt',
+    workTicks: 90, ingredients: { sticks: 2, flint: 1, thatch: 1 },
+    output: { arrow: 4 }, keep: 8,
+  },
   hide_armour: {
     id: 'hide_armour',
     label: 'Hide armour',
@@ -291,6 +298,13 @@ export const RECIPES: Record<string, RecipeDef> = {
     ingredients: { sticks: 3, thatch: 1 },
     output: { atlatl: 1 },
     keep: 1,
+  },
+  // A heavier dart uses the same shaft/point/binding materials in a smaller
+  // batch. It is loose ammunition in inventory, not another weapon selection.
+  atlatl_darts: {
+    id: 'atlatl_darts', label: 'Spear-thrower darts', icon: '➶', tech: 'atlatl', skill: 'hunt',
+    workTicks: 90, ingredients: { sticks: 2, flint: 1, thatch: 1 },
+    output: { atlatl_dart: 2 }, keep: 4,
   },
 
   // M8.1, mechanism 4: the first recipe in the game that is about a place.
@@ -614,9 +628,7 @@ export const RECIPES: Record<string, RecipeDef> = {
     workTicks: 90, ingredients: { meal: 1 }, output: { flatbread: 1 },
     station: 'hearth', keep: 2,
   },
-  // `sling`: a cord and the flint it throws. There is no ammunition model (the
-  // bow has none either: a hunt spends nothing), so the two flints are the
-  // pebbles it is made with, spent once, here.
+  // `sling`: the weapon is retained; additional flint is its stone ammunition.
   sling: {
     id: 'sling', label: 'Sling', icon: '\u{1FA83}', tech: 'sling', skill: 'hunt',
     workTicks: 80, ingredients: { rope: 1, flint: 2 }, output: { sling: 1 }, keep: 1,

@@ -73,7 +73,7 @@ import { expectedFood } from '../ai/Beliefs.ts';
 import {
   TECH, awlFactor, axeFactor, buildFactor, calendarFactor, forageYieldFactor,
   orchardFactor, prerequisitesMet, reapFactor, tallyFactor, techPower,
-  workableIdea as chooseWorkableIdea, weaponOf, weaponItemOf, armourOf, protectionOf, type Tech,
+  workableIdea as chooseWorkableIdea, weaponOf, weaponItemOf, weaponAmmoItem, armourOf, protectionOf, type Tech,
 } from '../knowledge/Tech.ts';
 import { MAX_IDEAS, PROTOTYPE_AT, type Idea } from '../knowledge/Synthesis.ts';
 import { mayUse, type PropertyUse } from '../social/Property.ts';
@@ -3084,13 +3084,16 @@ export class ActionSystem {
       return;
     }
 
-    // A sling is a hare weapon and its stones belong to the hunter's pack.
-    // Reject before equipping, walking, or rolling the hunt so an empty pouch
-    // cannot silently become an unarmed attempt or consume another stream.
-    const slingForHare = animal.species === 'hare' &&
-      weaponItemOf(person, true, false, person.armsTaken === 0 ? 2 : 1, 'hare') === 'sling';
-    if (slingForHare && !person.inventory.has('flint')) {
-      this.abandon(person, 'sling_no_ammunition', ctx);
+    // Projectiles are physically carried: a sling stone, arrow or atlatl dart
+    // comes from this hunter's own inventory. Reject before equipping, walking
+    // or rolling the hunt when the chosen weapon cannot be fired.
+    // Select from the pack before `prepareTool` changes equipment. Restricting
+    // this to currently equipped items would let an empty quiver start the
+    // multi-tick setup before the bow is fitted.
+    const carriedWeapon = weaponItemOf(person, true, false, 2, animal.species);
+    const carriedAmmo = weaponAmmoItem(carriedWeapon);
+    if (carriedAmmo !== null && !person.inventory.has(carriedAmmo)) {
+      this.abandon(person, 'projectile_ammo_missing', ctx);
       return;
     }
 
@@ -3191,10 +3194,11 @@ export class ActionSystem {
       return;
     }
 
-    // Spend the physical stone only when the sling's shot actually lands.
-    // The preflight above ensures this removal cannot fail midway through a
-    // committed hunt; flint has no shared or communal fallback ownership.
-    if (weaponItem === 'sling') person.inventory.remove('flint', 1);
+    // A miss or an out-of-range chase leaves the carrier's projectile alone;
+    // a landed shot consumes exactly the ammo declared on its weapon. The
+    // preflight above makes this removal safe after the hit roll succeeds.
+    const ammoItem = weaponAmmoItem(weaponItem);
+    if (ammoItem !== null) person.inventory.remove(ammoItem, 1);
 
     animal.health = 0;
     animal.alive = false;

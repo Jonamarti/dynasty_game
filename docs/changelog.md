@@ -15114,3 +15114,15 @@ receta, materiales, propiedad, carga y colocación. Sin UI ni arte nuevos.
 Verificación `sim:check` no disponible en el worktree: falta `vite-node` local;
 pruebas/typecheck no se ejecutaron: `vitest`/`tsc` tampoco están instalados en
 este worktree. [Contrato](m15_phase16d_bedding.md).
+
+## 2026-10-12 — m15: flechas y dardos como munición
+
+El arco lleva flechas y el átlatl dardos fabricables con palos, sílex y paja.
+Los tres proyectiles usan la misma comprobación previa y consumen una unidad
+del inventario propio solo en un impacto exitoso; fallar o estar fuera de
+alcance no gasta munición. La honda conserva su límite de liebres. Se añadieron
+generadores de iconos para ambos objetos, traducciones y pruebas de receta, acierto,
+falta de munición y alcance. No hubo calibración ni cohortes. Se regeneró el
+atlas y se capturó la barra visible de recetas en
+`artifacts/screenshots/m15-projectile-ammo-2026-10-12/01-ammunition-recipes.png`.
+Ver `docs/m15_phase13_subwebs.md`.

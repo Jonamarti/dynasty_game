@@ -3246,6 +3246,11 @@ export function weaponOf(
   };
 }
 
+/** Physical ammunition consumed by a successful hunting strike, if any. */
+export function weaponAmmoItem(itemId: string | null): string | null {
+  return itemId === null ? null : ITEMS[itemId]?.weapon?.ammo ?? null;
+}
+
 /**
  * How strong a weapon's design is in this person's hands: `techPower`, and for
  * the spear one factor more, the fire-hardened tip (M15 phase 13d). The single

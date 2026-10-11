@@ -82,6 +82,10 @@ describe('art coverage', () => {
     expect(props.keys['item/sling']).toBeDefined();
   });
 
+  it('draws inventory icons for projectile ammunition', () => {
+    for (const id of ['arrow', 'atlatl_dart']) expect(props.keys[`item/${id}`]).toBeDefined();
+  });
+
   it('draws inventory icons and world sprites for the phase 16d sleep surfaces', () => {
     for (const id of ['bedding', 'bed', 'bench', 'shelf']) {
       expect(props.keys[`item/${id}`], `${id} inventory icon`).toBeDefined();

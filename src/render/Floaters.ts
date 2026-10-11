@@ -333,7 +333,7 @@ export const STOP_REASONS: Record<string, string> = {
   target_gone: 'they were gone',
   quarry_gone: 'the animal was gone',
   quarry_escaped: 'the animal outran them',
-  sling_no_ammunition: 'their sling had no stone to throw',
+  projectile_ammo_missing: 'they had no ammunition for their weapon',
   // M11 phase 12b. `quarry_escaped` speaks of an animal; a person who gets
   // away from an attack needed their own sentence.
   target_escaped: 'they got away',

@@ -40,7 +40,7 @@ export interface ItemDef {
    * to a deer than to a neighbour. `tech` routes the whole thing through
    * `techPower`, so a refined design hits harder than a first attempt at one.
    */
-  weapon?: { damage: number; reach: number; hunt: number; tech: string };
+  weapon?: { damage: number; reach: number; hunt: number; tech: string; ammo?: string };
   /**
    * M15 phase 21f. How much of a blow on each part of the body this turns
    * aside, 0 to 1. Wearable armour applies only while the layer is worn.
@@ -179,7 +179,7 @@ export const ITEMS: Record<string, ItemDef> = {
     // Poor in a brawl and decisive against an animal that outruns you, which is
     // the whole reason hunting has been a garnish: a fresh deer is faster than a
     // person and a hunt could only ever be won by exhausting one.
-    weapon: { damage: 0.3, reach: 1.6, hunt: 2.4, tech: 'bow' },
+    weapon: { damage: 0.3, reach: 1.6, hunt: 2.4, tech: 'bow', ammo: 'arrow' },
     // Two hands, always: there is no one-handed way to draw a bow, unlike the
     // spear's "needs both hands to throw far, works one-handed at a pinch".
     class: 'long', hand: { perHand: 1, perArms: 1, hands: 2 },
@@ -221,9 +221,16 @@ export const ITEMS: Record<string, ItemDef> = {
     // It precedes the bow by twenty thousand years and sits just below it here,
     // which is the whole reason it requires only `spear`: a lever on the end of
     // your arm is a smaller idea than a bow, and it arrived first.
-    weapon: { damage: 0.5, reach: 1.35, hunt: 2.1, tech: 'atlatl' },
+    weapon: { damage: 0.5, reach: 1.35, hunt: 2.1, tech: 'atlatl', ammo: 'atlatl_dart' },
     class: 'long', hand: { perHand: 1, perArms: 1, hands: 1 },
   },
+  // M15 phase 13d. An arrow is a carried shaft with a flint point and thatch
+  // binding; the pack count is the archer's actual supply, not a global store.
+  arrow: { id: 'arrow', label: 'Arrow', nutrition: 0, spoilTicks: 0, baseValue: 2,
+    class: 'small', hand: { perHand: 8, perArms: 16, hands: 1 } },
+  // The atlatl throws a heavier, hafted dart rather than the reusable lever.
+  atlatl_dart: { id: 'atlatl_dart', label: 'Spear-thrower dart', nutrition: 0, spoilTicks: 0, baseValue: 3,
+    class: 'long', hand: { perHand: 3, perArms: 6, hands: 1 } },
   fur_coat: {
     id: 'fur_coat', label: 'Fur coat', nutrition: 0, spoilTicks: 0, baseValue: 15,
     // Thick pelts blunt a blow a little where they cover — the coat is for
@@ -368,11 +375,11 @@ export const ITEMS: Record<string, ItemDef> = {
   },
   // `sling`. Reach past the spear and a better hunting term (small game that a
   // thrown spear cannot reach), poor in a brawl, one hand. Below the bow in
-  // every term that matters for a hunt. Its ammunition is not an item: see
-  // `RECIPES.sling` and the open doubts of phase 13d.
+  // every term that matters for a hunt. The carried flint it throws is its
+  // physical ammunition; the pouch still comes from `RECIPES.sling`.
   sling: {
     id: 'sling', label: 'Sling', nutrition: 0, spoilTicks: 0, baseValue: 5,
-    weapon: { damage: 0.2, reach: 1.4, hunt: 1.7, tech: 'sling' },
+    weapon: { damage: 0.2, reach: 1.4, hunt: 1.7, tech: 'sling', ammo: 'flint' },
     class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 },
   },
   // --- M15 phase 37 (M8.3): the metal tier ------------------------------------
