@@ -1701,6 +1701,14 @@ el rechazo de cuentas incoherentes antes de mutar. Quedan trueque/robo/tributo,
 otros movimientos entre edificios, escrow y tráfico fuera del mapa; por eso
 desgaste/remiendo sigue apagado.
 
+**Avance del 2026-10-12 — regalos físicos:** `Simulation.handOver` y el regalo
+autónomo cronometrado usan `Inventory.transferTo`, así que una prenda conserva
+identidad, desgaste y progreso de remiendo. Si falla la inserción de una pila
+de prendas, el helper revierte ambas mochilas. `doTrade` sólo elige alimentos y
+no puede seleccionar prendas; robo, amends, tributo, otros movimientos entre
+edificios, escrow y tráfico fuera del mapa siguen pendientes. Desgaste/remiendo
+permanece apagado.
+
 **Avance del 2026-10-11 — base de condición física:** `Inventory` crea una
 unidad íntegra por prenda, permite extraerla/devolverla con condición y trabajo
 de remiendo, y conserva/valida las unidades en el registro explícito de

@@ -3144,9 +3144,8 @@ export class Simulation {
       this.lastRefusal = t('{name} cannot carry any more', { name: receiver.name });
       return 0;
     }
-    const moved = giver.inventory.remove(itemId, Math.min(room, count, available));
+    const moved = giver.inventory.transferTo(receiver.inventory, itemId, Math.min(room, count, available));
     if (moved === 0) return 0;
-    receiver.inventory.add(itemId, moved);
     // Worn layers are ownership references too. Handing over the last copy
     // must clear the visible layer and any capacity it supplied immediately.
     reconcileCarry(giver, this.config.carry, (x, y, id, amount, units) => this.dropAt(x, y, id, amount, units));

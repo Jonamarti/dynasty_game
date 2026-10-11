@@ -5705,12 +5705,12 @@ export class ActionSystem {
     // phase 5b and never emitted; this is its first writer outside the Kit.
     const chosen = person.targetItemId;
     if (chosen !== null && (ITEMS[chosen]?.nutrition ?? 0) === 0) {
-      const handed = person.inventory.remove(chosen, 1);
+      const handed = person.inventory.transferTo(other.inventory, chosen, 1);
       if (handed === 0) {
         this.abandon(person, 'nothing_to_give', ctx);
         return;
       }
-      other.inventory.add(chosen, handed);
+      reconcileCarry(person, ctx.carry, ctx.dropAt);
       ctx.social.emit('gift', person, other, giftWorth(chosen, handed),
         ctx.tick, ctx.peopleHash, ctx.sightRadius);
       telemetry.count('gift_of_goods');

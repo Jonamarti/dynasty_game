@@ -659,14 +659,24 @@ export class Inventory {
       return moved;
     }
     if (!Number.isSafeInteger(count)) throw new RangeError('garment transfer count must be a safe integer');
+    // Gifts and direct handovers must not strand half a stack if a destination
+    // rejects one garment after earlier units have already arrived.
+    const sourceBefore = this.transferSnapshot();
+    const destinationBefore = destination.transferSnapshot();
     let moved = 0;
-    for (let i = 0; i < count; i++) {
-      const unit = this.takeGarmentUnit(itemId, excludedUnitIds);
-      if (!unit) break;
-      destination.putGarmentUnit(unit);
-      moved++;
+    try {
+      for (let i = 0; i < count; i++) {
+        const unit = this.takeGarmentUnit(itemId, excludedUnitIds);
+        if (!unit) break;
+        destination.putGarmentUnit(unit);
+        moved++;
+      }
+      return moved;
+    } catch (error) {
+      this.restoreStateUnchecked(sourceBefore);
+      destination.restoreStateUnchecked(destinationBefore);
+      throw error;
     }
-    return moved;
   }
 
   /**

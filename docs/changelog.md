@@ -14971,3 +14971,16 @@ La prueba de visibilidad del montículo ahora refresca la prominencia derivada
 después de aplanar el heightfield en su fixture. Antes comparaba contra
 prominencia residual de la geografía generada y fallaba aunque `pile` actualizase
 correctamente el relieve. Sin cambio de comportamiento del juego.
+
+## 2026-10-12 — m15: regalos conservan la prenda física
+
+`Simulation.handOver` y el regalo autónomo no alimentario pasan por la
+transferencia explícita de unidades; conservan identidad, desgaste y progreso
+de remiendo, y reconciliamos inmediatamente la capa que el donante ya no posee.
+Las transferencias de prendas revierten ambas mochilas si una inserción falla.
+Pruebas añadidas para regalo directo, regalo NPC y rollback. `doTrade` sigue
+intercambiando únicamente comida; robo, amends y tributo permanecen pendientes.
+No se instaló dependencias. `npm run sim:check`, `npm run typecheck` y la prueba
+focal no pudieron arrancar (`vite-node`, `tsc` y `vitest` no encontrados); quedan
+por ejecutar cuando el runtime local esté disponible. Desgaste/remiendo no se
+activa.

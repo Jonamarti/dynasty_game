@@ -10,6 +10,67 @@ import { settleEstate } from '../systems/LifeSystem.ts';
 import { BUILDINGS, Building } from '../entities/Building.ts';
 
 describe('garment condition ownership foundation', () => {
+  it('preserves the chosen garment unit through the direct player handover', () => {
+    const sim = new Simulation({ seed: 'garment-handover', world: { width: 48, height: 48 },
+      population: { bands: 1, peoplePerBand: 2 }, carry: { legacyPack: true } });
+    const [giver, receiver] = sim.livingPeople();
+    giver!.inventory.add('wool_cloak', 2);
+    const [worn, spare] = giver!.inventory.garmentUnitsOf('wool_cloak');
+    giver!.inventory.setGarmentUnitCondition(worn!.unitId, 0.32, 88);
+    giver!.inventory.setGarmentUnitCondition(spare!.unitId, 0.74, 11);
+    expect(changeGarment(giver!, 'wool_cloak', 'wear_garment')).toBeNull();
+
+    expect(sim.handOver(giver!, receiver!, 'wool_cloak', 1)).toBe(1);
+    expect(giver!.inventory.garmentUnitsOf('wool_cloak')).toMatchObject([
+      { unitId: spare!.unitId, wear: 0.74, repairProgress: 11 },
+    ]);
+    expect(receiver!.inventory.garmentUnitsOf('wool_cloak')).toMatchObject([
+      { unitId: worn!.unitId, wear: 0.32, repairProgress: 88 },
+    ]);
+    expect(giver!.equipment.cloak).toBeUndefined();
+  });
+
+  it('preserves garment condition through an NPC non-food gift action', () => {
+    const sim = new Simulation({ seed: 'garment-npc-gift', world: { width: 48, height: 48 },
+      population: { bands: 1, peoplePerBand: 2 }, carry: { legacyPack: true } });
+    const [giver, receiver] = sim.livingPeople();
+    giver!.age = 30 * giver!.daysPerYear;
+    receiver!.age = 30 * receiver!.daysPerYear;
+    receiver!.x = giver!.x + 1;
+    receiver!.y = giver!.y;
+    giver!.inventory.add('wool_cloak', 1);
+    const unit = giver!.inventory.garmentUnitsOf('wool_cloak')[0]!;
+    giver!.inventory.setGarmentUnitCondition(unit.unitId, 0.41, 57);
+    expect(sim.order(giver!, 'give', { personId: receiver!.id, itemId: 'wool_cloak' })).toBe(true);
+
+    for (let tick = 0; tick < 40 && receiver!.inventory.count('wool_cloak') === 0; tick++) sim.step();
+    expect(receiver!.inventory.garmentUnitsOf('wool_cloak')).toMatchObject([
+      { unitId: unit.unitId, wear: 0.41, repairProgress: 57 },
+    ]);
+  });
+
+  it('rolls back a multi-unit garment transfer when the receiver rejects a unit', () => {
+    let inserted = 0;
+    class RejectSecondGarment extends Inventory {
+      override putGarmentUnit(unit: GarmentUnit): string {
+        if (++inserted === 2) throw new Error('receiver rejected garment');
+        return super.putGarmentUnit(unit);
+      }
+    }
+    const source = new Inventory();
+    const destination = new RejectSecondGarment();
+    source.add('wool_cloak', 2);
+    const [first, second] = source.garmentUnitsOf('wool_cloak');
+    source.setGarmentUnitCondition(first!.unitId, 0.28, 19);
+    source.setGarmentUnitCondition(second!.unitId, 0.63, 91);
+    const sourceBefore = source.transferSnapshot();
+    const destinationBefore = destination.transferSnapshot();
+
+    expect(() => source.transferTo(destination, 'wool_cloak', 2)).toThrow('receiver rejected garment');
+    expect(source.transferSnapshot()).toEqual(sourceBefore);
+    expect(destination.transferSnapshot()).toEqual(destinationBefore);
+  });
+
   it('moves one physical garment with its condition and banked repair work', () => {
     const pack = new Inventory();
     pack.add('wool_cloak', 2);
