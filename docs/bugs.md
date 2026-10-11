@@ -6,7 +6,7 @@ elige esa orden ni fabrica una sustituta; la luz desaparece hasta que intervenga
 el jugador. Este avance de autonomía es una sola carga inicial, no mantenimiento
 doméstico completo. Véase [contrato 16d](m15_phase16d_bedding.md).
 
-## 2026-10-11 — M15 14c, propiedad de condición aún no conectada al juego
+## 2026-10-12 — M15 14c, propiedad de condición: auditoría de consumidores
 
 La base por unidad ya conserva condición/progreso en las API de `Inventory` y
 en el registro explícito de transferencia. Equipo, soltar/recoger montones,
@@ -24,14 +24,18 @@ con unidades ausentes o duplicadas. Los manifiestos de mercancía de caravana
 siguen siendo count-only: rechazan prendas y el trueque/retorno las deja con el
 viajero hasta que el manifiesto tenga soporte para unidades físicas. Las rutas
 de amenaza y rescate ya transfieren prendas atómicamente; `doHaul` también usa
-transferencia física si una obra solicita ropa. Sigue pendiente reconciliar la
-prenda vestida si `doPrototype` consume el `fur_coat` de la muestra para
-`toggles`; `unitId` sigue
-siendo local al inventario y se reemite al colisionar durante una fusión; una
-identidad global antes de referenciar copias entre inventarios sigue pendiente.
-Por esa referencia vestida sin reconciliar y la auditoría de consumo pendiente
-no se habilita desgaste ni remiendo. Véase el
-[contrato](m15_garment_condition_design.md).
+transferencia física si una obra solicita ropa. La auditoría encontró dos
+consumidores legítimos de prendas: `doPrototype` gasta el `fur_coat` de la
+muestra `toggles` y `doCraft` gasta el de la receta `toggled_coat`. Ambos ahora
+usan consumo transaccional, limpian la referencia vestida y restauran inventario
+y equipo si falla otro material. Los demás `remove` count-only son para comida,
+materiales no garment, herramientas/recipientes, o destrucción explícita.
+No queda una ruta count-only de consumidor de prendas identificada. El `unitId`
+sigue siendo local al inventario y se reemite ante colisión durante fusiones;
+las referencias vestidas se reconcilian con ese ID dentro de cada propietario.
+No hay una brecha conocida de transferencia que impida la propiedad por unidad.
+El desgaste diario ya se habilitó para prendas vestidas; el remiendo queda
+pendiente. Véase el [contrato](m15_garment_condition_design.md).
 
 Las transferencias de prendas ahora revierten ambas mochilas si falla una
 inserción intermedia. La prueba nueva de regalos NPC requiere typecheck y Vitest;

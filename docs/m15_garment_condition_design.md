@@ -56,10 +56,25 @@ traveller. The focused test covers a worn unit with banked repair progress over
 the full out-and-back trip. See the
 [phase 35 contract](m15_phase35_journeys.md).
 
-This is still a foundation: some gameplay transfer seams listed below use
-generic count-based `add`/`remove`. Wear/remending must not be activated until
-those routes move garment rows too. Generic `remove` treats a garment as
-consumed and destroys its row; it is never a transfer operation.
+The 2026-10-12 consumer audit closes both garment-input routes: the `toggles`
+prototype sample and the `toggled_coat` recipe. `Inventory.consumeItems`
+prevalidates and removes a complete material set transactionally; its callback
+reconciles the worn-unit reference before the inventory transaction commits.
+Failure restores the inventory and the action restores equipment. Tests cover
+successful consumption of a worn, damaged `fur_coat` and rollback when a later
+material removal fails. Other count-only removal sites are food/nutrition,
+non-garment technology or inscription materials, tool/container displacement,
+or explicit destruction; current recipes and technology prototypes have no
+other garment inputs. Quantity-only caravan manifests reject garments.
+Ownership and current garment-consumer coverage now have no identified
+count-only laundering route. Wear and mending remain inactive pending their
+own implementation and verification.
+
+This is still an ownership foundation, not wear or mending behavior. Generic
+`remove` treats a garment as consumed and destroys its row; it is never a
+transfer operation. A garment ingredient must go through the transactional
+`consumeItems` path so the worn reference is cleared with the consumption or
+restored together with the inventory on failure.
 
 ## The invariant
 
@@ -117,7 +132,7 @@ The main movement seams found in the current tree are:
 | Death and inheritance | `LifeSystem.settleEstate`, called from `Simulation` death handling | **Delivered:** whole estate moves atomically to heir/home, or garment rows drop intact at the deceased's feet. |
 | Comarca staging and restore | `ComarcaInventoryTransfer.take`, `consume`, `restore`, `toRecord` | **Delivered for escrow records:** validated graphs preserve unit ID, wear, and repair progress through JSON and food consumption; malformed or incomplete present rows and duplicate identities are rejected, and multi-source take/restore roll back on later failure. Consuming a garment itself is explicit destruction. |
 | World traffic / traveller cargo | `WorldTrafficCoordinator` plus `WorldState` cargo staging and return | **Delivered for traveller inventories:** exact rows survive staging, checkpoint save/load, arrival and return; checkpoint hydration rejects missing/duplicate rows. Quantity-only caravan manifests reject garments and camp barter/return selection leaves garment stacks on the traveller. |
-| Crafting and explicit consumption | `ActionSystem.doCraft`, `doPrototype`, food/ingredient consumers | New garment outputs are pristine; a garment used as an ingredient is explicitly destroyed, not transferred. Current recipes contain no garment ingredients. One technology prototype, `TECH.toggles.prototype.fur_coat`, intentionally consumes a garment through `doPrototype`; that route does not reconcile a worn reference and remains the last clothing-consumption gap before wear/mending. |
+| Crafting and explicit consumption | `ActionSystem.doCraft`, `doPrototype`, food/ingredient consumers | New garment outputs are pristine. The `toggled_coat` recipe and `TECH.toggles.prototype.fur_coat` prototype sample intentionally destroy garment inputs through the atomic `Inventory.consumeItems` path, reconciling the worn reference and rolling back inventory/equipment on failure. Current food, inscription, and other material consumers do not select garments. |
 
 Other `remove`/`add` pairs exist for food, tools, earth, and materials. They
 need not all become per-unit APIs, but every route capable of moving a garment

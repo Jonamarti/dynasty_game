@@ -166,6 +166,11 @@ function clearUnownedEquipment(person: Person): void {
       person.carryContainerCapacity - (ITEMS[equipped.item]?.container?.capacity ?? 0));
     delete person.equipment[slot];
   }
+  reconcileGarmentEquipment(person);
+}
+
+/** Clear garment references after a physical unit was consumed or destroyed. */
+export function reconcileGarmentEquipment(person: Person): void {
   for (const slot of GARMENT_SLOTS) {
     const equipped = person.equipment[slot];
     if (!equipped || !ITEMS[equipped.item]?.garment) continue;

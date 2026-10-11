@@ -57,7 +57,7 @@ import type { RNG } from '../core/RNG.ts';
 import { ITEMS } from '../entities/Item.ts';
 import { animalBlow } from '../entities/AnimalAttack.ts';
 import { claimTransportAnimal } from '../core/TransportAnimals.ts';
-import { canTake, equipContainer, itemCapacityFor, reconcileCarry, stow } from '../core/Carry.ts';
+import { canTake, equipContainer, itemCapacityFor, reconcileCarry, reconcileGarmentEquipment, stow } from '../core/Carry.ts';
 import {
   changeGarment, equipFor as fitToolForAction, equipItemInSlot, manualEquipRefusal,
   manualEquipSlot, manualGarmentRefusal, type ToolAction, type ManualGarmentVerb,
@@ -4894,11 +4894,22 @@ export class ActionSystem {
     }
 
     // M15 phase 11b: worked into a craft, whether it survives the recipe
-    // (an ingredient) or is what came out of it (the product).
-    for (const [itemId, count] of Object.entries(ingredientsFor(recipe, person.inventory) ?? recipe.ingredients)) {
-      person.inventory.remove(itemId, count);
-      if (foodRecipe) telemetry.count('compact_production_input_processing_' + itemId, count);
+    // (an ingredient) or is what came out of it (the product). `toggled_coat`
+    // consumes a garment, so reconcile its worn unit inside the same rollback
+    // boundary as the other ingredients.
+    const ingredients = Object.entries(ingredientsFor(recipe, person.inventory) ?? recipe.ingredients);
+    const equipmentBefore = Object.fromEntries(Object.entries(person.equipment)
+      .map(([slot, item]) => [slot, item ? { ...item } : item])) as typeof person.equipment;
+    try {
+      person.inventory.consumeItems(ingredients, () => reconcileGarmentEquipment(person));
+    } catch {
+      person.equipment = equipmentBefore;
+      this.abandon(person, 'lack_materials', ctx);
+      return;
+    }
+    for (const [itemId, count] of ingredients) {
       person.handled.set(itemId, ctx.tick);
+      if (foodRecipe) telemetry.count('compact_production_input_processing_' + itemId, count);
     }
     for (const [itemId, count] of Object.entries(recipe.output)) {
       person.inventory.add(itemId, count);
@@ -5503,8 +5514,17 @@ export class ActionSystem {
       return;
     }
 
-    for (const [itemId, count] of Object.entries(def.prototype)) {
-      person.inventory.remove(itemId, count);
+    const equipmentBefore = Object.fromEntries(Object.entries(person.equipment)
+      .map(([slot, item]) => [slot, item ? { ...item } : item])) as typeof person.equipment;
+    try {
+      // Prototype inputs are consumed, not transferred. Keep this as one
+      // inventory transaction so a later bad input cannot destroy a worn
+      // coat while leaving the idea and its other materials untouched.
+      person.inventory.consumeItems(Object.entries(def.prototype), () => reconcileGarmentEquipment(person));
+    } catch {
+      person.equipment = equipmentBefore;
+      this.abandon(person, 'lack_materials', ctx);
+      return;
     }
     idea.stage = 'prototyped';
     person.clearWorkBank();

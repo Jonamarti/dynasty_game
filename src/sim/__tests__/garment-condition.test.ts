@@ -11,6 +11,59 @@ import { settleEstate } from '../systems/LifeSystem.ts';
 import { BUILDINGS, Building } from '../entities/Building.ts';
 
 describe('garment condition ownership foundation', () => {
+  it('consumes a prototype sample atomically and clears its worn unit reference', () => {
+    const sim = new Simulation({ seed: 'garment-prototype-consume', world: { width: 48, height: 48 },
+      population: { bands: 1, peoplePerBand: 2 }, carry: { legacyPack: true } });
+    const person = sim.livingPeople()[0]!;
+    person.age = 30 * person.daysPerYear;
+    person.inventory.add('fur_coat', 1);
+    person.inventory.add('bone', 2);
+    const unit = person.inventory.garmentUnitsOf('fur_coat')[0]!;
+    person.inventory.setGarmentUnitCondition(unit.unitId, 0.29, 93);
+    expect(changeGarment(person, 'fur_coat', 'wear_garment')).toBeNull();
+    const idea = { tech: 'toggles' as const, stage: 'researching' as const, insight: 1, story: 'test',
+      conceivedTick: 0, effort: 0, discussedWith: [], trials: 0, proof: 0, failedTests: 0, tries: 0 };
+    person.ideas.push(idea);
+    person.action = 'prototype';
+    person.actionTimer = 1;
+
+    sim.step();
+
+    expect(person.inventory.count('fur_coat')).toBe(0);
+    expect(person.inventory.count('bone')).toBe(0);
+    expect(person.equipment.torso).toBeUndefined();
+    expect(idea.stage).toBe('prototyped');
+  });
+
+  it('rolls back a worn prototype sample when a later material removal fails', () => {
+    const sim = new Simulation({ seed: 'garment-prototype-rollback', world: { width: 48, height: 48 },
+      population: { bands: 1, peoplePerBand: 2 }, carry: { legacyPack: true } });
+    const person = sim.livingPeople()[0]!;
+    person.age = 30 * person.daysPerYear;
+    person.inventory.add('fur_coat', 1);
+    person.inventory.add('bone', 2);
+    const unit = person.inventory.garmentUnitsOf('fur_coat')[0]!;
+    person.inventory.setGarmentUnitCondition(unit.unitId, 0.29, 93);
+    expect(changeGarment(person, 'fur_coat', 'wear_garment')).toBeNull();
+    const idea = { tech: 'toggles' as const, stage: 'researching' as const, insight: 1, story: 'test',
+      conceivedTick: 0, effort: 0, discussedWith: [], trials: 0, proof: 0, failedTests: 0, tries: 0 };
+    person.ideas.push(idea);
+    const before = person.inventory.transferSnapshot();
+    const remove = person.inventory.remove.bind(person.inventory);
+    person.inventory.remove = (itemId, count) => {
+      if (itemId === 'bone') throw new Error('injected material removal failure');
+      return remove(itemId, count);
+    };
+    person.action = 'prototype';
+    person.actionTimer = 1;
+
+    sim.step();
+
+    expect(person.inventory.transferSnapshot()).toEqual(before);
+    expect(person.equipment.torso).toMatchObject({ item: 'fur_coat', unitId: unit.unitId });
+    expect(idea.stage).toBe('researching');
+  });
+
   it('preserves the chosen garment unit through the direct player handover', () => {
     const sim = new Simulation({ seed: 'garment-handover', world: { width: 48, height: 48 },
       population: { bands: 1, peoplePerBand: 2 }, carry: { legacyPack: true } });

@@ -1,3 +1,17 @@
+## 2026-10-12 — m15: consumo de prendas con reconciliación y rollback (0.15.76-alpha)
+
+El cierre de la auditoría encontró dos consumidores reales: `doPrototype`
+consume la muestra `fur_coat` de `toggles` y `doCraft` consume el mismo tipo en
+la receta `toggled_coat`. Ambos usan `Inventory.consumeItems`, una transacción
+que valida todos los materiales, revierte la mochila si una retirada falla y
+reconcilia el slot vestido dentro de la operación. Pruebas cubren muestra
+gastada/vestida exitosa y rollback tras fallo de un material posterior; la
+receta confirma que no queda una referencia a la prenda destruida. Reauditoría
+de `inventory.remove` no encontró otro consumidor count-only que pueda
+seleccionar prendas: los demás caminos son nutrición, materiales no garment,
+herramientas/recipientes o destrucción explícita. Desgaste/remiendo siguen
+apagados mientras esperan su implementación y verificación propias.
+
 ## 2026-10-12 — m15: amenazas y rescates transfieren prendas físicas (0.15.75-alpha)
 
 `doThreaten` y `ransomCaptive` mueven prendas por `Inventory.transferTo` /

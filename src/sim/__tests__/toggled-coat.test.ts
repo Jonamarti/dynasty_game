@@ -6,6 +6,7 @@ import { wornGarmentsOf } from '../../render/Renderer.ts';
 import { RECIPES, hasIngredients } from '../entities/Recipe.ts';
 import { ITEMS } from '../entities/Item.ts';
 import { toCheckpointRecord } from '../persistence/CheckpointRecords.ts';
+import { changeGarment } from '../core/ToolEquipment.ts';
 
 function fixture() {
   const sim = new Simulation({ seed: 'toggled_coat', world: { width: 48, height: 48 }, population: { bands: 1, peoplePerBand: 2 } });
@@ -30,12 +31,17 @@ describe('toggled_coat', () => {
 
   it('crafts the toggled coat through the ordinary executor and spends exactly the listed materials', () => {
     const { sim, person } = fixture();
+    person.age = 30 * person.daysPerYear;
     person.inventory.add('fur_coat', 1); person.inventory.add('bone', 2);
+    const sample = person.inventory.garmentUnitsOf('fur_coat')[0]!;
+    person.inventory.setGarmentUnitCondition(sample.unitId, 0.27, 61);
+    expect(changeGarment(person, 'fur_coat', 'wear_garment')).toBeNull();
     person.knownTech.add('tailoring'); person.knownTech.add('bone_working');
     expect(sim.order(person, 'craft', { recipeId: 'toggled_coat' })).toBe(true);
     sim.step();
     expect(person.inventory.count('fur_coat')).toBe(1);
     expect(person.inventory.count('bone')).toBe(2);
+    expect(person.equipment.torso?.unitId).toBe(sample.unitId);
     expect(person.action).not.toBe('craft');
     person.knownTech.add('toggles');
     expect(sim.order(person, 'craft', { recipeId: 'toggled_coat' })).toBe(true);
@@ -46,6 +52,7 @@ describe('toggled_coat', () => {
     expect(person.inventory.count('toggled_coat')).toBe(1);
     expect(person.inventory.count('fur_coat')).toBe(0);
     expect(person.inventory.count('bone')).toBe(0);
+    expect(person.equipment.torso).toBeUndefined();
   });
 
   it('warms only in the torso slot while owned and worn', () => {

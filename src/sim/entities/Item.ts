@@ -580,6 +580,39 @@ export class Inventory {
     return taken;
   }
 
+  /** Consume a selected set of materials as one transaction, including garments. */
+  consumeItems(items: readonly (readonly [string, number])[], afterConsume?: () => void): number {
+    if (items.length === 0) return 0;
+    const required = new Map<string, number>();
+    for (const entry of items) {
+      if (!Array.isArray(entry) || entry.length !== 2 || typeof entry[0] !== 'string' || !entry[0] ||
+          !Number.isSafeInteger(entry[1]) || entry[1] <= 0) {
+        throw new RangeError('inventory consumption request is invalid');
+      }
+      const total = (required.get(entry[0]) ?? 0) + entry[1];
+      if (!Number.isSafeInteger(total)) throw new RangeError('inventory consumption count is invalid');
+      required.set(entry[0], total);
+    }
+    for (const [itemId, count] of required) {
+      if (this.count(itemId) < count) throw new RangeError('inventory changed before consumption');
+    }
+
+    const before = this.transferSnapshot();
+    let consumed = 0;
+    try {
+      for (const [itemId, count] of required) {
+        const removed = this.remove(itemId, count);
+        if (removed !== count) throw new RangeError('inventory count changed during consumption');
+        consumed += removed;
+      }
+      afterConsume?.();
+      return consumed;
+    } catch (error) {
+      this.restoreStateUnchecked(before);
+      throw error;
+    }
+  }
+
   count(itemId: string): number {
     return this.stacks.get(itemId) ?? 0;
   }
