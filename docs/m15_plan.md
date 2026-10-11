@@ -1,4 +1,6 @@
-**Avance del 2026-10-11 — 14c, almacén de prendas:** el depósito y la retirada directa y automática transfieren filas físicas por `Inventory.transferTo`; la aceptación del edificio y el inventario persistido conservan unidad, condición y progreso parcial. Prueba el ciclo persona→almacén→persona y rechaza el guardado cuya cantidad no concuerda con sus prendas físicas. Quedan herencia, intercambio/robo/tributo, transferencias internas entre almacenes y tráfico de mundo; el desgaste/remiendo continúa apagado. No se cierra 14c/14e ni M15.
+**Avance del 2026-10-11 — 14c, fusión de almacenes:** al fusionar hogares, el almacén de origen se combina atómicamente con el del hogar destino mediante una transferencia de inventario validada. Se conserva el estado de cada prenda y se reemiten IDs locales en caso de colisión. Una incoherencia de identidad o cantidad rechaza la fusión antes de cambiar hogares/riqueza; un fallo de inserción revierte ambos inventarios. Siguen pendientes herencia, intercambio/robo/tributo, escrow y tráfico de mundo; desgaste/remiendo continúan apagados.
+
+**Avance del 2026-10-11 — 14c, almacén de prendas:** el depósito y la retirada directa y automática transfieren filas físicas por `Inventory.transferTo`; la aceptación del edificio y el inventario persistido conservan unidad, condición y progreso parcial. Prueba el ciclo persona→almacén→persona y rechaza el guardado cuya cantidad no concuerda con sus prendas físicas. Quedan herencia, intercambio/robo/tributo, transferencias internas entre almacenes fuera de la fusión de hogares y tráfico de mundo; el desgaste/remiendo continúa apagado. No se cierra 14c/14e ni M15.
 
 **Avance del 2026-10-11 — 14c, bolsillos:** túnica cosida y de lino y abrigo con alamares aportan cuatro unidades; parka, dos. Sólo cuenta la prenda propia en su hueco vestido. El lector compartido aumenta capacidad agregada y límites por objeto pequeño, sin aumentar los límites de comida o cargas grandes. Cambiarse o perder la última prenda reconcilia el exceso en montones físicos; el guardado deriva la capacidad del equipo canónico. [Contrato](m15_phase14c_pockets.md). Siguen la integración completa de propiedad de condición, desgaste/remiendo, curtido y estatus opcional; no se cierra 14c/14e ni M15, ni se afirma mejora económica.
 
@@ -25,8 +27,8 @@ No se declara 14c/14e ni M15 completos; cohortes y matriz pesada diferidas.
 **Revisión del 2026-10-10 — condición física de ropa:** las unidades tienen
 propiedad y equipo, montones y almacenes ya conservan su unidad al moverla.
 `Equipment.wear` y los stacks de cantidades no bastan por sí solos. Siguen
-pendientes intercambio/robo/tributo, herencia, staging/escrow, tráfico fuera
-del mapa y las transferencias internas entre almacenes. [Contrato](m15_garment_condition_design.md).
+pendientes intercambio/robo/tributo, herencia, staging/escrow y tráfico fuera
+del mapa. [Contrato](m15_garment_condition_design.md).
 No se activa desgaste/remiendo hasta cubrir esas rutas; curtido también sigue
 abierto.
 

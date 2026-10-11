@@ -3,8 +3,9 @@
 La base por unidad ya conserva condición/progreso en las API de `Inventory` y
 en el registro explícito de transferencia. Equipo, soltar/recoger montones,
 desbordamiento de carga y depósitos/retiradas persona↔almacén preservan la
-unidad. Siguen sin migrar herencia, intercambio/robo/tributo, transferencias
-edificio↔edificio y tráfico fuera del mapa; algunas de esas rutas aún usan
+unidad. La fusión de almacenes del hogar está cubierta por una transferencia
+atómica. Siguen sin migrar herencia, intercambio/robo/tributo, otros movimientos
+entre edificios y tráfico fuera del mapa; algunas de esas rutas aún usan
 recuentos genéricos y pueden destruir o recrear la unidad. `unitId` sigue
 siendo local al inventario y se reemite al colisionar durante una fusión; una
 identidad global antes de referenciar copias entre inventarios sigue pendiente.

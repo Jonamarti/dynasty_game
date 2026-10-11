@@ -16,8 +16,9 @@ The 2026-10-11 store-transfer slice preserves rows for direct and autonomous
 person/store deposits and withdrawals, including partial quantities. Building
 acceptance uses the same transfer API, and its validated inventory snapshot
 retains unit ID, condition, and banked repair progress. A record whose garment
-counts do not match its physical rows is rejected. Building-to-building
-transfers remain a separate, pending route.
+counts do not match its physical rows is rejected. Household home-store merges
+use an atomic whole-inventory transfer, with rollback if an insertion fails.
+Other internal building transfers remain pending.
 
 This is a foundation only: the existing gameplay transfer seams listed below
 still use generic count-based `add`/`remove` in places. Wear/remending must not
@@ -74,7 +75,7 @@ The main movement seams found in the current tree are:
 | --- | --- | --- |
 | Put on, take off, replace clothing | `ToolEquipment.changeGarment` | Equipment references a specific owned unit; swapping keeps the displaced unit in inventory. |
 | Give, trade, steal, amends, tribute | `Simulation.handOver`, `doGive`, `doTrade`, `doSteal`, `doMakeAmends`, `Simulation` tribute path | Move selected garment units with condition; never recreate them with plain `add`. Pending. |
-| Store and withdraw | `Building.accept`, `Simulation.storeItem` / `takeItem`, `ActionSystem.doStore` / `doTake` | **Delivered for person↔building store:** direct and autonomous paths preserve condition across partial quantities and validated store snapshots. Building-to-building transfers (including world merge) remain pending. |
+| Store and withdraw | `Building.accept`, `Simulation.storeItem` / `takeItem`, `ActionSystem.doStore` / `doTake` | **Delivered for person↔building store** and household home-store merges: direct/autonomous paths preserve condition and snapshots; whole-inventory merge is validated and rolls back both sides on failure. Other building-to-building transfers remain pending. |
 | Drop, pickup, carry overflow | `Simulation.drop`, `Simulation.takeFromPile`, `Simulation.dropAt`, `Carry.reconcileCarry` | **Delivered:** worn slot references an exact unit; drop, pickup and carry overflow move unit rows and preserve condition/progress. Generic `dropAt` still creates pristine garments for produced goods. |
 | Death and inheritance | `LifeSystem.settleEstate`, called from `Simulation` death handling | Preserve units to heir or home store; only a genuinely lost unit may be discarded. Pending. |
 | Comarca staging and restore | `ComarcaInventoryTransfer.take`, `consume`, `restore`, `toRecord` | Include condition in validated escrow graphs and restore it atomically with stacks/spoilage. |

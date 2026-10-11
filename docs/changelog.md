@@ -1,3 +1,20 @@
+## 2026-10-11 — m15: fusionar almacenes con identidad física
+
+`0.15.56-alpha`: la fusión de hogares mueve el inventario del almacén de
+origen al destino en una transacción única. `Inventory.transferAllTo` valida
+ambos estados antes de moverlos, mantiene condición y progreso de remiendo,
+resuelve colisiones locales de ID y revierte ambos lados ante un fallo de
+inserción. La fusión valida antes de cambiar miembros o riqueza; una cantidad
+de prendas que no coincide con sus filas físicas la rechaza íntegra. Tests
+cubren conservación, rollback de una inserción fallida y rechazo de fusión
+inconsistente o una identidad repetida antes de efectos sociales/económicos.
+
+Sin cambios de UI ni activación de desgaste/remiendo. Persisten pendientes
+herencia, intercambio/robo/tributo, escrow y tráfico fuera del mapa. No hubo
+`node_modules`: typecheck, pruebas y `sim:check` siguen bloqueados por ausencia
+de `tsc`, `vitest` y `vite-node`; no se instalaron dependencias. `git diff
+--check` pasa. No se ejecutan cohortes ni matriz pesada.
+
 ## 2026-10-11 — m15: conservar condición de ropa en almacenes
 
 `0.15.55-alpha`: `Building.accept`, órdenes automáticas de depósito/retirada y

@@ -2013,9 +2013,19 @@ export class Simulation {
     const source = younger.householdId === null
       ? null
       : this.householdsById.get(younger.householdId);
-    if (source && source.id !== target.id) this.closeFeud(source, target);
-    if (source && source.id !== target.id) target.wealth += source.wealth;
     if (source && source.id !== target.id) {
+      // Validate and move the two stores before changing household membership
+      // or wealth. A malformed garment identity/count must fail without
+      // partially merging the families; `transferAllTo` also rolls both
+      // inventories back if a later insertion throws.
+      if (source.homeBuildingId !== null && target.homeBuildingId !== null &&
+          source.homeBuildingId !== target.homeBuildingId) {
+        const from = this.buildingsById.get(source.homeBuildingId);
+        const to = this.buildingsById.get(target.homeBuildingId);
+        if (from && to) from.store.transferAllTo(to.store);
+      }
+      this.closeFeud(source, target);
+      target.wealth += source.wealth;
       for (const memberId of [...source.memberIds]) {
         const member = this.peopleById.get(memberId);
         if (member) this.joinHousehold(member, target);
@@ -2028,14 +2038,6 @@ export class Simulation {
       if (source.homeBuildingId !== null) {
         if (target.homeBuildingId === null) {
           target.homeBuildingId = source.homeBuildingId;
-        } else if (target.homeBuildingId !== source.homeBuildingId) {
-          const from = this.buildingsById.get(source.homeBuildingId);
-          const to = this.buildingsById.get(target.homeBuildingId);
-          if (from && to) {
-            for (const [itemId, count] of from.store.entries()) {
-              to.store.add(itemId, from.store.remove(itemId, count));
-            }
-          }
         }
       }
       source.endedTick = this.time.tick;

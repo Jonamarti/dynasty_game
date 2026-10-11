@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Inventory, validateInventoryTransferState } from '../entities/Item.ts';
+import { Inventory, type GarmentUnit, validateInventoryTransferState } from '../entities/Item.ts';
 import { Simulation } from '../core/Simulation.ts';
 import { changeGarment } from '../core/ToolEquipment.ts';
 import { DEFAULT_CONFIG } from '../core/Config.ts';
@@ -116,6 +116,97 @@ describe('garment condition ownership foundation', () => {
     expect(merged).toHaveLength(2);
     expect(merged.find(unit => unit.wear === 0.27)).toMatchObject({ wear: 0.27, repairProgress: 44 });
     expect(new Set(merged.map(unit => unit.unitId)).size).toBe(2);
+  });
+
+  it('rolls back an entire inventory merge when a garment insertion fails mid-transfer', () => {
+    const source = new Inventory();
+    source.add('fur_hat', 2);
+    source.add('berries', 5);
+    source.setGarmentUnitCondition(source.garmentUnitsOf('fur_hat')[0]!.unitId, 0.22, 31);
+    const destination = new Inventory();
+    destination.add('fur_hat', 1);
+    destination.add('sticks', 3);
+    const sourceBefore = source.transferSnapshot();
+    const destinationBefore = destination.transferSnapshot();
+    const originalPut = destination.putGarmentUnit;
+    let insertions = 0;
+    destination.putGarmentUnit = unit => {
+      if (++insertions === 2) throw new Error('simulated insertion failure');
+      return originalPut.call(destination, unit);
+    };
+
+    expect(() => source.transferAllTo(destination)).toThrow('simulated insertion failure');
+    expect(source.transferSnapshot()).toEqual(sourceBefore);
+    expect(destination.transferSnapshot()).toEqual(destinationBefore);
+
+    destination.putGarmentUnit = originalPut;
+    expect(source.transferAllTo(destination)).toBe(7);
+    expect(source.total).toBe(0);
+    expect(destination.count('fur_hat')).toBe(3);
+    expect(destination.count('berries')).toBe(5);
+    expect(destination.garmentUnitsOf('fur_hat').find(unit => unit.wear === 0.22))
+      .toMatchObject({ wear: 0.22, repairProgress: 31 });
+  });
+
+  it('rejects duplicate physical identity before changing either inventory', () => {
+    const source = new Inventory();
+    source.add('fur_hat', 2);
+    const rows = (source as unknown as { garmentUnits: GarmentUnit[] }).garmentUnits;
+    rows[1] = { ...rows[1]!, unitId: rows[0]!.unitId };
+    const destination = new Inventory();
+    destination.add('sticks', 4);
+    const destinationBefore = destination.transferSnapshot();
+
+    expect(() => source.transferAllTo(destination)).toThrow(/duplicate garment unit identity/);
+    expect(source.count('fur_hat')).toBe(2);
+    expect(source.garmentUnitsOf('fur_hat').map(unit => unit.unitId))
+      .toEqual([rows[0]!.unitId, rows[0]!.unitId]);
+    expect(destination.transferSnapshot()).toEqual(destinationBefore);
+  });
+
+  it('does not partially merge households when a home store garment count is inconsistent', () => {
+    const sim = new Simulation({ seed: 'garment-household-merge', world: { width: 64, height: 64 },
+      population: { bands: 1, peoplePerBand: 6 } });
+    const first = sim.livingPeople().find(person => !person.isChild)!;
+    const second = sim.livingPeople().find(person => !person.isChild && person.householdId !== first.householdId)!;
+    const elder = first.age >= second.age ? first : second;
+    const younger = elder === first ? second : first;
+    const targetHouse = sim.householdsById.get(elder.householdId!)!;
+    const sourceHouse = sim.householdsById.get(younger.householdId!)!;
+    const placeStore = (person: Person) => {
+      for (const [dx, dy] of [[4, 0], [-4, 0], [0, 4], [0, -4]]) {
+        const placed = sim.place('storage_pit', Math.round(person.x) + dx!, Math.round(person.y) + dy!, person.bandId);
+        if (placed) return placed;
+      }
+      throw new Error('could not place household storage');
+    };
+    const targetStore = placeStore(elder);
+    const sourceStore = placeStore(younger);
+    targetHouse.homeBuildingId = targetStore.id;
+    sourceHouse.homeBuildingId = sourceStore.id;
+    targetHouse.wealth = 17;
+    sourceHouse.wealth = 23;
+    targetStore.store.add('fur_hat', 1);
+    sourceStore.store.add('fur_hat', 1);
+    const sourceUnit = sourceStore.store.garmentUnitsOf('fur_hat')[0]!;
+    sourceStore.store.setGarmentUnitCondition(sourceUnit.unitId, 0.19, 52);
+    const sourceRows = (sourceStore.store as unknown as { garmentUnits: GarmentUnit[] }).garmentUnits;
+    sourceRows.push({ ...sourceUnit, unitId: 'invalid-extra-unit' });
+
+    expect(() => sim.mergeHouseholds(elder, younger)).toThrow(/garment units do not match garment counts/);
+    expect(targetHouse.memberIds).not.toContain(younger.id);
+    expect(sourceHouse.memberIds).toContain(younger.id);
+    expect(targetHouse.wealth).toBe(17);
+    expect(sourceHouse.wealth).toBe(23);
+    expect(targetStore.store.count('fur_hat')).toBe(1);
+    expect(sourceStore.store.count('fur_hat')).toBe(1);
+
+    sourceRows.pop();
+    sim.mergeHouseholds(elder, younger);
+    expect(targetStore.store.count('fur_hat')).toBe(2);
+    expect(sourceStore.store.count('fur_hat')).toBe(0);
+    expect(targetStore.store.garmentUnitsOf('fur_hat').find(unit => unit.wear === 0.19))
+      .toMatchObject({ wear: 0.19, repairProgress: 52 });
   });
 
   it('drops only unpacked garment units when carry reconciliation sheds excess', () => {

@@ -663,6 +663,40 @@ export class Inventory {
     return moved;
   }
 
+  /**
+   * Merge this whole inventory into another as one transaction. Household
+   * consolidation used to move stacks one at a time, so a bad garment row in
+   * a later stack could leave the earlier goods already transferred. Validate
+   * both complete inventories first, then restore both snapshots on any
+   * failure during the move.
+   */
+  transferAllTo(destination: Inventory): number {
+    if (destination === this) return 0;
+    const sourceBefore = this.transferSnapshot();
+    const destinationBefore = destination.transferSnapshot();
+    let movedTotal = 0;
+    try {
+      for (const [itemId, count] of sourceBefore.stacks) {
+        const moved = this.transferTo(destination, itemId, count);
+        if (moved !== count) throw new RangeError('inventory transfer count changed during merge');
+        movedTotal += moved;
+      }
+      return movedTotal;
+    } catch (error) {
+      this.restoreStateUnchecked(sourceBefore);
+      destination.restoreStateUnchecked(destinationBefore);
+      throw error;
+    }
+  }
+
+  /** Restore validated state only for rollback inside `transferAllTo`. */
+  private restoreStateUnchecked(state: InventoryTransferState): void {
+    this.stacks = new Map(state.stacks);
+    this.spoilage = new Map(state.spoilage);
+    this.garmentUnits = state.garmentUnits.map(unit => ({ ...unit }));
+    this.version = state.version;
+  }
+
   /** M15 phase 34: escrow moves stacks with their fractional spoilage carry. */
   transferSnapshot(): InventoryTransferState {
     this.ensureGarmentUnits();
