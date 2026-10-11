@@ -5,6 +5,9 @@ import { RNG } from '../core/RNG.ts';
 import { makeConfig, DEFAULT_CONFIG } from '../core/Config.ts';
 import { World } from '../core/World.ts';
 import { purposeAppetite, sensitivity } from '../ai/Temperament.ts';
+import { Simulation } from '../core/Simulation.ts';
+import { lastScores } from '../ai/Brain.ts';
+import { COMMITMENT_DRIVES } from '../ai/Commitment.ts';
 
 describe('physical drives', () => {
   it('preserves the old urgency curve exactly for each need', () => {
@@ -38,6 +41,44 @@ describe('physical drives', () => {
     expect(sensitivity(person, 'safety')).toBeCloseTo(1);
     person.traits.aggression = 1;
     expect(sensitivity(person, 'safety')).toBeCloseTo(0.6);
+  });
+
+  it('turns only a comfort deficit into pressure and raises the existing dusk home decision', () => {
+    const person = new Person('Test', 0, 0, 0, new RNG('comfort-drive'), 40);
+    person.mood.comfort = 40;
+    expect(drivePressures(person).comfort).toBe(0);
+    person.mood.comfort = 0;
+    expect(drivePressures(person).comfort).toBe(0);
+    person.mood.comfort = -50;
+    expect(drivePressures(person).comfort).toBe(urgencyCurve(50));
+    person.mood.comfort = -100;
+    expect(drivePressures(person).comfort).toBe(1);
+    expect(DRIVES.comfort.readers).toContain('go_home');
+    expect(DRIVES.comfort.readers).toContain('place_furniture');
+    expect(COMMITMENT_DRIVES).not.toContain('comfort');
+
+    const scoreGoingHome = (comfort: number): number => {
+      const sim = new Simulation({
+        seed: 'comfort-home-reader', world: { width: 80, height: 80 },
+        time: { ticksPerDay: 24, startDay: 110 }, thinkInterval: 1,
+        population: { bands: 1, peoplePerBand: 6 },
+      });
+      const band = sim.bands[0]!;
+      const sleeper = sim.people.find(candidate => candidate.alive && !candidate.isChild)!;
+      sleeper.mood.comfort = comfort;
+      sleeper.needs.hunger = sleeper.needs.thirst = sleeper.needs.fatigue = sleeper.needs.cold = 0;
+      sleeper.action = 'idle';
+      sleeper.order = null;
+      sleeper.x = band.homeX > 40 ? band.homeX - 30 : band.homeX + 30;
+      sleeper.y = band.homeY;
+      sim.time.tick = 18;
+      sim.step();
+      return lastScores.get(sleeper.id)?.find(action => action.id === 'go_home')?.score ?? 0;
+    };
+
+    const comfortableControl = scoreGoingHome(0);
+    expect(scoreGoingHome(40)).toBeCloseTo(comfortableControl);
+    expect(scoreGoingHome(-50)).toBeGreaterThan(comfortableControl);
   });
 
   it('scales belonging pressure with loyalty while keeping the population midpoint neutral', () => {

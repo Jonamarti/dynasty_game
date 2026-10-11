@@ -217,6 +217,24 @@ passed all seven applicable checks in 2400 steps. This validates the readers
 and fixture, not comfort amplitudes or population outcomes; calibration and
 cohort runs remain deferred.
 
-Still open in 16e/16f: wiring `mood.comfort` into the `comfort` drive, NPC
-autonomous fireplace construction and lamp refuelling, other planned comfort
-furniture, and deferred calibration.
+Still open after 16e/16f: NPC autonomous fireplace construction and lamp
+refuelling, other planned comfort furniture, and deferred calibration.
+
+## 2026-10-12: phase 16e, the comfort drive reads sleep mood
+
+The new `comfort` drive is `urgencyCurve(max(0, -mood.comfort))`: a neutral or
+positive mood creates no new pressure, while an accumulated comfort deficit
+uses the same 0–100 need curve already used elsewhere. The existing score rows
+consume it directly: it raises the dusk return-home score, increases the
+existing room-quality weight when choosing a sleep shelter, lets that shelter
+justify sleep before fatigue is high, and scales the existing scores for
+crafting or placing an already-eligible household furnishing. The pressure
+uses no added sensitivity/weight, draws no RNG, and is excluded from
+long-action commitment/interruption policy; it cannot create a destination or
+missing furniture/materials.
+
+The focused mechanism test compares equal-seed simulations with neutral versus
+positive comfort as a control, then verifies a negative comfort sample raises
+the real `go_home` score. It also checks the pressure endpoints and declared
+readers. Typecheck and the drive/commitment tests pass. No UI surface changed;
+no coefficient calibration or cohort result is claimed.

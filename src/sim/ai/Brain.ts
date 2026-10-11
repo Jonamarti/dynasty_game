@@ -3476,13 +3476,17 @@ export class Brain {
             : 1;
           // A better sleep surface can win over a slightly warmer hut; doSleep
           // routes the last room tiles to that surface before fatigue recovers.
-          return b.def.shelter * 40 + roomQuality * 10 -
+          return b.def.shelter * 40 + roomQuality * (10 + drive.comfort) -
             person.distanceTo({ x: b.centerX, y: b.centerY });
         });
       if (restShelter) {
         const nearness = this.proximityBonus(person,
           { x: restShelter.centerX, y: restShelter.centerY }, ctx.sightRadius);
-        add('sleep', fatigue * 3.2 * nearness);
+        // A comfort deficit can justify using a real shelter even before
+        // fatigue is high. Both values are on the same 0–100 pressure scale;
+        // the existing sleep weight and destination quality still decide how
+        // strongly and where the person sleeps.
+        add('sleep', Math.max(fatigue, drive.comfort * 100) * 3.2 * nearness);
       } else if (anchor && Math.hypot(person.x - anchor.x, person.y - anchor.y) <= ctx.motivation.nightRadius) {
         add('sleep', fatigue * 3.2 * 0.8);
       }
@@ -3715,7 +3719,7 @@ export class Brain {
         }
         if (furnitureItem) {
           furnitureHome = home;
-          add('place_furniture', 0.8 * this.proximityBonus(person,
+          add('place_furniture', 0.8 * (1 + drive.comfort) * this.proximityBonus(person,
             { x: home.centerX, y: home.centerY }, ctx.sightRadius));
         }
       }
@@ -3796,7 +3800,9 @@ export class Brain {
         foodGain = Math.max(0, Math.min(1.5,
           gain / 10 * Math.min(person.inventory.count(raw), 4)));
       }
-      const score = (forSite ? 0.75 : 0.55) * (0.4 + person.skillFactor(recipe.skill)) * nearness * foodGain;
+      const comfortPriority = ITEMS[output]?.furniture ? 1 + drive.comfort : 1;
+      const score = (forSite ? 0.75 : 0.55) * (0.4 + person.skillFactor(recipe.skill)) *
+        nearness * foodGain * comfortPriority;
       if (score > craftScore) {
         craftScore = score;
         craftRecipe = recipe.id;
@@ -3978,7 +3984,7 @@ export class Brain {
       const childPressure = person.isChild && homeDistance > childRadius(person, ctx.motivation) + 3
         ? Math.max(drive.home, ctx.motivation.childHomeMinimumPressure) : drive.home;
       const dusk = Math.max(0, Math.min(1, 1 - ctx.time.daylight / 0.35));
-      add('go_home', (childPressure + belongingNeed(person) * dusk * 0.2)
+      add('go_home', (childPressure + belongingNeed(person) * dusk * 0.2 + drive.comfort * dusk)
         * ctx.motivation.homeWeight * childFactor);
     }
     // Still here for people with no roof, which after a bad winter is most of

@@ -6,14 +6,21 @@ mitad, sin cambiar la definición compartida ni el ritmo de otras copias. Las
 rutas de propiedad y persistencia preservan ambos campos. NPC no eligen la
 acción autónomamente; calibración de desgaste y cohortes siguen diferidas.
 
+**Avance del 2026-10-12 — 16e, lector del motivo de comodidad:** la presión
+lee directamente `mood.comfort` con la curva de urgencia ya existente: sólo un
+débito produce presión, sin nuevo coeficiente. El cansancio de comodidad ayuda
+a volver al anochecer, usar refugio para dormir y fabricar/colocar el mobiliario
+doméstico que ya está disponible. Control focal: comodidad neutra/positiva no
+cambia el regreso; comodidad negativa sí. Sin calibración ni cohortes; el motivo
+no crea destinos ni interrumpe trabajos comprometidos. [Contrato](m15_phase16d_bedding.md).
+
 **Avance del 2026-10-12 — 16f, escenario `homes`:** un fixture determinista
 construye una casa completa por banda y permite medir el uso de camas por la
 muestra real de medianoche, el frío y los cuatro términos de seguridad; los NPC
 colocan el mobiliario y los checks también vigilan paredes y rutas. Los siete
 checks pasan en 2400 pasos de una sola semilla. Es verificación del mecanismo,
 no calibración de amplitudes ni resultado poblacional. [Contrato](m15_phase16d_bedding.md).
-Siguen abiertos el motivo `comfort`, más autonomía y muebles domésticos y las
-cohortes diferidas.
+Siguen abiertos más autonomía y muebles domésticos, y las cohortes diferidas.
 
 **Avance del 2026-10-12 — 16e, muestra de sueño:** la recuperación lee la
 calidad de la superficie también al raso (0,7; 0,8 junto a una hoguera).
@@ -21,9 +28,8 @@ La muestra única de medianoche escribe `mood.comfort` según superficie, frío
 y nieve, y `mood.security` según campamento propio, compañía cercana, guardia
 y territorio reclamado. El mapa de techo que usa concepción sigue saliendo de
 esa misma pasada; no se añadió otro muestreo. Tests cubren cambios y negativas.
-No se ajustaron amplitudes con cohortes. Sigue abierta la motivación `comfort`
-en `Drives.ts` y la calibración diferida; el escenario de mecanismo `homes`
-ya está entregado en 16f.
+No se ajustaron amplitudes con cohortes. El escenario de mecanismo `homes`
+ya está entregado en 16f; su calibración demográfica sigue diferida.
 
 **Avance del 2026-10-12 — 16d, hogar interior:** `fireplace` usa barro 4 y
 sílex 2 y solo se coloca dentro de la casa terminada del hogar propio. Como
@@ -2073,9 +2079,15 @@ es posible si nadie del hogar lo ve.
   calidad, deuda de frío y nieve; y `mood.security` por campamento propio,
   compañía cercana, guardia y casilla reclamada. Es la misma pasada que
   construye el mapa de techo usado por concepción, no una segunda muestra.
-- **Pendiente:** el motivo `comfort` en `Drives.ts` debe leer el canal: `go_home`
-  al atardecer pesa más si en casa hay cama, colocar/fabricar muebles y elegir
-  dónde dormir. Su sensibilidad aún no se calibró.
+- **Entregado:** el motivo `comfort` lee el déficit de este canal con la misma
+  curva de urgencia que las necesidades físicas. La presión solo puede elevar
+  `go_home` al atardecer, `sleep` si hay refugio disponible, y las opciones de
+  fabricar/colocar mobiliario doméstico ya habilitadas por receta, materiales y
+  espacio. Valores neutros o positivos añaden presión cero. No se añadieron
+  sensibilidad ni peso calibrables.
+- **Pendiente:** calibrar sensibilidad y equilibrio de esas elecciones con
+  mediciones/cohortes. El motivo no crea una vivienda, muebles o ingredientes,
+  ni rompe una acción comprometida.
 - La concepción (fase 18) lee **la misma muestra de medianoche**.
 
 ### 16f. Checks y escenario

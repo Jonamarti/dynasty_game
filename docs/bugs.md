@@ -1,3 +1,13 @@
+## 2026-10-12 — Lector de comodidad aún sin calibrar
+
+El déficit nocturno de `mood.comfort` ahora mueve las elecciones de regreso,
+sueño y muebles mediante la curva de necesidad existente. Los tests contrastan
+neutral/positivo con negativo y el check `homes` confirma las entradas del
+muestreo, pero no se midió el efecto acumulado en supervivencia, uso de muebles
+ni distribución de actividades. No se ejecutaron cohortes; el balance del
+motivo sigue abierto para una medición solicitada, y los NPC no obtienen
+destinos/materiales ni abandonan compromisos por esta presión.
+
 ## 2026-10-12 — Escenario `homes` no mide construcción espontánea ni equilibrio
 
 El escenario 16f prepara una vivienda terminada por banda y una cama para

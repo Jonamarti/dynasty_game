@@ -15337,3 +15337,11 @@ distintos. El registro del instrumento pasa a versión 3; la observación
 compacta interna pasa a versión 2. No se ejecutó la ventana de medición y no se
 añadió otro productor ni se escogieron coeficientes. Ver
 `m15_phase32b_compact.md`, sección 7.
+## 2026-10-12 — m15: el motivo de comodidad lee el ánimo (0.15.94-alpha)
+
+La presión de comodidad usa el débito de `mood.comfort` con la curva de urgencia
+existente, sin sensibilidad ni coeficiente nuevos. Modula el regreso al
+anochecer, el uso de un refugio para dormir y la fabricación o colocación del
+mobiliario doméstico disponible. Neutro/positivo no cambia el regreso; negativo
+eleva el score. Pruebas focales; sin RNG, UI, calibración ni cohortes.
+
