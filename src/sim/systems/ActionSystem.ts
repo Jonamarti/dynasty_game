@@ -5868,12 +5868,13 @@ export class ActionSystem {
     }
 
     const units = Math.max(1, Math.ceil(other.inventory.count(bestId) / 2));
-    const taken = other.inventory.remove(bestId, units);
+    const taken = other.inventory.transferTo(person.inventory, bestId, units);
     if (taken === 0) {
       this.abandon(person, 'nothing_to_steal', ctx);
       return;
     }
-    person.inventory.add(bestId, taken);
+    reconcileCarry(other, ctx.carry, ctx.dropAt);
+    reconcileCarry(person, ctx.carry, ctx.dropAt);
 
     const worth = (ITEMS[bestId]?.baseValue ?? 1) * taken;
     ctx.social.emit(

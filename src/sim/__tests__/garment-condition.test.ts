@@ -49,6 +49,48 @@ describe('garment condition ownership foundation', () => {
     ]);
   });
 
+  it('steals the same worn garment unit with its wear and repair progress', () => {
+    const sim = new Simulation({ seed: 'garment-theft', world: { width: 48, height: 48 },
+      population: { bands: 1, peoplePerBand: 2 }, carry: { legacyPack: true } });
+    const [thief, victim] = sim.livingPeople();
+    thief!.age = 30 * thief!.daysPerYear;
+    victim!.age = 30 * victim!.daysPerYear;
+    victim!.x = thief!.x + 1;
+    victim!.y = thief!.y;
+    for (const [itemId, count] of victim!.inventory.entries()) victim!.inventory.remove(itemId, count);
+    victim!.equipment.cloak = undefined;
+    victim!.inventory.add('wool_cloak', 1);
+    const unit = victim!.inventory.garmentUnitsOf('wool_cloak')[0]!;
+    victim!.inventory.setGarmentUnitCondition(unit.unitId, 0.37, 64);
+    expect(changeGarment(victim!, 'wool_cloak', 'wear_garment')).toBeNull();
+    expect(sim.order(thief!, 'steal', { personId: victim!.id })).toBe(true);
+    thief!.actionTimer = 1;
+
+    sim.step();
+
+    expect(thief!.inventory.garmentUnitsOf('wool_cloak')).toMatchObject([
+      { unitId: unit.unitId, wear: 0.37, repairProgress: 64 },
+    ]);
+    expect(victim!.inventory.count('wool_cloak')).toBe(0);
+    expect(victim!.equipment.cloak).toBeUndefined();
+  });
+
+  it('rejects an orphaned garment row before a theft transfer changes either owner', () => {
+    const source = new Inventory();
+    const thief = new Inventory();
+    source.add('fur_hat', 1);
+    const original = source.garmentUnitsOf('fur_hat')[0]!;
+    const rows = (source as unknown as { garmentUnits: GarmentUnit[] }).garmentUnits;
+    rows.push({ ...original, unitId: 'orphaned-unit' });
+
+    expect(() => source.transferTo(thief, 'fur_hat', 1))
+      .toThrow(/garment units do not match garment counts/);
+    expect(source.count('fur_hat')).toBe(1);
+    expect(rows).toHaveLength(2);
+    expect(thief.count('fur_hat')).toBe(0);
+    expect(thief.garmentUnitsOf('fur_hat')).toEqual([]);
+  });
+
   it('rolls back a multi-unit garment transfer when the receiver rejects a unit', () => {
     let inserted = 0;
     class RejectSecondGarment extends Inventory {

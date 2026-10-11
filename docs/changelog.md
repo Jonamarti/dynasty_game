@@ -14984,3 +14984,13 @@ No se instaló dependencias. `npm run sim:check`, `npm run typecheck` y la prueb
 focal no pudieron arrancar (`vite-node`, `tsc` y `vitest` no encontrados); quedan
 por ejecutar cuando el runtime local esté disponible. Desgaste/remiendo no se
 activa.
+
+## 2026-10-12 — m15: robo conserva la prenda física
+
+`doSteal` traslada la unidad física del montón seleccionado mediante la
+transferencia validada de `Inventory`, conserva desgaste/progreso y actualiza
+la ropa y capacidad derivada de ambos participantes. Filas huérfanas se
+rechazan antes de cambiar dueño; inserciones parciales revierten ambas
+mochilas. Se añaden pruebas de robo, rollback y propiedad inválida. Typecheck y
+Vitest siguen bloqueados porque este worktree no tiene dependencias instaladas;
+no se hizo instalación ni calibración. Desgaste/remiendo sigue apagado.
