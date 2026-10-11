@@ -3848,10 +3848,12 @@ export class ActionSystem {
     }
 
     person.workedTicks++;
+    telemetry.count('compact_production_work_ticks_farm');
     person.practice('farm', 0.5);
     if (person.workedTicks < SOW_TICKS) return;
 
     person.inventory.remove('grain', SOW_SEED);
+    telemetry.count('compact_production_input_farm_grain', SOW_SEED);
     field.crop.sow(ctx.day, ploughing ? 1.2 : 1);
     if (ploughing) telemetry.count('field_ploughed');
     // The tilling, paid here rather than in a verb of its own - see the header
@@ -3896,6 +3898,7 @@ export class ActionSystem {
     }
 
     person.workedTicks++;
+    telemetry.count('compact_production_work_ticks_farm');
     person.practice('farm', 0.6);
     // `sickle`: a blade in hand shortens the countdown itself rather than the
     // yield at the end of it, which is the honest version of "a field
@@ -3918,6 +3921,7 @@ export class ActionSystem {
     );
     const ploughFactor = field.crop.ploughYieldFactor ?? 1;
     const yielded = Math.round(baseYield * ploughFactor);
+    telemetry.count('compact_production_output_farm_grain', yielded);
     if (ploughFactor > 1) telemetry.count('plough_grain_harvested', yielded);
     field.crop.reaped(yielded);
     this.reapPlot(field, ctx);
@@ -4841,6 +4845,12 @@ export class ActionSystem {
     const pace = ctx.fineWorkPace?.(person) ?? 1;
     person.actionTimer -= pace;
     person.workedTicks++;
+    // The optional measurement stays out of ordinary craft ticks: resolving
+    // ingredient alternatives on every tick would add work even with counters off.
+    const foodRecipe = telemetry.isEnabled() && (Object.keys(recipe.output).some(itemId => (ITEMS[itemId]?.nutrition ?? 0) > 0) ||
+      [recipe.ingredients, ...(recipe.ingredientOptions ?? [])].some(ingredients =>
+        Object.keys(ingredients).some(itemId => (ITEMS[itemId]?.nutrition ?? 0) > 0)));
+    if (foodRecipe) telemetry.count('compact_production_work_ticks_processing');
     person.bankWork(bankKey, pace);
     if (person.actionTimer > 0) {
       // `ignoreLaden`, for the same reason felling passes it: nothing is taken
@@ -4866,10 +4876,12 @@ export class ActionSystem {
     // (an ingredient) or is what came out of it (the product).
     for (const [itemId, count] of Object.entries(ingredientsFor(recipe, person.inventory) ?? recipe.ingredients)) {
       person.inventory.remove(itemId, count);
+      if (foodRecipe) telemetry.count('compact_production_input_processing_' + itemId, count);
       person.handled.set(itemId, ctx.tick);
     }
     for (const [itemId, count] of Object.entries(recipe.output)) {
       person.inventory.add(itemId, count);
+      if (foodRecipe) telemetry.count('compact_production_output_processing_' + itemId, count);
       equipContainer(person, itemId);
       person.handled.set(itemId, ctx.tick);
     }

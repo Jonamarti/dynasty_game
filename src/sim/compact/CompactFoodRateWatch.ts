@@ -5,7 +5,8 @@
  */
 import { RATION_NUTRITION } from '../world/ResourceProfile.ts';
 import { COMPACT_BAND_FOOD_SOURCES, type CompactBandFoodSeason, type CompactBandFoodSource } from './CompactBandFood.ts';
-export const COMPACT_FOOD_RATE_WATCH_RECORD_VERSION = 1 as const;
+import { observeCompactProduction, type CompactProductionObservation } from './CompactProductionWatch.ts';
+export const COMPACT_FOOD_RATE_WATCH_RECORD_VERSION = 2 as const;
 export type CompactFoodRateCoverage = 'measured' | 'n/a';
 export interface CompactFoodSeasonObservation { readonly days: number; readonly meanAmbientTemperature: number | null }
 export interface CompactFoodSourceRateRecord {
@@ -32,6 +33,7 @@ export interface CompactFoodRateWatchRecord {
   readonly temperatureScale: 'simulation temperature units';
   readonly interpretation: 'single-seed mechanism observation; not a calibrated forecast';
   readonly sources: Readonly<Record<CompactBandFoodSource, CompactFoodSourceRateRecord>>;
+  readonly production: CompactProductionObservation;
   readonly crossChecks: Readonly<Record<string, number>>;
 }
 const SEASONS: readonly CompactBandFoodSeason[] = ['spring', 'summer', 'autumn', 'winter'];
@@ -100,5 +102,6 @@ export function recordCompactFoodRates(input: CompactFoodRateWatchInput): Compac
     climate: Object.freeze(climate), temperatureScale: 'simulation temperature units',
     interpretation: 'single-seed mechanism observation; not a calibrated forecast',
     sources: Object.freeze(sources), crossChecks,
+    production: observeCompactProduction(input.telemetry),
   });
 }

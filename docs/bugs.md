@@ -326,9 +326,11 @@ Decisión del propietario: ahora se terminan las funcionalidades de M15; los bug
   días no se pudo medir si afecta a las colas.
 - **La sed en `lean` invierno aprobó por 0,4 puntos** (Δ 14,6 de 15) tras añadir `thirstyZero`
   después de verla fallar; margen de ruido, no un resultado.
-- **No hay producción compacta**: ni rendimiento por tick de trabajo ni avance de órdenes; la
-  tabla mide lo absorbido, no lo producido. La capacidad resume carga, herramientas y
-  conservación sin distinguirlas; cuál pesa más no se ha medido.
+- **No hay producción compacta**: ni avance de órdenes ni rendimiento calibrado. Desde 2026-10-12
+  `CompactProductionWatch` puede observar trabajo/entradas/salidas reales de agricultura y recetas
+  alimentarias, además de la cosecha silvestre ya instrumentada; su ventana no se ha ejecutado y
+  no entrega tasas. La capacidad resume carga, herramientas y conservación sin distinguirlas;
+  cuál pesa más no se ha medido. Por ahora tampoco se conserva avance compacto de las órdenes.
 - **Instrumento**: `RateWatch` contó a las personas pegadas a 100 como aliviadas hasta la
   corrección de esta pasada (ver changelog); las cifras de §4 anteriores a esa corrección (filas de
   hambre ≥ 75) se sustituyeron. No se ha buscado si otras cifras de `lean` (mortalidad, agenda)

@@ -296,6 +296,28 @@ despensas que el detallado no publica. El compacto sigue sin avanzar órdenes ni
 activarse el LOD). No se calienta ni se duerme. La correlación entre personas de una misma banda
 (una semana mala para todos) no está: cada persona sortea sus días por separado.
 
+## 7. Instrumento de producción observado (sin calibración)
+
+2026-10-12. `ActionSystem` emite contadores opcionales, únicamente cuando la telemetría ya está
+activada, para las jornadas de trabajo reales de sembrar/cosechar y de recetas alimentarias. En
+los puntos de consumo y entrega anota los artículos y cantidades que realmente salieron o
+entraron del inventario. `CompactProductionWatch` junta esos contadores con los existentes de
+recolección, pesca y caza; informa artículos, nutrición entrante/saliente, cambio neto por tick
+activo y cobertura `n/a` cuando no observó trabajo. No lee potenciales, tiempos teóricos ni RNG.
+`tools/compact-food-rates.ts` incorpora el bloque `production` al JSON de su informe.
+
+El control negativo deja un producto registrado sin ningún tick de trabajo: el informe conserva
+la cobertura `n/a`, no inventa una tasa y marca `materialWithoutWork`. Así una observación que
+pierda el contador de trabajo no puede presentarse como medición válida. Los contadores son
+solo lecturas; la prueba de determinismo compara el mundo con telemetría desactivada y activada.
+
+Esto **no mide por persona, terreno o estación**, no enlaza una receta concreta con sus
+ingredientes en el reporte agregado, no mide cargas/herramientas/conservación ni reparto desde
+almacenes. El grano de semilla tiene nutrición cero hasta procesarse; sus unidades se informan
+como artículos y no como alimento. No se ejecutó la ventana del instrumento para producir tasas:
+no hay coeficiente elegido ni mejora económica afirmada. Producción compacta, su progreso
+persistente y su correspondencia siguen pendientes.
+
 ## 6. Envejecer, concebir y morir de vejez (commit «demografía»)
 
 `CompactBody` acepta `env.life`. En cada tick que cruza un día de calendario (`tick % ticksPerDay

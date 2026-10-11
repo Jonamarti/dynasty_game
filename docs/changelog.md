@@ -15067,3 +15067,11 @@ embarazo y mortalidad siguen sus reglas y los recién nacidos quedan en el
 checkpoint y el grupo persistido. Los residentes de destino quedan fuera de esa
 pasada. Contrato y cobertura de checkpoint/restore/negativa en
 `docs/m15_phase35_journeys.md`.
+## 2026-10-12 — Fase 32b, instrumento de producción observable
+
+La telemetría opcional cuenta ticks de trabajo efectivos, materiales sembrados/cosechados y
+entradas/salidas de recetas alimentarias; `CompactProductionWatch` los presenta junto con las
+fuentes silvestres ya medidas. El control negativo detecta materiales sin trabajo y mantiene la
+cobertura en `n/a`. Sin cambios de estado o RNG previstos por el instrumento. Se documenta el
+alcance y lo que aún falta en `docs/m15_phase32b_compact.md` y `docs/bugs.md`. La ventana no se
+ejecutó: no hay tasas ni afirmación de calibración o mejora económica.

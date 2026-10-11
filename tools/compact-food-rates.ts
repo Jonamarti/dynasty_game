@@ -1,5 +1,7 @@
 /**
- * One seeded ten-day observation of actual food production by source.
+ * One seeded ten-day observation of detailed-model food production by source.
+ * The JSON carries observed harvest, farming and edible-processing work/material counts;
+ * missing work remains `n/a` and no rate is chosen for the compact model.
  *
  * Run with `npx vite-node tools/compact-food-rates.ts` (JSON goes to stdout). This is a mechanism sample, not a
  * multi-seed economy forecast; the detailed model only counts productive task ticks, so rates exclude travel/search.
