@@ -1,4 +1,16 @@
-## 2026-10-12 — m15: consumo de prendas con reconciliación y rollback (0.15.76-alpha)
+## 2026-10-12 — m15: desgaste diario de prendas vestidas (0.15.83-alpha)
+
+Cada prenda declara una pérdida inicial de 0,005 de condición por día completo
+vestido: 200 días de uso continuo llevan una unidad íntegra a cero. Los huecos
+vestidos se procesan una vez por día en simulación local y viaje; unidades de
+reserva no envejecen. Abrigo y armadura escalan con la condición, y al llegar a
+cero se destruye exactamente esa unidad, se limpia la referencia y queda una
+línea localizada en la crónica del dueño. Sin RNG ni calibración de cohortes.
+Pruebas cubren reservas, unidad vestida, pérdida de calor/protección, rotura,
+checkpoint y tick de viajero. Remiendo continúa apagado. Typecheck y Vitest no
+arrancan en este worktree porque faltan `tsc`/`vitest`; no se instalaron deps.
+
+## 2026-10-12 — m15: consumo de prendas con reconciliación y rollback (0.15.82-alpha)
 
 El cierre de la auditoría encontró dos consumidores reales: `doPrototype`
 consume la muestra `fur_coat` de `toggles` y `doCraft` consume el mismo tipo en
@@ -12,7 +24,7 @@ seleccionar prendas: los demás caminos son nutrición, materiales no garment,
 herramientas/recipientes o destrucción explícita. Desgaste/remiendo siguen
 apagados mientras esperan su implementación y verificación propias.
 
-## 2026-10-12 — m15: amenazas y rescates transfieren prendas físicas (0.15.75-alpha)
+## 2026-10-12 — m15: amenazas y rescates transfieren prendas físicas (0.15.79-alpha)
 
 `doThreaten` y `ransomCaptive` mueven prendas por `Inventory.transferTo` /
 `transferItemsTo`, conservan wear y progreso, y reconcilian equipo/capacidad.

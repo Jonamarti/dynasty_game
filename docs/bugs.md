@@ -34,8 +34,12 @@ No queda una ruta count-only de consumidor de prendas identificada. El `unitId`
 sigue siendo local al inventario y se reemite ante colisión durante fusiones;
 las referencias vestidas se reconcilian con ese ID dentro de cada propietario.
 No hay una brecha conocida de transferencia que impida la propiedad por unidad.
-El desgaste diario ya se habilitó para prendas vestidas; el remiendo queda
-pendiente. Véase el [contrato](m15_garment_condition_design.md).
+El desgaste diario ya actúa sobre la unidad vestida y reduce abrigo/protección;
+la tasa 0,005/día es provisional y no está calibrada por cohortes. No se conoce
+un fallo de propiedad que impida el remiendo, pero su acción, materiales, refusal
+localizado y trabajo persistente siguen pendientes. Véase el
+[contrato](m15_garment_condition_design.md).
+ 
 
 Las transferencias de prendas ahora revierten ambas mochilas si falla una
 inserción intermedia. La prueba nueva de regalos NPC requiere typecheck y Vitest;

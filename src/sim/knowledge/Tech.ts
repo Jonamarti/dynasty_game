@@ -3349,7 +3349,11 @@ export function protectionOf(person: Person, part: BodyPart): number {
     // Carrying a coat is not wearing it. Non-garment armour keeps its existing
     // inventory reader; wearable armour contributes only from its body slot.
     const worn = def?.garment ? person.equipment[def.garment.slot] : undefined;
-    if (def?.garment && (worn?.item !== itemId || !person.inventory.ownsGarmentUnit(itemId, worn.unitId))) continue;
+    const units = def?.garment ? person.inventory.garmentUnitsOf(itemId) : [];
+    const wornUnit = worn && def?.garment
+      ? units.find(unit => unit.unitId === worn.unitId) ?? (worn.unitId === undefined ? units[0] : undefined)
+      : undefined;
+    if (def?.garment && (worn?.item !== itemId || !wornUnit)) continue;
     const covers = def?.protects?.[part];
     if (covers === undefined) continue;
     // M15 phase 37: "`armourOf` finally goes through `techPower`". A garment that
@@ -3358,7 +3362,8 @@ export function protectionOf(person: Person, part: BodyPart): number {
     // turns aside most of its worth for anybody: a helm taken off a corpse is a
     // helm. Garments that name none keep their number exactly, so no existing
     // world moves.
-    const worth = def?.armourTech === undefined ? covers : covers * armourFit(person, def.armourTech as Tech);
+    const fit = def?.armourTech === undefined ? 1 : armourFit(person, def.armourTech as Tech);
+    const worth = covers * fit * (def?.garment ? wornUnit!.wear : 1);
     if (worth > best) best = worth;
   }
   return best;
@@ -3627,9 +3632,14 @@ export function warmthFrom(person: Person, omitGarmentId?: string): number {
   for (const slot of GARMENT_SLOTS) {
     const worn = person.equipment[slot];
     const garment = worn ? ITEMS[worn.item]?.garment : undefined;
+    const units = worn && garment ? person.inventory.garmentUnitsOf(worn.item) : [];
+    const unit = worn && garment
+      ? units.find(candidate => candidate.unitId === worn.unitId) ??
+        (worn.unitId === undefined ? units[0] : undefined)
+      : undefined;
     const warmth = worn && worn.item !== omitGarmentId && garment?.slot === slot &&
-      person.inventory.ownsGarmentUnit(worn.item, worn.unitId)
-      ? garment.warmth
+      unit
+      ? garment.warmth * unit.wear
       : 0;
     unwarmed *= 1 - Math.max(0, Math.min(1, warmth));
   }

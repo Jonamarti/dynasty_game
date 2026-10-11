@@ -92,6 +92,7 @@ import { ForestSystem, seedInitialForest } from '../systems/ForestSystem.ts';
 import {
   LifeSystem, findHeir, roofOverSleeper, settleEstate,
 } from '../systems/LifeSystem.ts';
+import { wearWornGarments } from '../systems/GarmentSystem.ts';
 import { linkFamily } from '../social/SocialSystem.ts';
 import { BandSystem, TERRITORY_RADIUS } from '../systems/BandSystem.ts';
 import { foundBand, type FoundingContext } from '../systems/Founding.ts';
@@ -5761,6 +5762,7 @@ export class Simulation {
     }
     if (this.time.tick % this.config.time.ticksPerDay === 0) {
       for (const person of travellers) if (person.alive) { decayMacroBalance(person); decayMacroTarget(person); }
+      for (const person of travellers) if (person.alive) wearWornGarments(person, this.time.tick);
       // Phase 17d enables spoilage only for provisions in transit. The detailed
       // economy still keeps its configured zero rate until phase 15 is measured;
       // travelling must not make fresh food keep indefinitely by inheriting it.
@@ -5929,6 +5931,7 @@ export class Simulation {
         if (node.species !== null && node.amount > 0 && bushPhase(node.species, season) === 'bare') node.amount = 0;
       }
       this.social.dailyUpkeep(this.people);
+      for (const person of this.people) if (person.alive) wearWornGarments(person, this.time.tick);
       this.woundsOfTheDay();
       this.shareTheHearth();
       // Renown decays far more slowly than an ordinary opinion's `deeds`

@@ -70,6 +70,8 @@ export interface ItemDef {
   garment?: {
     slot: import('./Equipment.ts').GarmentSlot;
     warmth: number;
+    /** Fraction of condition lost per complete day while this unit is worn. */
+    wearPerDay: number;
     /** M15 phase 14c: extra room for `small` items, only while worn and owned. */
     pocket?: number;
   };
@@ -193,7 +195,7 @@ export const ITEMS: Record<string, ItemDef> = {
     // legs 0.2, head bare.
     protects: { torso: 0.5, left_arm: 0.25, right_arm: 0.25, left_leg: 0.2, right_leg: 0.2 },
     class: 'bulky', hand: { perHand: 1, perArms: 1, hands: 1 },
-    garment: { slot: 'torso', warmth: 0.1 },
+    garment: { slot: 'torso', warmth: 0.1, wearPerDay: 0.005 },
   },
   // --- M8.1: what comes off a carcass once you know what to do with it -------
   //
@@ -239,7 +241,7 @@ export const ITEMS: Record<string, ItemDef> = {
     // warmth first, so it is a fifth of what a hide cuirass gives the torso.
     protects: { torso: 0.2, left_arm: 0.12, right_arm: 0.12, left_leg: 0.06, right_leg: 0.06 },
     class: 'bulky', hand: { perHand: 1, perArms: 1, hands: 1 },
-    garment: { slot: 'torso', warmth: 0.4, pocket: 2 },
+    garment: { slot: 'torso', warmth: 0.4, pocket: 2, wearPerDay: 0.005 },
   },
   // The only object in the game that does nothing useful at all, and the most
   // valuable thing a Palaeolithic band owns for exactly that reason.
@@ -476,9 +478,9 @@ export const ITEMS: Record<string, ItemDef> = {
   fat_torch: { id: 'fat_torch', label: 'Fat torch', nutrition: 0, spoilTicks: 0, baseValue: 8,
     class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 } },
   hide_cape: { id: 'hide_cape', label: 'Hide cape', nutrition: 0, spoilTicks: 0, baseValue: 6,
-    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'cloak', warmth: 0.25 } },
+    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'cloak', warmth: 0.25, wearPerDay: 0.005 } },
   sewn_tunic: { id: 'sewn_tunic', label: 'Sewn tunic', nutrition: 0, spoilTicks: 0, baseValue: 9,
-    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'torso', warmth: 0.30, pocket: 4 } },
+    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'torso', warmth: 0.30, pocket: 4, wearPerDay: 0.005 } },
   dried_meat: { id: 'dried_meat', label: 'Dried meat', nutrition: 30, spoilTicks: 12000,
     macros: { fat: 0.45, protein: 0.55, carb: 0 }, baseValue: 8,
     class: 'food', hand: { perHand: 3, perArms: 8, hands: 1 } },
@@ -503,27 +505,27 @@ export const ITEMS: Record<string, ItemDef> = {
     macros: { fat: 0.35, protein: 0.65, carb: 0 }, baseValue: 11,
     class: 'food', hand: { perHand: 3, perArms: 8, hands: 1 } },
   foot_wraps: { id: 'foot_wraps', label: 'Foot wraps', nutrition: 0, spoilTicks: 0, baseValue: 4,
-    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'feet', warmth: 0.08 } },
+    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'feet', warmth: 0.08, wearPerDay: 0.005 } },
   hide_loincloth: { id: 'hide_loincloth', label: 'Hide loincloth', nutrition: 0, spoilTicks: 0, baseValue: 3,
-    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'hips', warmth: 0.02 } },
+    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'hips', warmth: 0.02, wearPerDay: 0.005 } },
   fibre_skirt: { id: 'fibre_skirt', label: 'Fibre skirt', nutrition: 0, spoilTicks: 0, baseValue: 3,
-    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'hips', warmth: 0.03 } },
+    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'hips', warmth: 0.03, wearPerDay: 0.005 } },
   leggings: { id: 'leggings', label: 'Leggings', nutrition: 0, spoilTicks: 0, baseValue: 7,
-    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'legs', warmth: 0.15 } },
+    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'legs', warmth: 0.15, wearPerDay: 0.005 } },
   moccasins: { id: 'moccasins', label: 'Moccasins', nutrition: 0, spoilTicks: 0, baseValue: 6,
-    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'feet', warmth: 0.12 } },
+    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'feet', warmth: 0.12, wearPerDay: 0.005 } },
   fur_hat: { id: 'fur_hat', label: 'Fur hat', nutrition: 0, spoilTicks: 0, baseValue: 5,
-    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'head', warmth: 0.10 } },
+    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'head', warmth: 0.10, wearPerDay: 0.005 } },
   wool_cloak: { id: 'wool_cloak', label: 'Wool cloak', nutrition: 0, spoilTicks: 0, baseValue: 15,
-    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'cloak', warmth: 0.35 } },
+    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'cloak', warmth: 0.35, wearPerDay: 0.005 } },
   // M15 phase 14c: bone toggles close a fur coat, adding torso warmth only
   // after the garment has been crafted and equipped.
   toggled_coat: { id: 'toggled_coat', label: 'Toggled coat', nutrition: 0, spoilTicks: 0, baseValue: 18,
-    class: 'bulky', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'torso', warmth: 0.48, pocket: 4 } },
+    class: 'bulky', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'torso', warmth: 0.48, pocket: 4, wearPerDay: 0.005 } },
   // M15 phase 14c: the first woven garment is warmer and carries a few small
   // things only when worn; packed cloth does not grant extra carrying room.
   linen_tunic: { id: 'linen_tunic', label: 'Linen tunic', nutrition: 0, spoilTicks: 0, baseValue: 10,
-    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'torso', warmth: 0.20, pocket: 4 } },
+    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'torso', warmth: 0.20, pocket: 4, wearPerDay: 0.005 } },
 };
 
 export class Inventory {
@@ -666,6 +668,29 @@ export class Inventory {
     this.garmentUnits[index] = unit;
     this.version++;
     return true;
+  }
+
+  /** Apply daily wear to exactly one unit; a ruined unit is destroyed outright. */
+  applyGarmentWear(unitId: string, amount: number): 'missing' | 'worn' | 'broken' {
+    if (!Number.isFinite(amount) || amount < 0 || amount > 1) throw new RangeError('garment wear must be between 0 and 1');
+    this.ensureGarmentUnits();
+    const index = this.garmentUnits.findIndex(unit => unit.unitId === unitId);
+    if (index < 0) return 'missing';
+    if (amount === 0) return 'worn';
+    const current = this.garmentUnits[index]!;
+    const remaining = current.wear - amount;
+    if (remaining <= Number.EPSILON * 4) {
+      const have = this.count(current.itemId);
+      if (have <= 0) throw new RangeError('garment unit has no owning item count');
+      this.garmentUnits.splice(index, 1);
+      if (have === 1) this.stacks.delete(current.itemId);
+      else this.stacks.set(current.itemId, have - 1);
+      this.version++;
+      return 'broken';
+    }
+    this.garmentUnits[index] = validateGarmentUnit({ ...current, wear: remaining });
+    this.version++;
+    return 'worn';
   }
 
   /** Add a transferred physical garment without resetting its condition. */

@@ -21,7 +21,7 @@ describe('toggled_coat', () => {
     expect(TECH.toggles!.requires).toEqual(['tailoring', 'bone_working']);
     expect(TECH.toggles!.tier).toBe('craft');
     expect(RECIPES.toggled_coat!.ingredients).toEqual({ fur_coat: 1, bone: 2 });
-    expect(ITEMS.toggled_coat!.garment).toEqual({ slot: 'torso', warmth: 0.48, pocket: 4 });
+    expect(ITEMS.toggled_coat!.garment).toEqual({ slot: 'torso', warmth: 0.48, pocket: 4, wearPerDay: 0.005 });
     const { person } = fixture();
     person.inventory.add('fur_coat', 1); person.inventory.add('bone', 2);
     expect(hasIngredients(person.inventory, RECIPES.toggled_coat!)).toBe(true);

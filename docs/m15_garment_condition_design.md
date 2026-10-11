@@ -1,7 +1,7 @@
 # Garment condition ownership — design note
 
-Status: ownership foundation delivered on 2026-10-11; wear and mending are not
-active. `Inventory` now holds one condition row per garment count and exposes
+Status: ownership foundation delivered on 2026-10-11; daily wear delivered on
+2026-10-12; mending remains inactive. `Inventory` now holds one condition row per garment count and exposes
 `takeGarmentUnit` / `putGarmentUnit` so an explicit caller can move a garment
 without resetting condition. `setGarmentUnitCondition` bounds condition and
 banked repair progress. New and legacy garments start pristine, and explicit
@@ -67,10 +67,22 @@ non-garment technology or inscription materials, tool/container displacement,
 or explicit destruction; current recipes and technology prototypes have no
 other garment inputs. Quantity-only caravan manifests reject garments.
 Ownership and current garment-consumer coverage now have no identified
-count-only laundering route. Wear and mending remain inactive pending their
-own implementation and verification.
+count-only laundering route.
 
-This is still an ownership foundation, not wear or mending behavior. Generic
+Daily wear is now active for exact worn units in the detailed simulation and
+traveller ticks. Each garment declares `wearPerDay` in `[0, 1]`; the current
+bounded starting value is `0.005` for every garment, so a pristine unit reaches
+zero after 200 uninterrupted worn days. Wear has no RNG draws. The wearer's
+warmth and armour contribution scale linearly with that unit's condition; at
+zero the unit is destroyed, its equipment reference is cleared, and the wearer's
+chronicle records the break. Unworn spares do not age. This is a deliberate
+initial rate, not a cohort-calibrated balance claim. Condition remains private
+to its owner; observers receive no wear value through `Knowledge`.
+
+Mending remains inactive until its separate action supports refusal, persistent
+per-unit work, materials and tools, and ownership-safe rollback.
+
+This is still an ownership foundation with daily wear, but not mending behavior. Generic
 `remove` treats a garment as consumed and destroys its row; it is never a
 transfer operation. A garment ingredient must go through the transactional
 `consumeItems` path so the worn reference is cleared with the consumption or
