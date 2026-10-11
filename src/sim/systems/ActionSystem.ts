@@ -15,6 +15,7 @@ import type { ComarcaTravel } from '../world/ComarcaTravel.ts';
  * draw their own conclusions.
  */
 import type { Person } from '../entities/Person.ts';
+import type { GarmentUnit } from '../entities/Item.ts';
 import { dress, needsTending, partWord, poisonGrade, soothe, KNOCKOUT_AT, strikePart, wound } from '../entities/Body.ts';
 import { WORK_ACTIONS } from '../entities/Job.ts';
 import { canWalk, isNursling } from '../entities/LifeStage.ts';
@@ -175,7 +176,7 @@ export interface ActionContext {
   /** Existing order authority, reused for requests to join a project. */
   persuasionAuthority?: (sponsor: Person, listener: Person) => number;
   /** Puts goods on the ground, for yields nobody has room to carry. */
-  dropAt: (x: number, y: number, itemId: string, count: number) => void;
+  dropAt: (x: number, y: number, itemId: string, count: number, garmentUnits?: readonly GarmentUnit[]) => void;
   pilesById: Map<number, ItemPile>;
   /**
    * Takes goods off a heap on the ground, as far as the carrier has room.

@@ -59,25 +59,25 @@ import {
 export function wornGarmentsOf(person: Person): PersonAspect['wear'] {
   const torsoId = person.equipment.torso?.item;
   const torsoDef = torsoId ? ITEMS[torsoId]?.garment : undefined;
-  const torso = torsoDef?.slot === 'torso' && torsoId && person.inventory.count(torsoId) > 0 &&
+  const torso = torsoDef?.slot === 'torso' && torsoId && person.inventory.ownsGarmentUnit(torsoId, person.equipment.torso?.unitId) &&
     (torsoId === 'fur_coat' || torsoId === 'toggled_coat' || torsoId === 'hide_armour' || torsoId === 'sewn_tunic' || torsoId === 'linen_tunic')
     ? torsoId === 'sewn_tunic' ? 'tunic' : torsoId : undefined;
   const cloakId = person.equipment.cloak?.item;
-  const cloak = cloakId && person.inventory.count(cloakId) >= 1
+  const cloak = cloakId && person.inventory.ownsGarmentUnit(cloakId, person.equipment.cloak?.unitId)
     ? cloakId === 'hide_cape' ? 'cloak' as const : cloakId === 'wool_cloak' ? 'wool_cloak' as const : undefined
     : undefined;
   const feetId = person.equipment.feet?.item;
-  const feet = feetId && person.inventory.count(feetId) >= 1
+  const feet = feetId && person.inventory.ownsGarmentUnit(feetId, person.equipment.feet?.unitId)
     ? feetId === 'foot_wraps' ? 'wraps' as const : feetId === 'moccasins' ? 'boots' as const : undefined
     : undefined;
   // Keep absent optional regions out of the appearance record: old callers
   // and cached appearances already use the two torso/cloak keys.
-  const legs = person.equipment.legs?.item === 'leggings' && person.inventory.count('leggings') >= 1
+  const legs = person.equipment.legs?.item === 'leggings' && person.inventory.ownsGarmentUnit('leggings', person.equipment.legs?.unitId)
     ? 'trousers' as const : undefined;
-  const head = person.equipment.head?.item === 'fur_hat' && person.inventory.count('fur_hat') >= 1
+  const head = person.equipment.head?.item === 'fur_hat' && person.inventory.ownsGarmentUnit('fur_hat', person.equipment.head?.unitId)
     ? 'cap' as const : undefined;
   const hipId = person.equipment.hips?.item;
-  const hips = hipId && person.inventory.count(hipId) >= 1
+  const hips = hipId && person.inventory.ownsGarmentUnit(hipId, person.equipment.hips?.unitId)
     ? hipId === 'hide_loincloth' || hipId === 'fibre_skirt' ? hipId : undefined
     : undefined;
   return { torso, cloak, ...(feet ? { feet } : {}), ...(legs ? { legs } : {}), ...(head ? { head } : {}), ...(hips ? { hips } : {}) };

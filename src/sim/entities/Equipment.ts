@@ -20,7 +20,9 @@ export type Slot = (typeof SLOTS)[number];
 export interface EquippedItem {
   item: string;
   count: number;
-  /** Phase 14: wear on a worn garment. Unread until then. */
+  /** Phase 14c: exact physical garment copy referenced in the owner's Inventory. */
+  unitId?: string;
+  /** Garment condition; read only once phase 14c wear is activated. */
   wear?: number;
   /** Phase 12d: ticks of fuel left on a lit torch; reaches zero before the stack is consumed. */
   lit?: number;

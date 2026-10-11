@@ -3224,7 +3224,8 @@ export function protectionOf(person: Person, part: BodyPart): number {
     const def = ITEMS[itemId];
     // Carrying a coat is not wearing it. Non-garment armour keeps its existing
     // inventory reader; wearable armour contributes only from its body slot.
-    if (def?.garment && person.equipment[def.garment.slot]?.item !== itemId) continue;
+    const worn = def?.garment ? person.equipment[def.garment.slot] : undefined;
+    if (def?.garment && (worn?.item !== itemId || !person.inventory.ownsGarmentUnit(itemId, worn.unitId))) continue;
     const covers = def?.protects?.[part];
     if (covers === undefined) continue;
     // M15 phase 37: "`armourOf` finally goes through `techPower`". A garment that
@@ -3502,7 +3503,8 @@ export function warmthFrom(person: Person, omitGarmentId?: string): number {
   for (const slot of GARMENT_SLOTS) {
     const worn = person.equipment[slot];
     const garment = worn ? ITEMS[worn.item]?.garment : undefined;
-    const warmth = worn && worn.item !== omitGarmentId && garment?.slot === slot && person.inventory.count(worn.item) >= 1
+    const warmth = worn && worn.item !== omitGarmentId && garment?.slot === slot &&
+      person.inventory.ownsGarmentUnit(worn.item, worn.unitId)
       ? garment.warmth
       : 0;
     unwarmed *= 1 - Math.max(0, Math.min(1, warmth));

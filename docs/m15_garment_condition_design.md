@@ -7,6 +7,11 @@ without resetting condition. `setGarmentUnitCondition` bounds condition and
 banked repair progress. New and legacy garments start pristine, and explicit
 inventory transfer records validate and preserve these rows.
 
+The 2026-10-11 pile-transfer slice also gives each worn slot an exact unit
+reference and preserves garment rows through drop, pickup, and carry overflow.
+When inventories merge, colliding inventory-local IDs are re-keyed; condition
+and repair progress remain attached to the same transferred row.
+
 This is a foundation only: the existing gameplay transfer seams listed below
 still use generic count-based `add`/`remove` in places. Wear/remending must not
 be activated until those routes move garment rows too. Generic `remove` treats
@@ -64,7 +69,7 @@ The main movement seams found in the current tree are:
 | Put on, take off, replace clothing | `ToolEquipment.changeGarment` | Equipment references a specific owned unit; swapping keeps the displaced unit in inventory. |
 | Give, trade, steal, amends, tribute | `Simulation.handOver`, `doGive`, `doTrade`, `doSteal`, `doMakeAmends`, `Simulation` tribute path | Move selected garment units with condition; never recreate them with plain `add`. |
 | Store and withdraw | `Building.accept`, `Simulation.storeItem` / `takeItem`, `ActionSystem.doStore` / `doTake` | Preserve condition across person/store inventories and partial quantities. |
-| Drop, pickup, carry overflow | `Simulation.dropAt`, `ItemPile.contents`, `ActionSystem.doPickup`, `Carry.reconcileCarry` | Move each dropped garment unit into the pile and back unchanged. |
+| Drop, pickup, carry overflow | `Simulation.drop`, `Simulation.takeFromPile`, `Simulation.dropAt`, `Carry.reconcileCarry` | **Delivered:** worn slot references an exact unit; drop, pickup and carry overflow move unit rows and preserve condition/progress. Generic `dropAt` still creates pristine garments for produced goods. |
 | Death and inheritance | `LifeSystem.settleEstate`, called from `Simulation` death handling | Preserve units to heir or home store; only a genuinely lost unit may be discarded. |
 | Comarca staging and restore | `ComarcaInventoryTransfer.take`, `consume`, `restore`, `toRecord` | Include condition in validated escrow graphs and restore it atomically with stacks/spoilage. |
 | World traffic / traveller cargo | `WorldTrafficCoordinator` plus `WorldState` cargo staging and return | Preserve condition through transit inventory and both directions of travel. |

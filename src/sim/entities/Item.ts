@@ -590,10 +590,16 @@ export class Inventory {
       .map(unit => ({ ...unit }));
   }
 
-  /** Remove one physical garment for a transfer while preserving its condition. */
-  takeGarmentUnit(itemId: string): GarmentUnit | null {
+  ownsGarmentUnit(itemId: string, unitId?: string): boolean {
     this.ensureGarmentUnits();
-    const index = this.garmentUnits.findIndex(unit => unit.itemId === itemId);
+    return this.garmentUnits.some(unit => unit.itemId === itemId &&
+      (unitId === undefined || unit.unitId === unitId));
+  }
+
+  /** Remove one physical garment for a transfer while preserving its condition. */
+  takeGarmentUnit(itemId: string, excludedUnitIds: ReadonlySet<string> = new Set()): GarmentUnit | null {
+    this.ensureGarmentUnits();
+    const index = this.garmentUnits.findIndex(unit => unit.itemId === itemId && !excludedUnitIds.has(unit.unitId));
     if (index < 0 || this.count(itemId) <= 0) return null;
     const [unit] = this.garmentUnits.splice(index, 1);
     const have = this.count(itemId);
@@ -615,16 +621,46 @@ export class Inventory {
   }
 
   /** Add a transferred physical garment without resetting its condition. */
-  putGarmentUnit(unit: GarmentUnit): void {
+  putGarmentUnit(unit: GarmentUnit): string {
     this.ensureGarmentUnits();
-    const clean = validateGarmentUnit(unit);
+    let clean = validateGarmentUnit(unit);
     if (!ITEMS[clean.itemId]?.garment) throw new TypeError('garment unit item is not a garment');
     if (this.garmentUnits.some(existing => existing.unitId === clean.unitId)) {
-      throw new RangeError('garment unit identity already exists in inventory');
+      // IDs are scoped to an Inventory. Merging two inventories can bring
+      // equally numbered local units together; re-key the incoming row while
+      // keeping its physical condition and repair work unchanged.
+      let suffix = 0;
+      let unitId = '';
+      do {
+        unitId = `g:merge:${this.version + 1}:${clean.itemId}:${suffix++}`;
+      } while (this.garmentUnits.some(existing => existing.unitId === unitId));
+      clean = { ...clean, unitId };
     }
     this.garmentUnits.push(clean);
     this.stacks.set(clean.itemId, this.count(clean.itemId) + 1);
     this.version++;
+    return clean.unitId;
+  }
+
+  /** Move a count to another Inventory, preserving each garment's state. */
+  transferTo(
+    destination: Inventory, itemId: string, count: number, excludedUnitIds: ReadonlySet<string> = new Set(),
+  ): number {
+    if (destination === this || count <= 0) return 0;
+    if (!ITEMS[itemId]?.garment) {
+      const moved = this.remove(itemId, count);
+      if (moved > 0) destination.add(itemId, moved);
+      return moved;
+    }
+    if (!Number.isSafeInteger(count)) throw new RangeError('garment transfer count must be a safe integer');
+    let moved = 0;
+    for (let i = 0; i < count; i++) {
+      const unit = this.takeGarmentUnit(itemId, excludedUnitIds);
+      if (!unit) break;
+      destination.putGarmentUnit(unit);
+      moved++;
+    }
+    return moved;
   }
 
   /** M15 phase 34: escrow moves stacks with their fractional spoilage carry. */

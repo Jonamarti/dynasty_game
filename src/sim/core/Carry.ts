@@ -1,5 +1,5 @@
 /** M15 phase 11: hands and the containers that turn hands into carrying. */
-import { ITEMS, type ItemClass } from '../entities/Item.ts';
+import { ITEMS, type GarmentUnit, type ItemClass } from '../entities/Item.ts';
 import { GARMENT_SLOTS } from '../entities/Equipment.ts';
 import type { Person } from '../entities/Person.ts';
 import { handfulsOnly } from '../entities/Pregnancy.ts';
@@ -98,7 +98,7 @@ export function carrySpeedFactor(person: Person, sledgeSpeed = 0.8): number {
 export function reconcileCarry(
   person: Person,
   config: CarryConfig,
-  dropAt: (x: number, y: number, itemId: string, count: number) => void,
+  dropAt: (x: number, y: number, itemId: string, count: number, garmentUnits?: readonly GarmentUnit[]) => void,
 ): number {
   let dropped = 0;
   // Garment slots are references into owned inventory too. A transfer or a
@@ -114,27 +114,43 @@ export function reconcileCarry(
   }
   while (true) {
     const totalExcess = Math.max(0, person.carrying - capacityFor(person, config));
-    let chosen: [string, number, number] | undefined;
+    let chosen: [string, number, number, ReadonlySet<string>] | undefined;
     const equippedContainers = new Set(Object.values(person.equipment).filter(Boolean).map(item => item!.item));
     const entries = person.inventory.entries();
     for (let i = entries.length - 1; i >= 0; i--) {
       const [itemId, count] = entries[i]!;
+      const isGarment = Boolean(ITEMS[itemId]?.garment);
+      const protectedIds = isGarment ? wornUnitIds(person, itemId) : new Set<string>();
+      const movable = isGarment
+        ? person.inventory.garmentUnitsOf(itemId).filter(unit => !protectedIds.has(unit.unitId)).length
+        : count;
+      if (movable <= 0) continue;
       const overItem = count - itemCapacityFor(person, config, itemId);
       if (overItem > 0) {
-        chosen = [itemId, count, overItem];
+        chosen = [itemId, count, Math.min(overItem, movable), protectedIds];
         break;
       }
       if (totalExcess > 0 && !equippedContainers.has(itemId)) {
-        chosen = [itemId, count, totalExcess];
+        chosen = [itemId, count, Math.min(totalExcess, movable), protectedIds];
         break;
       }
     }
     if (!chosen) break;
-    const [itemId, count, amount] = chosen;
-    const removed = person.inventory.remove(itemId, Math.min(count, amount));
+    const [itemId, count, amount, protectedIds] = chosen;
+    let units: GarmentUnit[] | undefined;
+    let removed: number;
+    if (ITEMS[itemId]?.garment) {
+      units = [];
+      for (let i = 0; i < Math.min(count, amount); i++) {
+        const unit = person.inventory.takeGarmentUnit(itemId, protectedIds);
+        if (!unit) break;
+        units.push(unit);
+      }
+      removed = units.length;
+    } else removed = person.inventory.remove(itemId, Math.min(count, amount));
     if (removed <= 0) break;
     clearUnownedEquipment(person);
-    dropAt(person.x, person.y, itemId, removed);
+    dropAt(person.x, person.y, itemId, removed, units);
     dropped += removed;
     telemetry.count('carry_overflow_dropped', removed);
   }
@@ -152,6 +168,24 @@ function clearUnownedEquipment(person: Person): void {
   }
   for (const slot of GARMENT_SLOTS) {
     const equipped = person.equipment[slot];
-    if (equipped && person.inventory.count(equipped.item) <= 0) delete person.equipment[slot];
+    if (!equipped || !ITEMS[equipped.item]?.garment) continue;
+    const units = person.inventory.garmentUnitsOf(equipped.item);
+    if (units.length === 0) {
+      delete person.equipment[slot];
+      continue;
+    }
+    if (!equipped.unitId) {
+      const alreadyWorn = wornUnitIds(person, equipped.item);
+      equipped.unitId = units.find(unit => !alreadyWorn.has(unit.unitId))?.unitId ?? units[0]!.unitId;
+    } else if (!units.some(unit => unit.unitId === equipped.unitId)) delete person.equipment[slot];
   }
+}
+
+function wornUnitIds(person: Person, itemId: string): Set<string> {
+  const ids = new Set<string>();
+  for (const slot of GARMENT_SLOTS) {
+    const equipped = person.equipment[slot];
+    if (equipped?.item === itemId && equipped.unitId) ids.add(equipped.unitId);
+  }
+  return ids;
 }

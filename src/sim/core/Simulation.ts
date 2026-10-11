@@ -28,7 +28,7 @@ import { BODY_PARTS, partWord, poisonDaily, wound, woundsDaily } from '../entiti
 import { makeConfig, type SimConfig, type DeepPartial } from './Config.ts';
 import { ADULT_YEARS, Person } from '../entities/Person.ts';
 import { IdSpace, type IdSpaceSnapshot } from './IdSpace.ts';
-import { ITEMS, Inventory } from '../entities/Item.ts';
+import { ITEMS, Inventory, type GarmentUnit } from '../entities/Item.ts';
 import { equipContainer, itemCapacityFor, reconcileCarry } from './Carry.ts';
 import {
   manualEquipReasonText, manualEquipRefusal, manualEquipSlot,
@@ -3011,8 +3011,8 @@ export class Simulation {
     if (available < 1 && person.inventory.count(itemId) >= 1) {
       this.lastRefusal = burningTorchRefusalText(); return null;
     }
-    const taken = person.inventory.remove(itemId, Math.min(count, available));
-    if (taken === 0) return null;
+    const requested = Math.min(count, available);
+    if (requested === 0) return null;
 
     let pile = this.pileHash.findNearest(person.x, person.y, 1.2);
     if (!pile) {
@@ -3021,12 +3021,16 @@ export class Simulation {
       this.pilesById.set(pile.id, pile);
       this.pileHash.rebuild(this.piles);
     }
-    pile.contents.add(itemId, taken);
+    const taken = person.inventory.transferTo(pile.contents, itemId, requested);
+    if (taken === 0) {
+      if (pile.empty) this.removePile(pile);
+      return null;
+    }
     // Dropping the final copy of a fitted container ends its capacity too.
     // Reconcile through the same carry rule as transfers so no slot points at
     // a container the person no longer owns and any overflow becomes a pile.
-    reconcileCarry(person, this.config.carry, (x, y, droppedId, amount) =>
-      this.dropAt(x, y, droppedId, amount));
+    reconcileCarry(person, this.config.carry, (x, y, droppedId, amount, units) =>
+      this.dropAt(x, y, droppedId, amount, units));
     telemetry.count('dropped', taken);
     return pile;
   }
@@ -3038,7 +3042,7 @@ export class Simulation {
    * reached a pack at all — the timber from a tree felled by someone whose
    * hands were already full.
    */
-  dropAt(x: number, y: number, itemId: string, count: number): void {
+  dropAt(x: number, y: number, itemId: string, count: number, garmentUnits?: readonly GarmentUnit[]): void {
     this.assertExecutionAuthority();
     if (count <= 0) return;
     let pile = this.pileHash.findNearest(x, y, 1.2);
@@ -3048,8 +3052,13 @@ export class Simulation {
       this.pilesById.set(pile.id, pile);
       this.pileHash.rebuild(this.piles);
     }
-    pile.contents.add(itemId, count);
-    telemetry.count('dropped', count);
+    if (garmentUnits) {
+      if (garmentUnits.length !== count || garmentUnits.some(unit => unit.itemId !== itemId)) {
+        throw new RangeError('dropped garment units do not match the requested count');
+      }
+      for (const unit of garmentUnits) pile.contents.putGarmentUnit(unit);
+    } else pile.contents.add(itemId, count);
+    telemetry.count('dropped', garmentUnits?.length ?? count);
   }
 
   /**
@@ -3069,8 +3078,7 @@ export class Simulation {
         itemCapacityFor(person, this.config.carry, itemId) - person.inventory.count(itemId));
       const want = Math.min(count ?? pile.contents.count(itemId), pile.contents.count(itemId), room);
       if (want > 0) {
-        moved = pile.contents.remove(itemId, want);
-        person.inventory.add(itemId, moved);
+        moved = pile.contents.transferTo(person.inventory, itemId, want);
         // A carried container counts only after it is fitted into its named
         // slot; the pile is also how the player can reclaim one dropped later.
         equipContainer(person, itemId);
@@ -3080,8 +3088,7 @@ export class Simulation {
         const room = Math.min(person.carryCapacity - person.carrying - moved,
           itemCapacityFor(person, this.config.carry, id) - person.inventory.count(id));
         if (room <= 0) break;
-        const taken = pile.contents.remove(id, Math.min(stackCount, room));
-        person.inventory.add(id, taken);
+        const taken = pile.contents.transferTo(person.inventory, id, Math.min(stackCount, room));
         equipContainer(person, id);
         moved += taken;
       }
@@ -3138,7 +3145,7 @@ export class Simulation {
     receiver.inventory.add(itemId, moved);
     // Worn layers are ownership references too. Handing over the last copy
     // must clear the visible layer and any capacity it supplied immediately.
-    reconcileCarry(giver, this.config.carry, (x, y, id, amount) => this.dropAt(x, y, id, amount));
+    reconcileCarry(giver, this.config.carry, (x, y, id, amount, units) => this.dropAt(x, y, id, amount, units));
 
     const nutrition = (ITEMS[itemId]?.nutrition ?? 0) * moved;
     if (nutrition > 0) {
@@ -3186,7 +3193,7 @@ export class Simulation {
     }
     const moved = store.accept(person.inventory, itemId, Math.min(count, available));
     if (moved === 0) return 0;
-    reconcileCarry(person, this.config.carry, (x, y, id, amount) => this.dropAt(x, y, id, amount));
+    reconcileCarry(person, this.config.carry, (x, y, id, amount, units) => this.dropAt(x, y, id, amount, units));
     telemetry.count('stored', moved);
     return moved;
   }
@@ -6174,8 +6181,8 @@ export class Simulation {
       motivation: this.config.motivation,
       persuasionAuthority: (sponsor: Person, listener: Person) =>
         this.standing(sponsor, listener, 'build').chance,
-      dropAt: (x: number, y: number, itemId: string, count: number) =>
-        this.dropAt(x, y, itemId, count),
+      dropAt: (x: number, y: number, itemId: string, count: number, units?: readonly GarmentUnit[]) =>
+        this.dropAt(x, y, itemId, count, units),
       pilesById: this.pilesById,
       // The same method the inventory panel and the radial menu call, rather
       // than a second transfer written out inside `doPickup`: how much fits,
@@ -6527,7 +6534,7 @@ export class Simulation {
     for (const person of this.people) {
       if (person.alive && person.carryReconciledVersion !== person.inventory.version) {
         reconcileCarry(person, this.config.carry,
-          (x, y, itemId, count) => this.dropAt(x, y, itemId, count));
+          (x, y, itemId, count, units) => this.dropAt(x, y, itemId, count, units));
         person.carryReconciledVersion = person.inventory.version;
       }
     }

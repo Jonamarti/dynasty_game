@@ -1,5 +1,6 @@
 /** M15 phase 11d: move the tool an action needs into the hands doing it. */
 import type { Person } from '../entities/Person.ts';
+import type { GarmentUnit } from '../entities/Item.ts';
 import { GARMENT_SLOTS } from '../entities/Equipment.ts';
 import { ITEMS } from '../entities/Item.ts';
 import { axeItemOf, weaponItemOf } from '../knowledge/Tech.ts';
@@ -62,13 +63,15 @@ export function changeGarment(
     delete person.equipment[slot];
     return null;
   }
+  const unit = person.inventory.garmentUnitsOf(itemId)[0];
+  if (!unit) return 'garment_not_owned';
 
   // An item has one canonical wearable reference. This also heals malformed
   // old state with the same coat copied into two body slots.
   for (const garmentSlot of GARMENT_SLOTS) {
     if (person.equipment[garmentSlot]?.item === itemId) delete person.equipment[garmentSlot];
   }
-  person.equipment[slot] = { item: itemId, count: 1 };
+  person.equipment[slot] = { item: itemId, count: 1, unitId: unit.unitId };
   return null;
 }
 
@@ -139,7 +142,7 @@ export function equipItemInSlot(
   itemId: string,
   slot: ManualEquipmentSlot,
   config: CarryConfig,
-  dropAt: (x: number, y: number, itemId: string, count: number) => void,
+  dropAt: (x: number, y: number, itemId: string, count: number, garmentUnits?: readonly GarmentUnit[]) => void,
 ): ManualEquipReason | null {
   const refusal = manualEquipRefusal(person, itemId, slot);
   if (refusal) return refusal;
@@ -196,7 +199,7 @@ export function equipFor(
   person: Person,
   action: ToolAction,
   config: CarryConfig,
-  dropAt: (x: number, y: number, itemId: string, count: number) => void,
+  dropAt: (x: number, y: number, itemId: string, count: number, garmentUnits?: readonly GarmentUnit[]) => void,
 ): ToolFitResult {
   if (person.armsTaken >= 2) return { changed: false, reason: 'hands_full' };
   cleanEmptyHandSlots(person);
@@ -328,7 +331,7 @@ function dropItems(
   person: Person,
   itemIds: ReadonlySet<string>,
   config: CarryConfig,
-  dropAt: (x: number, y: number, itemId: string, count: number) => void,
+  dropAt: (x: number, y: number, itemId: string, count: number, garmentUnits?: readonly GarmentUnit[]) => void,
 ): void {
   let droppedContainer = false;
   for (const itemId of itemIds) {

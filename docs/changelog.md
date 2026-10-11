@@ -1,3 +1,21 @@
+## 2026-10-11 — m15: conservar condición de ropa en montones
+
+`0.15.54-alpha`: el hueco de Equipo referencia una unidad concreta. Las
+operaciones de soltar, recoger y reconciliar exceso de carga transfieren las
+filas físicas a/desde `ItemPile`, incluidas condición y labor de remiendo; una
+prenda vestida no se puede confundir con otra copia del stack. Los IDs siguen
+siendo locales y se reemiten si chocan al unir inventarios, sin cambiar el
+estado físico. Pruebas focales cubren el ciclo de montón, el choque y la
+protección de la copia vestida ante el desbordamiento. Renderer y protección
+validan la unidad exacta equipada.
+
+Las rutas de almacén, comercio/robo, herencia, escrow y tráfico fuera de mapa
+siguen sin migrar, por lo que todavía no se activa desgaste ni remiendo. La
+comprobación exacta de la copia puede cambiar la apariencia tras transferir una
+de varias prendas; no se pudo generar la captura porque el worktree carece de
+dependencias de Playwright. Typecheck/test focal tampoco se pudieron ejecutar;
+no se enlazaron dependencias externas.
+
 ## 2026-10-11 — m15: base de condición por unidad de ropa
 
 `0.15.53-alpha`: `Inventory` representa cada prenda como una unidad física

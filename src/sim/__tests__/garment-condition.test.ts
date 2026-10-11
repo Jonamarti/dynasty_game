@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { Inventory, validateInventoryTransferState } from '../entities/Item.ts';
+import { Simulation } from '../core/Simulation.ts';
+import { changeGarment } from '../core/ToolEquipment.ts';
+import { DEFAULT_CONFIG } from '../core/Config.ts';
+import { Person } from '../entities/Person.ts';
+import { RNG } from '../core/RNG.ts';
+import { reconcileCarry } from '../core/Carry.ts';
 
 describe('garment condition ownership foundation', () => {
   it('moves one physical garment with its condition and banked repair work', () => {
@@ -44,5 +50,58 @@ describe('garment condition ownership foundation', () => {
     });
     expect(legacy.garmentUnits).toHaveLength(2);
     expect(legacy.garmentUnits.every(unit => unit.wear === 1 && unit.repairProgress === 0)).toBe(true);
+  });
+
+  it('preserves a garment across drop and pickup, and clears only its exact worn reference', () => {
+    const sim = new Simulation({ seed: 'garment-pile-transfer', world: { width: 48, height: 48 },
+      population: { bands: 1, peoplePerBand: 2 } });
+    const person = sim.livingPeople()[0]!;
+    person.inventory.add('wool_cloak', 1);
+    changeGarment(person, 'wool_cloak', 'wear_garment');
+    const worn = person.equipment.cloak!;
+    person.inventory.setGarmentUnitCondition(worn.unitId!, 0.31, 96);
+
+    const pile = sim.drop(person, 'wool_cloak', 1)!;
+    expect(person.equipment.cloak).toBeUndefined();
+    expect(pile.contents.garmentUnitsOf('wool_cloak')).toMatchObject([
+      { unitId: worn.unitId, wear: 0.31, repairProgress: 96 },
+    ]);
+    expect(sim.takeFromPile(person, pile, 'wool_cloak', 1)).toBe(1);
+    expect(person.inventory.garmentUnitsOf('wool_cloak')).toMatchObject([
+      { unitId: worn.unitId, wear: 0.31, repairProgress: 96 },
+    ]);
+  });
+
+  it('re-keys a local unit collision when merging inventories without changing condition', () => {
+    const source = new Inventory();
+    source.add('fur_hat', 1);
+    const sourceUnit = source.garmentUnitsOf()[0]!;
+    source.setGarmentUnitCondition(sourceUnit.unitId, 0.27, 44);
+    const destination = new Inventory();
+    destination.add('fur_hat', 1);
+
+    expect(source.transferTo(destination, 'fur_hat', 1)).toBe(1);
+    const merged = destination.garmentUnitsOf('fur_hat');
+    expect(merged).toHaveLength(2);
+    expect(merged.find(unit => unit.wear === 0.27)).toMatchObject({ wear: 0.27, repairProgress: 44 });
+    expect(new Set(merged.map(unit => unit.unitId)).size).toBe(2);
+  });
+
+  it('drops only unpacked garment units when carry reconciliation sheds excess', () => {
+    const person = new Person('Overloaded', 8, 8, 0, new RNG('garment-overflow'));
+    person.age = 30 * 80;
+    person.inventory.add('wool_cloak', 12);
+    const worn = person.inventory.garmentUnitsOf('wool_cloak')[0]!;
+    person.equipment.cloak = { item: 'wool_cloak', count: 1, unitId: worn.unitId };
+    person.inventory.setGarmentUnitCondition(worn.unitId, 0.58, 21);
+    const drops: { count: number; units?: readonly { unitId: string; wear: number; repairProgress: number }[] }[] = [];
+
+    reconcileCarry(person, DEFAULT_CONFIG.carry, (_x, _y, _id, count, units) => drops.push({ count, units }));
+
+    expect(person.equipment.cloak?.unitId).toBe(worn.unitId);
+    expect(person.inventory.ownsGarmentUnit('wool_cloak', worn.unitId)).toBe(true);
+    expect(drops.length).toBeGreaterThan(0);
+    expect(drops.every(drop => drop.count === drop.units?.length)).toBe(true);
+    expect(drops.flatMap(drop => drop.units ?? []).some(unit => unit.unitId === worn.unitId)).toBe(false);
   });
 });
