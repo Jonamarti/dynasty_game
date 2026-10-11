@@ -586,8 +586,11 @@ arranque vengan ya cavados, o `git revert` del commit del silo.
   del canal (`irrigation`) y la fertilidad del bancal.
   Avance 2026-10-11: `earthworks` abre `ditch` y `moat`; el escalón de salida de
   la zanja ya usa el coste de pendiente 25b y el foso rebasa `pitDepth`, por lo
-  que no se puede cruzar, y se llena desde la orilla (26d). Faltan el desvío de
-  las incursiones y una medición de coste defensivo. Avance 2026-10-11: la
+  que no se puede cruzar, y se llena desde la orilla (26d). Avance 2026-10-12:
+  el pathfinder de incursiones cobra coste por cada casilla de zanja terminada
+  y elige un rodeo cuando sale más barato. Una prueba sintética confirma la
+  elección de ruta, pero no mide menos saqueos/daño ni coste defensivo real.
+  Avance 2026-10-11: la
   puerta también abre montones y terraplenes; los lectores físicos de altura,
   pendiente y visión se cubren en sus controles focales. Canales/bancales usan
   sus puertas propias y los agujeros simples siguen abiertos a todos.

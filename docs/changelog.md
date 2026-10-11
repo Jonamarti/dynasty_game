@@ -15233,3 +15233,13 @@ concepción escribe `mood.comfort` por superficie, frío y nieve y
 estado ni tiradas. Tests focales cubren casos favorables y negativos; se
 difieren calibración y escenario `homes`. No hubo cambio visual ni captura.
 El motivo `comfort` aún no está conectado a `Drives.ts`.
+## 2026-10-12 — m15: coste táctico de zanjas para incursiones (0.15.89-alpha)
+
+Las rutas de una persona durante su ventana activa de incursión cargan un tile
+adicional por cada casilla de zanja terminada. A* elige el rodeo si cuesta
+menos y mantiene el paso si la zanja es el camino más barato; los viajes
+ordinarios no cambian. La zanja se resuelve mediante el hash espacial de
+edificios. La regresión del pathfinder compara contra el comportamiento recto
+anterior en un mapa plano. No se midió disminución de saqueos/daño, ni se
+corrieron cohortes. `sim:check` no arrancó: `vite-node` no está disponible en el
+worktree. No hay cambio de UI ni captura necesaria.

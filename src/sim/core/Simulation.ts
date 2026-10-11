@@ -489,6 +489,7 @@ export class Simulation {
   /** Records are static once cut, so the index is rebuilt only on change. */
   readonly inscriptionHash = new SpatialHash<Inscription>(8);
   readonly buildingHash = new SpatialHash<Building>(8);
+  private readonly raidDitchScratch: Building[] = [];
   /** The person the player currently inhabits. Null in headless runs. */
   player: Person | null = null;
   /**
@@ -741,7 +742,7 @@ export class Simulation {
     this.time = new TimeManager(this.config.time);
 
     this.needsSystem = new NeedsSystem(this.config.needs, this.world);
-    this.pathfinder = new Pathfinder(this.world);
+    this.pathfinder = new Pathfinder(this.world, (x, y) => this.isFinishedDitchTile(x, y));
     this.movementSystem = new MovementSystem(this.world, moveRng, this.pathfinder,
       this.config.motivation.infantsStill, this.config.carry.sledgeSpeed, this.config.childhood);
     this.social = new SocialSystem(
@@ -1105,7 +1106,7 @@ export class Simulation {
       if (!value) throw new TypeError(`Invalid checkpoint state: missing RNG stream ${path}`);
       return value;
     };
-    const pathfinder = new Pathfinder(world);
+    const pathfinder = new Pathfinder(world, (x, y) => this.isFinishedDitchTile(x, y));
     const movementRng = stream('simulation.movementSystem.rng');
     const movementSystem = new MovementSystem(world, movementRng, pathfinder,
       state.config.motivation.infantsStill, state.config.carry.sledgeSpeed, state.config.childhood);
@@ -7064,6 +7065,14 @@ export class Simulation {
     for (const animal of this.animals) {
       if (animal.alive) this.animalHash.insert(animal);
     }
+  }
+
+  /** Spatially resolve a completed trench tile; path searches must not scan buildings. */
+  private isFinishedDitchTile(x: number, y: number): boolean {
+    const nearby = this.buildingHash.queryRadius(x + 0.5, y + 0.5, 8, this.raidDitchScratch);
+    return nearby.some(building => building.complete && !building.ruined &&
+      building.def.earthwork?.kind === 'ditch' &&
+      building.earth?.some(tile => tile.x === x && tile.y === y));
   }
 
   /** Fuel is advanced by simulation time only, so pause freezes carried light. */

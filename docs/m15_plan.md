@@ -2699,7 +2699,11 @@ lleva agua a beber junto al campamento: un valor que la banda descubre sola.
 ### 26e. Qué hace cada obra (los lectores)
 
 - **Zanja:** cruzarla cuesta (la pendiente de 25b), y si es honda no se
-  cruza. Las incursiones la rodean o buscan el paso.
+  cruza. **Avance 2026-10-12:** durante una incursión activa, cada casilla de
+  zanja terminada añade un tile de coste de ruta; el pathfinder rodea cortes
+  largos cuando el rodeo es más barato y usa el paso si no lo es. Los viajes
+  ordinarios conservan su coste anterior. La prueba de mapa plano demuestra la
+  elección de ruta, no una reducción medida de saqueos o daño.
 - **Foso:** `moat` excava 16 unidades de tierra por casilla, más que el umbral
   `pitDepth`; queda intransitable y 26d deja entrar agua donde el ring toca la
   orilla. La puerta `earthworks` también lo habilita (avance 2026-10-11).
@@ -2732,7 +2736,9 @@ lleva agua a beber junto al campamento: un valor que la banda descubre sola.
   abre `mound` y `embankment` (incluida su orientación `_ns`). El relieve apilado
   sube `World.heightAt`, `World.sightBonusAt` y el coste de ascender según
   `World.stepFactor`; controles antes/después comprueban los tres lectores. El
-  rodeo de incursiones y su coste defensivo siguen pendientes.
+  pathfinding táctico de incursiones sobre zanjas está implementado (avance
+  2026-10-12); su efecto en defensa real, la persuasión de obras y la medición
+  económica siguen pendientes.
 - **Bancal:** un campo en pendiente que conserva la capa fértil al nivelar la
   ladera con corte y relleno; no modela erosión adicional por lluvia.
 

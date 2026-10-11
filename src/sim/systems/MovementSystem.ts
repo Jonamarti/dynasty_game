@@ -603,7 +603,8 @@ export class MovementSystem {
 
     person.pathTick = tick;
     const status = this.pathfinder.find(
-      person.x, person.y, person.targetX!, person.targetY!, DEFAULT_MAX_EXPANSIONS, avoid, this.passMode(person)
+      person.x, person.y, person.targetX!, person.targetY!, DEFAULT_MAX_EXPANSIONS, avoid,
+      this.passMode(person), this.isActiveRaider(person, tick)
     );
     if (this.storeRoute(person, status)) telemetry.count('path_recovery_found');
   }
@@ -704,7 +705,8 @@ export class MovementSystem {
 
     this.storeRoute(
       person,
-      this.pathfinder.find(person.x, person.y, person.targetX!, person.targetY!, DEFAULT_MAX_EXPANSIONS, -1, mode)
+      this.pathfinder.find(person.x, person.y, person.targetX!, person.targetY!, DEFAULT_MAX_EXPANSIONS, -1,
+        mode, this.isActiveRaider(person, tick))
     );
   }
 
@@ -724,5 +726,9 @@ export class MovementSystem {
         person.needs.fatigue < this.world.drownAt &&
         this.world.sameSwimRegion(person.x, person.y, person.targetX, person.targetY)) return 'swim';
     return 'walk';
+  }
+
+  private isActiveRaider(person: Person, tick: number): boolean {
+    return person.raidingBandId !== null && tick < person.raidingUntil;
   }
 }
