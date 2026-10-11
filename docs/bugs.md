@@ -1005,10 +1005,12 @@ investigó el selector en este cambio.
   persigue a un niño solo no tiene contraparte.
 - **Los depredadores no tienen carroña ni cadáver**: al morir (cazados,
   hambre) simplemente salen del mundo, como los demás animales.
-- **La guardia no ve a los depredadores.** `dog` (23g) amplía la vista del
-  dueño para extraños (`sightIntruders`) y aparta a los depredadores de quien
-  lo lleva al lado, pero sin `Light.sightOf` la guardia de la banda no tiene un
-  término de depredador propio.
+- **Resuelto el 2026-10-12 — defensa local de patrulla.** Depredadores no eligen
+  a una persona dentro de siete tiles de un adulto de su banda que tenga el
+  trabajo de guardia y esté patrullando; también bloquea la irrupción cercana
+  del oso y la persecución por rencor. El radio coincide con el de exclusión de
+  hoguera. Una guardia inactiva no protege. No hay aviso de banda ni defensa
+  fuera de ese radio; no se añadieron pesos ni tiradas.
 - **Resuelto el 2026-10-12:** antes, `doHunt` solo mataba o fallaba, así que una
   presa nunca podía huir herida ni recordar a su cazador. El primer impacto
   acertado ahora deja una herida mínima, alarma de huida y `hurtBy`; otro acierto

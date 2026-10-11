@@ -2,7 +2,7 @@
  * The hunters (M15 phases 23e and 23f): where they begin, what they take, and
  * what a fire does to them.
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { Simulation } from '../core/Simulation.ts';
 import { telemetry } from '../core/Telemetry.ts';
 
@@ -91,5 +91,69 @@ describe('predators', () => {
     expect(telemetry.get('animal_bit_person_bear')).toBe(bites);
     expect(person.health).toBe(100);
     expect(telemetry.get('predator_kept_off_by_fire')).toBeGreaterThan(kept);
+  });
+
+  it('a patrolling guard keeps a bear off a nearby adult', () => {
+    const sim = new Simulation({ seed: 'predator-guard-active' });
+    const bear = sim.animals.find(animal => animal.species === 'bear')!;
+    const [person, guard] = sim.livingPeople().filter(candidate =>
+      candidate.bandId === 0 && !candidate.isChild);
+    expect(person).toBeDefined();
+    expect(guard).toBeDefined();
+    for (const animal of sim.animals) if (animal !== bear) animal.alive = false;
+    for (const other of sim.people) if (other !== person && other !== guard) other.alive = false;
+
+    person!.x = Math.round(person!.x) + 0.5;
+    person!.y = Math.round(person!.y) + 0.5;
+    guard!.x = person!.x + 6;
+    guard!.y = person!.y;
+    guard!.job = 'guard';
+    guard!.action = 'patrol';
+    bear.x = person!.x;
+    bear.y = person!.y;
+    bear.fed = 0;
+    sim['rebuildHashes']();
+    vi.spyOn(sim['ecologyRng'], 'chance').mockReturnValue(true);
+
+    for (let i = 0; i < 10 && bear.lastAttackAt === -Infinity; i++) {
+      guard!.action = 'patrol';
+      guard!.targetX = guard!.x;
+      guard!.targetY = guard!.y;
+      sim.step();
+    }
+
+    expect(person!.health).toBe(100);
+    expect(bear.lastAttackAt).toBe(-Infinity);
+  });
+
+  it('does not mistake an idle guard for an active patrol', () => {
+    const sim = new Simulation({ seed: 'predator-guard-idle' });
+    const bear = sim.animals.find(animal => animal.species === 'bear')!;
+    const [person, guard] = sim.livingPeople().filter(candidate =>
+      candidate.bandId === 0 && !candidate.isChild);
+    expect(person).toBeDefined();
+    expect(guard).toBeDefined();
+    for (const animal of sim.animals) if (animal !== bear) animal.alive = false;
+    for (const other of sim.people) if (other !== person && other !== guard) other.alive = false;
+
+    person!.x = Math.round(person!.x) + 0.5;
+    person!.y = Math.round(person!.y) + 0.5;
+    guard!.x = person!.x + 6;
+    guard!.y = person!.y;
+    guard!.job = 'guard';
+    guard!.action = 'idle';
+    bear.x = person!.x;
+    bear.y = person!.y;
+    bear.fed = 0;
+    sim['rebuildHashes']();
+    vi.spyOn(sim['ecologyRng'], 'chance').mockReturnValue(true);
+
+    for (let i = 0; i < 10 && bear.lastAttackAt === -Infinity; i++) {
+      guard!.action = 'rest';
+      sim.step();
+    }
+
+    expect(person!.health).toBeLessThan(100);
+    expect(bear.lastAttackAt).toBe(sim.time.tick);
   });
 });

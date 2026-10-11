@@ -68,6 +68,16 @@ lección falsa. Prueba con especie de verano agotada dos años consecutivos;
 `npm test` focal pendiente al integrar porque este worktree no lleva
 dependencias instaladas.
 ## 2026-10-12 — m15: la caza puede herir y hacer huir a la presa (0.15.84-alpha)
+## 2026-10-12 — m15: la patrulla mantiene a los depredadores a distancia (0.15.85-alpha)
+
+Un adulto de la banda que esté patrullando protege a quienes se encuentren a
+siete tiles. Los depredadores ya no seleccionan a esas personas, incluido el
+oso que irrumpe y el animal que sigue un rencor. El filtro usa el hash espacial
+de personas y exige una guardia realmente activa; un guardia inactivo no
+protege. No añade tiradas ni cambia pesos. Dos pruebas focales cubren defensa y
+control inactivo; no cambia la interfaz ni requiere captura. No se ejecutó
+calibración, cohorte ni matriz.
+
 
 Antes un impacto humano mataba al animal de inmediato, lo que impedía que una
 presa herida escapara y recordara a su cazador. El primer impacto acertado ahora

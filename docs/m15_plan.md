@@ -2459,6 +2459,13 @@ distingue el impacto no letal; no se midió ni ajustó su balance. Un fallo sigu
 sin dejar rencor, daño ni consumo de proyectil. Pruebas focales positivas y
 negativas; no hubo cohortes ni calibración.
 
+**Avance del 2026-10-12 — defensa ante depredadores.** Un adulto de la banda
+que está patrullando protege a quienes estén a siete tiles; osos, lobos y linces
+no eligen a esas personas como presa y un oso que irrumpe tampoco las ataca.
+Solo cuenta `job: guard` con `action: patrol`; un guardia inactivo no protege.
+La consulta usa `peopleHash`, sin pesos ni RNG nuevos. Pruebas focales positivas
+y negativas; sin cohortes, calibración ni cambio de UI.
+
 **Detalle en `m14_plan.md` fase 9.** La hierba como capa (`World.grass`), segar
 para paja y cuerda, herbívoros que pastan y se reproducen con un techo que sale
 del pasto, depredadores (lobo en jauría, oso, lince) en su propia pasada,
