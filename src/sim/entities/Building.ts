@@ -777,25 +777,25 @@ export const BUILDINGS: Record<string, BuildingDef> = {
 // `Object.values(BUILDINGS)`, which the planner and the menu iterate. No
 // materials and no technology: a hole in the ground is older than any entry in
 // the tree, and what limits it is the digger's tool (`digTool`) and the hours.
-// The designs that wait on the `earthworks` gate (26e) are declared with it,
-// when the ditch and the moat have a reader; until then they are open to all.
+// Ordinary pits and ditches are old knowledge; channels and terraces wait on
+// their field readers in the Campo web (M15 phase 26e).
 // Each linear design has a turned copy (`_ns`) that is the same plan running
 // north-south: the build menu lists one design and R turns it.
 function earthworkDef(
   id: string, label: string, icon: string, width: number, height: number,
-  spec: EarthworkSpec, description: string
+  spec: EarthworkSpec, description: string, requiresTech: string | null = null
 ): BuildingDef {
   return {
     id, label, icon, width, height, materials: {},
     workTicks: designTotal(spec, width, height),
-    shelter: 0, storage: 0, requiresTech: null, earthwork: spec, description,
+    shelter: 0, storage: 0, requiresTech, earthwork: spec, description,
   };
 }
 
 function withTurned(def: BuildingDef): BuildingDef[] {
   const spec = def.earthwork!;
   const turned = earthworkDef(def.id + '_ns', def.label, def.icon, def.height, def.width,
-    { ...spec, turned: true, turnOf: def.id }, def.description);
+    { ...spec, turned: true, turnOf: def.id }, def.description, def.requiresTech);
   return [def, turned];
 }
 
@@ -817,10 +817,12 @@ const EARTHWORK_DEFS: BuildingDef[] = [
     'A long bank of earth. Dug earth is carried to it, and it is a wall to climb rather than to pass.')),
   ...withTurned(earthworkDef('canal', 'Canal', '\u{1F6A3}', 7, 1,
     { layout: 'fill', kind: 'dig', depth: 4, water: 'end' },
-    'A shallow cut that starts at the water and leads away from it. Where the ground lies low, the water follows.')),
+    'A shallow cut that starts at the water and leads away from it. Where the ground lies low, the water follows.',
+    'irrigation')),
   ...withTurned(earthworkDef('terrace', 'Terrace', '\u{1F33E}', 5, 3,
     { layout: 'cutfill', kind: 'dig', depth: 2, slope: 2 },
-    'The slope cut level: the high edge dug away and the low edge built up with it.')),
+    'The slope cut level: the high edge dug away and the low edge built up with it.',
+    'terracing')),
 ];
 for (const def of EARTHWORK_DEFS) BUILDINGS[def.id] = def;
 

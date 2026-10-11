@@ -254,6 +254,7 @@ describe('earthwork results', () => {
   it('a terrace cuts the high edge and builds up the low one', () => {
     const sim = new Simulation({ seed: 'earthworks' });
     const w = sim.world;
+    sim.knownTech.add('terracing');
     const spot = openGround(sim, 8, 8);
     // Tilt a 5x3 plot: the north row high, the south row low.
     for (let j = 0; j < 3; j++) for (let i = 0; i < 5; i++) {

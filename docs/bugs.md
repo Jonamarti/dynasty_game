@@ -4857,5 +4857,7 @@ Perfil en vez de Equipo: se corrigió el test y su repetición pasa.
 El primer lector de la fase 26e aplica un factor 1,25 al crecimiento diario de
 campos próximos a canales con agua dulce. Es un mecanismo funcional, no una
 medición económica: no se ejecutaron cohortes y no se afirma que mejore la
-supervivencia. La puerta tecnológica `irrigation`, el lector de bancales y la
-calibración agrícola siguen pendientes para el cierre de 26e/M15.
+supervivencia. Los nodos `irrigation`/`terracing` y sus puertas funcionales se
+entregaron después; siguen pendientes la puerta genérica `earthworks`, sus
+nodos de zanja/foso y persuasión. El factor 1,25 y la economía agrícola
+continúan sin calibrar para el cierre de 26e/M15.

@@ -14877,3 +14877,16 @@ salados no riegan. No añade estado guardado ni draws. Pruebas focales cubren el
 límite de distancia, canal incompleto y fuente salada/seca. La calibración
 agrícola completa y la matriz larga quedan diferidas por AGENTS.md; no se afirma
 una mejora de cosecha o supervivencia. No cambia la UI.
+
+## 2026-10-11 — Fase 26e, tecnologías de riego y bancales
+
+`irrigation` y `terracing` se añaden a la red Campo, en ese orden y al final de
+`TECHS`. `irrigation` requiere agricultura y desbloquea canales; `terracing`
+requiere irrigation y desbloquea bancales. El corte y relleno conserva la capa
+fértil al trasladarla cuesta abajo con la mecánica existente de suelo. Los
+controles negativos de los nodos y las puertas fallaron antes del cambio; luego
+pasaron junto con la prueba de tecnología y las pruebas de earthworks. Typecheck
+limpio, 61/61 pruebas focales y e2e de red española 1/1. Capturas:
+`artifacts/screenshots/m15-phase26e-irrigation-2026-10-11/`. No se corrieron
+cohortes ni se calibró el factor de riego. Sigue pendiente la puerta genérica
+`earthworks`, sus nodos, persuasión y medición económica; no se cierra la fase 26.

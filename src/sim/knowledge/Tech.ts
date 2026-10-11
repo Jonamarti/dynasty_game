@@ -214,6 +214,8 @@ export const TECHS = [
   'wool_cloak',
   // M15 phase 14c: bound thatch makes the first plant-fibre hip garment.
   'fibre_skirt',
+  // M15 phase 26e: canal irrigation and cut-and-fill terraces are field readers.
+  'irrigation', 'terracing',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -1444,6 +1446,40 @@ export const TECH: Record<Tech, TechDef> = {
     description:
       'Seed saved from one harvest and put back in the ground for the next. ' +
       'The band stops walking to the food and starts waiting for it.',
+  },
+  irrigation: {
+    id: 'irrigation', label: 'Irrigation', domain: 'plants', web: 'field',
+    age: 'neolithic', firstKnown: 'about 6000 BC',
+    kind: 'device', requires: ['farming'], difficulty: 0.58, skill: 'build',
+    prototype: { earth: 4 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'farming' }, { kind: 'doing', action: 'dig' },
+                { kind: 'holding', item: 'earth' }],
+        weight: 1.0, story: 'cut a channel from fresh water and watched the flow reach ground that had been dry' },
+      { needs: [{ kind: 'knows', tech: 'farming' }, { kind: 'holding', item: 'earth' },
+                { kind: 'place', biome: 'grass' }, { kind: 'feeling', need: 'hunger' }],
+        weight: 0.6, story: 'looked at a dry field and wondered whether a stream could be led to it' },
+    ],
+    description:
+      'A cut that leads fresh water to a field. A completed wet canal lets ' +
+      'nearby crops make more of the growing season.',
+  },
+  terracing: {
+    id: 'terracing', label: 'Terracing', domain: 'plants', web: 'field',
+    age: 'neolithic', firstKnown: 'about 6000 BC',
+    kind: 'device', requires: ['farming', 'irrigation'], difficulty: 0.56, skill: 'build',
+    prototype: { earth: 4 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'farming' }, { kind: 'knows', tech: 'irrigation' },
+                { kind: 'doing', action: 'pile' }, { kind: 'place', biome: 'grass' }],
+        weight: 1.0, story: 'cut the high edge of a sloping field and heaped that soil at the low edge until the ground lay level' },
+      { needs: [{ kind: 'knows', tech: 'irrigation' }, { kind: 'holding', item: 'earth' },
+                { kind: 'doing', action: 'dig' }],
+        weight: 0.6, story: 'noticed that a low bench held the soil that ran off the hillside' },
+    ],
+    description:
+      'Cut the upper edge of a slope and use its earth to raise the lower edge. ' +
+      'The cut-and-fill work keeps the moved topsoil on a level bench.',
   },
   composting: {
     id: 'composting', label: 'Composting', domain: 'plants',
@@ -2879,6 +2915,14 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   farming: {
     summary: 'Ground broken and sown: a harvest where you left it, and grain that keeps.',
     site: 'BUILDINGS.field, and ActionSystem.doSow and doReap',
+  },
+  irrigation: {
+    summary: 'Lead fresh water to nearby fields with a canal.',
+    site: 'BUILDINGS.canal requires irrigation; Simulation.growCrops reads a completed canal carrying freshwater',
+  },
+  terracing: {
+    summary: 'Level a hillside field with a cut and fill that carries topsoil downhill.',
+    site: 'BUILDINGS.terrace requires terracing; ActionSystem.doEarthwork carries soil through Soil.strip and Soil.bury',
   },
   composting: {
     summary: 'The ground can be given back to. A field that lasts beyond the farmer.',

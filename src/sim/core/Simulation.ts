@@ -4827,7 +4827,8 @@ export class Simulation {
    */
   lockedDesigns(): BuildingDef[] {
     return Object.values(BUILDINGS).filter(
-      def => !def.furniture && def.requiresTech !== null && !this.knownTech.has(def.requiresTech)
+      def => !def.furniture && !def.earthwork?.turnOf &&
+        def.requiresTech !== null && !this.knownTech.has(def.requiresTech)
     );
   }
 

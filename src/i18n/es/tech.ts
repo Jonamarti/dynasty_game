@@ -1,5 +1,18 @@
 /** Spanish for tech. Keys are the English templates; see `i18n.ts`. */
 export const ES_TECH: Record<string, string> = {
+  'Irrigation': 'Riego',
+  'Terracing': 'Abancalado',
+  'about 6000 BC': 'hacia 6000 a. C.',
+  'cut a channel from fresh water and watched the flow reach ground that had been dry': 'abrió un canal desde el agua dulce y vio llegar el caudal a un terreno seco',
+  'looked at a dry field and wondered whether a stream could be led to it': 'miró un campo seco y se preguntó si podría llevar hasta allí un arroyo',
+  'A cut that leads fresh water to a field. A completed wet canal lets nearby crops make more of the growing season.': 'Una zanja que lleva agua dulce a un campo. Un canal terminado y con agua alarga el aprovechamiento de la estación de cultivo en los campos cercanos.',
+  'Lead fresh water to nearby fields with a canal.': 'Lleva agua dulce a los campos cercanos mediante un canal.',
+  'BUILDINGS.canal requires irrigation; Simulation.growCrops reads a completed canal carrying freshwater': 'BUILDINGS.canal requiere irrigation; Simulation.growCrops lee los canales terminados que llevan agua dulce',
+  'cut the high edge of a sloping field and heaped that soil at the low edge until the ground lay level': 'cavó el borde alto de una ladera y apiló esa tierra en el bajo hasta dejar el terreno llano',
+  'noticed that a low bench held the soil that ran off the hillside': 'observó que una terraza baja retenía la tierra que descendía por la ladera',
+  'Cut the upper edge of a slope and use its earth to raise the lower edge. The cut-and-fill work keeps the moved topsoil on a level bench.': 'Cava la parte alta de una ladera y usa esa tierra para elevar la parte baja. El corte y relleno conserva la capa fértil en una terraza llana.',
+  'Level a hillside field with a cut and fill that carries topsoil downhill.': 'Nivela un campo en ladera con un corte y relleno que lleva la capa fértil cuesta abajo.',
+  'BUILDINGS.terrace requires terracing; ActionSystem.doEarthwork carries soil through Soil.strip and Soil.bury': 'BUILDINGS.terrace requiere terracing; ActionSystem.doEarthwork conserva la tierra mediante Soil.strip y Soil.bury',
   'Clothes': 'Ropa',
   'Hide and fibre garments warm only their equipped body slot.': 'Las prendas de piel y fibra abrigan solo el espacio del cuerpo donde se llevan.',
   'wrapped woven wool around their shoulders against the cold': 'se envolvió los hombros con lana tejida para protegerse del frío',

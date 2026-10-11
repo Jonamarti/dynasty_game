@@ -2585,9 +2585,14 @@ lleva agua a beber junto al campamento: un valor que la banda descubre sola.
   canal crecen más (un término en `Field` o `Soil`, con `irrigation`). **Avance
   2026-10-11:** los campos próximos a un canal terminado que aún contiene agua
   dulce reciben un factor provisional de crecimiento 1,25. Se deriva del mundo
-  y de `buildingHash`, sin estado duplicado ni draws; el factor no está
-  calibrado. Siguen pendientes la puerta/nodo `irrigation` y la medición final.
-- **Bancal:** un campo en pendiente que no pierde fertilidad por la ladera.
+  y de `buildingHash`, sin estado duplicado ni draws. La tecnología `irrigation`
+  requiere `farming` y abre el canal; su factor no está calibrado. `terracing`
+  requiere `irrigation` y abre el bancal: el corte y relleno existente lleva la
+  capa fértil de la parte alta a la baja. No hay un modelo separado de erosión
+  de ladera. Siguen pendientes la puerta genérica `earthworks`, las tecnologías
+  de zanja/foso, la persuasión de obras y la medición final de 26e.
+- **Bancal:** un campo en pendiente que conserva la capa fértil al nivelar la
+  ladera con corte y relleno; no modela erosión adicional por lluvia.
 
 ### 26f. Checks y escenario
 
