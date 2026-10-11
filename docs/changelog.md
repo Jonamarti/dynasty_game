@@ -1,3 +1,20 @@
+## 2026-10-11 — m15: banco y descanso sentado
+
+`0.15.54-alpha`: `bench` es una receta de carpintería de dos maderas,
+colocable dentro del hogar, persistente por `hostId` y visible en los
+generadores de arte. NPC con carpintería pueden fabricar y colocar el banco de
+su casa cuando falta; cansados pueden elegirlo para descansar. El viaje y la
+opción contextual “Sit and rest” pasan por `reachBuilding` y sus
+interrupciones/refusals. Descansar allí recupera fatiga a 1,6× el ritmo de pie,
+sin cambiar el sueño. Contrato, pendientes y captura en
+`docs/m15_phase16d_bedding.md`.
+
+Typecheck, 86 pruebas focales de mobiliario/arte/tecnología/i18n y el e2e de
+colocación/captura pasan. El screenshot está en
+`artifacts/screenshots/m15-phase16d-bench-2026-10-11/`. No se ejecutaron
+calibración ni cohortes. El `sim:check` de un seed conserva solo los dos
+fallos ya conocidos: `cravings-steer-the-diet` y `perf-budget` (2/147).
+
 ## 2026-10-11 — m15: asignar superficies de sueño por hogar
 
 `0.15.57-alpha`: el sueño autónomo dirige a cada miembro vivo a una superficie

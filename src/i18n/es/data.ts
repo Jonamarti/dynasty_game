@@ -90,6 +90,8 @@ export const ES_DATA: Record<string, string> = {
   "Mud hut": "Choza de barro",
   "Bedding": "Lecho",
   "Bed": "Cama",
+  "Bench": "Banco",
+  "A wooden seat for resting inside a home.": "Un asiento de madera para descansar dentro de una casa.",
   "A bed of grass or hide laid inside a home.": "Un lecho de hierba o piel tendido dentro de una casa.",
   "A raised wooden bed with bedding, inside a home.": "Una cama elevada de madera con lecho, dentro de una casa.",
   "Daubed walls on a felled-timber frame, under thatch. Warm enough to winter in, and the first thing worth cutting a tree for.": "Paredes de barro sobre un armazón de madera talada, bajo techo de paja. Lo bastante cálida para pasar el invierno, y lo primero por lo que vale la pena talar un árbol.",

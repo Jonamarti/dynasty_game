@@ -101,6 +101,8 @@ export const ITEMS: Record<string, ItemDef> = {
     class: 'bulky', hand: { perHand: 0, perArms: 1, hands: 2 }, furniture: true },
   bed: { id: 'bed', label: 'Bed', nutrition: 0, spoilTicks: 0, baseValue: 12,
     class: 'bulky', hand: { perHand: 0, perArms: 1, hands: 2 }, furniture: true },
+  bench: { id: 'bench', label: 'Bench', nutrition: 0, spoilTicks: 0, baseValue: 8,
+    class: 'bulky', hand: { perHand: 0, perArms: 1, hands: 2 }, furniture: true },
   raft: { id: 'raft', label: 'Reed raft', nutrition: 0, spoilTicks: 0, baseValue: 12,
     class: 'bulky', hand: { perHand: 0, perArms: 2, hands: 2, shoulder: 0 } },
   sail: { id: 'sail', label: 'Sail', nutrition: 0, spoilTicks: 0, baseValue: 18,

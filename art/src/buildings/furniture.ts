@@ -25,7 +25,16 @@ const bed = (): string =>
   stroke('M48,73L48,83M100,69L100,80M73,83L73,94', WOOD_LIGHT, 2.4) +
   stroke('M58,55L58,61M68,59L68,65', '#9b8b6e', 1);
 
+const bench = (): string =>
+  ell(72, 102, 34, 6, 'rgba(0,0,0,0.2)') +
+  shape(poly([[39, 57], [72, 43], [105, 57], [72, 72]]), WOOD_LIGHT, OUTLINE) +
+  shape(poly([[42, 67], [72, 80], [72, 91], [42, 78]]), WOOD, OUTLINE) +
+  shape(poly([[72, 80], [102, 67], [102, 78], [72, 91]]), '#76502f', OUTLINE) +
+  stroke('M48,70L48,85M96,70L96,85M72,81L72,92', WOOD_LIGHT, 2.5) +
+  stroke('M50,58L72,68M72,47L95,57', '#d0a874', 1.4);
+
 export const FURNITURE: BuildingArt[] = [
   ['bedding', 'Lecho', 'cordage', 96, bedding],
   ['bed', 'Cama', 'carpentry', 96, bed],
+  ['bench', 'Banco', 'carpentry', 96, bench],
 ];

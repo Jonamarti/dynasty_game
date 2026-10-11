@@ -67,5 +67,27 @@ The assignment is derived from `Household.memberIds`, live people and hosted
 buildings, so it has no new checkpoint field, RNG draw or UI. The focused
 regression checks stable sorting, distinct surfaces when available, and the
 round-robin case. Individual player-managed assignments, shelf storage,
-fireplace, fat lamp, bench/seated comfort, and the phase 16f measurement remain
-open. No screenshot applies because no UI changed.
+fireplace, fat lamp, conversation while seated, and the phase 16f measurement
+remain open.
+
+## 2026-10-11: bench and seated rest
+
+`bench` is a two-wood carpentry recipe. It uses the existing furniture
+placement contract: only the household owner may place it inside the finished
+home, the placement picks an open walkable room tile, and `hostId` survives a
+checkpoint. The radial action on a bench says “Sit and rest”; attempting it
+still goes through the ordinary property/interruption checks, so a seat that
+becomes unavailable reports its stop reason. The Spanish label and action are
+translated.
+
+An adult with carpentry, two wood, a completed household home and a free tile
+may autonomously make and place one bench when that home has none. Tired adults
+may select a usable hosted bench; the rest action routes to the seat and
+recovers fatigue at 1.6 times the standing rest rate. This reader is
+deliberately separate from sleep quality; benches do not replace beds or alter
+night sleep. Art generators supply the world sprite and inventory icon,
+rebuilt into `public/art`. The focused capture is
+`artifacts/screenshots/m15-phase16d-bench-2026-10-11/01-bench-in-house.png`.
+Focal furniture, tech, art and i18n tests cover the recipe, placement,
+persistence, seated recovery, Spanish strings and generated art. No cohort or
+calibration is claimed.

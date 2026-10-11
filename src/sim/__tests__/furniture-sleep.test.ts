@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Brain, type BrainContext } from '../ai/Brain.ts';
+import { availableActions } from '../ai/ActionCatalog.ts';
 import { Simulation } from '../core/Simulation.ts';
 import { toCheckpointRecord } from '../persistence/CheckpointRecords.ts';
 import { Building, BUILDINGS } from '../entities/Building.ts';
@@ -55,6 +56,37 @@ describe('bedding and beds', () => {
     expect(assignedSleepSurface(members[0]!, members, house, [secondBed])).toBe(secondBed);
   });
 
+  it('crafts, places, persists, and rests on a bench at the improved seated rate', () => {
+    const { sim, person, house } = fixture();
+    person.knownTech.add('carpentry');
+    person.inventory.add('wood', 2);
+    expect(RECIPES.bench).toMatchObject({ tech: 'carpentry', ingredients: { wood: 2 }, output: { bench: 1 } });
+    person.inventory.add('bench', 1);
+    expect(sim.order(person, 'place_furniture', { buildingId: house.id, itemId: 'bench' })).toBe(true);
+    for (let tick = 0; tick < 5 && person.inventory.count('bench') > 0; tick++) sim.step();
+
+    const bench = sim.buildings.find(building => building.def.id === 'bench');
+    expect(bench).toMatchObject({ hostId: house.id, complete: true });
+    expect(availableActions(person, { kind: 'building', x: bench!.x, y: bench!.y, building: bench! },
+      { world: sim.world, nearWater: false }).find(option => option.id === 'rest'))
+      .toMatchObject({ label: 'Sit and rest', enabled: true });
+    const loaded = Simulation.fromCheckpointRecord(JSON.parse(JSON.stringify(toCheckpointRecord(sim))));
+    const loadedBench = loaded.buildingsById.get(bench!.id)!;
+    expect(loadedBench.hostId).toBe(loaded.buildingsById.get(house.id)!.id);
+
+    const sleeper = loaded.peopleById.get(person.id)!;
+    sleeper.needs.hunger = sleeper.needs.thirst = 0;
+    sleeper.needs.fatigue = 50;
+    loaded.peopleHash.remove(sleeper);
+    sleeper.x = loadedBench.centerX; sleeper.y = loadedBench.centerY;
+    sleeper.targetX = sleeper.x; sleeper.targetY = sleeper.y;
+    loaded.peopleHash.insert(sleeper);
+    expect(loaded.order(sleeper, 'rest', { buildingId: loadedBench.id })).toBe(true);
+    const before = sleeper.needs.fatigue;
+    loaded.step();
+    expect(before - sleeper.needs.fatigue).toBeGreaterThanOrEqual(0.35 * 1.6);
+  });
+
   it('scores the bedding-to-bed ladder only for an unfinished household need', () => {
     const { sim, person, house } = fixture();
     const brain = (sim as unknown as { brain: Brain }).brain;
@@ -77,6 +109,13 @@ describe('bedding and beds', () => {
       expect(score(actor, ctx).found.furnitureItem).toBeNull();
       expect(score(actor, ctx).found.recipe).not.toBe('bedding');
       expect(score(actor, ctx).found.recipe).not.toBe('bed');
+      person.inventory.add('wood', 2);
+      expect(score(actor, ctx).found.recipe).toBe('bench');
+      person.inventory.add('bench', 1);
+      expect(score(actor, ctx).found.furnitureItem).toBe('bench');
+      const bench = new Building(BUILDINGS.bench!, house.centerX + 1, house.centerY, person.bandId, sim.ids);
+      bench.hostId = house.id; bench.complete = true; ctx.buildingHash.insert(bench);
+      expect(score(actor, ctx).found.furnitureItem).toBeNull();
       person.householdId = null; ctx.buildingHash.remove(bed);
       expect(score(actor, ctx).found.furnitureItem).toBeNull();
       return score(actor, ctx);
@@ -110,6 +149,34 @@ describe('bedding and beds', () => {
       expect(person.inventory.count('bed')).toBe(0);
       expect(sim.buildings.some(piece => piece.hostId === house.id && piece.def.id === 'bed')).toBe(true);
       expect(person.order).toBeNull();
+    } finally { spy.mockRestore(); }
+  });
+
+  it('autonomously makes and places one bench after its household has a sleep surface', () => {
+    const { sim, person, house } = fixture();
+    person.knownTech.add('carpentry'); person.inventory.add('wood', 2);
+    const bed = new Building(BUILDINGS.bed!, house.centerX, house.centerY, person.bandId, sim.ids);
+    bed.hostId = house.id; bed.complete = true;
+    sim.buildings.push(bed); sim.buildingsById.set(bed.id, bed); sim.buildingHash.insert(bed);
+    person.action = 'idle'; person.order = null; person.needs.fatigue = 0;
+    const brain = (sim as unknown as { brain: Brain }).brain;
+    const score = brain.score.bind(brain);
+    const spy = vi.spyOn(brain, 'score').mockImplementation((actor, ctx) => {
+      const result = score(actor, ctx);
+      if (actor === person) for (const action of result.scores) {
+        if (action.id === 'craft' || action.id === 'place_furniture') action.score = 100;
+      }
+      return result;
+    });
+    try {
+      for (let tick = 0; tick < 500 && !sim.buildings.some(piece => piece.hostId === house.id && piece.def.id === 'bench'); tick++) {
+        person.needs.hunger = person.needs.thirst = person.needs.cold = 0;
+        sim.step();
+      }
+      expect(person.inventory.count('bench')).toBe(0);
+      expect(sim.buildings.some(piece => piece.hostId === house.id && piece.def.id === 'bench'),
+        JSON.stringify({ action: person.action, order: person.order, inventory: person.inventory.entries(), target: person.targetBuildingId }))
+        .toBe(true);
     } finally { spy.mockRestore(); }
   });
 

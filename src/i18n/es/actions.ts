@@ -421,6 +421,7 @@ export const ES_ACTIONS: Record<string, string> = {
   "Walk here": "Caminar hasta aquí",
   "You cannot walk there": "No puedes caminar hasta ahí",
   "Rest": "Descansar",
+  "Sit and rest": "Sentarse y descansar",
   "Drink": "Beber",
   "Drink salt water (harmful)": "Beber agua salada (perjudicial)",
   "Play a tune": "Tocar una melodía",

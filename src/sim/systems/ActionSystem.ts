@@ -2505,9 +2505,13 @@ export class ActionSystem {
       this.stop(person, wake, ctx, 'rest_ended_');
       return;
     }
-    if (person.targetBuildingId !== null && !this.reachBuilding(person, ctx, undefined, 'trespass')) return;
-    person.needs.fatigue = Math.max(0, person.needs.fatigue - 0.35);
+    const seat = person.targetBuildingId === null
+      ? null : this.reachBuilding(person, ctx, undefined, 'trespass');
+    if (person.targetBuildingId !== null && !seat) return;
+    const restQuality = seat?.def.furniture ? Math.max(1, seat.def.restQuality ?? 1) : 1;
+    person.needs.fatigue = Math.max(0, person.needs.fatigue - 0.35 * restQuality);
     telemetry.count('rest');
+    if (restQuality > 1) telemetry.count('rest_furniture');
   }
 
   // -------------------------------------------------------------------------

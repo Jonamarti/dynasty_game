@@ -267,6 +267,7 @@ interface FoundTargets {
   site: Building | null;
   shelter: Building | null;
   restShelter: Building | null;
+  restFurniture: Building | null;
   fruitTree: Tree | null;
   fellTree: Tree | null;
   storeTarget: Building | null;
@@ -1486,6 +1487,7 @@ export class Brain {
     let unfinished: Inscription | null = null;
     let shelter: Building | null = null;
     let restShelter: Building | null = null;
+    let restFurniture: Building | null = null;
     let storeTarget: Building | null = null;
     let storeItemId: string | null = null;
     let storeItemCount: number | null = null;
@@ -3442,6 +3444,18 @@ export class Brain {
     // even with no cold: gating this search on night left tired people resting
     // outside a roof they were already standing beside.
     if (fatigue > 0) {
+      const homeId = person.householdId === null ? null :
+        ctx.householdsById.get(person.householdId)?.homeBuildingId ?? null;
+      const home = homeId === null ? null : ctx.buildingsById.get(homeId) ?? null;
+      if (home?.def.interior && home.complete && !home.ruined) {
+        restFurniture = this.pickBest(ctx.buildingHash.queryRadius(person.x, person.y, ctx.sightRadius + 4)
+          .filter(piece => piece.hostId === home.id && piece.complete && !piece.ruined &&
+            (piece.def.restQuality ?? 0) > 0 &&
+            person.distanceTo({ x: piece.centerX, y: piece.centerY }) <= ctx.sightRadius &&
+            ctx.world.sameRegion(person.x, person.y, piece.centerX, piece.centerY) && this.canUse(person, piece, ctx)),
+          piece => (piece.def.restQuality ?? 1) * 10 -
+            person.distanceTo({ x: piece.centerX, y: piece.centerY }));
+      }
       restShelter = this.pickBest(ctx.buildingHash.queryRadius(person.x, person.y, ctx.sightRadius + 4)
         .filter(b => b.complete && !b.ruined && b.def.shelter > 0.2 &&
           person.distanceTo({ x: b.centerX, y: b.centerY }) <= ctx.sightRadius &&
@@ -3671,6 +3685,12 @@ export class Brain {
         if (quality < (canMakeBed ? 1.1 : 1) && !furnitureItem) {
           furnitureRecipe = canMakeBed && hasIngredients(person.inventory, RECIPES.bed!) ? 'bed' :
             person.inventory.count('bedding') < 1 ? 'bedding' : null;
+        }
+        if (!furnitureItem && !furnitureRecipe && !pieces.some(piece => piece.def.id === 'bench')) {
+          if (person.inventory.count('bench') > 0) furnitureItem = 'bench';
+          else if (recipeTechPower(person, RECIPES.bench!) > 0 && hasIngredients(person.inventory, RECIPES.bench!)) {
+            furnitureRecipe = 'bench';
+          }
         }
         if (furnitureItem) {
           furnitureHome = home;
@@ -3942,7 +3962,7 @@ export class Brain {
     }
     // Still here for people with no roof, which after a bad winter is most of
     // them. Sleeping is strictly better and scores higher when it is available.
-    add('rest', fatigue * 2.4);
+    add('rest', fatigue * 2.4 * (restFurniture ? 1.2 : 1));
 
     // --- Wander ------------------------------------------------------------
     // A small floor so a person with nothing pressing still looks alive, and so
@@ -4056,7 +4076,7 @@ export class Brain {
         water, foodToEat, garmentItem, torchItem, furnitureItem, furnitureHome, waterQuestionPeer, explorePoint, waterExplorePoint, bringFoodPoint, foodNode, pickupPile, pickupItem, matNode, grassSpot, plantSpot, companion, suitor, sparPartner, student, childPupil, mentor, colleague,
         victim, foe, attackRoute, intruder, restrainee, kinDefence, correctee, amendsTo, complainTo, parleyWith, peaceWith, helpCallerTarget, bindTarget, patrolPoint, investigatePoint, concealCorpse, giftee, giftItem, feastStore, feastHost, beneficiary, nursingChild, playmate, tradePartner, fleeFrom, fleePoint,
         quarry,
-        site, shelter, restShelter, storeTarget, storeItemId, storeItemCount, larderTarget, sabotageTarget, fruitTree, fellTree,
+        site, shelter, restShelter, restFurniture, storeTarget, storeItemId, storeItemCount, larderTarget, sabotageTarget, fruitTree, fellTree,
         recipe: craftRecipe, craftStation, fieldTarget, record, unfinished,
         patient, strayAnimal, slanderSubjectId, praiseSubjectId, proposalListener, proposalSite,
       },
@@ -4731,7 +4751,8 @@ export class Brain {
       case 'sleep':
       case 'rest':
       case 'shelter': {
-        const building = action === 'sleep' || action === 'rest' ? found.restShelter :
+        const building = action === 'sleep' ? found.restShelter :
+          action === 'rest' ? found.restFurniture ?? found.restShelter :
           action === 'shelter' ? found.shelter :
           action === 'take' ? found.larderTarget :
           action === 'store' ? found.storeTarget :

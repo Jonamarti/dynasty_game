@@ -164,6 +164,8 @@ export interface BuildingDef {
   furniture?: boolean;
   /** Fatigue recovery multiplier for a sleeper resting on this furniture. */
   sleepQuality?: number;
+  /** Fatigue recovery multiplier for resting beside/on this furniture. */
+  restQuality?: number;
   /**
    * Set on a design that moves ground to a plan rather than raising a
    * structure — M15 phase 26c. The tiles, and how far each has got, hang off
@@ -334,6 +336,12 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     width: 1, height: 1, materials: {}, workTicks: 0, shelter: 0, storage: 0,
     requiresTech: 'carpentry', furniture: true, sleepQuality: 1.1,
     description: 'A raised wooden bed with bedding, inside a home.',
+  },
+  bench: {
+    id: 'bench', label: 'Bench', icon: '\u{1FA91}',
+    width: 1, height: 1, materials: {}, workTicks: 0, shelter: 0, storage: 0,
+    requiresTech: 'carpentry', furniture: true, restQuality: 1.6,
+    description: 'A wooden seat for resting inside a home.',
   },
 
   // --- M11 phase 10, second commit: two more shelters -----------------------

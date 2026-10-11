@@ -1151,6 +1151,15 @@ function buildingActions(
         warning: watched,
       });
     }
+    if ((building.def.restQuality ?? 0) > 0 && building.def.furniture) {
+      options.push({
+        id: 'rest',
+        label: t('Sit and rest'),
+        icon: '\u{1FA91}',
+        enabled: true,
+        warning: watched,
+      });
+    }
     if (building.def.interior && actor.inventory.entries().some(([itemId, count]) =>
       count > 0 && ITEMS[itemId]?.furniture)) {
       const furniture = actor.inventory.entries().filter(([itemId, count]) =>
