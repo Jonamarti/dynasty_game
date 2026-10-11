@@ -13,6 +13,9 @@ function flatWorld(): World {
   world.offset.fill(0);
   world.walkable.fill(1);
   world.biome.fill(BIOME_ID.grass);
+  // Keep derived prominence in sync with the flat elevation field before
+  // comparing its sight bonus before and after piling earth.
+  world.refreshProminence(0, 0, world.width - 1, world.height - 1);
   return world;
 }
 

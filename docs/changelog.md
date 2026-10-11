@@ -14964,3 +14964,10 @@ una superficie de sueño y un banco. Arte de edificio e icono se generan desde
 `art/src`; no cambia paneles ni overlays. Plan y límites en
 `docs/m15_phase16d_bedding.md`. Pruebas focales cubren la
 transferencia, checkpoint, acciones radiales y colocación autónoma.
+
+## 2026-10-12 — corregir el fixture de terreno plano de earthworks
+
+La prueba de visibilidad del montículo ahora refresca la prominencia derivada
+después de aplanar el heightfield en su fixture. Antes comparaba contra
+prominencia residual de la geografía generada y fallaba aunque `pile` actualizase
+correctamente el relieve. Sin cambio de comportamiento del juego.
