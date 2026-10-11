@@ -546,6 +546,11 @@ arranque vengan ya cavados, o `git revert` del commit del silo.
   puerta también abre montones y terraplenes; los lectores físicos de altura,
   pendiente y visión se cubren en sus controles focales. Canales/bancales usan
   sus puertas propias y los agujeros simples siguen abiertos a todos.
+- **La ruta por una zanja se verifica como topología, no como táctica.** El test
+  `earthwork-routing.test.ts` confirma que Pathfinder usa una abertura y que
+  `pitDepth` cierra la ruta al cerrar la última abertura. Sigue sin medirse si
+  el coste de salir de una zanja somera cambia una ruta alternativa o si las
+  incursiones prefieren rodear terraplenes/fosos con paso disponible.
 - **Una casilla de plan que se hace honda bajo los pies de otro peón.** El que
   cava no está nunca en la casilla que se hará pozo (trabaja desde el borde),
   pero otro compañero de la cuadrilla sí puede estar en ella cuando alguien

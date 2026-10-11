@@ -10,6 +10,15 @@ focales añadidas a `world-traffic.test.ts`; no se activan desgaste ni remiendo
 hasta completar la auditoría de consumo. [Contrato de prendas](m15_garment_condition_design.md),
 [contrato de fase 35](m15_phase35_journeys.md). Dependencias no instaladas en
 este worktree; verificación local limitada a checks disponibles.
+## 2026-10-12 — M15 fase 26e: rutas por aberturas en zanjas
+
+Se añade una regresión de Pathfinder para la topología física de una zanja que
+rebasa `pitDepth`: una abertura conserva el paso y la ruta la usa; al cerrar
+esa abertura, la consulta no encuentra ruta. La medición solo cubre paso
+alcanzable frente a barrera cerrada, no una ventaja defensiva de las zanjas
+someras ni el coste táctico para una incursión. Typecheck y prueba focal no
+pudieron ejecutarse porque este worktree no tiene dependencias locales
+(`vite-node` no está disponible); `npm run sim:check` tampoco pudo iniciar.
 
 ## 2026-10-11 — M15 herencia física de prendas
 

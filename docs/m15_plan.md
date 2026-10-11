@@ -2642,6 +2642,13 @@ lleva agua a beber junto al campamento: un valor que la banda descubre sola.
   requiere `irrigation` y abre el bancal: el corte y relleno existente lleva la
   capa fértil de la parte alta a la baja. No hay un modelo separado de erosión
   de ladera. Sigue pendiente la persuasión de obras y la medición final de 26e.
+- **Rutas sobre obras cavadas (avance 2026-10-12):** regresión de Pathfinder
+  con una zanja que supera `pitDepth`: con una abertura, la ruta cruza por ella;
+  al cerrar la abertura, las regiones separan ambos lados y la misma consulta
+  da `NoRoute`. Esto verifica el comportamiento compartido por movimiento y
+  órdenes de incursión; no mide si una zanja poco profunda disuade a un grupo ni
+  cuánto cuesta rodear las obras. Esa medición táctica y la persuasión siguen
+  pendientes.
 - **Puerta Tierra (avance 2026-10-11):** `earthworks` requiere `ground_stone` y
   `basketry`; abre la zanja y el foso. La zanja de seis unidades queda bajo el
   umbral de `pitDepth` y sigue caminable; `World.stepFactor` encarece salir del
