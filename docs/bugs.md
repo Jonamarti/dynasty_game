@@ -592,6 +592,16 @@ alto o plantar solo con despensa llena, y repetir a 40 semillas antes de decidir
 
 # Known bugs and rough edges
 
+## M15 29c/33: la malla de comarcas no anticipa hidrología local (2026-10-12)
+
+La malla inicial colorea cada comarca por el muestreo de terreno del atlas,
+pero los ríos y el agua dulce se miden al pulsar Begin, construyendo la
+geografía local completa. Una celda puede ser tierra en el atlas y aun así
+rechazarse por no reunir tierra suficiente; una celda terrestre sin agua abre
+la confirmación seca. No se muestra un pronóstico hidrológico por celda antes
+de elegir. La comarca elegida no se sustituye sin permiso. Pendiente decidir
+si una futura vista previa compensa su coste adicional.
+
 ## M15 fase 27: puerta de coste abierta (2026-10-05)
 
 La comparación completa de 560 parejas (veinte semillas × 28 escenarios)

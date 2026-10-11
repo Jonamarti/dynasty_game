@@ -328,6 +328,18 @@ export function findStartInRegion(geography: WorldGeography, rx: number, ry: num
   return findAcrossBoundary(geography, grid, rx, ry, half, span, config, requireWater);
 }
 
+/** Measure one explicitly chosen comarca instead of silently replacing it with the region's ranked start. */
+export function startInComarca(geography: WorldGeography, cx: number, cy: number, config: LocalWorldConfig,
+  options: FindStartOptions = {}): StartPlace | null {
+  const grid = globeGridOf(geography);
+  if (!grid || geography.kind === 'legacyIsland' || !Number.isInteger(cx) || !Number.isInteger(cy) ||
+      cx < 0 || cy < 0 || cx >= grid.width || cy >= grid.height) return null;
+  const x = cx + 0.5, y = cy + 0.5;
+  const report = measureWindow(geography, x, y, 1, config);
+  const valid = options.requireWater === false ? report.land >= MIN_LAND_SHARE : isStart(report);
+  return valid ? { x, y, region: { x: Math.floor(cx / grid.perRegion), y: Math.floor(cy / grid.perRegion) }, report } : null;
+}
+
 /** The start nearest a region: itself first, then the rings around it up to `radius` regions. Null if there is none that close. */
 export function findNearestStart(geography: WorldGeography, rx: number, ry: number, span: number, config: LocalWorldConfig,
   radius = 2): StartPlace | null {

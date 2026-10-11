@@ -15383,3 +15383,13 @@ negativos prueban que cualquiera de las dos ausencias lo hace fallar. El
 contrato aclara que el remiendo es una orden controlada del instrumento y no
 una afirmación de autonomía o supervivencia. Sin cambio de UI ni cohortes.
 
+## 2026-10-12 — m15: permite elegir comarca inicial (0.15.100-alpha)
+
+El selector de mundo muestra las 100 comarcas de la región elegida y conserva
+la coordenada exacta al medir el terreno local. El juego inicia ahí si hay
+suelo suficiente y agua dulce; si no hay agua, el jugador decide iniciar en
+seco o trasladarse al agua más cercana. Cambiar atlas borra ambas selecciones.
+La interfaz conserva el mapa y expone las comarcas por botones accesibles. E2E
+verifica inicio, región reservada y selección persistente; captura nueva en
+`artifacts/screenshots/m15-comarca-choice-2026-10-12/04-comarca-choice-es.png`.
+

@@ -55,6 +55,13 @@ test('a region with no water nearby offers a choice, and "begin here anyway" sta
   await expect(page.locator('.worldpicker-confirm-nearest')).toContainText('regions away');
   await page.screenshot({ path: `${SHOTS}/02-no-water-confirm-panel.png` });
 
+  // Changing the selected comarca invalidates the old confirmation. The
+  // chosen cell is checked again before the same dry-start choice is offered.
+  await page.locator('.worldpicker-comarcas button').first().click();
+  await expect(confirm).toBeHidden();
+  await begin.click();
+  await expect(confirm).toBeVisible({ timeout: 10_000 });
+
   await page.locator('.worldpicker-confirm-anyway').click();
   await expect(page.locator('.worldpicker')).toBeHidden();
   await expect(page.locator('.settings')).toBeVisible({ timeout: 15_000 });
