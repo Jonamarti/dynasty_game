@@ -2617,12 +2617,13 @@ export class ActionSystem {
     for (const [itemId] of person.inventory.entries()) {
       const needed = site.stillNeeds(itemId);
       if (needed <= 0) continue;
-      const given = person.inventory.remove(itemId, Math.min(needed, person.inventory.count(itemId)));
-      site.delivered.add(itemId, given);
+      const given = person.inventory.transferTo(site.delivered, itemId, Math.min(needed, person.inventory.count(itemId)));
       // M15 phase 11b: hauled to a site is handled, even once it leaves the pack.
       person.handled.set(itemId, ctx.tick);
       delivered += given;
     }
+
+    if (delivered > 0) reconcileCarry(person, ctx.carry, ctx.dropAt);
 
     if (delivered === 0) {
       this.abandon(person, 'nothing_to_haul', ctx);
@@ -6741,12 +6742,15 @@ export class ActionSystem {
       return;
     }
 
-    const taken = other.inventory.remove(itemId, want);
+    const taken = other.inventory.transferItemsTo(person.inventory, [[itemId, want]]);
     if (taken === 0) {
       this.abandon(person, 'nothing_to_demand', ctx);
       return;
     }
-    person.inventory.add(itemId, taken);
+    // A demanded garment is the target's physical unit, and removing its last
+    // owned copy also invalidates any worn layer and pocket capacity.
+    reconcileCarry(other, ctx.carry, ctx.dropAt);
+    reconcileCarry(person, ctx.carry, ctx.dropAt);
     this.owe(person, other, 'threaten',
       THREAT_WORTH + (ITEMS[itemId]?.baseValue ?? 1) * taken, ctx, { itemId, count: taken });
     telemetry.count('threaten_succeeded');

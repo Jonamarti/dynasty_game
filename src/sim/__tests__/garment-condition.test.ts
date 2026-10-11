@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Inventory, type GarmentUnit, validateInventoryTransferState } from '../entities/Item.ts';
 import { Simulation } from '../core/Simulation.ts';
+import { RNG } from '../core/RNG.ts';
 import { changeGarment } from '../core/ToolEquipment.ts';
 import { DEFAULT_CONFIG } from '../core/Config.ts';
 import { Person } from '../entities/Person.ts';
@@ -73,6 +74,82 @@ describe('garment condition ownership foundation', () => {
     ]);
     expect(victim!.inventory.count('wool_cloak')).toBe(0);
     expect(victim!.equipment.cloak).toBeUndefined();
+  });
+
+  it('preserves the exact worn garment when a threat is obeyed', () => {
+    const sim = new Simulation({ seed: 'garment-threat', world: { width: 48, height: 48 },
+      population: { bands: 1, peoplePerBand: 2 }, carry: { legacyPack: true } });
+    const [leader, victim] = sim.livingPeople();
+    leader!.age = victim!.age = 30 * leader!.daysPerYear;
+    leader!.x = victim!.x; leader!.y = victim!.y;
+    leader!.skills.fight = 100; victim!.skills.fight = 0; victim!.traits.aggression = 0;
+    for (const [itemId, count] of leader!.inventory.entries()) leader!.inventory.remove(itemId, count);
+    for (const [itemId, count] of victim!.inventory.entries()) victim!.inventory.remove(itemId, count);
+    victim!.equipment.cloak = undefined;
+    victim!.inventory.add('wool_cloak', 1);
+    const unit = victim!.inventory.garmentUnitsOf('wool_cloak')[0]!;
+    victim!.inventory.setGarmentUnitCondition(unit.unitId, 0.34, 77);
+    expect(changeGarment(victim!, 'wool_cloak', 'wear_garment')).toBeNull();
+    (sim as unknown as { actionRng: RNG }).actionRng.chance = () => true;
+    expect(sim.order(leader!, 'threaten', { personId: victim!.id, itemId: 'wool_cloak', count: 1 })).toBe(true);
+    leader!.actionTimer = 1;
+
+    sim.step();
+
+    expect(leader!.inventory.garmentUnitsOf('wool_cloak')).toEqual([
+      { unitId: unit.unitId, itemId: 'wool_cloak', wear: 0.34, repairProgress: 77 },
+    ]);
+    expect(victim!.inventory.count('wool_cloak')).toBe(0);
+    expect(victim!.equipment.cloak).toBeUndefined();
+  });
+
+  it('rolls back both owners when a threatened garment receiver rejects insertion', () => {
+    class RejectGarmentInventory extends Inventory {
+      override putGarmentUnit(unit: GarmentUnit): string { throw new Error(`rejected ${unit.itemId}`); }
+    }
+    const sim = new Simulation({ seed: 'garment-threat-rollback', world: { width: 48, height: 48 },
+      population: { bands: 1, peoplePerBand: 2 }, carry: { legacyPack: true } });
+    const [leader, victim] = sim.livingPeople();
+    leader!.age = victim!.age = 30 * leader!.daysPerYear;
+    leader!.x = victim!.x; leader!.y = victim!.y;
+    leader!.skills.fight = 100; victim!.skills.fight = 0; victim!.traits.aggression = 0;
+    for (const [itemId, count] of victim!.inventory.entries()) victim!.inventory.remove(itemId, count);
+    victim!.inventory.add('wool_cloak', 1);
+    const unit = victim!.inventory.garmentUnitsOf('wool_cloak')[0]!;
+    victim!.inventory.setGarmentUnitCondition(unit.unitId, 0.34, 77);
+    leader!.inventory = new RejectGarmentInventory();
+    const sourceBefore = victim!.inventory.transferSnapshot();
+    const destinationBefore = leader!.inventory.transferSnapshot();
+    (sim as unknown as { actionRng: RNG }).actionRng.chance = () => true;
+    expect(sim.order(leader!, 'threaten', { personId: victim!.id, itemId: 'wool_cloak', count: 1 })).toBe(true);
+    leader!.actionTimer = 1;
+
+    expect(() => sim.step()).toThrow(/rejected wool_cloak/);
+    expect(victim!.inventory.transferSnapshot()).toEqual(sourceBefore);
+    expect(leader!.inventory.transferSnapshot()).toEqual(destinationBefore);
+  });
+
+  it('rejects a threat against a garment whose physical ownership row is missing', () => {
+    const sim = new Simulation({ seed: 'garment-threat-invalid-owner', world: { width: 48, height: 48 },
+      population: { bands: 1, peoplePerBand: 2 }, carry: { legacyPack: true } });
+    const [leader, victim] = sim.livingPeople();
+    leader!.age = victim!.age = 30 * leader!.daysPerYear;
+    leader!.x = victim!.x; leader!.y = victim!.y;
+    leader!.skills.fight = 100; victim!.skills.fight = 0;
+    for (const [itemId, count] of victim!.inventory.entries()) victim!.inventory.remove(itemId, count);
+    victim!.equipment.cloak = undefined;
+    victim!.inventory.add('wool_cloak', 1);
+    const unit = victim!.inventory.garmentUnitsOf('wool_cloak')[0]!;
+    expect(changeGarment(victim!, 'wool_cloak', 'wear_garment')).toBeNull();
+    (victim!.inventory as unknown as { garmentUnits: GarmentUnit[] }).garmentUnits.length = 0;
+    (sim as unknown as { actionRng: RNG }).actionRng.chance = () => true;
+    expect(sim.order(leader!, 'threaten', { personId: victim!.id, itemId: 'wool_cloak', count: 1 })).toBe(true);
+    leader!.actionTimer = 1;
+
+    expect(() => sim.step()).toThrow(/garment units do not match garment counts/);
+    expect(victim!.inventory.count('wool_cloak')).toBe(1);
+    expect(leader!.inventory.count('wool_cloak')).toBe(0);
+    expect(victim!.equipment.cloak?.unitId).toBe(unit.unitId);
   });
 
   it('rejects an orphaned garment row before a multi-item offer changes either owner', () => {

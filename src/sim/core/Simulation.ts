@@ -2622,14 +2622,19 @@ export class Simulation {
     this.assertExecutionAuthority();
     this.assertCanonical(this.peopleById, payer, 'person');
     this.assertCanonical(this.peopleById, captive, 'person');
-    if (!payer.alive || !captive.alive || !isCaptive(captive) || count <= 0) return false;
+    if (!payer.alive || !captive.alive || !isCaptive(captive) || !Number.isSafeInteger(count) || count <= 0) return false;
     if (payer.bandId !== captive.captiveFrom || payer.distanceTo(captive) > 6) return false;
     if (!payer.inventory.has(itemId, count)) return false;
     const captor = this.people.find(person =>
       person.alive && person.bandId === captive.captiveOf && !person.isChild);
     if (!captor) return false;
-    payer.inventory.remove(itemId, count);
-    captor.inventory.add(itemId, count);
+    // Release is the consequence of payment, so validate and move the complete
+    // offer first. A failed garment insertion rolls both inventories back and
+    // must not free the captive for goods they never received.
+    try { payer.inventory.transferItemsTo(captor.inventory, [[itemId, count]]); }
+    catch { return false; }
+    reconcileCarry(payer, this.config.carry, (x, y, id, amount, units) => this.dropAt(x, y, id, amount, units));
+    reconcileCarry(captor, this.config.carry, (x, y, id, amount, units) => this.dropAt(x, y, id, amount, units));
     const oldBand = captive.captiveFrom;
     captive.captiveOf = null;
     captive.serfOf = null;

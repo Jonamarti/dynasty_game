@@ -1,3 +1,16 @@
+## 2026-10-12 — m15: amenazas y rescates transfieren prendas físicas (0.15.75-alpha)
+
+`doThreaten` y `ransomCaptive` mueven prendas por `Inventory.transferTo` /
+`transferItemsTo`, conservan wear y progreso, y reconcilian equipo/capacidad.
+El rescate sólo libera al cautivo después de mover toda la oferta; inserción
+rechazada o propiedad malformada deja dueño, prenda y cautiverio intactos.
+`doHaul` también usa la transferencia compartida para sus materiales. Tests
+focales cubren amenaza con éxito y rollback, rescate con éxito, inserción
+fallida y filas inválidas. Auditoría de consumidores: comida y recetas actuales
+no usan prendas; `doPrototype` sí consume `fur_coat` al prototipar `toggles` y
+falta reconciliar la capa si estaba vestida. Por eso desgaste/remiendo siguen
+apagados. Typecheck/Vitest no disponibles en este worktree (faltan dependencias).
+
 ## 2026-10-12 — m15: prendas físicas en el tráfico de mundo (0.15.74-alpha)
 
 Los inventarios de las personas viajan dentro del checkpoint del grupo y ahora
