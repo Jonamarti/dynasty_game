@@ -46,6 +46,13 @@ function worker(sim: Simulation): Person {
   return person;
 }
 
+/** Mark the design gate known for tests whose subject is the earthwork itself. */
+function simWithEarthworks(): Simulation {
+  const sim = new Simulation({ seed: 'earthworks' });
+  sim.knownTech.add('earthworks');
+  return sim;
+}
+
 function run(sim: Simulation, person: Person, site: Building, maxTicks = 20000): number {
   let ticks = 0;
   while (!site.complete && ticks < maxTicks && person.alive) {
@@ -76,7 +83,7 @@ describe('earthwork designs', () => {
   });
 
   it('keeps the turned copies out of the menu, and the plan sum equal to the declared total', () => {
-    const sim = new Simulation({ seed: 'earthworks' });
+    const sim = simWithEarthworks();
     const menu = sim.availableDesigns().map(d => d.id);
     expect(menu).toContain('ditch');
     expect(menu).not.toContain('ditch_ns');
@@ -88,7 +95,7 @@ describe('earthwork designs', () => {
   });
 
   it('are marked out where the ground allows, and refused with the reason where it does not', () => {
-    const sim = new Simulation({ seed: 'earthworks' });
+    const sim = simWithEarthworks();
     const spot = openGround(sim, 7, 7);
     const ditch = sim.place('ditch', spot.x, spot.y, 0, null, true);
     expect(ditch).not.toBeNull();
@@ -105,7 +112,7 @@ describe('earthwork designs', () => {
   });
 
   it('a ditch is dug by one person, progress banked on the tiles and the ground lowered', () => {
-    const sim = new Simulation({ seed: 'earthworks' });
+    const sim = simWithEarthworks();
     const spot = openGround(sim, 8, 8);
     const site = sim.place('ditch', spot.x, spot.y, 0, null, true)!;
     const person = worker(sim);
@@ -135,7 +142,7 @@ describe('earthwork designs', () => {
   }, 60000);
 
   it('a mound heaps earth that a digger scrapes up from beside it', () => {
-    const sim = new Simulation({ seed: 'earthworks' });
+    const sim = simWithEarthworks();
     const spot = openGround(sim, 8, 8);
     const site = sim.place('mound', spot.x, spot.y, 0, null, true)!;
     const person = worker(sim);
@@ -151,7 +158,7 @@ describe('earthwork designs', () => {
 
 describe('earthwork orders', () => {
   it('refuse with the tool as the reason, and refuse build and haul altogether', () => {
-    const sim = new Simulation({ seed: 'earthworks' });
+    const sim = simWithEarthworks();
     const spot = openGround(sim, 7, 7);
     const site = sim.place('ditch', spot.x, spot.y, 0, null, true)!;
     const person = sim.people.find(p => p.alive && !p.isChild)!;
@@ -165,7 +172,7 @@ describe('earthwork orders', () => {
   });
 
   it('stop with a reason when the hands are full of earth and there is nowhere to put it', () => {
-    const sim = new Simulation({ seed: 'earthworks' });
+    const sim = simWithEarthworks();
     const spot = openGround(sim, 7, 7);
     const site = sim.place('ditch', spot.x, spot.y, 0, null, true)!;
     const person = worker(sim);
@@ -188,7 +195,7 @@ describe('earthwork orders', () => {
 
 describe('earthwork results', () => {
   it('a pit is worked from its rim and ends as ground nobody can cross', () => {
-    const sim = new Simulation({ seed: 'earthworks' });
+    const sim = simWithEarthworks();
     const spot = openGround(sim, 8, 8);
     const site = sim.place('pit', spot.x, spot.y, 0, null, true)!;
     const person = worker(sim);
@@ -207,7 +214,7 @@ describe('earthwork results', () => {
   }, 240000);
 
   it('a moat that touches the water fills as it is dug', () => {
-    const sim = new Simulation({ seed: 'earthworks' });
+    const sim = simWithEarthworks();
     const w = sim.world;
     // A 6x6 plot on land with a shore tile on its ring, levelled to just above the water.
     let spot: { x: number; y: number } | null = null;
@@ -252,7 +259,7 @@ describe('earthwork results', () => {
   }, 400000);
 
   it('a terrace cuts the high edge and builds up the low one', () => {
-    const sim = new Simulation({ seed: 'earthworks' });
+    const sim = simWithEarthworks();
     const w = sim.world;
     sim.knownTech.add('terracing');
     const spot = openGround(sim, 8, 8);
@@ -280,7 +287,7 @@ describe('earthwork records and replay', () => {
   it('survive a save and load with their banked progress, and two runs agree', async () => {
     const { toWorldObjectRecord, fromWorldObjectRecord } = await import('../persistence/WorldObjectRecords.ts');
     const build = () => {
-      const sim = new Simulation({ seed: 'earthworks' });
+      const sim = simWithEarthworks();
       const spot = openGround(sim, 8, 8);
       const site = sim.place('ditch', spot.x, spot.y, 0, null, true)!;
       const person = worker(sim);

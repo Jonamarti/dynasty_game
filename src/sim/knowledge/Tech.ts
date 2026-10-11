@@ -216,6 +216,9 @@ export const TECHS = [
   'fibre_skirt',
   // M15 phase 26e: canal irrigation and cut-and-fill terraces are field readers.
   'irrigation', 'terracing',
+  // M15 phase 26e: earthworks opens the first designed ditch; later designs
+  // join only when their own readers are ready.
+  'earthworks',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -1450,19 +1453,38 @@ export const TECH: Record<Tech, TechDef> = {
   irrigation: {
     id: 'irrigation', label: 'Irrigation', domain: 'plants', web: 'field',
     age: 'neolithic', firstKnown: 'about 6000 BC',
-    kind: 'device', requires: ['farming'], difficulty: 0.58, skill: 'build',
+    kind: 'device', requires: ['farming', 'earthworks'], difficulty: 0.58, skill: 'build',
     prototype: { earth: 4 }, maxRefinement: 2,
     sparks: [
-      { needs: [{ kind: 'knows', tech: 'farming' }, { kind: 'doing', action: 'dig' },
+      { needs: [{ kind: 'knows', tech: 'farming' }, { kind: 'knows', tech: 'earthworks' },
+                { kind: 'doing', action: 'dig' },
                 { kind: 'holding', item: 'earth' }],
         weight: 1.0, story: 'cut a channel from fresh water and watched the flow reach ground that had been dry' },
-      { needs: [{ kind: 'knows', tech: 'farming' }, { kind: 'holding', item: 'earth' },
+      { needs: [{ kind: 'knows', tech: 'farming' }, { kind: 'knows', tech: 'earthworks' },
+                { kind: 'holding', item: 'earth' },
                 { kind: 'place', biome: 'grass' }, { kind: 'feeling', need: 'hunger' }],
         weight: 0.6, story: 'looked at a dry field and wondered whether a stream could be led to it' },
     ],
     description:
       'A cut that leads fresh water to a field. A completed wet canal lets ' +
       'nearby crops make more of the growing season.',
+  },
+  earthworks: {
+    id: 'earthworks', label: 'Earthworks', domain: 'stone',
+    age: 'neolithic', firstKnown: 'about 6000 BC',
+    kind: 'device', requires: ['ground_stone', 'basketry'], difficulty: 0.62, skill: 'build',
+    prototype: { earth: 4 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'ground_stone' }, { kind: 'knows', tech: 'basketry' },
+                { kind: 'doing', action: 'dig' }, { kind: 'holding', item: 'earth' }],
+        weight: 1.0, story: 'cut a line through the ground and found the earth itself could be shaped into a boundary' },
+      { needs: [{ kind: 'knows', tech: 'ground_stone' }, { kind: 'knows', tech: 'basketry' },
+                { kind: 'doing', action: 'pile' }],
+        weight: 0.6, story: 'heaped earth into a bank and saw it change where people could walk' },
+    ],
+    description:
+      'Planned cuts and banks of earth. The first design is a ditch; other ' +
+      'works wait for the ground to show what they are for.',
   },
   terracing: {
     id: 'terracing', label: 'Terracing', domain: 'plants', web: 'field',
@@ -2919,6 +2941,10 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   irrigation: {
     summary: 'Lead fresh water to nearby fields with a canal.',
     site: 'BUILDINGS.canal requires irrigation; Simulation.growCrops reads a completed canal carrying freshwater',
+  },
+  earthworks: {
+    summary: 'A planned ditch can be marked and dug; later earth designs wait for their own readers.',
+    site: 'BUILDINGS.ditch.requiresTech; Simulation.availableDesigns and Simulation.place gate the ditch design',
   },
   terracing: {
     summary: 'Level a hillside field with a cut and fill that carries topsoil downhill.',

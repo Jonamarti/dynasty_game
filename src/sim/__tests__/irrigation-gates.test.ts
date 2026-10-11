@@ -21,6 +21,7 @@ describe('irrigation and terrace technology gates (M15 phase 26e)', () => {
     expect(webOf('terracing')).toBe('field');
     expect(techsOfWeb('field')).toEqual(expect.arrayContaining(['irrigation', 'terracing']));
     expect(TECH.irrigation.requires).toContain('farming');
+    expect(TECH.irrigation.requires).toContain('earthworks');
     expect(TECH.terracing.requires).toContain('farming');
     expect(TECH_EFFECTS.irrigation.site).toContain('BUILDINGS.canal');
     expect(TECH_EFFECTS.terracing.site).toContain('BUILDINGS.terrace');

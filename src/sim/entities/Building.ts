@@ -777,8 +777,8 @@ export const BUILDINGS: Record<string, BuildingDef> = {
 // `Object.values(BUILDINGS)`, which the planner and the menu iterate. No
 // materials and no technology: a hole in the ground is older than any entry in
 // the tree, and what limits it is the digger's tool (`digTool`) and the hours.
-// Ordinary pits and ditches are old knowledge; channels and terraces wait on
-// their field readers in the Campo web (M15 phase 26e).
+// Pits stay open as ordinary holes; designed ditches open with earthworks,
+// while channels and terraces wait on their field readers (M15 phase 26e).
 // Each linear design has a turned copy (`_ns`) that is the same plan running
 // north-south: the build menu lists one design and R turns it.
 function earthworkDef(
@@ -805,7 +805,8 @@ const EARTHWORK_DEFS: BuildingDef[] = [
     'A hole sunk past what anyone can climb out of. Nobody crosses it, and what falls in stays.'),
   ...withTurned(earthworkDef('ditch', 'Ditch', '\u{3030}', 6, 1,
     { layout: 'fill', kind: 'dig', depth: 6 },
-    'A trench a person can still climb out of. It costs a step to cross, and the earth comes up beside it.')),
+    'A trench a person can still climb out of. It costs a step to cross, and the earth comes up beside it.',
+    'earthworks')),
   earthworkDef('moat', 'Moat', '\u{1F30A}', 6, 6,
     { layout: 'ring', kind: 'dig', depth: 16, water: 'ring' },
     'A ring of ground dug too deep to cross, starting at the water. Where the water follows, it fills.'),

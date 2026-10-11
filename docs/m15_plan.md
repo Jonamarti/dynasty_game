@@ -2541,9 +2541,11 @@ declaran tecnologías que todavía no puedan hacer nada.
 | palo de cavar (`digging_stick`) | Paleolítico inferior | — (palos 1) | cavar a 1× |
 | pico de asta (`antler_pick`) | Mesolítico | `bone_working` (hueso 2) | 2× |
 | pala de madera (`spade`) | Neolítico | `carpentry` (madera 1) | 3× |
-| `earthworks` (puerta de la sub-red Tierra) | Neolítico (los recintos de fosos interrumpidos) | `ground_stone`, `basketry` | diseños de zanja, foso y terraplén |
-| `ditch` · `moat` · `terracing` | Neolítico · Neolítico · Bronce | `earthworks` (el foso, además, un borde de agua) | los diseños de 26c |
-| `irrigation` (sub-red Campo) | Neolítico final (Mesopotamia) | `earthworks`, `farming` | el canal que riega (26e) |
+| `earthworks` (puerta Tierra, en la red principal) | Neolítico | `ground_stone`, `basketry` | abre `ditch`; otros diseños se conectan al llegar sus lectores |
+| `ditch` | Neolítico | `earthworks` | diseño excavable de 26c; mueve suelo y modifica el relieve |
+| `moat` | Neolítico | `earthworks` (además, requiere un borde de agua) | diseño de foso de 26c; gate aún pendiente |
+| `terracing` | Bronce | `irrigation` | bancal de 26e, lector de topsoil; diseño ya implementado |
+| `irrigation` (sub-red Campo) | Neolítico final (Mesopotamia) | `earthworks`, `farming` | abre el canal que riega (26e) |
 
 Los hoyos y los silos no necesitan técnica: cavar un agujero es muy antiguo.
 Las herramientas de bronce y hierro (fases 37 y 40) llegan a 5× y 6×.
@@ -2586,11 +2588,16 @@ lleva agua a beber junto al campamento: un valor que la banda descubre sola.
   2026-10-11:** los campos próximos a un canal terminado que aún contiene agua
   dulce reciben un factor provisional de crecimiento 1,25. Se deriva del mundo
   y de `buildingHash`, sin estado duplicado ni draws. La tecnología `irrigation`
-  requiere `farming` y abre el canal; su factor no está calibrado. `terracing`
+  requiere `farming` y `earthworks`, y abre el canal; su factor no está calibrado. `terracing`
   requiere `irrigation` y abre el bancal: el corte y relleno existente lleva la
   capa fértil de la parte alta a la baja. No hay un modelo separado de erosión
-  de ladera. Siguen pendientes la puerta genérica `earthworks`, las tecnologías
-  de zanja/foso, la persuasión de obras y la medición final de 26e.
+  de ladera. Siguen pendientes los nodos específicos del foso y otras obras,
+  la persuasión de obras y la medición final de 26e.
+- **Puerta Tierra (avance 2026-10-11):** `earthworks` requiere `ground_stone` y
+  `basketry`; su primer lector es `ditch`, que permanece bloqueado hasta conocer
+  la puerta. La puerta está en la red principal mientras solo tenga un diseño
+  lector. El canal requiere también `earthworks` a través de `irrigation`; el
+  foso, montones y terraplenes siguen pendientes hasta conectar cada lector.
 - **Bancal:** un campo en pendiente que conserva la capa fértil al nivelar la
   ladera con corte y relleno; no modela erosión adicional por lluvia.
 

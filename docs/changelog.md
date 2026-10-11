@@ -14890,3 +14890,19 @@ limpio, 61/61 pruebas focales y e2e de red española 1/1. Capturas:
 `artifacts/screenshots/m15-phase26e-irrigation-2026-10-11/`. No se corrieron
 cohortes ni se calibró el factor de riego. Sigue pendiente la puerta genérica
 `earthworks`, sus nodos, persuasión y medición económica; no se cierra la fase 26.
+
+## 2026-10-11 — Fase 26e, puerta Tierra y primera zanja
+
+`earthworks` requiere `ground_stone` y `basketry`, y abre el diseño `ditch`; el
+diseño bloqueado devuelve `null` al intentar colocarlo. `irrigation` incorpora
+también `earthworks` como requisito. Los tests de nodo, lector y gate fallaron
+antes de la implementación y pasan ahora. Typecheck limpio; 63/63 pruebas de
+cinco archivos focalizados, 6/6 de i18n y e2e 2/2. Captura de la red principal:
+`artifacts/screenshots/m15-phase26e-earthworks-2026-10-11/`. No se corrieron
+cohortes ni calibración. Siguen pendientes los nodos/lectores propios de foso y
+otras obras, el coste de cruzar una zanja para las incursiones, la persuasión y
+la medición económica; la fase 26 permanece abierta.
+
+El `sim:check` único de `band` conserva los dos fallos de baseline conocidos:
+`cravings-steer-the-diet` y `perf-budget` (531 pasos/s frente al piso de 1.678).
+No se atribuyen a esta puerta.

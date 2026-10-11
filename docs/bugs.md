@@ -520,9 +520,10 @@ arranque vengan ya cavados, o `git revert` del commit del silo.
   el foso solo se llena donde el terreno es bajo, y una playa natural sube unos
   4 m por casilla. Pero el coste de cruzar una zanja *honda*, las incursiones que la
   rodean, el riego del canal (`irrigation`) y la fertilidad del bancal son 26e.
-  Por eso la puerta `earthworks` y los nodos `ditch`/`moat`/`terracing` siguen sin
-  declararse: no hay lector que los pida, y las obras están abiertas a todos
-  (un agujero en el suelo es más antiguo que cualquier técnica).
+  Avance 2026-10-11: `earthworks` ahora abre el diseño `ditch`, y `irrigation`
+  también lo requiere. Faltan el coste de cruce defensivo, la reacción de las
+  incursiones, y puertas con lectores propios para foso, terraplén y las demás
+  obras. Los agujeros simples siguen abiertos a todos.
 - **Una casilla de plan que se hace honda bajo los pies de otro peón.** El que
   cava no está nunca en la casilla que se hará pozo (trabaja desde el borde),
   pero otro compañero de la cuadrilla sí puede estar en ella cuando alguien

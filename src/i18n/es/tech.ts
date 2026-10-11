@@ -1,5 +1,11 @@
 /** Spanish for tech. Keys are the English templates; see `i18n.ts`. */
 export const ES_TECH: Record<string, string> = {
+  'Earthworks': 'Obras de tierra',
+  'Planned cuts and banks of earth. The first design is a ditch; other works wait for the ground to show what they are for.': 'Cortes y terraplenes planificados. El primer diseño es una zanja; las demás obras esperan a que el terreno muestre para qué sirven.',
+  'cut a line through the ground and found the earth itself could be shaped into a boundary': 'abrió una línea en el terreno y vio que la propia tierra podía formar un límite',
+  'heaped earth into a bank and saw it change where people could walk': 'amontonó tierra en un terraplén y vio cómo cambiaba por dónde podía pasar la gente',
+  'A planned ditch can be marked and dug; later earth designs wait for their own readers.': 'Una zanja planificada puede marcarse y cavarse; los demás diseños esperan a tener un uso propio.',
+  'BUILDINGS.ditch.requiresTech; Simulation.availableDesigns and Simulation.place gate the ditch design': 'BUILDINGS.ditch.requiresTech; Simulation.availableDesigns y Simulation.place control el diseño de zanja',
   'Irrigation': 'Riego',
   'Terracing': 'Abancalado',
   'about 6000 BC': 'hacia 6000 a. C.',
