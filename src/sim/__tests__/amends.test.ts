@@ -8,6 +8,7 @@ import { Person } from '../entities/Person.ts';
 import { Simulation } from '../core/Simulation.ts';
 import { incur, debtTo, offerFor, acceptance, settleDebt, pruneDebts } from '../social/Amends.ts';
 import { ITEMS } from '../entities/Item.ts';
+import { changeGarment } from '../core/ToolEquipment.ts';
 
 function adult(name: string, band: number): Person {
   const person = new Person(name, 10, 10, band, new RNG('a-' + name));
@@ -114,6 +115,33 @@ describe('making amends', () => {
     expect(owed.inventory.count('flint')).toBe(flintBefore + 3);
     expect(sim.piles.reduce((sum, pile) => sum + pile.contents.count('flint'), 0)).toBeGreaterThan(groundFlintBefore);
     expect(sim.relationships.opinion(owed.id, payer.id)).toBeGreaterThan(before);
+  });
+
+  it('preserves the physical garment when it is offered as amends', () => {
+    const sim = new Simulation(SMALL);
+    const payer = sim.livingPeople().find(p => p.bandId === 0 && !p.isChild)!;
+    const owed = sim.livingPeople().find(p => p.bandId === 1 && !p.isChild)!;
+    owed.traits.malice = 0;
+    owed.traits.aggression = 0;
+    owed.x = payer.x + 1;
+    owed.y = payer.y;
+    payer.inventory.add('wool_cloak', 1);
+    const unit = payer.inventory.garmentUnitsOf('wool_cloak')[0]!;
+    payer.inventory.setGarmentUnitCondition(unit.unitId, 0.34, 79);
+    expect(changeGarment(payer, 'wool_cloak', 'wear_garment')).toBeNull();
+    incur(payer, owed, 'theft', ITEMS.wool_cloak!.baseValue, sim.time.tick,
+      { itemId: 'wool_cloak', count: 1 });
+    expect(sim.order(payer, 'make_amends', { personId: owed.id })).toBe(true);
+    payer.actionTimer = 1;
+
+    sim.step();
+
+    expect(owed.inventory.garmentUnitsOf('wool_cloak')).toMatchObject([
+      { unitId: unit.unitId, wear: 0.34, repairProgress: 79 },
+    ]);
+    expect(payer.inventory.count('wool_cloak')).toBe(0);
+    expect(payer.equipment.cloak).toBeUndefined();
+    expect(payer.debts).toHaveLength(0);
   });
 
   it('is refused aloud to somebody who owes nothing', () => {

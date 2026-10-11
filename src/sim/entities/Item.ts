@@ -679,6 +679,32 @@ export class Inventory {
     }
   }
 
+  /** Move a selected multi-stack offer as one transaction (amends, barter, etc.). */
+  transferItemsTo(destination: Inventory, items: readonly (readonly [string, number])[]): number {
+    if (destination === this || items.length === 0) return 0;
+    for (const entry of items) {
+      if (!Array.isArray(entry) || entry.length !== 2 || typeof entry[0] !== 'string' || !entry[0] ||
+          !Number.isSafeInteger(entry[1]) || entry[1] <= 0) {
+        throw new RangeError('inventory transfer request is invalid');
+      }
+    }
+    const sourceBefore = this.transferSnapshot();
+    const destinationBefore = destination.transferSnapshot();
+    let movedTotal = 0;
+    try {
+      for (const [itemId, count] of items) {
+        const moved = this.transferTo(destination, itemId, count);
+        if (moved !== count) throw new RangeError('inventory transfer count changed during selected transfer');
+        movedTotal += moved;
+      }
+      return movedTotal;
+    } catch (error) {
+      this.restoreStateUnchecked(sourceBefore);
+      destination.restoreStateUnchecked(destinationBefore);
+      throw error;
+    }
+  }
+
   /**
    * Merge this whole inventory into another as one transaction. Household
    * consolidation used to move stacks one at a time, so a bad garment row in

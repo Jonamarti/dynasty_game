@@ -1716,6 +1716,13 @@ fallida y reconcilia las capas/bolsillos de ambos participantes. Siguen
 pendientes amends, tributo, transferencias entre edificios, escrow y tráfico;
 desgaste/remiendo permanece apagado.
 
+**Avance del 2026-10-12 — compensación física:** `doMakeAmends` usa una
+transferencia transaccional para todas las pilas de la oferta. Una prenda que
+compensa una deuda conserva desgaste, progreso e identidad; cualquier fallo en
+una pila posterior revierte todo lo entregado. El pagador reconcilia sus capas
+vestidas al completar el pago. Siguen pendientes tributo, otros movimientos
+entre edificios, escrow y tráfico; desgaste/remiendo permanece apagado.
+
 **Avance del 2026-10-11 — base de condición física:** `Inventory` crea una
 unidad íntegra por prenda, permite extraerla/devolverla con condición y trabajo
 de remiendo, y conserva/valida las unidades en el registro explícito de

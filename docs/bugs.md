@@ -3,10 +3,11 @@
 La base por unidad ya conserva condición/progreso en las API de `Inventory` y
 en el registro explícito de transferencia. Equipo, soltar/recoger montones,
 desbordamiento de carga, depósitos/retiradas persona↔almacén, fusión de hogares,
-herencia, handover directo, regalos NPC no alimentarios y robo preservan la
-unidad. `doTrade` sólo mueve comida, así que no transfiere prendas. Siguen sin
-migrar amends, tributo, otros movimientos entre edificios y tráfico fuera del
-mapa; esas rutas pueden destruir o recrear la unidad. `unitId` sigue
+herencia, handover directo, regalos NPC no alimentarios, robo y compensación
+por amends preservan la unidad. `doTrade` sólo mueve comida, así que no
+transfiere prendas. Siguen sin migrar tributo, otros movimientos entre
+edificios y tráfico fuera del mapa; esas rutas pueden destruir o recrear la
+unidad. `unitId` sigue
 siendo local al inventario y se reemite al colisionar durante una fusión; una
 identidad global antes de referenciar copias entre inventarios sigue pendiente.
 Por eso no se habilita desgaste ni remiendo. Véase el

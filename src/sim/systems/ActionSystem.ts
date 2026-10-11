@@ -6023,10 +6023,8 @@ export class ActionSystem {
       return;
     }
 
-    for (const [itemId, count] of offer.items) {
-      const handed = person.inventory.remove(itemId, count);
-      if (handed > 0) owed.inventory.add(itemId, handed);
-    }
+    person.inventory.transferItemsTo(owed.inventory, offer.items);
+    reconcileCarry(person, ctx.carry, ctx.dropAt);
     settleDebt(person, owed);
     ctx.social.emit('amends', person, owed, Math.min(1, offer.value / Math.max(1, debt.worth)),
       ctx.tick, ctx.peopleHash, ctx.sightRadius);

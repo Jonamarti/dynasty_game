@@ -14994,3 +14994,13 @@ rechazan antes de cambiar dueño; inserciones parciales revierten ambas
 mochilas. Se añaden pruebas de robo, rollback y propiedad inválida. Typecheck y
 Vitest siguen bloqueados porque este worktree no tiene dependencias instaladas;
 no se hizo instalación ni calibración. Desgaste/remiendo sigue apagado.
+
+## 2026-10-12 — m15: amends transfiere prendas como bienes físicos
+
+`doMakeAmends` puede ofrecer cualquier bien transportado, incluidas prendas.
+Ahora mueve toda la oferta en una transacción de varias pilas, conserva la
+condición por unidad y revierte todos los bienes si una inserción falla. La capa
+vestida del pagador se reconcilia al pagar. Se añaden cobertura de compensación
+de prenda, fila inválida y rollback de oferta mixta. Sin instalación ni
+calibración. Typecheck y pruebas focales no pudieron arrancar porque faltan
+`tsc` y `vitest` en el worktree; desgaste/remiendo sigue apagado.

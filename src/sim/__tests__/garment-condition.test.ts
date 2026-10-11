@@ -75,18 +75,21 @@ describe('garment condition ownership foundation', () => {
     expect(victim!.equipment.cloak).toBeUndefined();
   });
 
-  it('rejects an orphaned garment row before a theft transfer changes either owner', () => {
+  it('rejects an orphaned garment row before a multi-item offer changes either owner', () => {
     const source = new Inventory();
     const thief = new Inventory();
+    source.add('sticks', 1);
     source.add('fur_hat', 1);
     const original = source.garmentUnitsOf('fur_hat')[0]!;
     const rows = (source as unknown as { garmentUnits: GarmentUnit[] }).garmentUnits;
     rows.push({ ...original, unitId: 'orphaned-unit' });
 
-    expect(() => source.transferTo(thief, 'fur_hat', 1))
+    expect(() => source.transferItemsTo(thief, [['sticks', 1], ['fur_hat', 1]]))
       .toThrow(/garment units do not match garment counts/);
+    expect(source.count('sticks')).toBe(1);
     expect(source.count('fur_hat')).toBe(1);
     expect(rows).toHaveLength(2);
+    expect(thief.count('sticks')).toBe(0);
     expect(thief.count('fur_hat')).toBe(0);
     expect(thief.garmentUnitsOf('fur_hat')).toEqual([]);
   });
@@ -109,6 +112,30 @@ describe('garment condition ownership foundation', () => {
     const destinationBefore = destination.transferSnapshot();
 
     expect(() => source.transferTo(destination, 'wool_cloak', 2)).toThrow('receiver rejected garment');
+    expect(source.transferSnapshot()).toEqual(sourceBefore);
+    expect(destination.transferSnapshot()).toEqual(destinationBefore);
+  });
+
+  it('rolls back the entire multi-item offer when a later garment insertion fails', () => {
+    let inserted = 0;
+    class RejectGarment extends Inventory {
+      override putGarmentUnit(_unit: GarmentUnit): string {
+        inserted++;
+        throw new Error('receiver rejected garment');
+      }
+    }
+    const source = new Inventory();
+    const destination = new RejectGarment();
+    source.add('sticks', 2);
+    source.add('fur_hat', 1);
+    const garment = source.garmentUnitsOf('fur_hat')[0]!;
+    source.setGarmentUnitCondition(garment.unitId, 0.21, 103);
+    const sourceBefore = source.transferSnapshot();
+    const destinationBefore = destination.transferSnapshot();
+
+    expect(() => source.transferItemsTo(destination, [['sticks', 1], ['fur_hat', 1]]))
+      .toThrow('receiver rejected garment');
+    expect(inserted).toBe(1);
     expect(source.transferSnapshot()).toEqual(sourceBefore);
     expect(destination.transferSnapshot()).toEqual(destinationBefore);
   });

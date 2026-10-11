@@ -29,7 +29,9 @@ transfers remain pending.
 The 2026-10-12 theft slice also transfers the selected garment units through
 the same rollback-safe API and reconciles both owners' worn layers and pocket
 capacity after success. Invalid garment ownership is rejected before either
-inventory changes.
+inventory changes. Amends use a multi-stack inventory transaction, preserving
+garments offered as compensation and rolling back earlier goods if a later
+stack cannot move; the payer's worn references are reconciled after payment.
 
 This is still a foundation: some gameplay transfer seams listed below use
 generic count-based `add`/`remove`. Wear/remending must not be activated until
@@ -85,7 +87,7 @@ The main movement seams found in the current tree are:
 | Route | Existing seam | Condition requirement |
 | --- | --- | --- |
 | Put on, take off, replace clothing | `ToolEquipment.changeGarment` | Equipment references a specific owned unit; swapping keeps the displaced unit in inventory. |
-| Give, trade, steal, amends, tribute | `Simulation.handOver`, `doGive`, `doTrade`, `doSteal`, `doMakeAmends`, `Simulation` tribute path | **Delivered for direct handover, timed non-food gifts and theft:** `Inventory.transferTo` preserves unit state and rolls back partial garment insertion; theft reconciles both wearers. `doTrade` currently exchanges food only, so it cannot select garments. Amends and tribute remain pending. |
+| Give, trade, steal, amends, tribute | `Simulation.handOver`, `doGive`, `doTrade`, `doSteal`, `doMakeAmends`, `Simulation` tribute path | **Delivered for direct handover, timed non-food gifts, theft and amends:** `Inventory.transferTo`/`transferItemsTo` preserve unit state and roll back partial garment insertion; theft reconciles both wearers, and amends reconciles the payer. `doTrade` currently exchanges food only, so it cannot select garments. Tribute remains pending. |
 | Store and withdraw | `Building.accept`, `Simulation.storeItem` / `takeItem`, `ActionSystem.doStore` / `doTake` | **Delivered for person↔building store** and household home-store merges: direct/autonomous paths preserve condition and snapshots; whole-inventory merge is validated and rolls back both sides on failure. Other building-to-building transfers remain pending. |
 | Drop, pickup, carry overflow | `Simulation.drop`, `Simulation.takeFromPile`, `Simulation.dropAt`, `Carry.reconcileCarry` | **Delivered:** worn slot references an exact unit; drop, pickup and carry overflow move unit rows and preserve condition/progress. Generic `dropAt` still creates pristine garments for produced goods. |
 | Death and inheritance | `LifeSystem.settleEstate`, called from `Simulation` death handling | **Delivered:** whole estate moves atomically to heir/home, or garment rows drop intact at the deceased's feet. |
