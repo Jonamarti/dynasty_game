@@ -6,6 +6,19 @@ elige esa orden ni fabrica una sustituta; la luz desaparece hasta que intervenga
 el jugador. Este avance de autonomía es una sola carga inicial, no mantenimiento
 doméstico completo. Véase [contrato 16d](m15_phase16d_bedding.md).
 
+## 2026-10-12 — M15 14c, remiendo inicial: límites y verificación
+
+`mend_garment` ya cubre la acción manual y las unidades propias fuera del
+cuerpo, con progreso en la prenda, corte por necesidades y rollback al fallar
+el consumo. No añade elección autónoma de remendar para NPC: sólo se ofrece en
+el catálogo de objetos y se inicia por orden explícita. No es una brecha de
+propiedad, pero deja pendiente decidir si el scorer NPC debe remendar antes de
+calibrar/desgastar más prendas. El `npm` normal no encuentra `tsc`/`vitest` en
+este worktree; ambos checks rápidos sí pasan al reutilizar las dependencias ya
+instaladas en el checkout principal, sin instalación ni cambios allí. La
+interacción de menú no tiene captura fechada en esta entrega porque falta
+Playwright local; queda pendiente de verificación visual con runtime disponible.
+
 ## 2026-10-12 — M15 14c, propiedad de condición: auditoría de consumidores
 
 La base por unidad ya conserva condición/progreso en las API de `Inventory` y

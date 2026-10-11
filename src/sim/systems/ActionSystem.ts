@@ -60,7 +60,8 @@ import { claimTransportAnimal } from '../core/TransportAnimals.ts';
 import { canTake, equipContainer, itemCapacityFor, reconcileCarry, reconcileGarmentEquipment, stow } from '../core/Carry.ts';
 import {
   changeGarment, equipFor as fitToolForAction, equipItemInSlot, manualEquipRefusal,
-  manualEquipSlot, manualGarmentRefusal, type ToolAction, type ManualGarmentVerb,
+  manualEquipSlot, manualGarmentRefusal, planGarmentMending,
+  type ToolAction, type ManualGarmentVerb,
 } from '../core/ToolEquipment.ts';
 import { RECIPES, hasIngredients, ingredientsFor, recipeTechPower } from '../entities/Recipe.ts';
 import {
@@ -806,6 +807,7 @@ export class ActionSystem {
       case 'equip_back': this.doManualEquip(person, ctx); break;
       case 'wear_garment':
       case 'take_off_garment': this.doChangeGarment(person, ctx); break;
+      case 'mend_garment': this.doMendGarment(person, ctx); break;
       case 'light_torch': this.doLightTorch(person, ctx); break;
       case 'shelter': this.doShelter(person, ctx); break;
       case 'sleep': this.doSleep(person, ctx); break;
@@ -1628,6 +1630,63 @@ export class ActionSystem {
     // the scorer. Keep the attempt in the ordinary decaying recency map.
     if (verb === 'wear_garment') person.lately.set('warm-tried:' + itemId, 1);
     telemetry.count(verb === 'wear_garment' ? 'garment_worn' : 'garment_taken_off');
+    this.finish(person);
+  }
+
+  /** Long repair work lives on the physical garment, so another worker can resume it. */
+  private doMendGarment(person: Person, ctx: ActionContext): void {
+    const itemId = person.targetItemId;
+    const unitId = person.targetGarmentUnitId;
+    const method = person.targetGarmentMendingMethod;
+    if (!itemId || !unitId || !method) {
+      this.abandon(person, 'garment_order_lost', ctx);
+      return;
+    }
+    const plan = planGarmentMending(person, itemId, unitId, method);
+    if (typeof plan === 'string') {
+      this.abandon(person, plan, ctx);
+      return;
+    }
+    const unit = person.inventory.garmentUnitsOf(itemId).find(candidate => candidate.unitId === unitId);
+    if (!unit) {
+      this.abandon(person, 'garment_not_owned', ctx);
+      return;
+    }
+    const interrupted = this.interruption(person, ctx, { ignoreLaden: true });
+    if (interrupted) {
+      this.stop(person, interrupted, ctx);
+      return;
+    }
+
+    // The schema allows 140 points for forward compatibility; this action's
+    // deliberately bounded job threshold is 100 work points.
+    const threshold = 100;
+    const pace = ctx.fineWorkPace?.(person) ?? 1;
+    const progress = Math.min(threshold,
+      unit.repairProgress + person.skillFactor('build') * pace);
+    person.actionTimer = 1;
+    person.actionTotal = threshold;
+    person.workedTicks++;
+    person.practice('build', 0.2);
+    if (progress < threshold) {
+      person.inventory.setGarmentUnitCondition(unitId, unit.wear, progress);
+      return;
+    }
+
+    const materials: readonly (readonly [string, number])[] = method === 'tailoring'
+      ? [['needle', 1], ['thread', 1]] : [['rope', 1]];
+    try {
+      person.inventory.consumeItems(materials, () => {
+        const restored = method === 'tailoring' ? 1 : Math.min(1, unit.wear + 0.25);
+        if (!person.inventory.setGarmentUnitCondition(unitId, restored, 0)) {
+          throw new Error('garment changed during mending');
+        }
+      });
+    } catch {
+      this.abandon(person, 'mending_materials_missing', ctx);
+      return;
+    }
+    telemetry.count('garment_mended_' + method);
     this.finish(person);
   }
 

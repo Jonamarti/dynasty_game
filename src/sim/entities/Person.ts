@@ -155,6 +155,8 @@ export interface ResumedOrder {
   /** Which item and count a set-aside player-ordered `take` named. */
   itemId: string | null;
   count: number | null;
+  garmentUnitId?: string | null;
+  garmentMendingMethod?: 'tailoring' | 'cordage' | null;
   x: number | null;
   y: number | null;
   /** Preserves a deliberate saline-water order while a need interrupts its walk. */
@@ -545,6 +547,9 @@ export class Person {
    * over.
    */
   targetItemId: string | null = null;
+  /** Exact physical garment being mended, including across checkpoints/resume. */
+  targetGarmentUnitId: string | null = null;
+  targetGarmentMendingMethod: 'tailoring' | 'cordage' | null = null;
   /** Pen whose two draft heads this explicit plough-sowing order reserves. */
   draftPenId: number | null = null;
   targetItemCount: number | null = null;
@@ -1201,6 +1206,8 @@ export class Person {
     this.targetTech = null;
     this.talkMode = null;
     this.targetItemId = null;
+    this.targetGarmentUnitId = null;
+    this.targetGarmentMendingMethod = null;
     this.draftPenId = null;
     this.targetItemCount = null;
     this.propertyUseNoted = null;

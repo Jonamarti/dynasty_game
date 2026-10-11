@@ -1,7 +1,7 @@
 # Garment condition ownership — design note
 
-Status: ownership foundation delivered on 2026-10-11; daily wear delivered on
-2026-10-12; mending remains inactive. `Inventory` now holds one condition row per garment count and exposes
+Status: ownership foundation, daily wear, and repairable mending are delivered
+as of 2026-10-12. `Inventory` now holds one condition row per garment count and exposes
 `takeGarmentUnit` / `putGarmentUnit` so an explicit caller can move a garment
 without resetting condition. `setGarmentUnitCondition` bounds condition and
 banked repair progress. New and legacy garments start pristine, and explicit
@@ -79,10 +79,19 @@ chronicle records the break. Unworn spares do not age. This is a deliberate
 initial rate, not a cohort-calibrated balance claim. Condition remains private
 to its owner; observers receive no wear value through `Knowledge`.
 
-Mending remains inactive until its separate action supports refusal, persistent
-per-unit work, materials and tools, and ownership-safe rollback.
+The `mend_garment` action is offered only for the actor's own garment stack. It
+selects one damaged, unworn physical unit and carries its unit ID and method on
+`Person`, including through checkpoints and need-interrupted order resume. Its
+first bounded contract is 100 build-work points: known tailoring with one
+needle and one thread restores full condition; rope without the complete
+tailoring kit restores at most 0.25 condition. Tailoring wins when its complete
+kit is present; otherwise rope is selected. Materials are consumed only at
+completion in the same inventory transaction that updates the exact garment.
+Interrupted work remains on `repairProgress`, so another worker can resume it.
+Refusals and runtime failures are localized and visible. These fixed starting
+thresholds are bounded design values, not cohort-calibrated claims.
 
-This is still an ownership foundation with daily wear, but not mending behavior. Generic
+This is an ownership foundation with daily wear and manual mending. Generic
 `remove` treats a garment as consumed and destroys its row; it is never a
 transfer operation. A garment ingredient must go through the transactional
 `consumeItems` path so the worn reference is cleared with the consumption or
@@ -144,6 +153,7 @@ The main movement seams found in the current tree are:
 | Death and inheritance | `LifeSystem.settleEstate`, called from `Simulation` death handling | **Delivered:** whole estate moves atomically to heir/home, or garment rows drop intact at the deceased's feet. |
 | Comarca staging and restore | `ComarcaInventoryTransfer.take`, `consume`, `restore`, `toRecord` | **Delivered for escrow records:** validated graphs preserve unit ID, wear, and repair progress through JSON and food consumption; malformed or incomplete present rows and duplicate identities are rejected, and multi-source take/restore roll back on later failure. Consuming a garment itself is explicit destruction. |
 | World traffic / traveller cargo | `WorldTrafficCoordinator` plus `WorldState` cargo staging and return | **Delivered for traveller inventories:** exact rows survive staging, checkpoint save/load, arrival and return; checkpoint hydration rejects missing/duplicate rows. Quantity-only caravan manifests reject garments and camp barter/return selection leaves garment stacks on the traveller. |
+| Mending | `Simulation.order`, `ActionCatalog.itemActions`, `ActionSystem.doMendGarment` | **Delivered for manual own-inventory repair:** exact damaged unworn unit, fixed work threshold, persistent per-unit progress, localized refusal and atomic material/condition completion. |
 | Crafting and explicit consumption | `ActionSystem.doCraft`, `doPrototype`, food/ingredient consumers | New garment outputs are pristine. The `toggled_coat` recipe and `TECH.toggles.prototype.fur_coat` prototype sample intentionally destroy garment inputs through the atomic `Inventory.consumeItems` path, reconciling the worn reference and rolling back inventory/equipment on failure. Current food, inscription, and other material consumers do not select garments. |
 
 Other `remove`/`add` pairs exist for food, tools, earth, and materials. They
@@ -183,9 +193,6 @@ Any future condition display must preserve the existing knowledge boundary.
 
 ## Separate future behavior
 
-Mending is a later action built on this ownership model. It should bank work on
-the garment unit, so another worker can resume it, and run the shared
-interruption/refusal path. Tailoring with the appropriate needle/thread should
-restore full condition; the rough cordage method should restore only part.
-Material consumption, work thresholds, tool requirements, and exact refusal
-texts remain for that feature's design and tests.
+This initial action is intentionally narrow: it repairs only an owned garment
+that is off the body. Further repair materials, wear-rate balance and any
+public condition display remain separate design work.

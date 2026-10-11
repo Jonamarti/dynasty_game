@@ -48,7 +48,9 @@ import { tooHeavyForHer } from '../entities/Pregnancy.ts';
 import { mayNurse } from './Nursing.ts';
 import { swimRefusal, swimRouteRefusal, swimRefusalText } from '../core/Swimming.ts';
 import { houseInteriorContains, houseInteriorTiles } from '../world/HouseInterior.ts';
-import { manualGarmentReasonText, manualGarmentRefusal } from '../core/ToolEquipment.ts';
+import {
+  manualGarmentReasonText, manualGarmentRefusal, planGarmentMending, garmentMendingReasonText,
+} from '../core/ToolEquipment.ts';
 import { torchIgnitionRefusal, torchRefusalText, transferableUnits, burningTorchRefusalText } from '../core/Torch.ts';
 import { fatLampRefusal, fatLampRefusalText } from '../core/FatLamp.ts';
 
@@ -349,6 +351,14 @@ export function itemActions(
     enabled: garmentRefusal === null,
     reason: garmentRefusal ? manualGarmentReasonText(garmentRefusal) : undefined,
   });
+  if (def?.garment) {
+    const mending = planGarmentMending(actor, itemId);
+    options.push({
+      id: 'mend_garment', label: t('Mend'), icon: '\u{1FA79}',
+      enabled: typeof mending !== 'string',
+      reason: typeof mending === 'string' ? garmentMendingReasonText(mending) : undefined,
+    });
+  }
   if (itemId === 'torch' || itemId === 'fat_torch') {
     const refusal = torchIgnitionRefusal(actor, itemId, torchNearFire);
     options.push({

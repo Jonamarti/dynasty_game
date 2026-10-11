@@ -32,7 +32,8 @@ import { ITEMS, Inventory, type GarmentUnit } from '../entities/Item.ts';
 import { equipContainer, itemCapacityFor, reconcileCarry } from './Carry.ts';
 import {
   manualEquipReasonText, manualEquipRefusal, manualEquipSlot,
-  manualGarmentReasonText, manualGarmentRefusal,
+  manualGarmentReasonText, manualGarmentRefusal, planGarmentMending,
+  garmentMendingReasonText, type GarmentMendingMethod,
 } from './ToolEquipment.ts';
 import {
   BUSH_SPECIES, BUSHES, WILD_PLANTS, RESOURCE_KINDS, ORE_COUNTS, bushPhase, ResourceNode, isFoodKind, isPlantFood, seasonLoreKind,
@@ -3863,6 +3864,8 @@ export class Simulation {
       tech: person.targetTech,
       itemId: person.targetItemId,
       count: person.targetItemCount,
+      garmentUnitId: person.targetGarmentUnitId,
+      garmentMendingMethod: person.targetGarmentMendingMethod,
       x: person.targetX,
       y: person.targetY,
       ...(person.saltDrinkTarget === true ? { saltDrinkTarget: true } : {}),
@@ -3908,6 +3911,8 @@ export class Simulation {
       techId: pending.tech ?? undefined,
       itemId: pending.itemId ?? undefined,
       count: pending.count ?? undefined,
+      garmentUnitId: pending.garmentUnitId ?? undefined,
+      garmentMendingMethod: pending.garmentMendingMethod ?? undefined,
       x: pending.nodeId === null && pending.treeId === null &&
         pending.buildingId === null && pending.personId === null &&
         pending.animalId === null && pending.pileId === null
@@ -4283,6 +4288,8 @@ export class Simulation {
        */
       itemId?: string;
       count?: number;
+      garmentUnitId?: string;
+      garmentMendingMethod?: GarmentMendingMethod;
     } = {}
   ): boolean {
     this.assertExecutionAuthority();
@@ -4315,6 +4322,15 @@ export class Simulation {
         this.lastRefusal = manualGarmentReasonText(refusal);
         return false;
       }
+    }
+    if (action === 'mend_garment') {
+      const plan = planGarmentMending(person, target.itemId ?? '', target.garmentUnitId,
+        target.garmentMendingMethod);
+      if (typeof plan === 'string') {
+        this.lastRefusal = garmentMendingReasonText(plan);
+        return false;
+      }
+      target = { ...target, garmentUnitId: plan.unitId, garmentMendingMethod: plan.method };
     }
     if (action === 'light_torch') {
       const refusal = torchIgnitionRefusal(person, target.itemId ?? '', this.hearthNear(person.x, person.y, 2));
@@ -4382,6 +4398,8 @@ export class Simulation {
       person.targetItemId = target.itemId;
       person.targetItemCount = target.count ?? null;
     }
+    if (target.garmentUnitId !== undefined) person.targetGarmentUnitId = target.garmentUnitId;
+    if (target.garmentMendingMethod !== undefined) person.targetGarmentMendingMethod = target.garmentMendingMethod;
     // Set here for the same reason: a `discuss` is aimed at a person and would
     // otherwise lose the technology to that branch's own return.
     if (target.techId !== undefined) person.targetTech = target.techId;

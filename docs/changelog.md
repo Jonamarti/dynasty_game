@@ -1,3 +1,19 @@
+## 2026-10-12 — m15: remiendo físico de prendas (0.15.88-alpha)
+
+Se añade `mend_garment` al catálogo del inventario del dueño. La reparación
+selecciona una unidad dañada fuera del cuerpo, llama a `interruption()` cada
+tick y conserva progreso hasta 100 build-work points en la propia unidad para
+reanudar tras necesidades, checkpoint o transferencia a otro trabajador.
+Sastrería conocida con aguja e hilo restaura condición completa; cuerda repara
+hasta 0,25. Los materiales se consumen junto a la actualización exacta en una
+transacción con rollback. Los rechazos por unidad, condición, método o
+materiales se muestran con textos localizados. Umbrales fijos iniciales, sin
+calibración por cohorte ni cambios RNG. Pruebas cubren reparación completa y
+parcial, progreso guardado, continuación con otro dueño, negativas y rollback;
+Vitest focal (4/4) y typecheck pasan mediante configuración temporal usando las
+dependencias locales del checkout principal; se retiró la configuración. La
+captura del menú sigue pendiente porque no hay Playwright en este worktree.
+
 ## 2026-10-12 — m15: desgaste diario de prendas vestidas (0.15.83-alpha)
 
 Cada prenda declara una pérdida inicial de 0,005 de condición por día completo
