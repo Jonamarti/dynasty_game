@@ -1054,9 +1054,7 @@ export class Building {
   accept(from: Inventory, itemId: string, count: number): number {
     const room = this.storageFree;
     if (room <= 0) return 0;
-    const moved = from.remove(itemId, Math.min(room, count, from.count(itemId)));
-    if (moved > 0) this.store.add(itemId, moved);
-    return moved;
+    return from.transferTo(this.store, itemId, Math.min(room, count, from.count(itemId)));
   }
 
   /** Adds work. Returns true if this was the moment it was finished. */

@@ -1,3 +1,20 @@
+## 2026-10-11 — m15: conservar condición de ropa en almacenes
+
+`0.15.55-alpha`: `Building.accept`, órdenes automáticas de depósito/retirada y
+los atajos directos del inventario pasan por transferencia entre inventarios.
+La unidad mantiene ID, desgaste y progreso de remiendo en cantidades parciales
+y en el snapshot validado del almacén. Un registro con una cantidad de prendas
+que no coincide con sus filas físicas se rechaza. Test focal cubre depósito,
+serialización y retirada de la misma unidad.
+
+No cambia la interfaz ni se activa desgaste/remiendo. Siguen pendientes
+transferencias edificio↔edificio, herencia, intercambio/robo/tributo, escrow y
+tráfico fuera del mapa. No se pudo ejecutar typecheck ni el test focal: este
+worktree no tiene `node_modules`; usar las dependencias de otro checkout no
+resolvió el typecheck de TS ni dejó crear la configuración temporal de Vitest.
+No se instalaron dependencias. `git diff --check` sí pasa. Cohortes y matriz
+pesada diferidas por la instrucción de M15.
+
 ## 2026-10-11 — m15: conservar condición de ropa en montones
 
 `0.15.54-alpha`: el hueco de Equipo referencia una unidad concreta. Las

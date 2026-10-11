@@ -3282,12 +3282,11 @@ export class Simulation {
       this.lastRefusal = t('the nearby draft team is already working');
       return 0;
     }
-    const moved = store.store.remove(itemId, Math.min(room, count, available));
+    const moved = store.store.transferTo(person.inventory, itemId, Math.min(room, count, available));
     if (moved <= 0) {
       this.lastRefusal = room <= 0 ? t('{name} cannot carry any more', { name: person.name }) : t('there was nothing to take');
       return 0;
     }
-    person.inventory.add(itemId, moved);
     equipContainer(person, itemId);
     telemetry.count('withdrawn', moved);
     return moved;

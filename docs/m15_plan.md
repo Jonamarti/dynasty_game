@@ -1,4 +1,6 @@
-**Avance del 2026-10-11 — 14c, bolsillos:** túnica cosida y de lino y abrigo con alamares aportan cuatro unidades; parka, dos. Sólo cuenta la prenda propia en su hueco vestido. El lector compartido aumenta capacidad agregada y límites por objeto pequeño, sin aumentar los límites de comida o cargas grandes. Cambiarse o perder la última prenda reconcilia el exceso en montones físicos; el guardado deriva la capacidad del equipo canónico. [Contrato](m15_phase14c_pockets.md). Siguen propiedad de condición, desgaste/remiendo, curtido y estatus opcional; no se cierra 14c/14e ni M15, ni se afirma mejora económica.
+**Avance del 2026-10-11 — 14c, almacén de prendas:** el depósito y la retirada directa y automática transfieren filas físicas por `Inventory.transferTo`; la aceptación del edificio y el inventario persistido conservan unidad, condición y progreso parcial. Prueba el ciclo persona→almacén→persona y rechaza el guardado cuya cantidad no concuerda con sus prendas físicas. Quedan herencia, intercambio/robo/tributo, transferencias internas entre almacenes y tráfico de mundo; el desgaste/remiendo continúa apagado. No se cierra 14c/14e ni M15.
+
+**Avance del 2026-10-11 — 14c, bolsillos:** túnica cosida y de lino y abrigo con alamares aportan cuatro unidades; parka, dos. Sólo cuenta la prenda propia en su hueco vestido. El lector compartido aumenta capacidad agregada y límites por objeto pequeño, sin aumentar los límites de comida o cargas grandes. Cambiarse o perder la última prenda reconcilia el exceso en montones físicos; el guardado deriva la capacidad del equipo canónico. [Contrato](m15_phase14c_pockets.md). Siguen la integración completa de propiedad de condición, desgaste/remiendo, curtido y estatus opcional; no se cierra 14c/14e ni M15, ni se afirma mejora económica.
 
 **Avance del 2026-10-11 — 14c, retirada por calor:** los NPC pueden quitarse una capa cuyo abrigo han probado cuando el ambiente es cálido y la deuda de frío ya es baja. Se conserva la prenda, las órdenes del jugador y las armaduras dedicadas; los umbrales están en configuración. [Contrato](m15_phase14c_heat_removal.md). No existe aún una necesidad de sobrecalentamiento ni se afirma mejora demográfica. Bolsillos y propiedad física para desgaste/remiendo siguen pendientes; 14c/14e y M15 continúan abiertos, con cohortes/matriz diferidas.
 **2026-10-10: 14a–14b, ropa puesta entregada.** Abrigo/armadura en slots del cuerpo, calor y protección sólo vestidos, órdenes cortas, apariencia y limpieza al perder propiedad. [Contrato](m15_phase14_worn_clothing.md). Catálogo con capa, túnica, envolturas de pies, polainas, mocasines y gorro; quedan otras prendas, creencias, bolsillos, deterioro y reparación14c.
@@ -20,14 +22,13 @@ con memoria reciente para no alternar prendas si el techo impide aprender.
 bolsillos, propiedad de condición, desgaste/remiendo y curtido siguen abiertos.
 No se declara 14c/14e ni M15 completos; cohortes y matriz pesada diferidas.
 
-**Revisión del 2026-10-10 — condición física de ropa:** desgaste y remiendo
-requieren conservar cada prenda al quitarla, moverla y mezclar ejemplares del
-mismo tipo. `Equipment.wear` y los stacks de cantidades no bastan: faltan
-propiedad por unidad/cohorte y su transferencia en almacenes, montones,
-trueque, herencia y escrow. [Contrato del siguiente corte de estado](m15_garment_condition_design.md).
-Se avanza primero con las creencias de abrigo de 14c, sin activar un desgaste
-que se renueve al cambiar de dueño. Bolsillos, desgaste/remiendo y curtido
-permanecen abiertos.
+**Revisión del 2026-10-10 — condición física de ropa:** las unidades tienen
+propiedad y equipo, montones y almacenes ya conservan su unidad al moverla.
+`Equipment.wear` y los stacks de cantidades no bastan por sí solos. Siguen
+pendientes intercambio/robo/tributo, herencia, staging/escrow, tráfico fuera
+del mapa y las transferencias internas entre almacenes. [Contrato](m15_garment_condition_design.md).
+No se activa desgaste/remiendo hasta cubrir esas rutas; curtido también sigue
+abierto.
 
 **Avance del 2026-10-10 — 14c, falda de fibra:** `fibre_skirt` completa el
 catálogo inicial de prendas de la tabla de 14c: técnica de Ropa tras

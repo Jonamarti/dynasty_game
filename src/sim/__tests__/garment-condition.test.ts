@@ -40,6 +40,8 @@ describe('garment condition ownership foundation', () => {
     expect(() => validateInventoryTransferState({ ...record,
       garmentUnits: [{ ...record.garmentUnits[0], repairProgress: 141 }],
     })).toThrow(/invalid identity, condition, or repair progress/);
+    expect(() => validateInventoryTransferState({ ...record, garmentUnits: [] }))
+      .toThrow(/garment units do not match garment counts/);
   });
 
   it('hydrates legacy count-only transfer records as pristine garments', () => {
@@ -70,6 +72,35 @@ describe('garment condition ownership foundation', () => {
     expect(person.inventory.garmentUnitsOf('wool_cloak')).toMatchObject([
       { unitId: worn.unitId, wear: 0.31, repairProgress: 96 },
     ]);
+  });
+
+  it('preserves the same garment through store, persisted inventory state, and withdrawal', () => {
+    const sim = new Simulation({ seed: 'garment-store-transfer', world: { width: 48, height: 48 },
+      population: { bands: 1, peoplePerBand: 2 } });
+    const person = sim.livingPeople()[0]!;
+    person.inventory.add('fur_hat', 1);
+    const unit = person.inventory.garmentUnitsOf('fur_hat')[0]!;
+    expect(person.inventory.setGarmentUnitCondition(unit.unitId, 0.36, 88)).toBe(true);
+
+    let store: import('../entities/Building.ts').Building | null = null;
+    for (const [dx, dy] of [[4, 0], [-4, 0], [0, 4], [0, -4]]) {
+      store = sim.place('storage_pit', Math.round(person.x) + dx!, Math.round(person.y) + dy!, person.bandId);
+      if (store) break;
+    }
+    expect(store).not.toBeNull();
+    store!.complete = true;
+
+    expect(sim.storeItem(person, store!, 'fur_hat', 1)).toBe(1);
+    expect(person.inventory.count('fur_hat')).toBe(0);
+    const persisted = validateInventoryTransferState(JSON.parse(JSON.stringify(store!.store.transferSnapshot())));
+    expect(persisted.garmentUnits).toEqual([{ ...unit, wear: 0.36, repairProgress: 88 }]);
+    const loaded = new Inventory();
+    loaded.restoreTransferState(persisted);
+    expect(loaded.garmentUnitsOf('fur_hat')).toEqual(persisted.garmentUnits);
+    store!.store.takeTransferState(persisted);
+    store!.store.restoreTransferState(persisted);
+    expect(sim.takeItem(person, store!, 'fur_hat', 1)).toBe(1);
+    expect(person.inventory.garmentUnitsOf('fur_hat')).toEqual(persisted.garmentUnits);
   });
 
   it('re-keys a local unit collision when merging inventories without changing condition', () => {

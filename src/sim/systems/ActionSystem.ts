@@ -2843,8 +2843,7 @@ export class ActionSystem {
     for (const [itemId, count] of person.inventory.entries()) {
       const room = store.storageFree;
       if (room <= 0) break;
-      const taken = person.inventory.remove(itemId, Math.min(count, room));
-      store.store.add(itemId, taken);
+      const taken = person.inventory.transferTo(store.store, itemId, Math.min(count, room));
       moved += taken;
       if ((ITEMS[itemId]?.nutrition ?? 0) > 0) food += taken;
     }
@@ -2906,9 +2905,12 @@ export class ActionSystem {
           itemCapacityFor(person, ctx.carry, itemId) - person.inventory.count(itemId),
         ));
         const available = itemId === 'meat' ? availableDraftHeads(store, ctx.peopleById, ctx.buildingsById) : count;
-        const got = store.store.remove(itemId, Math.min(6, count, available, room));
+        const amount = Math.min(6, count, available, room);
+        const got = ITEMS[itemId]?.garment
+          ? store.store.transferTo(person.inventory, itemId, amount)
+          : store.store.remove(itemId, amount);
         if (got > 0) {
-          stow(person, ctx.carry, itemId, got);
+          if (!ITEMS[itemId]?.garment) stow(person, ctx.carry, itemId, got);
           person.handled.set(itemId, ctx.tick);
           shared += got;
         }
@@ -2947,8 +2949,11 @@ export class ActionSystem {
       this.abandon(person, 'draft_team_busy', ctx);
       return;
     }
-    const taken = store.store.remove(itemId, Math.min(amount, room, available));
-    stow(person, ctx.carry, itemId, taken);
+    const quantity = Math.min(amount, room, available);
+    const taken = ITEMS[itemId]?.garment
+      ? store.store.transferTo(person.inventory, itemId, quantity)
+      : store.store.remove(itemId, quantity);
+    if (!ITEMS[itemId]?.garment) stow(person, ctx.carry, itemId, taken);
     // M15 phase 11b: taking something off a shelf is handling it.
     if (taken > 0) person.handled.set(itemId, ctx.tick);
     telemetry.count('withdrawn', taken);

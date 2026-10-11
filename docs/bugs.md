@@ -1,13 +1,14 @@
 ## 2026-10-11 — M15 14c, propiedad de condición aún no conectada al juego
 
 La base por unidad ya conserva condición/progreso en las API de `Inventory` y
-en el registro explícito de transferencia. Equipo, soltar/recoger montones y el
-desbordamiento de carga preservan la unidad. Todavía faltan almacenes,
-trueque/robo, herencia y tráfico fuera del mapa: esas rutas usan recuentos
-genéricos y pueden destruir o recrear la unidad. `unitId` sigue siendo local al
-inventario y se reemite al colisionar durante una fusión; resolver una identidad
-global antes de referenciar copias entre inventarios sigue pendiente. Por eso
-no se habilita desgaste ni remiendo. Véase el
+en el registro explícito de transferencia. Equipo, soltar/recoger montones,
+desbordamiento de carga y depósitos/retiradas persona↔almacén preservan la
+unidad. Siguen sin migrar herencia, intercambio/robo/tributo, transferencias
+edificio↔edificio y tráfico fuera del mapa; algunas de esas rutas aún usan
+recuentos genéricos y pueden destruir o recrear la unidad. `unitId` sigue
+siendo local al inventario y se reemite al colisionar durante una fusión; una
+identidad global antes de referenciar copias entre inventarios sigue pendiente.
+Por eso no se habilita desgaste ni remiendo. Véase el
 [contrato](m15_garment_condition_design.md).
 
 ## 2026-10-11 — M15 14c, verificación de calor y bolsillos
