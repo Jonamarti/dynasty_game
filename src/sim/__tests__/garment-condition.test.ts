@@ -119,27 +119,30 @@ describe('garment condition ownership foundation', () => {
   });
 
   it('rolls back an entire inventory merge when a garment insertion fails mid-transfer', () => {
+    let insertions = 0;
+    let failOnce = true;
+    class FailingInventory extends Inventory {
+      override putGarmentUnit(unit: GarmentUnit): string {
+        if (failOnce && ++insertions === 2) {
+          failOnce = false;
+          throw new Error('simulated insertion failure');
+        }
+        return super.putGarmentUnit(unit);
+      }
+    }
     const source = new Inventory();
     source.add('fur_hat', 2);
     source.add('berries', 5);
     source.setGarmentUnitCondition(source.garmentUnitsOf('fur_hat')[0]!.unitId, 0.22, 31);
-    const destination = new Inventory();
+    const destination = new FailingInventory();
     destination.add('fur_hat', 1);
     destination.add('sticks', 3);
     const sourceBefore = source.transferSnapshot();
     const destinationBefore = destination.transferSnapshot();
-    const originalPut = destination.putGarmentUnit;
-    let insertions = 0;
-    destination.putGarmentUnit = unit => {
-      if (++insertions === 2) throw new Error('simulated insertion failure');
-      return originalPut.call(destination, unit);
-    };
-
     expect(() => source.transferAllTo(destination)).toThrow('simulated insertion failure');
     expect(source.transferSnapshot()).toEqual(sourceBefore);
     expect(destination.transferSnapshot()).toEqual(destinationBefore);
 
-    destination.putGarmentUnit = originalPut;
     expect(source.transferAllTo(destination)).toBe(7);
     expect(source.total).toBe(0);
     expect(destination.count('fur_hat')).toBe(3);
@@ -166,7 +169,7 @@ describe('garment condition ownership foundation', () => {
 
   it('does not partially merge households when a home store garment count is inconsistent', () => {
     const sim = new Simulation({ seed: 'garment-household-merge', world: { width: 64, height: 64 },
-      population: { bands: 1, peoplePerBand: 6 } });
+      population: { bands: 2, peoplePerBand: 6 } });
     const first = sim.livingPeople().find(person => !person.isChild)!;
     const second = sim.livingPeople().find(person => !person.isChild && person.householdId !== first.householdId)!;
     const elder = first.age >= second.age ? first : second;

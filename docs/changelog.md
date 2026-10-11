@@ -1,3 +1,13 @@
+## 2026-10-11 — M15: fixtures de integración de prendas
+
+Las regresiones de transferencia de inventarios inyectan el fallo mediante un
+override de prototipo, sin añadir campos enumerables al estado que valida
+`Inventory.transferSnapshot`. La fusión de hogares usa dos bandas para que la
+premisa de hogares distintos no dependa de una semilla con dos adultos en la
+misma familia. No cambia el comportamiento del juego ni el número de versión.
+Typecheck limpio; seis archivos focales pasan (40/40). No se ejecutaron suites
+largas, calibración ni cohortes.
+
 ## 2026-10-11 — m15: lámpara de grasa interior
 
 `0.15.60-alpha`: lámpara de fuego como mueble colocable en el hogar, con 1200
