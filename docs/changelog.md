@@ -124,6 +124,18 @@ prueba focal del escenario. Los siete checks pasan en 2400 pasos de una
 semilla. Es instrumentación de mecanismos con casas preparadas: no mide la
 economía de construir hogares, no calibra los coeficientes y no ejecuta cohortes.
 Sin cambio de versión porque no cambia comportamiento del juego.
+## 2026-10-12 — M15 29c: auditoría bibliográfica de cinco semillas
+
+Se contrastaron las fuentes para sorgo, caballo, sílex levantino, oro del Sinaí
+y sal del Mar Muerto. La bibliografía confirma disponibilidad regional de sílex
+y existencia geológica de halita, con los límites de escala y acceso terrestre
+declarados; no demuestra canteras puntuales ni explotación prehistórica. Las
+discrepancias del centroide de sorgo, caballo y oro, además del acceso a sal en
+la celda, permanecen abiertas con el dato necesario para resolverlas. Contrato
+y enlaces en `docs/m15_phase29_sources.md` y `public/world/SOURCES.md`; plan y
+bugs actualizados. Documentación solamente: sin cambios de coordenadas,
+semillas, mapas, versión ni capturas. `sim:check` no pudo iniciar porque
+`vite-node` no está instalado en este worktree.
 
 ## 2026-10-11 — M15 herencia física de prendas
 

@@ -502,17 +502,35 @@ La matriz de esta pasada conserva los 116 fallos del checkout inicial en
 procedencia y banco no resuelven esas deudas de simulación.
 [Verificación y límites](m15_phase29_verification_20261005.md).
 
-La bibliografía por fila permite ver deudas antes ocultas:
+Auditoría de fuentes académicas del 2026-10-12 (detalle y enlaces en
+[`m15_phase29_sources.md`](m15_phase29_sources.md) y
+[`public/world/SOURCES.md`](../public/world/SOURCES.md)):
 
-- Sorgo (13°N, 1°E): la semilla está en Sahel occidental, pero la evidencia
-  citada procede del Sudán oriental, unos 35° más al este.
-- Caballo (48°N, 35°E): está al oeste del foco Volga–Don citado; el estudio
-  trata el linaje doméstico moderno, no la distribución completa del caballo silvestre.
-- Oro (25°N, 33°E): el nombre Sinaí no concuerda con el punto, situado al sur;
-  la referencia al desierto oriental/Nubia no valida ese centroide.
-- Sílex levantino: falta evidencia geológica local para el punto guardado.
-- Sal del mar Muerto: la evidencia de precipitación moderna de halita no
-  demuestra acceso/explotación prehistórica en la celda.
+- **Sorgo (13°N, 1°E):** [Winchell et al. (2017)](https://doi.org/10.1086/693898)
+  aporta evidencia de cultivo/domesticación cerca de Kassala, Sudán oriental,
+  no para el Sahel occidental de la semilla. Falta definir si se representa
+  foco arqueobotánico o rango silvestre y, para este último, una fuente del
+  rango en el punto.
+- **Caballo (48°N, 35°E):** [Librado et al. (2021)](https://doi.org/10.1038/s41586-021-04018-9)
+  infiere el linaje doméstico moderno en especial en el bajo Volga–Don; no
+  respalda el centroide ni determina el rango natural silvestre. Falta definir
+  qué fenómeno representa la semilla.
+- **Oro del Sinaí (25°N, 33°E):** [Surour et al. (2003)](https://doi.org/10.1016/S0375-6742(02)00268-6)
+  documenta oro en sedimentos de Dahab, sudeste del Sinaí; no valida el punto,
+  que está al sur de la península. Falta identificar la zona geológica buscada
+  y una fuente que la ubique.
+- **Sílex levantino (35°N, 35°E):** [Hovers y Belfer-Cohen (2013)](https://doi.org/10.1086/673880)
+  respalda disponibilidad ampliamente extendida en el sustrato geológico del
+  Levante, suficiente para una semilla regional aproximada pero no para afirmar
+  una cantera/afloramiento en el centroide. Esa afirmación requeriría cartografía
+  geológica local o caracterización arqueométrica.
+- **Sal del Mar Muerto (31,5°N, 35,5°E):** fuentes GSI/USGS confirman halita en
+  el sistema lacustre (referencias en `SOURCES.md`), pero no extracción
+  prehistórica ni una fuente terrestre recolectable en el punto. Falta decidir
+  si la semilla representa salmuera/evaporación costera o un depósito emergido,
+  y ubicar ese recurso. No inferir explotación a partir de geología.
+
+No se cambian coordenadas, semillas o activos hasta resolver esos datos.
 
 Los centros se conservan para no cambiar los binarios en una entrega de
 procedencia. Corregirlos exige nuevas fuentes, mover semillas y regenerar

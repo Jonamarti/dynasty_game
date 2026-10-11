@@ -3348,7 +3348,13 @@ historia tenga la misma forma sin ser la misma.
   - clima: la clasificación de Köppen-Geiger de Beck y otros (2018, CC BY 4.0,
     con su atribución en los créditos);
   - zonas iniciales aproximadas para recursos y antepasados silvestres, con
-    bibliografía por fila todavía pendiente: dónde
+    bibliografía por fila en `public/world/SOURCES.md`; la auditoría de
+    2026-10-12 deja explícitas las cinco filas que aún necesitan aclarar el
+    alcance de la semilla o ubicar un dato compatible (sorgo, caballo, oro del
+    Sinaí, sílex levantino y sal del Mar Muerto). El sílex tiene respaldo de
+    disponibilidad regional, no de cantera puntual; la sal, de existencia
+    geológica, no de nodo terrestre/explotación antigua. No se han movido
+    centros ni regenerado mapas. Se mantienen las preguntas de dónde
     crecían los antepasados silvestres de las plantas domesticadas (trigo y
     cebada en el Creciente Fértil, arroz en el Yangtsé, mijo en el río
     Amarillo, maíz en Mesoamérica, patata en los Andes, sorgo en el Sahel…),

@@ -6,15 +6,20 @@ permite auditar la ubicación de cada centroide sin convertir un área amplia en
 un supuesto yacimiento exacto. La lista exportada de claves y una regresión
 comprueban que ninguna fila carezca de una clave reconocida.
 
-Las referencias distinguen evidencia de domesticación, área probable del
-progenitor, geología del recurso y explotación arqueológica. Esas categorías no
-son intercambiables. Se señalan de forma explícita las filas con evidencia
-local débil o una ubicación que necesita revisión. Tres entradas exponen
-conocidos desajustes de ubicación (sorgo, caballo y oro), y dos carecen de evidencia
-suficiente para el punto guardado (sílex levantino y sal del mar Muerto). Son
-deudas de datos abiertas, así que la bibliografía no basta para cerrar la
-puerta de fase. Las semillas no determinan recursos locales de una comarca ni
-distribución histórica detallada.
+La auditoría bibliográfica de 2026-10-12 matiza cinco filas sin alterar
+coordenadas, semillas ni activos. [SOURCES.md](../public/world/SOURCES.md)
+enlaza estudios directos y distingue procedencia/domesticación, rango silvestre,
+existencia geológica y explotación arqueológica. Sorgo (Kassala frente a 13°N,
+1°E), caballo (foco inferido Volga–Don frente a 48°N, 35°E) y oro del Sinaí
+(oro aluvial documentado en Dahab, no en 25°N, 33°E) siguen abiertos porque la
+evidencia no identifica el centroide almacenado ni autoriza moverlo. La fuente
+regional avala disponibilidad amplia de sílex en el Levante, sin localizar una
+cantera en el punto. La halita del Mar Muerto queda confirmada como fenómeno
+geológico, pero no como extracción prehistórica ni como recurso terrestre
+accesible en la coordenada. Para las filas abiertas se especifica qué dato
+falta. Las semillas no determinan recursos locales de una comarca ni rangos
+históricos detallados; no se transforman lugares de domesticación en rangos
+naturales.
 
 El mapa `earth-12000-bce` conserva la elevación moderna de ETOPO con un nivel
 del mar de −60 m, clases Köppen-Geiger de 1980–2016 y las mismas semillas
