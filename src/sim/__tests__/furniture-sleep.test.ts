@@ -8,6 +8,8 @@ import { Inventory } from '../entities/Item.ts';
 import { RECIPES, ingredientsFor, missingIngredients } from '../entities/Recipe.ts';
 import { assignedSleepSurface, benchConversationBelonging, seatedOnBench, sleepQualityAt } from '../world/HouseInterior.ts';
 import { telemetry } from '../core/Telemetry.ts';
+import { FAT_LAMP_FUEL_TICKS, FAT_LAMP_REFILL_FAT } from '../core/FatLamp.ts';
+import { fatLampLight, lightAt } from '../core/Light.ts';
 
 function fixture() {
   const sim = new Simulation({ seed: 'furniture-sleep-contract',
@@ -110,6 +112,75 @@ describe('bedding and beds', () => {
     family.householdId = null;
     expect(benchConversationBelonging(person, family, sim.buildingsById)).toBe(0);
     family.householdId = householdId;
+  });
+
+  it('crafts, lights, saves, burns and refills a household fat lamp without making heat', () => {
+    const { sim, person, house } = fixture();
+    person.knownTech.add('firemaking');
+    person.inventory.add('fat_lamp', 1);
+    person.inventory.add('fat', FAT_LAMP_REFILL_FAT);
+    expect(RECIPES.fat_lamp).toMatchObject({ tech: 'firemaking', ingredients: { flint: 1, fat: 2 }, output: { fat_lamp: 1 } });
+    expect(sim.order(person, 'place_furniture', { buildingId: house.id, itemId: 'fat_lamp' })).toBe(true);
+    sim.step();
+    const lamp = sim.buildings.find(building => building.def.id === 'fat_lamp')!;
+    expect(sim.buildingAt(lamp.x, lamp.y)).toBe(lamp); // The furniture target must outrank its house footprint.
+    expect(lamp).toMatchObject({ hostId: house.id, complete: true, fuelRemaining: FAT_LAMP_FUEL_TICKS });
+    expect(fatLampLight(lamp)).toMatchObject({ radius: 3, strength: 0.9 });
+    expect(lightAt(lamp.centerX, lamp.centerY, 0, sim.buildingHash)).toBeCloseTo(0.9);
+
+    const loaded = Simulation.fromCheckpointRecord(JSON.parse(JSON.stringify(toCheckpointRecord(sim))));
+    const loadedLamp = loaded.buildingsById.get(lamp.id)!;
+    expect(loadedLamp.fuelRemaining).toBe(FAT_LAMP_FUEL_TICKS);
+    loadedLamp.fuelRemaining = 2;
+    loaded.time.tick = 0;
+    loaded.step();
+    expect(loadedLamp.fuelRemaining).toBe(1);
+    loaded.step();
+    expect(loadedLamp.fuelRemaining).toBe(0);
+    expect(fatLampLight(loadedLamp)).toBeNull();
+
+    const owner = loaded.peopleById.get(person.id)!;
+    owner.needs.hunger = owner.needs.thirst = owner.needs.cold = 0;
+    owner.inventory.add('fat', FAT_LAMP_REFILL_FAT);
+    loaded.peopleHash.remove(owner);
+    owner.x = loadedLamp.centerX; owner.y = loadedLamp.centerY;
+    owner.targetX = owner.x; owner.targetY = owner.y;
+    loaded.peopleHash.insert(owner);
+    telemetry.reset(); telemetry.enable();
+    try {
+      expect(loaded.order(owner, 'refuel_lamp', { buildingId: loadedLamp.id })).toBe(true);
+      expect(owner.action).toBe('refuel_lamp');
+      loaded.step();
+      expect(telemetry.get('fat_lamp_refuelled'), JSON.stringify({ action: owner.action, order: owner.order,
+        refusal: loaded.lastRefusal, lamp: loadedLamp.fuelRemaining })).toBe(1);
+    } finally { telemetry.disable(); }
+    expect(loadedLamp.fuelRemaining).toBe(FAT_LAMP_FUEL_TICKS);
+    expect(owner.inventory.count('fat')).toBe(2);
+    expect(loadedLamp.def.shelter).toBe(0); // It is a light source, never a heat source.
+  });
+
+  it('explains why a lamp cannot be refuelled without fuel or at another household’s home', () => {
+    const { sim, person, house } = fixture();
+    const lamp = new Building(BUILDINGS.fat_lamp!, house.x + 1, house.y + 1, person.bandId, sim.ids);
+    lamp.hostId = house.id; lamp.complete = true; lamp.fuelRemaining = 0;
+    sim.buildings.push(lamp); sim.buildingsById.set(lamp.id, lamp); sim.buildingHash.insert(lamp);
+    const option = () => availableActions(person, { kind: 'building', x: lamp.x, y: lamp.y, building: lamp }, {
+      world: sim.world, nearWater: false,
+      homeBuildingId: person.householdId === null ? null : sim.householdsById.get(person.householdId)?.homeBuildingId ?? null,
+      buildings: sim.buildings,
+    }).find(candidate => candidate.id === 'refuel_lamp');
+    expect(option()).toMatchObject({ enabled: false, reason: 'You need 2 fat to refill the lamp' });
+    expect(sim.order(person, 'refuel_lamp', { buildingId: lamp.id })).toBe(false);
+    expect(sim.lastRefusal).toBe('You need 2 fat to refill the lamp');
+    person.inventory.add('fat', FAT_LAMP_REFILL_FAT);
+    expect(option()).toMatchObject({ enabled: true });
+    const otherHouse = new Building(BUILDINGS.mud_hut!, house.x + 12, house.y, person.bandId, sim.ids);
+    otherHouse.complete = true;
+    sim.buildings.push(otherHouse); sim.buildingsById.set(otherHouse.id, otherHouse); sim.buildingHash.insert(otherHouse);
+    sim.householdsById.get(person.householdId!)!.homeBuildingId = otherHouse.id;
+    expect(sim.order(person, 'refuel_lamp', { buildingId: lamp.id })).toBe(false);
+    expect(sim.lastRefusal).toBe('That lamp is not in your household’s home');
+    expect(option()).toMatchObject({ enabled: false, reason: 'That lamp is not in your household’s home' });
   });
 
   it('scores the bedding-to-bed ladder only for an unfinished household need', () => {

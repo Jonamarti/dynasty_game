@@ -19,6 +19,7 @@ import { Mood } from '../core/Mood.ts';
 import { MacroBalance } from '../core/Macros.ts';
 import { SeasonLore } from '../knowledge/SeasonLore.ts';
 import { WorldKnowledge } from '../social/WorldKnowledge.ts';
+import { FAT_LAMP_FUEL_TICKS } from '../core/FatLamp.ts';
 import { fromObjectGraph, registerGraphPrototype, toObjectGraph, type ObjectGraph } from './GraphRecords.ts';
 
 export const WORLD_OBJECT_RECORD_VERSION = 1 as const;
@@ -85,6 +86,8 @@ function validate(state: WorldObjects, tick: number): void {
       (isField(b.def) ? !(b.crop instanceof Crop) : b.crop !== null) || !(b.byproductCarry instanceof Map) ||
       !Number.isFinite(b.progress) || !Number.isFinite(b.yieldCarry) ||
       ((isTrap(b.def) || isHerd(b.def) || isHeap(b.def)) && !Number.isFinite(b.yieldCarry)))) invalid('invalid building or nested state');
+  if (state.buildings.some(b => !Number.isSafeInteger(b.fuelRemaining) || b.fuelRemaining < 0 ||
+      (b.def.id === 'fat_lamp' ? b.fuelRemaining > FAT_LAMP_FUEL_TICKS : b.fuelRemaining !== 0))) invalid('invalid fixed-lamp fuel');
   // M15 phase 26c: an earthwork's plan and its banked progress travel with it.
   // The tiles are the record of how much was moved, so a malformed one would
   // turn a half-dug ditch into a finished or an impossible one on reload.
@@ -142,6 +145,11 @@ export function fromWorldObjectRecord(input: unknown, peopleById?: ReadonlyMap<n
     const animalState = animal as unknown as Record<string, unknown>;
     if (!Object.hasOwn(animalState, 'transportedBy')) animal.transportedBy = null;
     if (!Object.hasOwn(animalState, 'transportMode')) animal.transportMode = null;
+  }
+  for (const building of state.buildings) {
+    // Older world-object graphs have no fixed-lamp fuel field; no earlier build
+    // could place one, so the only valid migration is the empty tank.
+    if (!Object.hasOwn(building, 'fuelRemaining')) building.fuelRemaining = 0;
   }
   for (const corpse of state.corpses) {
     if (!(corpse instanceof Corpse) || !corpse.person || !Number.isSafeInteger(corpse.person.id)) invalid('invalid corpse person reference');

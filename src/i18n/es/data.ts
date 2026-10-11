@@ -37,6 +37,8 @@ export const ES_DATA: Record<string, string> = {
   "Fat": "Grasa",
   "Torch": "Antorcha",
   "Fat torch": "Antorcha de grasa",
+  "Fat lamp": "Lámpara de grasa",
+  "A stone lamp that burns animal fat to light a home.": "Una lámpara de piedra que quema grasa animal para iluminar una casa.",
   "Hide cape": "Capa de piel",
   "Sewn tunic": "Túnica cosida",
   'Dried meat': 'Carne seca',

@@ -11,7 +11,7 @@
  */
 import { stageOf, type Corpse } from '../sim/entities/Corpse.ts';
 import type { Simulation } from '../sim/core/Simulation.ts';
-import { hearthLight, torchLight, type LightSource } from '../sim/core/Light.ts';
+import { fatLampLight, hearthLight, torchLight, type LightSource } from '../sim/core/Light.ts';
 import { Interpolator, type Placed } from './Interpolator.ts';
 import type { Inscription } from '../sim/entities/Inscription.ts';
 import type { Person } from '../sim/entities/Person.ts';
@@ -610,12 +610,13 @@ export class Renderer {
     const viewRadius = Math.hypot(camera.viewWidth / (2 * scale), camera.viewHeight / (2 * scale));
     for (const building of sim.buildingHash.queryRadius(camera.x, camera.y, viewRadius + 5)) {
       const source = hearthLight(building);
-      if (!source || !inSight(source.x, source.y)) continue;
-      const px = camera.worldToScreenX(source.x), py = camera.worldToScreenY(source.y);
-      const radius = source.radius * scale;
+      const light = source ?? fatLampLight(building);
+      if (!light || !inSight(light.x, light.y)) continue;
+      const px = camera.worldToScreenX(light.x), py = camera.worldToScreenY(light.y);
+      const radius = light.radius * scale;
       if (px + radius < 0 || px - radius > camera.viewWidth ||
           py + radius < 0 || py - radius > camera.viewHeight) continue;
-      nightSources.push({ source, centerLight: sim.lightAt(source.x, source.y) });
+      nightSources.push({ source: light, centerLight: sim.lightAt(light.x, light.y) });
     }
     for (const carrier of sim.peopleHash.queryRadius(camera.x, camera.y, viewRadius + 5)) {
       const source = torchLight(carrier);

@@ -33,8 +33,16 @@ const bench = (): string =>
   stroke('M48,70L48,85M96,70L96,85M72,81L72,92', WOOD_LIGHT, 2.5) +
   stroke('M50,58L72,68M72,47L95,57', '#d0a874', 1.4);
 
+const fatLamp = (): string =>
+  ell(72, 99, 22, 5, 'rgba(0,0,0,0.2)') +
+  shape(poly([[45, 73], [56, 60], [83, 60], [96, 73], [88, 88], [54, 88]]), '#8a8170', OUTLINE) +
+  ell(70, 70, 14, 5, '#55483a', '#30251a') +
+  shape(poly([[67, 65], [71, 47], [77, 66], [73, 72]]), '#f0a443', '#9a431b') +
+  shape(poly([[70, 64], [72, 53], [74, 65], [72, 68]]), '#ffe5a0');
+
 export const FURNITURE: BuildingArt[] = [
   ['bedding', 'Lecho', 'cordage', 96, bedding],
   ['bed', 'Cama', 'carpentry', 96, bed],
   ['bench', 'Banco', 'carpentry', 96, bench],
+  ['fat_lamp', 'Lámpara de grasa', 'firemaking', 96, fatLamp],
 ];

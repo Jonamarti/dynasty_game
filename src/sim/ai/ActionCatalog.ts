@@ -50,6 +50,7 @@ import { swimRefusal, swimRouteRefusal, swimRefusalText } from '../core/Swimming
 import { houseInteriorContains, houseInteriorTiles } from '../world/HouseInterior.ts';
 import { manualGarmentReasonText, manualGarmentRefusal } from '../core/ToolEquipment.ts';
 import { torchIgnitionRefusal, torchRefusalText, transferableUnits, burningTorchRefusalText } from '../core/Torch.ts';
+import { fatLampRefusal, fatLampRefusalText } from '../core/FatLamp.ts';
 
 export type TargetKind =
   'ground' | 'person' | 'node' | 'building' | 'tree' | 'pile' | 'animal' | 'inscription' | 'corpse';
@@ -1157,6 +1158,21 @@ function buildingActions(
         label: t('Sit and rest'),
         icon: '\u{1FA91}',
         enabled: true,
+        warning: watched,
+      });
+    }
+    if (building.def.id === 'fat_lamp') {
+      const refusal = fatLampRefusal(actor, building, ctx.homeBuildingId ?? null);
+      const host = (ctx.buildings ?? []).find(candidate => candidate.id === building.hostId);
+      const inside = !!host && houseInteriorContains(host, actor.x, actor.y);
+      const usableHome = !!host && host.complete && !host.ruined;
+      options.push({
+        id: 'refuel_lamp', buildingId: building.id,
+        label: t('Refuel lamp'), icon: '\u{1F56F}',
+        enabled: refusal === null && usableHome && inside,
+        reason: refusal ? fatLampRefusalText(refusal)
+          : !usableHome ? t('The house cannot be used right now')
+            : !inside ? t('You must be inside the house to refuel the lamp') : undefined,
         warning: watched,
       });
     }

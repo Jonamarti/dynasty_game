@@ -343,6 +343,12 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     requiresTech: 'carpentry', furniture: true, restQuality: 1.6,
     description: 'A wooden seat for resting inside a home.',
   },
+  fat_lamp: {
+    id: 'fat_lamp', label: 'Fat lamp', icon: '\u{1F56F}',
+    width: 1, height: 1, materials: {}, workTicks: 0, shelter: 0, storage: 0,
+    requiresTech: 'firemaking', furniture: true,
+    description: 'A stone lamp that burns animal fat to light a home.',
+  },
 
   // --- M11 phase 10, second commit: two more shelters -----------------------
   //
@@ -865,6 +871,8 @@ export class Building {
   interiorDoorSide: 'north' | 'east' | 'south' | 'west' | null = null;
   /** Host dwelling for placed furniture; null on ordinary buildings. */
   hostId: number | null = null;
+  /** Remaining ticks on a fixed fat lamp, saved with its host building. */
+  fuelRemaining = 0;
 
   /**
    * How much of the building is still standing, once there is a building to

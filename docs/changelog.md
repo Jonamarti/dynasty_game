@@ -1,3 +1,15 @@
+## 2026-10-11 — m15: lámpara de grasa interior
+
+`0.15.56-alpha`: lámpara de fuego como mueble colocable en el hogar, con 1200
+ticks de carga por dos grasas, recarga contextual, combustión por reloj y
+combustible persistente. Su luz radial usa `lightAt`/el overlay nocturno; no
+aporta calor ni cuenta como fuego para recetas. Arte generado desde `art/src`,
+acciones y negativas traducidas, y captura del menú español en
+`artifacts/screenshots/m15-phase16d-fat-lamp-2026-10-11/`. 43 pruebas focales,
+typecheck y e2e de captura pasan. `sim:check` de un mundo conserva los dos
+fallos ya registrados: `cravings-steer-the-diet` y `perf-budget`; no se
+ejecutaron cohortes ni matrices largas.
+
 ## 2026-10-11 — m15: pertenencia al conversar sentado
 
 `0.15.55-alpha`: hablar con un familiar que descansa en un banco doméstico

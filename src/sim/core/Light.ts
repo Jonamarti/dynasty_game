@@ -2,6 +2,7 @@ import type { Building } from '../entities/Building.ts';
 import type { Person } from '../entities/Person.ts';
 import type { SpatialHash } from './SpatialHash.ts';
 import { torchInHand } from './Torch.ts';
+import { FAT_LAMP_RADIUS, FAT_LAMP_STRENGTH } from './FatLamp.ts';
 
 /** A measured source, independent of presentation and of any observer's knowledge. */
 export interface LightSource { readonly x: number; readonly y: number; readonly radius: number; readonly strength: number }
@@ -17,6 +18,14 @@ export function lightFactor(light: number, floor: number): number {
 export function hearthLight(building: Building): LightSource | null {
   return building.complete && !building.ruined && building.def.id === 'hearth'
     ? { x: building.centerX, y: building.centerY, radius: HEARTH_LIGHT_RADIUS, strength: 1 }
+    : null;
+}
+
+/** A fueled indoor lamp emits light only; it never warms people or counts as fire. */
+export function fatLampLight(building: Building): LightSource | null {
+  return building.complete && !building.ruined && building.def.id === 'fat_lamp' &&
+    building.hostId !== null && building.fuelRemaining > 0
+    ? { x: building.centerX, y: building.centerY, radius: FAT_LAMP_RADIUS, strength: FAT_LAMP_STRENGTH }
     : null;
 }
 
@@ -48,8 +57,8 @@ export function lightAt(
 ): number {
   let light = Math.max(0, Math.min(1, daylight));
   // Hearths are one tile; the extra tile covers an index anchored on its origin.
-  for (const building of buildings.queryRadius(x, y, HEARTH_LIGHT_RADIUS + 1)) {
-    const source = hearthLight(building);
+  for (const building of buildings.queryRadius(x, y, Math.max(HEARTH_LIGHT_RADIUS, FAT_LAMP_RADIUS) + 1)) {
+    const source = hearthLight(building) ?? fatLampLight(building);
     if (source) light = Math.max(light, sourceLightAt(source, x, y));
   }
   if (people) for (const person of people.queryRadius(x, y, TORCH_LIGHT_RADIUS + 1)) {

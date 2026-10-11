@@ -16,11 +16,12 @@
 
 ## Deliberate scope
 
-This slice supplies one sleep surface ladder. It does not add autonomous
-furniture crafting, a comfort mood, benches, storage furniture, lights, or
-family-specific sleeping assignments. The recipes use existing technology and
-current ingredient values; this change does not claim a measured improvement
-to the food economy. No cohort run was made.
+The sleep-surface ladder and bench/lamp slices are delivered separately below.
+This document does not close autonomous furniture crafting as a whole, a comfort
+mood, storage furniture, all listed room furniture or family-specific sleeping
+assignments. The recipes use existing technology and current ingredient values;
+this change does not claim a measured improvement to the food economy. No cohort
+run was made.
 
 Legacy saves already retain building definitions and dimensions. The new
 furniture fields are optional on ordinary buildings and `hostId` defaults to
@@ -31,10 +32,14 @@ stored in their save; this slice does not resize them.
 
 `src/sim/__tests__/furniture-sleep.test.ts` covers recipe alternatives,
 placement/refusal, JSON reconstruction, walkable furniture, and the sleep
-recovery reader. The art registry and renderer wiring are coordinated in the
-separate art task; this contract does not declare the renderer portion closed.
+recovery reader. The lamp tests also cover its light, fuel lifecycle and
+refill refusals; `art.test.ts` verifies the generated furniture and item art.
 
-The art registry includes bedding and bed sprites and item icons. The in-world capture is saved at artifacts/screenshots/m15-phase16d-2026-10-10/01-bed-in-house.png. The browser capture drives the simulation order through the debug fixture; it does not independently verify a physical radial-menu click.
+The art registry includes the bedding, bed, bench and fat-lamp sprites and item
+icons. The bed capture is `artifacts/screenshots/m15-phase16d-2026-10-10/01-bed-in-house.png`; the bench capture is in
+`artifacts/screenshots/m15-phase16d-bench-2026-10-11/`. Browser captures use
+debug fixtures to place furniture; the lamp capture additionally shows its
+Spanish refill option in the physical radial menu.
 
 ## 2026-10-10: household autonomy, first surface
 
@@ -67,7 +72,7 @@ The assignment is derived from `Household.memberIds`, live people and hosted
 buildings, so it has no new checkpoint field, RNG draw or UI. The focused
 regression checks stable sorting, distinct surfaces when available, and the
 round-robin case. Individual player-managed assignments, shelf storage,
-fireplace, fat lamp, and the phase 16f measurement remain open. Seated family
+fireplace, and the phase 16f measurement remain open. Seated family
 conversation is covered below.
 
 ## 2026-10-11: bench and seated rest
@@ -103,3 +108,24 @@ adds a modest talk urge when belonging is low. `seatedOnBench` and
 writer agree on what counts; a standing person or a non-family conversation
 does not qualify. The focused test covers the positive case and both negative
 gates. There is no new action label or UI, so no screenshot was needed.
+
+## 2026-10-11: fat lamp, persistent fuel and room light
+
+`fat_lamp` is a firemaking furniture recipe using one flint and two fat. Placing
+it in the finished household home starts a 1200-tick charge. Its fuel is a
+`Building` field, restored from older graphs as empty; each simulation tick
+burns one unit, and two carried fat refill an empty or partly used lamp to full.
+The contextual “Refuel lamp” order checks the household, home, lamp state and
+fuel before accepting, routes inside before consuming fat, and reports refusals
+in both languages.
+
+The fueled lamp enters the shared spatial-hash `lightAt` reader and renderer
+night overlay with radius 3 and strength 0.9. It is not a hearth: it does not
+count for fire-dependent recipes and its building shelter remains zero. Tests
+cover placed/loaded fuel, burn-out, actual local light, successful refill, lack
+of fuel, foreign home and the disabled-menu reason. Generated item and building
+art lives in `art/src`; the new capture shows the lamp and its Spanish refill
+option at `artifacts/screenshots/m15-phase16d-fat-lamp-2026-10-11/`.
+
+When a furniture tile overlaps its host footprint, `buildingAt` resolves the
+small furniture object first so its own contextual actions remain reachable.

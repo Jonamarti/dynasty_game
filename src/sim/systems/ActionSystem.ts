@@ -108,6 +108,7 @@ import { support } from '../social/Persuasion.ts';
 import { swimRefusal, swimRouteRefusal } from '../core/Swimming.ts';
 import { canWork } from '../knowledge/Ore.ts';
 import { assignedSleepSurface, benchConversationBelonging, houseInteriorContains, sleepQualityAt } from '../world/HouseInterior.ts';
+import { FAT_LAMP_FUEL_TICKS, FAT_LAMP_REFILL_FAT, fatLampRefusal, fatLampRefusalText } from '../core/FatLamp.ts';
 import { igniteTorch, TORCH_IGNITION_TICKS } from '../core/Torch.ts';
 
 export interface ActionContext {
@@ -818,6 +819,7 @@ export class ActionSystem {
       case 'make_peace': this.doMakePeace(person, ctx); break;
       case 'craft': this.doCraft(person, ctx); break;
       case 'place_furniture': this.doPlaceFurniture(person, ctx); break;
+      case 'refuel_lamp': this.doRefuelLamp(person, ctx); break;
       case 'inscribe': this.doInscribe(person, ctx); break;
       case 'read': this.doRead(person, ctx); break;
       case 'ponder': this.doPonder(person, ctx); break;
@@ -4243,6 +4245,39 @@ export class ActionSystem {
     person.inventory.remove(itemId, 1);
     person.handled.set(itemId, ctx.tick);
     telemetry.count('furniture_placed_' + itemId);
+    this.finish(person);
+  }
+
+  /** Refill and relight the household's fixed lamp in one deliberate order. */
+  private doRefuelLamp(person: Person, ctx: ActionContext): void {
+    const interrupted = this.interruption(person, ctx, { ignoreLaden: true });
+    if (interrupted) { this.stop(person, interrupted, ctx, 'lamp_'); return; }
+    const lamp = this.reachBuilding(person, ctx, {
+      ok: building => building.def.id === 'fat_lamp' && building.hostId !== null,
+      reason: 'lamp_gone',
+    }, 'trespass');
+    if (!lamp) return;
+    const homeId = person.householdId === null ? null
+      : ctx.householdsById.get(person.householdId)?.homeBuildingId ?? null;
+    const refusal = fatLampRefusal(person, lamp, homeId);
+    if (refusal) { this.abandon(person, fatLampRefusalText(refusal), ctx); return; }
+    const host = lamp.hostId === null ? null : ctx.buildingsById.get(lamp.hostId) ?? null;
+    if (!host || !host.complete || host.ruined) {
+      this.abandon(person, t('The house cannot be used right now'), ctx);
+      return;
+    }
+    if (!houseInteriorContains(host, person.x, person.y)) {
+      person.targetX = lamp.centerX;
+      person.targetY = lamp.centerY;
+      this.travel(person, ctx);
+      return;
+    }
+    if (person.inventory.remove('fat', FAT_LAMP_REFILL_FAT) !== FAT_LAMP_REFILL_FAT) {
+      this.abandon(person, 'need_fat', ctx);
+      return;
+    }
+    lamp.fuelRemaining = FAT_LAMP_FUEL_TICKS;
+    telemetry.count('fat_lamp_refuelled');
     this.finish(person);
   }
 

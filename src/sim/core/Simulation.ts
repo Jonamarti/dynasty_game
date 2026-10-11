@@ -135,6 +135,7 @@ import { applyHouseWalls, houseInteriorContains, houseInteriorTiles, houseContai
 import { lightAt as measuredLightAt, lightFactor, torchLight, hearthNear } from './Light.ts';
 import { saltSourceNear } from './Preservation.ts';
 import { advanceTorchBurn, torchIgnitionRefusal, torchRefusalText, transferableUnits, burningTorchRefusalText } from './Torch.ts';
+import { advanceFatLamps, FAT_LAMP_FUEL_TICKS, fatLampRefusal, fatLampRefusalText } from './FatLamp.ts';
 import { edgeOfTile, type ComarcaEdge } from '../world/ComarcaNeighbour.ts';
 import type { ComarcaMigrationContext } from '../world/ComarcaMigration.ts';
 import { comarcaResourceProfile, PROFILE_SPAN, type ComarcaResourceProfile } from '../world/ResourceProfile.ts';
@@ -4277,6 +4278,13 @@ export class Simulation {
       const refusal = this.furniturePlacementRefusal(person, host, target.itemId ?? '');
       if (refusal) { this.lastRefusal = refusal; return false; }
     }
+    if (action === 'refuel_lamp') {
+      const lamp = target.buildingId === undefined ? null : this.buildingsById.get(target.buildingId) ?? null;
+      const homeId = person.householdId === null ? null
+        : this.householdsById.get(person.householdId)?.homeBuildingId ?? null;
+      const refusal = fatLampRefusal(person, lamp, homeId);
+      if (refusal) { this.lastRefusal = fatLampRefusalText(refusal); return false; }
+    }
     // M15 phase 19b: the heavy work is refused her in the last third of a
     // pregnancy, with the reason. Before any state is touched, so a refused
     // order leaves her at whatever she was doing — the same seam every other
@@ -4887,6 +4895,7 @@ export class Simulation {
     if (!tile || !def) return null;
     const furniture = new Building(def, tile.x, tile.y, host.ownerBandId, this.ids);
     furniture.hostId = host.id;
+    if (itemId === 'fat_lamp') furniture.fuelRemaining = FAT_LAMP_FUEL_TICKS;
     furniture.sponsorId = person.id;
     furniture.plannedTick = this.time.tick;
     this.buildings.push(furniture);
@@ -5630,6 +5639,13 @@ export class Simulation {
 
   /** The building covering a point, if any. */
   buildingAt(x: number, y: number): Building | null {
+    // Interior furnishings share their floor tiles with the house footprint.
+    // Resolve the small, actionable object first or a right-click always opens
+    // the house menu and the furniture's own verbs become unreachable.
+    for (let i = this.buildings.length - 1; i >= 0; i--) {
+      const building = this.buildings[i]!;
+      if (building.def.furniture && building.contains(x, y)) return building;
+    }
     for (const building of this.buildings) {
       if (building.contains(x, y)) return building;
     }
@@ -5755,6 +5771,7 @@ export class Simulation {
     if (!this.playerIntent) this.playerMovementRefusal = null;
     this.time.advance();
     this.advanceTorchFuels(this.people);
+    advanceFatLamps(this.buildings);
     this.rebuildHashes();
     stepMark?.('advance+rebuildHashes');
 
