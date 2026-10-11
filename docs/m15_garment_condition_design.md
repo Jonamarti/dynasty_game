@@ -36,7 +36,9 @@ The 2026-10-12 tribute delivery path preserves garments when withdrawing a
 named item from a household store to a bearer; the existing store deposit leg
 then carries that same unit to the overlord. Autonomous tribute selection still
 uses `mostOf`, which admits servable food only, and territory access demands
-use `bestFood`.
+use `bestFood`. The local building-store audit found no other direct store to
+store mover: household home-store consolidation is the sole seam and uses
+`Inventory.transferAllTo`. Other store trips have a person as the carrier.
 
 This is still a foundation: some gameplay transfer seams listed below use
 generic count-based `add`/`remove`. Wear/remending must not be activated until
@@ -93,7 +95,7 @@ The main movement seams found in the current tree are:
 | --- | --- | --- |
 | Put on, take off, replace clothing | `ToolEquipment.changeGarment` | Equipment references a specific owned unit; swapping keeps the displaced unit in inventory. |
 | Give, trade, steal, amends, tribute | `Simulation.handOver`, `doGive`, `doTrade`, `doSteal`, `doMakeAmends`, `Simulation` tribute path | **Delivered for direct handover, timed non-food gifts, theft, amends and named-item tribute delivery:** `Inventory.transferTo`/`transferItemsTo` preserve unit state and roll back partial garment insertion; theft and tribute reconcile affected wearers, and amends reconciles the payer. `doTrade` currently exchanges food only, so it cannot select garments; autonomous tribute selectors also select safe food only. |
-| Store and withdraw | `Building.accept`, `Simulation.storeItem` / `takeItem`, `ActionSystem.doStore` / `doTake` / `doRender` | **Delivered for person↔building store**, household home-store merges, and the store-to-bearer leg of tribute: explicit transfer preserves condition and snapshots; whole-inventory merge is validated and rolls back both sides on failure. Other building-to-building transfers remain pending. |
+| Store and withdraw | `Building.accept`, `Simulation.storeItem` / `takeItem`, `ActionSystem.doStore` / `doTake` / `doRender`, `Simulation.mergeHouseholdsImpl` | **Delivered for person↔building store**, household home-store merges, and the store-to-bearer leg of tribute: explicit transfer preserves condition and snapshots; whole-inventory merge is validated and rolls back both sides on failure, including colliding local IDs. Audit found no other direct local store-to-store route; cross-building errands move through a person. |
 | Drop, pickup, carry overflow | `Simulation.drop`, `Simulation.takeFromPile`, `Simulation.dropAt`, `Carry.reconcileCarry` | **Delivered:** worn slot references an exact unit; drop, pickup and carry overflow move unit rows and preserve condition/progress. Generic `dropAt` still creates pristine garments for produced goods. |
 | Death and inheritance | `LifeSystem.settleEstate`, called from `Simulation` death handling | **Delivered:** whole estate moves atomically to heir/home, or garment rows drop intact at the deceased's feet. |
 | Comarca staging and restore | `ComarcaInventoryTransfer.take`, `consume`, `restore`, `toRecord` | Include condition in validated escrow graphs and restore it atomically with stacks/spoilage. |

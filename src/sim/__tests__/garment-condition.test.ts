@@ -405,8 +405,11 @@ describe('garment condition ownership foundation', () => {
     targetHouse.wealth = 17;
     sourceHouse.wealth = 23;
     targetStore.store.add('fur_hat', 1);
+    const targetUnit = targetStore.store.garmentUnitsOf('fur_hat')[0]!;
+    targetStore.store.setGarmentUnitCondition(targetUnit.unitId, 0.83, 8);
     sourceStore.store.add('fur_hat', 1);
     const sourceUnit = sourceStore.store.garmentUnitsOf('fur_hat')[0]!;
+    expect(sourceUnit.unitId).toBe(targetUnit.unitId);
     sourceStore.store.setGarmentUnitCondition(sourceUnit.unitId, 0.19, 52);
     const sourceRows = (sourceStore.store as unknown as { garmentUnits: GarmentUnit[] }).garmentUnits;
     sourceRows.push({ ...sourceUnit, unitId: 'invalid-extra-unit' });
@@ -423,8 +426,58 @@ describe('garment condition ownership foundation', () => {
     sim.mergeHouseholds(elder, younger);
     expect(targetStore.store.count('fur_hat')).toBe(2);
     expect(sourceStore.store.count('fur_hat')).toBe(0);
-    expect(targetStore.store.garmentUnitsOf('fur_hat').find(unit => unit.wear === 0.19))
-      .toMatchObject({ wear: 0.19, repairProgress: 52 });
+    const merged = targetStore.store.garmentUnitsOf('fur_hat');
+    expect(new Set(merged.map(unit => unit.unitId)).size).toBe(2);
+    expect(merged).toEqual(expect.arrayContaining([
+      expect.objectContaining({ unitId: targetUnit.unitId, wear: 0.83, repairProgress: 8 }),
+      expect.objectContaining({ wear: 0.19, repairProgress: 52 }),
+    ]));
+  });
+
+  it('rolls back household membership and both home stores when a garment merge insertion fails', () => {
+    const sim = new Simulation({ seed: 'garment-household-merge-reject', world: { width: 64, height: 64 },
+      population: { bands: 2, peoplePerBand: 6 } });
+    const first = sim.livingPeople().find(person => !person.isChild)!;
+    const second = sim.livingPeople().find(person => !person.isChild && person.householdId !== first.householdId)!;
+    const elder = first.age >= second.age ? first : second;
+    const younger = elder === first ? second : first;
+    const targetHouse = sim.householdsById.get(elder.householdId!)!;
+    const sourceHouse = sim.householdsById.get(younger.householdId!)!;
+    const placeStore = (person: Person) => {
+      for (const [dx, dy] of [[4, 0], [-4, 0], [0, 4], [0, -4]]) {
+        const placed = sim.place('storage_pit', Math.round(person.x) + dx!, Math.round(person.y) + dy!, person.bandId);
+        if (placed) return placed;
+      }
+      throw new Error('could not place household storage');
+    };
+    const targetStore = placeStore(elder);
+    const sourceStore = placeStore(younger);
+    targetHouse.homeBuildingId = targetStore.id;
+    sourceHouse.homeBuildingId = sourceStore.id;
+    targetHouse.wealth = 17;
+    sourceHouse.wealth = 23;
+    targetStore.store.add('fur_hat', 1);
+    sourceStore.store.add('fur_hat', 2);
+    sourceStore.store.add('berries', 3);
+    for (const [index, unit] of sourceStore.store.garmentUnitsOf('fur_hat').entries()) {
+      sourceStore.store.setGarmentUnitCondition(unit.unitId, index === 0 ? 0.19 : 0.46, 52 + index);
+    }
+    const sourceBefore = sourceStore.store.transferSnapshot();
+    const targetBefore = targetStore.store.transferSnapshot();
+    const put = targetStore.store.putGarmentUnit.bind(targetStore.store);
+    let attempts = 0;
+    targetStore.store.putGarmentUnit = unit => {
+      if (++attempts === 2) throw new Error('simulated home-store insertion failure');
+      return put(unit);
+    };
+
+    expect(() => sim.mergeHouseholds(elder, younger)).toThrow('simulated home-store insertion failure');
+    expect(sourceStore.store.transferSnapshot()).toEqual(sourceBefore);
+    expect(targetStore.store.transferSnapshot()).toEqual(targetBefore);
+    expect(targetHouse.memberIds).not.toContain(younger.id);
+    expect(sourceHouse.memberIds).toContain(younger.id);
+    expect(targetHouse.wealth).toBe(17);
+    expect(sourceHouse.wealth).toBe(23);
   });
 
   it('drops only unpacked garment units when carry reconciliation sheds excess', () => {

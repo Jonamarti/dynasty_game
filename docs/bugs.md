@@ -6,9 +6,11 @@ desbordamiento de carga, depósitos/retiradas persona↔almacén, fusión de hog
 herencia, handover directo, regalos NPC no alimentarios, robo y compensación
 por amends preservan la unidad. `doTrade` sólo mueve comida, así que no
 transfiere prendas. La entrega de tributo a un almacén conserva unidades; sus
-selectores autónomos sólo eligen comida segura. Siguen sin migrar otros
-movimientos entre edificios y tráfico fuera del mapa; esas rutas pueden
-destruir o recrear la unidad. `unitId` sigue
+selectores autónomos sólo eligen comida segura. La fusión de hogares es la
+única transferencia directa local entre almacenes y revierte ambos inventarios
+si una inserción falla. Otros recorridos entre almacenes llevan la carga por
+una persona. Siguen pendientes escrow y tráfico fuera del mapa; esas rutas
+pueden destruir o recrear la unidad. `unitId` sigue
 siendo local al inventario y se reemite al colisionar durante una fusión; una
 identidad global antes de referenciar copias entre inventarios sigue pendiente.
 Por eso no se habilita desgaste ni remiendo. Véase el

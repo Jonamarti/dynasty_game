@@ -15014,3 +15014,15 @@ portador rechaza la inserción. Los selectores autónomos de tributo siguen
 limitados a comida segura. Typecheck y pruebas focales no pudieron arrancar por
 falta de `tsc`/`vitest`; sin instalación ni calibración. Desgaste/remiendo sigue
 apagado.
+
+## 2026-10-12 — m15: cierre de transferencias locales entre almacenes
+
+La auditoría confirma que la fusión de hogares es la única ruta que mueve un
+inventario de edificio directamente a otro; usa `Inventory.transferAllTo`.
+Las pruebas de integración verifican IDs locales en colisión, desgaste y
+progreso conservados, rechazo de inventarios incoherentes y rollback de ambas
+casas si falla una inserción. Los demás viajes locales entre almacenes llevan
+la prenda en una persona y ya usan las transferencias explícitas. Typecheck y
+pruebas focales no pudieron arrancar por falta de `tsc`/`vitest`; sin
+instalación ni pruebas largas. Escrow y tráfico fuera del mapa siguen
+pendientes; desgaste/remiendo permanece apagado.

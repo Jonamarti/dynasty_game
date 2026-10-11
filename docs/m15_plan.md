@@ -1728,8 +1728,11 @@ hogar al portador usa transferencia explícita; la entrega al almacén del
 overlord conserva la misma unidad. Pruebas cubren ambos tramos y el rechazo
 atómico del primero. La selección autónoma sigue restringida a comida segura
 (`mostOf`/`bestFood`); el executor genérico también conserva la unidad si recibe
-una prenda. Siguen pendientes otros movimientos entre edificios, escrow y
-tráfico; desgaste/remiendo permanece apagado.
+una prenda. La auditoría local no encontró otra transferencia directa entre
+almacenes: la fusión de hogares es la única y ya usa `transferAllTo`. Pruebas
+de esa ruta cubren choque de IDs, condición y progreso, rechazo de filas
+inconsistentes y rollback si falla una inserción. Siguen pendientes escrow y
+tráfico fuera del mapa; desgaste/remiendo permanece apagado.
 
 **Avance del 2026-10-11 — base de condición física:** `Inventory` crea una
 unidad íntegra por prenda, permite extraerla/devolverla con condición y trabajo
