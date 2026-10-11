@@ -513,6 +513,8 @@ export const ITEMS: Record<string, ItemDef> = {
 
 export class Inventory {
   private stacks = new Map<string, number>();
+  /** Physical garment state is separate from item counts so equal garments can diverge. */
+  private garmentUnits: GarmentUnit[] = [];
 
   /**
    * Bumped on every change to the contents.
@@ -528,15 +530,35 @@ export class Inventory {
 
   add(itemId: string, count = 1): void {
     if (count <= 0) return;
+    if (ITEMS[itemId]?.garment && !Number.isSafeInteger(count)) throw new RangeError('garment count must be a safe integer');
+    this.ensureGarmentUnits();
+    if (ITEMS[itemId]?.garment) {
+      for (let i = 0; i < count; i++) this.garmentUnits.push({
+        unitId: `g:${this.version + 1}:${itemId}:${i}`,
+        itemId,
+        wear: 1,
+        repairProgress: 0,
+      });
+    }
     this.stacks.set(itemId, (this.stacks.get(itemId) ?? 0) + count);
     this.version++;
   }
 
   /** Removes up to `count`; returns how many were actually removed. */
   remove(itemId: string, count = 1): number {
+    this.ensureGarmentUnits();
+    if (ITEMS[itemId]?.garment && !Number.isSafeInteger(count)) throw new RangeError('garment count must be a safe integer');
     const have = this.stacks.get(itemId) ?? 0;
     const taken = Math.min(have, count);
     if (taken <= 0) return 0;
+    if (ITEMS[itemId]?.garment) {
+      // Generic removal means the units were consumed/destroyed. Moving a
+      // garment must use takeGarmentUnit so its condition reaches the receiver.
+      for (let i = 0; i < taken; i++) {
+        const index = this.garmentUnits.findIndex(unit => unit.itemId === itemId);
+        if (index >= 0) this.garmentUnits.splice(index, 1);
+      }
+    }
     if (have - taken <= 0) this.stacks.delete(itemId);
     else this.stacks.set(itemId, have - taken);
     this.version++;
@@ -560,21 +582,84 @@ export class Inventory {
   entries(): [string, number][] {
     return [...this.stacks.entries()];
   }
+
+  /** Read physical garment units without exposing the inventory's mutable rows. */
+  garmentUnitsOf(itemId?: string): readonly GarmentUnit[] {
+    this.ensureGarmentUnits();
+    return this.garmentUnits.filter(unit => itemId === undefined || unit.itemId === itemId)
+      .map(unit => ({ ...unit }));
+  }
+
+  /** Remove one physical garment for a transfer while preserving its condition. */
+  takeGarmentUnit(itemId: string): GarmentUnit | null {
+    this.ensureGarmentUnits();
+    const index = this.garmentUnits.findIndex(unit => unit.itemId === itemId);
+    if (index < 0 || this.count(itemId) <= 0) return null;
+    const [unit] = this.garmentUnits.splice(index, 1);
+    const have = this.count(itemId);
+    if (have === 1) this.stacks.delete(itemId);
+    else this.stacks.set(itemId, have - 1);
+    this.version++;
+    return { ...unit! };
+  }
+
+  /** Bank wear or repair progress on one physical garment. */
+  setGarmentUnitCondition(unitId: string, wear: number, repairProgress: number): boolean {
+    this.ensureGarmentUnits();
+    const index = this.garmentUnits.findIndex(unit => unit.unitId === unitId);
+    if (index < 0) return false;
+    const unit = validateGarmentUnit({ ...this.garmentUnits[index]!, wear, repairProgress });
+    this.garmentUnits[index] = unit;
+    this.version++;
+    return true;
+  }
+
+  /** Add a transferred physical garment without resetting its condition. */
+  putGarmentUnit(unit: GarmentUnit): void {
+    this.ensureGarmentUnits();
+    const clean = validateGarmentUnit(unit);
+    if (!ITEMS[clean.itemId]?.garment) throw new TypeError('garment unit item is not a garment');
+    if (this.garmentUnits.some(existing => existing.unitId === clean.unitId)) {
+      throw new RangeError('garment unit identity already exists in inventory');
+    }
+    this.garmentUnits.push(clean);
+    this.stacks.set(clean.itemId, this.count(clean.itemId) + 1);
+    this.version++;
+  }
+
   /** M15 phase 34: escrow moves stacks with their fractional spoilage carry. */
   transferSnapshot(): InventoryTransferState {
+    this.ensureGarmentUnits();
     const fields = Object.keys(this).sort();
-    if (fields.length !== 3 || fields[0] !== 'spoilage' || fields[1] !== 'stacks' || fields[2] !== 'version' ||
+    if (fields.length !== 4 || fields[0] !== 'garmentUnits' || fields[1] !== 'spoilage' ||
+        fields[2] !== 'stacks' || fields[3] !== 'version' || !(this.garmentUnits instanceof Array) ||
         !(this.stacks instanceof Map) || !(this.spoilage instanceof Map)) {
       throw new TypeError('Inventory transfer fields do not match the supported state');
     }
-    return validateInventoryTransferState({ version: this.version, stacks: [...this.stacks.entries()], spoilage: [...this.spoilage.entries()] });
+    return validateInventoryTransferState({ version: this.version, stacks: [...this.stacks.entries()],
+      spoilage: [...this.spoilage.entries()], garmentUnits: this.garmentUnits });
+  }
+
+  /** Legacy checkpoints predate per-unit clothing; their garments start pristine. */
+  private ensureGarmentUnits(): void {
+    if (!Array.isArray(this.garmentUnits)) this.garmentUnits = [];
+    for (const [itemId, count] of this.stacks) {
+      if (!ITEMS[itemId]?.garment) continue;
+      const present = this.garmentUnits.filter(unit => unit.itemId === itemId).length;
+      for (let i = present; i < count; i++) this.garmentUnits.push({
+        unitId: `g:legacy:${this.version}:${itemId}:${i}`,
+        itemId,
+        wear: 1,
+        repairProgress: 0,
+      });
+    }
   }
 
   /** Check a prepared extraction without changing either contents or cache generation. */
   assertCanTakeTransferState(expected: InventoryTransferState): void {
     const clean = validateInventoryTransferState(expected);
     if (!sameInventoryTransferState(this.transferSnapshot(), clean)) throw new RangeError('inventory changed before transfer');
-    if ((this.stacks.size !== 0 || this.spoilage.size !== 0) && this.version >= Number.MAX_SAFE_INTEGER) {
+    if ((this.stacks.size !== 0 || this.spoilage.size !== 0 || this.garmentUnits.length !== 0) && this.version >= Number.MAX_SAFE_INTEGER) {
       throw new RangeError('inventory version cannot advance for transfer');
     }
   }
@@ -582,16 +667,17 @@ export class Inventory {
   /** Empty this inventory only if it still has the state the caller inspected. */
   takeTransferState(expected: InventoryTransferState): void {
     this.assertCanTakeTransferState(expected);
-    if (this.stacks.size === 0 && this.spoilage.size === 0) return;
+    if (this.stacks.size === 0 && this.spoilage.size === 0 && this.garmentUnits.length === 0) return;
     this.stacks.clear();
     this.spoilage.clear();
+    this.garmentUnits = [];
     this.version++;
   }
 
   /** Check a prepared restoration without changing this inventory. */
   assertCanRestoreTransferState(state: InventoryTransferState): void {
     const clean = validateInventoryTransferState(state);
-    if (this.stacks.size !== 0 || this.spoilage.size !== 0) throw new RangeError('inventory transfer destination is not empty');
+    if (this.stacks.size !== 0 || this.spoilage.size !== 0 || this.garmentUnits.length !== 0) throw new RangeError('inventory transfer destination is not empty');
     if (Math.max(this.version, clean.version) >= Number.MAX_SAFE_INTEGER) throw new RangeError('inventory version cannot advance for transfer');
   }
 
@@ -601,6 +687,7 @@ export class Inventory {
     this.assertCanRestoreTransferState(clean);
     this.stacks = new Map(clean.stacks);
     this.spoilage = new Map(clean.spoilage);
+    this.garmentUnits = clean.garmentUnits.map(unit => ({ ...unit }));
     this.version = Math.max(this.version, clean.version) + 1;
   }
 
@@ -692,12 +779,36 @@ export interface InventoryTransferState {
   readonly version: number;
   readonly stacks: readonly (readonly [string, number])[];
   readonly spoilage: readonly (readonly [string, number])[];
+  readonly garmentUnits: readonly GarmentUnit[];
+}
+
+/** Wear is condition (1 is pristine, 0 is ruined); progress is banked work. */
+export interface GarmentUnit {
+  readonly unitId: string;
+  readonly itemId: string;
+  readonly wear: number;
+  readonly repairProgress: number;
+}
+
+function validateGarmentUnit(value: unknown): GarmentUnit {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new TypeError('garment unit must be an object');
+  const unit = value as Partial<GarmentUnit>;
+  if (Object.keys(value).length !== 4 || typeof unit.unitId !== 'string' || !unit.unitId ||
+      typeof unit.itemId !== 'string' || !unit.itemId || !Number.isFinite(unit.wear) || unit.wear! < 0 || unit.wear! > 1 ||
+      !Number.isFinite(unit.repairProgress) || unit.repairProgress! < 0 || unit.repairProgress! > 140) {
+    throw new RangeError('garment unit has invalid identity, condition, or repair progress');
+  }
+  return { unitId: unit.unitId, itemId: unit.itemId, wear: unit.wear!, repairProgress: unit.repairProgress! };
 }
 
 export function validateInventoryTransferState(value: unknown): InventoryTransferState {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new TypeError('inventory transfer state must be an object');
   const state = value as Partial<InventoryTransferState>;
-  if (Object.keys(value).length !== 3 || !Object.hasOwn(value, 'version') || !Object.hasOwn(value, 'stacks') || !Object.hasOwn(value, 'spoilage')) {
+  const keys = Object.keys(value).sort();
+  const hasGarmentUnits = Object.hasOwn(value, 'garmentUnits');
+  if ((!hasGarmentUnits && (keys.length !== 3 || keys.join(',') !== 'spoilage,stacks,version')) ||
+      (hasGarmentUnits && (keys.length !== 4 || keys.join(',') !== 'garmentUnits,spoilage,stacks,version')) ||
+      !Object.hasOwn(value, 'version') || !Object.hasOwn(value, 'stacks') || !Object.hasOwn(value, 'spoilage')) {
     throw new TypeError('inventory transfer state has unknown or missing fields');
   }
   if (!Number.isSafeInteger(state.version) || state.version! < 0) throw new RangeError('inventory transfer version must be a non-negative safe integer');
@@ -716,11 +827,41 @@ export function validateInventoryTransferState(value: unknown): InventoryTransfe
     }
     return out;
   };
-  return { version: state.version!, stacks: rows(state.stacks, 'stacks'), spoilage: rows(state.spoilage, 'spoilage') };
+  const stacks = rows(state.stacks, 'stacks');
+  const rawUnits = hasGarmentUnits ? (value as { garmentUnits: unknown }).garmentUnits : [];
+  if (!Array.isArray(rawUnits)) throw new TypeError('inventory transfer garment units must be an array');
+  const garmentUnits = rawUnits.map(validateGarmentUnit);
+  const unitIds = new Set<string>();
+  for (const unit of garmentUnits) {
+    if (unitIds.has(unit.unitId)) throw new RangeError('inventory transfer contains duplicate garment unit identity');
+    unitIds.add(unit.unitId);
+    if (!ITEMS[unit.itemId]?.garment) throw new TypeError('inventory transfer garment unit item is not a garment');
+  }
+  // Old transfer records had counts only. Give every represented garment a
+  // pristine unit with a deterministic identity and no random draws.
+  if (!hasGarmentUnits) for (const [itemId, count] of stacks) if (ITEMS[itemId]?.garment) {
+    for (let i = 0; i < count; i++) garmentUnits.push({ unitId: `g:legacy:${state.version}:${itemId}:${i}`, itemId, wear: 1, repairProgress: 0 });
+  }
+  const garmentIds = new Set([...stacks.map(([itemId]) => itemId), ...garmentUnits.map(unit => unit.itemId)]);
+  for (const itemId of garmentIds) {
+    const count = stacks.find(([id]) => id === itemId)?.[1] ?? 0;
+    if (ITEMS[itemId]?.garment && garmentUnits.filter(unit => unit.itemId === itemId).length !== count) {
+      throw new RangeError('inventory transfer garment units do not match garment counts');
+    }
+  }
+  if (garmentUnits.some(unit => !ITEMS[unit.itemId]?.garment)) throw new TypeError('inventory transfer unit item is not a garment');
+  return { version: state.version!, stacks, spoilage: rows(state.spoilage, 'spoilage'), garmentUnits };
 }
 
 function sameInventoryTransferState(a: InventoryTransferState, b: InventoryTransferState): boolean {
   const equalRows = (left: readonly (readonly [string, number])[], right: readonly (readonly [string, number])[]) =>
     left.length === right.length && left.every((row, i) => row[0] === right[i]![0] && row[1] === right[i]![1]);
-  return a.version === b.version && equalRows(a.stacks, b.stacks) && equalRows(a.spoilage, b.spoilage);
+  const equalUnits = (left: readonly GarmentUnit[], right: readonly GarmentUnit[]) =>
+    left.length === right.length && left.every((unit, i) => {
+      const other = right[i]!;
+      return unit.unitId === other.unitId && unit.itemId === other.itemId &&
+        unit.wear === other.wear && unit.repairProgress === other.repairProgress;
+    });
+  return a.version === b.version && equalRows(a.stacks, b.stacks) && equalRows(a.spoilage, b.spoilage) &&
+    equalUnits(a.garmentUnits, b.garmentUnits);
 }

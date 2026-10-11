@@ -1683,6 +1683,14 @@ muertes por frío**; coste declarado: ≤ 5 puntos.
 
 **Avance del 2026-10-11:** retirada autónoma por calor y bolsillos entregados en commits separados, con pruebas y capturas de hito. [Calor](m15_phase14c_heat_removal.md) y [bolsillos](m15_phase14c_pockets.md) detallan la política y los resultados. Quedan propiedad de condición, desgaste/remiendo, curtido, estatus opcional y las mediciones diferidas. No se declara cerrada 14c/14e ni M15.
 
+**Avance del 2026-10-11 — base de condición física:** `Inventory` crea una
+unidad íntegra por prenda, permite extraerla/devolverla con condición y trabajo
+de remiendo, y conserva/valida las unidades en el registro explícito de
+transferencia. Los registros antiguos reciben unidades íntegras. Todavía no se
+activa desgaste ni remiendo: equipo, almacenes, montones, trueque, robo,
+herencia, escrow y tráfico fuera de mapa deben migrar a las operaciones por
+unidad, y falta identificar sin ambigüedad la copia vestida. [Diseño y límites](m15_garment_condition_design.md).
+
 **Avance del 2026-10-10:** taparrabos `hide_loincloth` entregado desde la
 puerta `clothing`, con herramienta física retenida y calor 0,02 sólo en
 cadera. [Contrato](m15_phase14c_hip.md). La falda de fibra se entrega después

@@ -1,8 +1,16 @@
 # Garment condition ownership — design note
 
-Status: design only. Garments do not yet have durable per-item condition. This
-note records the ownership boundary a future wear-and-mending phase must cross;
-it does not prescribe a simulation balance or alter current gameplay.
+Status: ownership foundation delivered on 2026-10-11; wear and mending are not
+active. `Inventory` now holds one condition row per garment count and exposes
+`takeGarmentUnit` / `putGarmentUnit` so an explicit caller can move a garment
+without resetting condition. `setGarmentUnitCondition` bounds condition and
+banked repair progress. New and legacy garments start pristine, and explicit
+inventory transfer records validate and preserve these rows.
+
+This is a foundation only: the existing gameplay transfer seams listed below
+still use generic count-based `add`/`remove` in places. Wear/remending must not
+be activated until those routes move garment rows too. Generic `remove` treats
+a garment as consumed and destroys its row; it is never a transfer operation.
 
 ## The invariant
 
@@ -19,23 +27,24 @@ replacement, and cannot distinguish two copies of the same garment. The
 ownership model needs a stable unit identity (or an equivalent ordered cohort
 identity) that exists independently of a worn slot.
 
-The minimal public boundary should make identity movement explicit:
+The current Inventory boundary makes unit movement explicit:
 
 ```ts
 type GarmentUnit = { unitId: string; itemId: string; wear: number; repairProgress: number };
 
-inventory.takeUnit(unitId): GarmentUnit | null;
-inventory.putUnit(unit): void;
-inventory.garmentUnits(itemId?): readonly GarmentUnit[];
+inventory.takeGarmentUnit(itemId): GarmentUnit | null;
+inventory.putGarmentUnit(unit): void;
+inventory.garmentUnitsOf(itemId?): readonly GarmentUnit[];
+inventory.setGarmentUnitCondition(unitId, wear, repairProgress): boolean;
 ```
 
-These names are illustrative. The required properties are: one canonical
-owner at a time, immutable item identity, bounded condition/progress, and
-movement APIs that preserve all fields. Generic `add(itemId, count)` remains
-the path for new pristine items; generic `remove(itemId, count)` must not be
-used to move a condition-bearing garment unless the removed units are returned
-to the caller. If the implementation chooses cohorts rather than unit ids,
-equipment still needs an unambiguous reference to the particular worn copy.
+The current unit identity is local to its Inventory; collision handling across
+inventories and equipment references are still required before gameplay uses
+it to identify a worn copy. `add(itemId, count)` creates pristine units, and
+the explicit transfer APIs preserve the unit row. Generic `remove(itemId,
+count)` is destruction and must not be used to move a condition-bearing
+garment. The focused foundation test covers the APIs and transfer-record
+validation, not the gameplay routes below.
 
 ## Existing ownership paths to convert
 

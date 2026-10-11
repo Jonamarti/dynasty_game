@@ -1,3 +1,18 @@
+## 2026-10-11 — m15: base de condición por unidad de ropa
+
+`0.15.53-alpha`: `Inventory` representa cada prenda como una unidad física
+con condición y progreso de remiendo acotados. La API explícita permite sacar,
+devolver y actualizar una unidad; los registros de transferencia serializan y
+validan esas filas, y los registros antiguos reciben prendas íntegras. Pruebas
+focales cubren el movimiento, persistencia, límites y compatibilidad antigua.
+
+No se activa desgaste/remiendo en juego: las rutas de equipo, almacén, montón,
+intercambio, herencia, escrow y tráfico aún deben preservar unidades, y falta
+resolver la identidad sin colisiones entre inventarios para apuntar a la copia
+vestida. Sin cambio de UI ni captura. `sim:check` no arrancó en el worktree:
+falta `vite-node` porque no hay `node_modules`; no se enlazaron dependencias de
+otro checkout.
+
 ## 2026-10-11 — Integración de M15 en master
 
 `0.15.52-alpha`: se fusionan retirada por calor y bolsillos de prendas con la recuperación de frío ambiental y la temperatura de la HUD ya presentes en master. Se conserva la documentación de ambos recorridos y sus capturas; el contador incluye los tres cambios funcionales desde `.49`.

@@ -1,3 +1,14 @@
+## 2026-10-11 — M15 14c, propiedad de condición aún no conectada al juego
+
+La base por unidad ya conserva condición/progreso en las API de `Inventory` y
+en el registro explícito de transferencia. Todavía no está conectada a
+vestir/quitar, almacenes, montones, trueque/robo, herencia o tráfico fuera del
+mapa: esas rutas usan recuentos genéricos y pueden destruir o recrear la unidad.
+La identidad `unitId` sólo es local a un inventario; resolver colisiones al
+combinar inventarios y referenciar exactamente la prenda vestida sigue siendo
+requisito previo. Por eso no se habilita desgaste ni remiendo. Véase el
+[contrato](m15_garment_condition_design.md).
+
 ## 2026-10-11 — M15 14c, verificación de calor y bolsillos
 
 La suite completa de unidad mantiene los siete fallos heredados y añade una premisa de definición sin pocket (corregida, original repetida en 48/48 focales) y un timeout de continuidad. La misma continuidad, mismo límite y aserciones, pasa aislada en 9,83 s. Navegador 157/159: niebla heredada y preparación incorrecta de la carga en la nueva prueba de bolsillo; corregida, vestir/retirar/conservar carga pasa en la focal. Las ejecuciones completas fallidas no se describen como verdes ni se repiten. [Informe](m15_phase14c_pockets.md). Sin cohortes ni matriz pesada y sin declarar cerrada M15.
