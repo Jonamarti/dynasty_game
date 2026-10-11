@@ -38,9 +38,15 @@ describe('earthworks gate (M15 phase 26e)', () => {
     expect(TECH.earthworks.requires).toEqual(expect.arrayContaining(['ground_stone', 'basketry']));
     expect(TECH_EFFECTS.earthworks.site).toContain('BUILDINGS.ditch');
     expect(TECH_EFFECTS.earthworks.site).toContain('BUILDINGS.moat');
+    expect(TECH_EFFECTS.earthworks.site).toContain('BUILDINGS.mound');
+    expect(TECH_EFFECTS.earthworks.site).toContain('BUILDINGS.embankment');
     expect(TECH_EFFECTS.earthworks.site).toContain('World.pitDepth');
+    expect(TECH_EFFECTS.earthworks.site).toContain('World.sightBonusAt');
     expect(BUILDINGS.ditch?.requiresTech).toBe('earthworks');
     expect(BUILDINGS.ditch_ns?.requiresTech).toBe('earthworks');
+    expect(BUILDINGS.mound?.requiresTech).toBe('earthworks');
+    expect(BUILDINGS.embankment?.requiresTech).toBe('earthworks');
+    expect(BUILDINGS.embankment_ns?.requiresTech).toBe('earthworks');
   });
 
   it('keeps the ditch locked until earthworks is known, then exposes only its base design', () => {
@@ -85,5 +91,41 @@ describe('earthworks gate (M15 phase 26e)', () => {
     expect(ditch.depthDug(x, y)).toBeLessThan(ditch.pitDepth);
     expect(ditch.isWalkable(x, y)).toBe(true);
     expect(ditch.stepFactor(x + 0.5, y + 0.5, x - 0.5, y + 0.5)).toBeLessThan(1);
+  });
+
+  it('gates mound and embankment designs and reads their raised terrain as height, slope, and sight', () => {
+    const sim = new Simulation({ seed: 'raised-earthwork-gate' });
+    sim.knownTech.add('ground_stone');
+    sim.knownTech.add('basketry');
+    const designs = () => sim.availableDesigns().map(def => def.id);
+    const locked = () => sim.lockedDesigns().map(def => def.id);
+    const spot = openDitchSpot(sim);
+
+    expect(designs()).not.toEqual(expect.arrayContaining(['mound', 'embankment']));
+    expect(locked()).toEqual(expect.arrayContaining(['mound', 'embankment']));
+    expect(sim.place('mound', spot.x, spot.y, 0)).toBeNull();
+    expect(sim.place('embankment', spot.x, spot.y, 0)).toBeNull();
+
+    sim.knownTech.add('earthworks');
+    expect(designs()).toEqual(expect.arrayContaining(['mound', 'embankment']));
+    expect(designs()).not.toContain('embankment_ns');
+    const mound = sim.place('mound', spot.x, spot.y, 0, null, true)!;
+    const bank = sim.place('embankment', spot.x + 5, spot.y, 0, null, true)!;
+    expect(mound).not.toBeNull();
+    expect(bank).not.toBeNull();
+
+    // These are the existing terrain readers used by movement and observation,
+    // measured on the physical raised ground rather than on a design label.
+    const world = flatWorld();
+    const x = 32, y = 32;
+    const baseSight = world.sightBonusAt(x, y);
+    const baseClimb = world.stepFactor(x + 0.5, y + 0.5, x - 0.5, y + 0.5);
+    const baseHeight = world.heightAt(x + 0.5, y + 0.5);
+    world.pile(x, y, 6 * EARTH_UNIT);
+    expect(world.heightAt(x + 0.5, y + 0.5)).toBeGreaterThan(baseHeight);
+    expect(world.elevation[world.index(x, y)]! + world.offset[world.index(x, y)]!).toBeGreaterThan(0.5);
+    expect(world.sightBonusAt(x, y)).toBeGreaterThan(baseSight);
+    expect(world.stepFactor(x - 0.5, y + 0.5, x + 0.5, y + 0.5)).toBeLessThan(1);
+    expect(baseClimb).toBe(1);
   });
 });

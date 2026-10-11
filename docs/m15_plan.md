@@ -2611,8 +2611,11 @@ lleva agua a beber junto al campamento: un valor que la banda descubre sola.
   corte mediante la lectura de elevación excavada de 25b. El foso de 16 unidades
   rebasa `pitDepth` y el llenado de 26d lo conecta al agua de la orilla. La
   puerta permanece en la red principal hasta que haya dos nodos de Tierra; el
-  canal la exige a través de `irrigation`. Los demás diseños esperan sus
-  propios lectores; el rodeo de incursiones y su coste defensivo siguen pendientes.
+  canal la exige a través de `irrigation`. **Avance 2026-10-11:** la misma puerta
+  abre `mound` y `embankment` (incluida su orientación `_ns`). El relieve apilado
+  sube `World.heightAt`, `World.sightBonusAt` y el coste de ascender según
+  `World.stepFactor`; controles antes/después comprueban los tres lectores. El
+  rodeo de incursiones y su coste defensivo siguen pendientes.
 - **Bancal:** un campo en pendiente que conserva la capa fértil al nivelar la
   ladera con corte y relleno; no modela erosión adicional por lluvia.
 

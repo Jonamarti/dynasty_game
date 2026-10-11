@@ -2944,7 +2944,7 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   },
   earthworks: {
     summary: 'A cut slows the crossing; a water moat is deep enough to stop walking through.',
-    site: 'BUILDINGS.ditch and BUILDINGS.moat require earthworks; World.stepFactor reads excavated height, World.pitDepth and water fills read moat depth',
+    site: 'BUILDINGS.ditch, BUILDINGS.moat, BUILDINGS.mound and BUILDINGS.embankment require earthworks; World.stepFactor reads raised and excavated height, World.sightBonusAt reads prominence, World.pitDepth and water fills read moat depth',
   },
   terracing: {
     summary: 'Level a hillside field with a cut and fill that carries topsoil downhill.',

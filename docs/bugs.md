@@ -529,8 +529,10 @@ arranque vengan ya cavados, o `git revert` del commit del silo.
   Avance 2026-10-11: `earthworks` abre `ditch` y `moat`; el escalón de salida de
   la zanja ya usa el coste de pendiente 25b y el foso rebasa `pitDepth`, por lo
   que no se puede cruzar, y se llena desde la orilla (26d). Faltan el desvío de
-  las incursiones, una medición de coste defensivo y gates para montones,
-  terraplenes y otras obras. Los agujeros simples siguen abiertos a todos.
+  las incursiones y una medición de coste defensivo. Avance 2026-10-11: la
+  puerta también abre montones y terraplenes; los lectores físicos de altura,
+  pendiente y visión se cubren en sus controles focales. Canales/bancales usan
+  sus puertas propias y los agujeros simples siguen abiertos a todos.
 - **Una casilla de plan que se hace honda bajo los pies de otro peón.** El que
   cava no está nunca en la casilla que se hará pozo (trabaja desde el borde),
   pero otro compañero de la cuadrilla sí puede estar en ella cuando alguien

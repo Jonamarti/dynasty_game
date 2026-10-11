@@ -14942,3 +14942,14 @@ de incursiones siguen pendientes; no se corrieron cohortes ni calibración.
 
 El `sim:check` único de `band` repite los fallos conocidos de dieta y
 `perf-budget` (478 pasos/s frente al piso de 1.678); no se atribuyen a este gate.
+
+## 2026-10-11 — Fase 26e, montículos y terraplenes bajo la puerta Tierra
+
+`earthworks` también habilita `mound` y `embankment`, incluido el terraplén
+norte-sur. La prueba focal comprueba que los planos permanecen bloqueados sin
+la tecnología y que el relieve físico elevado alimenta `heightAt`,
+`sightBonusAt` y el coste de subida de `stepFactor`, con valores planos como
+control negativo. No cambia la UI visible del mundo. No se pudieron ejecutar
+typecheck ni Vitest en este worktree: `node_modules` no estaba instalado y
+`npm install --legacy-peer-deps` recibió EPERM al crear esa carpeta. No hubo
+calibración ni cohortes; la fase 26 permanece abierta.
