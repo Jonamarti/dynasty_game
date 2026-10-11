@@ -1,3 +1,11 @@
+## 2026-10-11 — m15: pertenencia al conversar sentado
+
+`0.15.55-alpha`: hablar con un familiar que descansa en un banco doméstico
+actualiza la pertenencia de ambas personas. El scorer reconoce ese interlocutor
+y lo prefiere ante una necesidad de pertenencia; personas de pie y conversaciones
+fuera del hogar no reciben el efecto. Prueba focal en `furniture-sleep.test.ts`;
+no cambia la interfaz. Contrato y pendientes en `docs/m15_phase16d_bedding.md`.
+
 ## 2026-10-11 — m15: banco y descanso sentado
 
 `0.15.54-alpha`: `bench` es una receta de carpintería de dos maderas,

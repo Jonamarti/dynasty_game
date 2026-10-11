@@ -107,7 +107,7 @@ import { noteWorkOutcome } from '../core/Mood.ts';
 import { support } from '../social/Persuasion.ts';
 import { swimRefusal, swimRouteRefusal } from '../core/Swimming.ts';
 import { canWork } from '../knowledge/Ore.ts';
-import { assignedSleepSurface, houseInteriorContains, sleepQualityAt } from '../world/HouseInterior.ts';
+import { assignedSleepSurface, benchConversationBelonging, houseInteriorContains, sleepQualityAt } from '../world/HouseInterior.ts';
 import { igniteTorch, TORCH_IGNITION_TICKS } from '../core/Torch.ts';
 
 export interface ActionContext {
@@ -4377,6 +4377,10 @@ export class ActionSystem {
     if (person.householdId !== null && person.householdId === other.householdId) {
       person.mood.add('belonging', 2, 'talked with family', ctx.tick);
       other.mood.add('belonging', 2, 'talked with family', ctx.tick);
+      if (benchConversationBelonging(person, other, ctx.buildingsById) > 0) {
+        person.mood.add('belonging', 2, 'talked with family on the bench', ctx.tick);
+        other.mood.add('belonging', 2, 'talked with family on the bench', ctx.tick);
+      }
     }
     person.practice('persuade', 0.3);
     // Both parties were in the conversation, so both wait before the next one,

@@ -13,7 +13,7 @@
 
 **2026-10-11: 16d, asignación autónoma de superficies de sueño.** Cada miembro vivo de un hogar se dirige a una cama/lecho según un turno estable por ID dentro del hogar; con más miembros que superficies se comparten por turnos. No añade estado guardado ni tiradas. [Contrato](m15_phase16d_bedding.md). Quedan sin cubrir el acopio de estantes, hogar interior, lámpara, banco/asiento, mobiliario de confort y calibración de 16f.
 
-**2026-10-11: 16d, banco y descanso sentado.** Banco de carpintería de madera 2, colocable y persistente en el hogar; el menú contextual permite sentarse, y NPC con carpintería pueden fabricarlo/colocarlo si su casa necesita banco. Al descansar sentados recuperan fatiga a 1,6× el descanso de pie. [Contrato y captura](m15_phase16d_bedding.md). Estantes/acopio, hogar interior, lámpara, conversación sentada/pertenencia y 16e/16f quedan abiertos.
+**2026-10-11: 16d, banco y conversación sentada.** Banco de carpintería de madera 2, colocable y persistente en el hogar; permite descansar a 1,6× el ritmo de pie. La conversación familiar con alguien que descansa en un banco añade pertenencia a ambos y el scorer lo prioriza como compañía cuando hay necesidad de pertenencia. [Contrato y captura anterior del banco](m15_phase16d_bedding.md). Estantes/acopio, hogar interior, lámpara, más mobiliario de confort y 16e/16f quedan abiertos.
 
 **2026-10-10: conocimiento de madera corregido.** La búsqueda amplia de árboles para obras sólo acepta visión actual o memoria personal. Regresión negativa confirmada; no se relaja people-act-on-what-they-know.
 

@@ -6,7 +6,7 @@ import { toCheckpointRecord } from '../persistence/CheckpointRecords.ts';
 import { Building, BUILDINGS } from '../entities/Building.ts';
 import { Inventory } from '../entities/Item.ts';
 import { RECIPES, ingredientsFor, missingIngredients } from '../entities/Recipe.ts';
-import { assignedSleepSurface, sleepQualityAt } from '../world/HouseInterior.ts';
+import { assignedSleepSurface, benchConversationBelonging, seatedOnBench, sleepQualityAt } from '../world/HouseInterior.ts';
 import { telemetry } from '../core/Telemetry.ts';
 
 function fixture() {
@@ -85,6 +85,31 @@ describe('bedding and beds', () => {
     const before = sleeper.needs.fatigue;
     loaded.step();
     expect(before - sleeper.needs.fatigue).toBeGreaterThanOrEqual(0.35 * 1.6);
+  });
+
+  it('recognizes a seated family member as bench company and rewards their conversation', () => {
+    const { sim, person, house } = fixture();
+    const family = sim.livingPeople().find(candidate => candidate.id !== person.id && !candidate.isChild)!;
+    family.householdId = person.householdId;
+    const bench = new Building(BUILDINGS.bench!, house.centerX, house.centerY, person.bandId, sim.ids);
+    bench.hostId = house.id; bench.complete = true;
+    sim.buildings.push(bench); sim.buildingsById.set(bench.id, bench); sim.buildingHash.insert(bench);
+    family.action = 'rest'; family.targetBuildingId = bench.id;
+    sim.peopleHash.remove(family);
+    family.x = bench.centerX; family.y = bench.centerY;
+    family.targetX = family.x; family.targetY = family.y;
+    sim.peopleHash.insert(family);
+    expect(seatedOnBench(family, sim.buildingsById)).toBe(bench);
+    expect(seatedOnBench(person, sim.buildingsById)).toBeNull();
+    expect(benchConversationBelonging(person, family, sim.buildingsById)).toBe(2);
+    const householdId = family.householdId;
+    family.action = 'idle';
+    expect(seatedOnBench(family, sim.buildingsById)).toBeNull();
+    expect(benchConversationBelonging(person, family, sim.buildingsById)).toBe(0);
+    family.action = 'rest';
+    family.householdId = null;
+    expect(benchConversationBelonging(person, family, sim.buildingsById)).toBe(0);
+    family.householdId = householdId;
   });
 
   it('scores the bedding-to-bed ladder only for an unfinished household need', () => {

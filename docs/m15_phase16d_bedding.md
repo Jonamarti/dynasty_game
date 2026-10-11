@@ -48,8 +48,8 @@ and a real autonomous doorway-to-room trip (selection weight forced in the test,
 no player order). Six furniture tests pass. No new UI or art is introduced.
 
 This ladder supplies shared surfaces per home. Material gathering specifically
-for furniture, upgrades in a completely full room, comfort furniture, player-
-managed individual assignments and the rest of16d remain open. It is not
+for furniture, upgrades in a completely full room, additional comfort furniture,
+player-managed individual assignments and the rest of 16d remain open. It is not
 completion of the whole furnishing phase or evidence of improved household
 survival.
 
@@ -67,8 +67,8 @@ The assignment is derived from `Household.memberIds`, live people and hosted
 buildings, so it has no new checkpoint field, RNG draw or UI. The focused
 regression checks stable sorting, distinct surfaces when available, and the
 round-robin case. Individual player-managed assignments, shelf storage,
-fireplace, fat lamp, conversation while seated, and the phase 16f measurement
-remain open.
+fireplace, fat lamp, and the phase 16f measurement remain open. Seated family
+conversation is covered below.
 
 ## 2026-10-11: bench and seated rest
 
@@ -91,3 +91,15 @@ rebuilt into `public/art`. The focused capture is
 Focal furniture, tech, art and i18n tests cover the recipe, placement,
 persistence, seated recovery, Spanish strings and generated art. No cohort or
 calibration is claimed.
+
+## 2026-10-11: belonging from seated family conversation
+
+When a conversation completes between members of the same household, each
+still gets the ordinary family belonging update. If either person is actively
+resting on a complete, unruined bench hosted by a home, both get one additional
+small belonging update. The scorer favors a seated family member as company and
+adds a modest talk urge when belonging is low. `seatedOnBench` and
+`benchConversationBelonging` are shared readers, so the scoring and action
+writer agree on what counts; a standing person or a non-family conversation
+does not qualify. The focused test covers the positive case and both negative
+gates. There is no new action label or UI, so no screenshot was needed.

@@ -65,6 +65,23 @@ export function assignedSleepSurface(
   return surfaces[index % surfaces.length] ?? null;
 }
 
+/** A person is seated only while resting on the hosted bench they reached. */
+export function seatedOnBench(person: Person, buildingsById: ReadonlyMap<number, Building>): Building | null {
+  if (person.action !== 'rest' || person.targetBuildingId === null) return null;
+  const bench = buildingsById.get(person.targetBuildingId);
+  if (!bench || bench.def.id !== 'bench' || !bench.def.furniture || !bench.complete || bench.ruined ||
+      bench.hostId === null || person.distanceTo(bench) > 1) return null;
+  return bench;
+}
+
+/** Extra belonging from a family conversation where at least one person sits. */
+export function benchConversationBelonging(
+  person: Person, other: Person, buildingsById: ReadonlyMap<number, Building>,
+): number {
+  return person.householdId !== null && person.householdId === other.householdId &&
+    (seatedOnBench(person, buildingsById) !== null || seatedOnBench(other, buildingsById) !== null) ? 2 : 0;
+}
+
 /** Whether the tile World.isWalkable would use is a room tile. */
 export function houseInteriorContains(building: Building, x: number, y: number): boolean {
   const tileX = Math.floor(x), tileY = Math.floor(y);

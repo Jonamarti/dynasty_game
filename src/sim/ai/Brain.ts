@@ -45,7 +45,7 @@ import type { Animal } from '../entities/Animal.ts';
 import { chooseCravingFood } from './FoodChoice.ts';
 import { ITEMS } from '../entities/Item.ts';
 import { GARMENT_SLOTS } from '../entities/Equipment.ts';
-import { houseInteriorTiles } from '../world/HouseInterior.ts';
+import { houseInteriorTiles, seatedOnBench } from '../world/HouseInterior.ts';
 import {
   TECH, techPower, prerequisitesMet, answerPressure, workableIdea as chooseWorkableIdea, type Tech,
   AXE_TOOLS, weaponItemOf,
@@ -1564,6 +1564,11 @@ export class Brain {
         // and a couple toward anybody else in it. In opinion's units because
         // everything else in this comparison is.
         + this.bond(person, other, ctx) * 12
+        // A family member already seated on the household bench is easy
+        // company for somebody who feels detached; prefer that conversation
+        // over an equally close family member who is elsewhere.
+        + (person.householdId !== null && person.householdId === other.householdId &&
+          seatedOnBench(other, ctx.buildingsById) ? 8 : 0)
         // And toward somebody who has not heard it yet. Weaker than `bond`, on
         // purpose: news decides *which* of two equally close friends you go to,
         // it does not send you across the camp to a stranger. The person who
@@ -1609,7 +1614,9 @@ export class Brain {
         const news = untold(companion);
         add('talk', (loneliness * 1.8 * worth + 0.09 + news * NEWS_URGE)
           * (1 + regard * 0.5)
-          * this.proximityBonus(person, companion, ctx.sightRadius));
+          * this.proximityBonus(person, companion, ctx.sightRadius)
+          + (person.householdId !== null && person.householdId === companion.householdId &&
+            seatedOnBench(companion, ctx.buildingsById) ? belongingNeed(person) * 0.08 : 0));
 
         // Slander and praise: the sharpest bad story and the sharpest good
         // one this person is carrying, told to the same listener `talk`
