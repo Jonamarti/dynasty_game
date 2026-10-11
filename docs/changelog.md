@@ -1,3 +1,14 @@
+## 2026-10-11 — M15 herencia física de prendas
+
+La muerte ya transfiere los bienes al heredero o almacén con `transferAllTo`,
+que valida y revierte el inventario completo si falla una inserción. Sin
+destino, la ropa llega al montón del difunto como las mismas unidades físicas,
+sin resetear desgaste ni trabajo de remiendo. Se cubren ambos destinos, caída
+al suelo y una cuenta de prendas malformada. Los demás caminos de comercio,
+robo, tributo, escrow y tráfico fuera del mapa siguen pendientes; desgaste y
+remiendo continúan apagados. `sim:check` no arrancó porque faltan dependencias
+locales en este worktree.
+
 ## 2026-10-11 — M15: fixtures de integración de prendas
 
 Las regresiones de transferencia de inventarios inyectan el fallo mediante un

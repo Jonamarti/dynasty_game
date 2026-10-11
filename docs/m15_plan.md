@@ -1692,12 +1692,20 @@ muertes por frío**; coste declarado: ≤ 5 puntos.
 
 **Avance del 2026-10-11:** retirada autónoma por calor y bolsillos entregados en commits separados, con pruebas y capturas de hito. [Calor](m15_phase14c_heat_removal.md) y [bolsillos](m15_phase14c_pockets.md) detallan la política y los resultados. La base de condición por unidad ya existe; quedan integrar todas las transferencias, activar desgaste/remiendo, curtido, estatus opcional y las mediciones diferidas. No se declara cerrada 14c/14e ni M15.
 
+**Avance del 2026-10-11 — herencia física:** `settleEstate` mueve el inventario
+completo con transferencia atómica al heredero o al almacén de hogar. Si no hay
+destino, las prendas se sueltan como filas físicas con su identidad, condición
+y progreso de remiendo intactos. Las pruebas cubren ambos destinos, la caída y
+el rechazo de cuentas incoherentes antes de mutar. Quedan trueque/robo/tributo,
+otros movimientos entre edificios, escrow y tráfico fuera del mapa; por eso
+desgaste/remiendo sigue apagado.
+
 **Avance del 2026-10-11 — base de condición física:** `Inventory` crea una
 unidad íntegra por prenda, permite extraerla/devolverla con condición y trabajo
 de remiendo, y conserva/valida las unidades en el registro explícito de
 transferencia. Los registros antiguos reciben unidades íntegras. Todavía no se
-activa desgaste ni remiendo: faltan almacenes, trueque, robo, herencia, escrow
-y tráfico fuera de mapa, además de cerrar la identidad entre inventarios.
+activa desgaste ni remiendo: faltan trueque/robo/tributo, escrow y tráfico
+fuera de mapa, además de cerrar la identidad entre inventarios.
 [Diseño y límites](m15_garment_condition_design.md).
 
 **Avance del 2026-10-11 — prendas en montones:** Equipo ahora referencia la

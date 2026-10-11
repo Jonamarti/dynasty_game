@@ -18,6 +18,7 @@ import type { Person } from '../entities/Person.ts';
 import { ELDER_YEARS, SKILLS, TRAITS, TRAIT_SPREAD } from '../entities/Person.ts';
 import type { Household } from '../entities/Household.ts';
 import type { Building } from '../entities/Building.ts';
+import { ITEMS, type GarmentUnit } from '../entities/Item.ts';
 import { houseInteriorContains } from '../world/HouseInterior.ts';
 import type { RNG } from '../core/RNG.ts';
 import type { PopulationConfig } from '../core/Config.ts';
@@ -370,16 +371,43 @@ export function settleEstate(
   deceased: Person,
   heir: Person | null,
   home: Building | null,
-  dropAt: (x: number, y: number, itemId: string, count: number) => void
+  dropAt: (x: number, y: number, itemId: string, count: number, garmentUnits?: readonly GarmentUnit[]) => void
 ): number {
+  // Inventory-to-inventory inheritance is an ownership transfer, not a new
+  // acquisition. The atomic helper validates the complete garment rows before
+  // moving any stack, so malformed estates cannot partly change hands.
+  if (heir) {
+    const moved = deceased.inventory.transferAllTo(heir.inventory);
+    if (moved > 0) telemetry.count('inherited_goods', moved);
+    return moved;
+  }
+  if (home) {
+    const moved = deceased.inventory.transferAllTo(home.store);
+    if (moved > 0) telemetry.count('inherited_goods', moved);
+    return moved;
+  }
+
+  // With nowhere to store goods, the deceased's inventory is dropped at their
+  // feet. Garments still travel as their exact rows; generic remove/add here
+  // would silently reset condition on the ground.
+  deceased.inventory.transferSnapshot(); // validate all counts/rows before mutation
   const goods = deceased.inventory.entries();
   let moved = 0;
 
   for (const [itemId, count] of goods) {
-    const taken = deceased.inventory.remove(itemId, count);
-    if (heir) heir.inventory.add(itemId, taken);
-    else if (home) home.store.add(itemId, taken);
-    else dropAt(deceased.x, deceased.y, itemId, taken);
+    if (ITEMS[itemId]?.garment) {
+      const units: GarmentUnit[] = [];
+      for (let i = 0; i < count; i++) {
+        const unit = deceased.inventory.takeGarmentUnit(itemId);
+        if (!unit) throw new RangeError('estate garment count changed during drop');
+        units.push(unit);
+      }
+      dropAt(deceased.x, deceased.y, itemId, units.length, units);
+    } else {
+      const taken = deceased.inventory.remove(itemId, count);
+      dropAt(deceased.x, deceased.y, itemId, taken);
+    }
+    const taken = count;
     moved += taken;
   }
 

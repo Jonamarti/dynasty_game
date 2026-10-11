@@ -1869,7 +1869,7 @@ export class Simulation {
       ? null
       : this.buildingsById.get(household.homeBuildingId) ?? null;
 
-    settleEstate(person, heir, home, (x, y, itemId, count) => this.dropAt(x, y, itemId, count));
+    settleEstate(person, heir, home, (x, y, itemId, count, units) => this.dropAt(x, y, itemId, count, units));
 
     if (household) {
       household.remove(person.id);

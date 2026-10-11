@@ -18,6 +18,10 @@ acceptance uses the same transfer API, and its validated inventory snapshot
 retains unit ID, condition, and banked repair progress. A record whose garment
 counts do not match its physical rows is rejected. Household home-store merges
 use an atomic whole-inventory transfer, with rollback if an insertion fails.
+The 2026-10-11 estate-transfer slice uses the same atomic whole-inventory path
+for inheritance to a living heir or the household home. Estates with neither
+destination drop physical garment rows into the ground pile. Inconsistent
+garment counts are rejected before any heir/home transfer or ground drop.
 Other internal building transfers remain pending.
 
 This is a foundation only: the existing gameplay transfer seams listed below
@@ -77,7 +81,7 @@ The main movement seams found in the current tree are:
 | Give, trade, steal, amends, tribute | `Simulation.handOver`, `doGive`, `doTrade`, `doSteal`, `doMakeAmends`, `Simulation` tribute path | Move selected garment units with condition; never recreate them with plain `add`. Pending. |
 | Store and withdraw | `Building.accept`, `Simulation.storeItem` / `takeItem`, `ActionSystem.doStore` / `doTake` | **Delivered for person↔building store** and household home-store merges: direct/autonomous paths preserve condition and snapshots; whole-inventory merge is validated and rolls back both sides on failure. Other building-to-building transfers remain pending. |
 | Drop, pickup, carry overflow | `Simulation.drop`, `Simulation.takeFromPile`, `Simulation.dropAt`, `Carry.reconcileCarry` | **Delivered:** worn slot references an exact unit; drop, pickup and carry overflow move unit rows and preserve condition/progress. Generic `dropAt` still creates pristine garments for produced goods. |
-| Death and inheritance | `LifeSystem.settleEstate`, called from `Simulation` death handling | Preserve units to heir or home store; only a genuinely lost unit may be discarded. Pending. |
+| Death and inheritance | `LifeSystem.settleEstate`, called from `Simulation` death handling | **Delivered:** whole estate moves atomically to heir/home, or garment rows drop intact at the deceased's feet. |
 | Comarca staging and restore | `ComarcaInventoryTransfer.take`, `consume`, `restore`, `toRecord` | Include condition in validated escrow graphs and restore it atomically with stacks/spoilage. |
 | World traffic / traveller cargo | `WorldTrafficCoordinator` plus `WorldState` cargo staging and return | Preserve condition through transit inventory and both directions of travel. |
 | Crafting and explicit consumption | `ActionSystem.doCraft` and other `inventory.remove` consumers | New garment outputs are pristine; a garment used as an ingredient is explicitly destroyed, not silently detached from its condition. |

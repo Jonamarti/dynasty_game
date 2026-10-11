@@ -6,6 +6,8 @@ import { DEFAULT_CONFIG } from '../core/Config.ts';
 import { Person } from '../entities/Person.ts';
 import { RNG } from '../core/RNG.ts';
 import { reconcileCarry } from '../core/Carry.ts';
+import { settleEstate } from '../systems/LifeSystem.ts';
+import { BUILDINGS, Building } from '../entities/Building.ts';
 
 describe('garment condition ownership foundation', () => {
   it('moves one physical garment with its condition and banked repair work', () => {
@@ -228,5 +230,66 @@ describe('garment condition ownership foundation', () => {
     expect(drops.length).toBeGreaterThan(0);
     expect(drops.every(drop => drop.count === drop.units?.length)).toBe(true);
     expect(drops.flatMap(drop => drop.units ?? []).some(unit => unit.unitId === worn.unitId)).toBe(false);
+  });
+
+  it('inherits exact worn and unworn garment rows without recreating them', () => {
+    const deceased = new Person('Deceased', 8, 8, 0, new RNG('estate-garment'));
+    const heir = new Person('Heir', 9, 8, 0, new RNG('estate-heir'));
+    deceased.inventory.add('wool_cloak', 2);
+    const [worn, spare] = deceased.inventory.garmentUnitsOf('wool_cloak');
+    deceased.equipment.cloak = { item: 'wool_cloak', count: 1, unitId: worn!.unitId };
+    deceased.inventory.setGarmentUnitCondition(worn!.unitId, 0.38, 67);
+    deceased.inventory.setGarmentUnitCondition(spare!.unitId, 0.81, 12);
+    const before = deceased.inventory.garmentUnitsOf('wool_cloak');
+
+    expect(settleEstate(deceased, heir, null, () => { throw new Error('unexpected drop'); })).toBe(2);
+    expect(deceased.inventory.count('wool_cloak')).toBe(0);
+    expect(heir.inventory.count('wool_cloak')).toBe(2);
+    expect(heir.inventory.garmentUnitsOf('wool_cloak')).toEqual(before);
+    expect(heir.inventory.ownsGarmentUnit('wool_cloak', worn!.unitId)).toBe(true);
+  });
+
+  it('drops exact garment rows at the deceased feet when there is no heir or home', () => {
+    const deceased = new Person('Deceased', 8, 8, 0, new RNG('estate-ground'));
+    deceased.inventory.add('fur_hat', 2);
+    const [first, second] = deceased.inventory.garmentUnitsOf('fur_hat');
+    deceased.inventory.setGarmentUnitCondition(first!.unitId, 0.24, 91);
+    deceased.inventory.setGarmentUnitCondition(second!.unitId, 0.73, 9);
+    const drops: GarmentUnit[] = [];
+
+    expect(settleEstate(deceased, null, null, (_x, _y, itemId, count, units) => {
+      expect(itemId).toBe('fur_hat');
+      expect(count).toBe(2);
+      drops.push(...(units ?? []));
+    })).toBe(2);
+    expect(deceased.inventory.count('fur_hat')).toBe(0);
+    expect(drops).toEqual([first, second].map((unit, index) => ({ ...unit!, wear: index ? 0.73 : 0.24, repairProgress: index ? 9 : 91 })));
+  });
+
+  it('rejects an inconsistent estate before heir or ground ownership changes', () => {
+    const deceased = new Person('Deceased', 8, 8, 0, new RNG('estate-invalid'));
+    const heir = new Person('Heir', 9, 8, 0, new RNG('estate-invalid-heir'));
+    deceased.inventory.add('fur_hat', 1);
+    const malformed = deceased.inventory as unknown as { garmentUnits: GarmentUnit[] };
+    malformed.garmentUnits.push({ ...malformed.garmentUnits[0]!, unitId: 'extra-row' });
+    const dropped: GarmentUnit[] = [];
+
+    expect(() => settleEstate(deceased, heir, null, (_x, _y, _id, _count, units) => dropped.push(...(units ?? []))))
+      .toThrow(/garment units do not match garment counts/);
+    expect(deceased.inventory.count('fur_hat')).toBe(1);
+    expect(heir.inventory.count('fur_hat')).toBe(0);
+    expect(dropped).toEqual([]);
+  });
+
+  it('sends garment rows to the household home store when there is no heir', () => {
+    const deceased = new Person('Deceased', 8, 8, 0, new RNG('estate-home'));
+    const home = new Building(BUILDINGS.storage_pit!, 8, 8, 0);
+    deceased.inventory.add('fur_hat', 1);
+    const unit = deceased.inventory.garmentUnitsOf('fur_hat')[0]!;
+    deceased.inventory.setGarmentUnitCondition(unit.unitId, 0.46, 33);
+
+    expect(settleEstate(deceased, null, home, () => { throw new Error('unexpected drop'); })).toBe(1);
+    expect(deceased.inventory.count('fur_hat')).toBe(0);
+    expect(home.store.garmentUnitsOf('fur_hat')).toMatchObject([{ wear: 0.46, repairProgress: 33 }]);
   });
 });
