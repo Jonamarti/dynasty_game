@@ -51,7 +51,7 @@ describe('sling ammunition', () => {
     expect(RECIPES.atlatl_darts!.output).toEqual({ atlatl_dart: 2 });
   });
 
-  it('spends one carried flint only when a hare is successfully hit', () => {
+  it('spends one carried flint only when the hare is successfully hit', () => {
     const sim = new Simulation(SMALL);
     const hare = sim.animals.find(animal => animal.species === 'hare')!;
     quietWildlife(sim, hare);
@@ -60,9 +60,10 @@ describe('sling ammunition', () => {
     expect(sim.order(person, 'hunt', { animalId: hare.id })).toBe(true);
 
     vi.spyOn(sim['actionRng'], 'chance').mockReturnValue(true);
-    for (let i = 0; i < 10 && hare.alive; i++) sim.step();
+    for (let i = 0; i < 4 && hare.health === hare.def.health; i++) sim.step();
 
-    expect(hare.alive).toBe(false);
+    expect(hare.alive).toBe(true);
+    expect(hare.health).toBeLessThan(hare.def.health);
     expect(person.inventory.count('flint')).toBe(1);
   });
 
@@ -121,9 +122,10 @@ describe('sling ammunition', () => {
     expect(sim.order(person, 'hunt', { animalId: hare.id })).toBe(true);
 
     vi.spyOn(sim['actionRng'], 'chance').mockReturnValue(true);
-    for (let i = 0; i < 10 && hare.alive; i++) sim.step();
+    for (let i = 0; i < 4 && hare.health === hare.def.health; i++) sim.step();
 
-    expect(hare.alive).toBe(false);
+    expect(hare.alive).toBe(true);
+    expect(hare.health).toBeLessThan(hare.def.health);
     expect(person.inventory.count(ammo)).toBe(1);
   });
 

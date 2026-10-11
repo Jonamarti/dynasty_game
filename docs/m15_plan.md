@@ -2450,6 +2450,15 @@ existentes `Light.lightAt` y la antorcha (fase 12); no existen, y los
 depredadores evitan hoy un `hearth` o un techo. Coste medido de 23e: −11 puntos
 de supervivencia (20 semillas); ver `changelog.md` y `bugs.md`.
 
+**Avance del 2026-10-12 — herida y huida de la presa.** `doHunt` ya no es
+estrictamente «muere o falla»: el primer impacto acertado hiere a la presa, la
+alarma para que huya y registra al cazador en `hurtBy`; un impacto acertado
+posterior la abate. Se conserva el único dado de acierto, sin tocar sus pesos
+ni el orden de RNG. La herida usa un punto de salud como estado mínimo que
+distingue el impacto no letal; no se midió ni ajustó su balance. Un fallo sigue
+sin dejar rencor, daño ni consumo de proyectil. Pruebas focales positivas y
+negativas; no hubo cohortes ni calibración.
+
 **Detalle en `m14_plan.md` fase 9.** La hierba como capa (`World.grass`), segar
 para paja y cuerda, herbívoros que pastan y se reproducen con un techo que sale
 del pasto, depredadores (lobo en jauría, oso, lince) en su propia pasada,

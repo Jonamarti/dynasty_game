@@ -67,6 +67,18 @@ botánica `bare`. Un arbusto agotado en su estación de fruto ya no enseña una
 lección falsa. Prueba con especie de verano agotada dos años consecutivos;
 `npm test` focal pendiente al integrar porque este worktree no lleva
 dependencias instaladas.
+## 2026-10-12 — m15: la caza puede herir y hacer huir a la presa (0.15.84-alpha)
+
+Antes un impacto humano mataba al animal de inmediato, lo que impedía que una
+presa herida escapara y recordara a su cazador. El primer impacto acertado ahora
+retira un punto de salud, marca `hurtBy` y la alarma para que huya; el siguiente
+impacto acertado la abate. Los fallos conservan el estado de salud y el rencor,
+y no gastan proyectil. Se reutiliza el dado de acierto actual y no se ajustan
+pesos. Pruebas focales positivas y negativas; typecheck y suite unitaria
+focales. `sim:check` mantiene los dos fallos conocidos del escenario base:
+`cravings-steer-the-diet` y `perf-budget` (569 pasos/s frente al suelo de
+1.678). No hubo calibración ni cohortes. No cambia texto ni controles visibles;
+no se necesitó captura.
 
 ## 2026-10-11 — M15 herencia física de prendas
 

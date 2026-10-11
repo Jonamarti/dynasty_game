@@ -3200,6 +3200,19 @@ export class ActionSystem {
     const ammoItem = weaponAmmoItem(weaponItem);
     if (ammoItem !== null) person.inventory.remove(ammoItem, 1);
 
+    // A landed shot does not always bring an animal down. Keep this first
+    // wound deliberately small: it records the missing state in the old
+    // kill-or-miss model without changing any hit odds or adding RNG draws.
+    // The animal bolts on the wildlife pass, and the committed hunter can
+    // pursue it; the next landed shot finishes a wounded quarry.
+    if (animal.health >= animal.def.health) {
+      animal.health = Math.max(0, animal.health - 1);
+      animal.alarmedUntil = ctx.tick + 90;
+      rememberHurt(animal, person, ctx.tick);
+      telemetry.count('hunt_wounded');
+      return;
+    }
+
     animal.health = 0;
     animal.alive = false;
     ctx.onAnimalKilled(animal, person);

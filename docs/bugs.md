@@ -1009,10 +1009,11 @@ investigó el selector en este cambio.
   dueño para extraños (`sightIntruders`) y aparta a los depredadores de quien
   lo lleva al lado, pero sin `Light.sightOf` la guardia de la banda no tiene un
   término de depredador propio.
-- **Solo un caso pone `hurtBy`** (el animal acorralado que se vuelve contra el
-  cazador). Un animal herido que huye sin matar a nadie no deja rencor porque
-  no hay herida sin matar: `doHunt` mata o falla. Y la caza a oscuras (12b)
-  que fallaba más aún no existe.
+- **Resuelto el 2026-10-12:** antes, `doHunt` solo mataba o fallaba, así que una
+  presa nunca podía huir herida ni recordar a su cazador. El primer impacto
+  acertado ahora deja una herida mínima, alarma de huida y `hurtBy`; otro acierto
+  la mata. Un fallo no estampa rencor ni consume munición. La probabilidad y el
+  orden de RNG no cambian; la cantidad de daño no se calibró.
 - **`moods-move-choices` pasa a rojo en la pasada por defecto de `sim:check`**
   (2,2% de charlas en el tercil de poca pertenencia contra 2,5% en el alto,
   con 865 muestras cada uno) tras 23e: antes de esta fase era uno de los 6

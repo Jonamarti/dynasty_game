@@ -699,7 +699,7 @@ export function grudgeOf(animal: Animal, tick: number, anyTime = false): number 
   return animal.hurtBy;
 }
 
-/** Records that `person` put this animal in a corner, so it remembers. */
+/** Records that `person` wounded this animal, so a predator can remember its hunter. */
 export function rememberHurt(animal: Animal, person: Person, tick: number): void {
   animal.hurtBy = person.id;
   animal.hurtAt = tick;
