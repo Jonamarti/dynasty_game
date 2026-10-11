@@ -1,13 +1,22 @@
+**Avance del 2026-10-12 — 16d, hogar interior:** `fireplace` usa barro 4 y
+sílex 2 y solo se coloca dentro de la casa terminada del hogar propio. Como
+hogar permanente sin `fuelRemaining`, da calor y luz local, sirve a las recetas
+de estación `hearth` y enciende el lector de humo junto a un secadero. Host y
+arte generado; pruebas cubren negativas, cocina, ahumado y checkpoint. NPC
+reciben los lectores, pero no buscan ni construyen este mueble autónomamente.
+Siguen abiertos más muebles, autonomía y fases 16e/16f; sin calibración ni
+cohortes. [Contrato y captura](m15_phase16d_bedding.md).
+
 **Avance del 2026-10-12 — 16d, lámpara autónoma:** tras completar cama/lecho,
 banco y estante, un adulto con fuego y materiales puede fabricar y colocar
 una lámpara de grasa con su carga inicial normal. La luz nocturna existente
-la lee y dibuja; cada hogar obtiene como máximo una. La recarga autónoma y el
-hogar interior siguen abiertos. Sin nueva interfaz, arte, estado guardado ni
+la lee y dibuja; cada hogar obtiene como máximo una. La recarga autónoma y otros
+muebles siguen abiertos. Sin nueva interfaz, arte, estado guardado ni
 tiradas; no se afirma calibración. [Contrato](m15_phase16d_bedding.md).
 **Avance del 2026-10-12 — fase 20, conocimiento estacional:** las observaciones ya no enseñan que una estación fructífera es estéril cuando el jugador agotó el arbusto. Solo se registra como ausencia estacional una especie en su fase realmente desnuda; una planta vacía durante su fase de fruto no aporta evidencia. Prueba focal por especie y temporada. No es un ajuste de supervivencia ni se ejecutaron cohortes.
 
-**Avance del 2026-10-12 — 16d, estante del hogar:** `shelf` de carpintería, con 20 unidades de almacenamiento y el ciclo normal de guardar/retirar del inventario. Se fabrica y coloca en la casa familiar mediante los lectores existentes; NPC con materiales y espacio pueden construirlo cuando su hogar aún no tiene uno. El host y el inventario se guardan en checkpoint. [Contrato](m15_phase16d_bedding.md). Siguen pendientes hogar interior, más muebles, la autonomía completa del mobiliario y 16e/16f; no se afirma mejora medida ni se ejecutaron cohortes.
 **Avance del 2026-10-12 — propiedad física de prendas en viajes y exigencia:** los checkpoints de personas conservan el inventario en ida y regreso; amenazas y rescates transfieren unidades físicas atómicamente, y el haul a obras usa el helper compartido. Manifiestos de caravana rechazan prendas y las dejan con el viajero. [Contrato fase 35](m15_phase35_journeys.md) y [diseño de condición](m15_garment_condition_design.md). Desgaste/remiendo continúan apagados: la auditoría halló que `doPrototype` consume `fur_coat` para la primera muestra de `toggles` sin reconciliar una capa que estuviera vestida.
+**Avance del 2026-10-12 — 16d, estante del hogar:** `shelf` de carpintería, con 20 unidades de almacenamiento y el ciclo normal de guardar/retirar del inventario. Se fabrica y coloca en la casa familiar mediante los lectores existentes; NPC con materiales y espacio pueden construirlo cuando su hogar aún no tiene uno. El host y el inventario se guardan en checkpoint. [Contrato](m15_phase16d_bedding.md). Siguen pendientes más muebles, autonomía completa del mobiliario y 16e/16f; no se afirma mejora medida ni se ejecutaron cohortes.
 **Avance del 2026-10-11 — 16d, lámpara de grasa:** mueble `fat_lamp` de fuego, con arte generado, colocación solo en la casa del hogar, carga de 1200 ticks por dos grasas y recarga contextual. El lector existente `lightAt` y la escena nocturna del renderer usan la luz local; no aporta calor ni sustituye al hogar. Combustible/host persisten en checkpoints y sus negativas tienen razón. [Contrato y captura](m15_phase16d_bedding.md). Quedan hogar interior, más muebles de confort, autonomía completa del mobiliario y 16e/16f; no se afirma mejora medida ni se ejecutaron cohortes.
 
 **Avance del 2026-10-11 — 14c, fusión de almacenes:** al fusionar hogares, el almacén de origen se combina atómicamente con el del hogar destino mediante una transferencia de inventario validada. Se conserva el estado de cada prenda y se reemiten IDs locales en caso de colisión. Una incoherencia de identidad o cantidad rechaza la fusión antes de cambiar hogares/riqueza; un fallo de inserción revierte ambos inventarios. El [contrato de condición](m15_garment_condition_design.md) recoge también los regalos, robo, amends, tributo, escrow y tráfico de personas ya cubiertos; los manifiestos de caravana siguen sin admitir prendas. Desgaste/remiendo continúa apagado.
@@ -1996,7 +2005,7 @@ es posible si nadie del hogar lo ve.
 | lecho (`bedding`) | ninguna | paja 4 o piel 2 | dormir a 1,0 (16e). El lecho de hierba de Sibudu tiene ~77.000 años |
 | cama (`bed`) | `carpentry` | madera 3, lecho 1 | dormir a 1,1 (16e) |
 | estante (`shelf`) | `carpentry` | madera 2 | **entregado:** 20 de almacenamiento en el mueble, incluido en el inventario normal de `Building.store` |
-| hogar interior (`fireplace`) | `fireplace` (sub-red Fuego) | barro 4, sílex 2 | calor y luz dentro de la casa (`Light`), estación `hearth` para cocinar, y ahumar con un secadero al lado |
+| hogar interior (`fireplace`) | `fireplace` (sub-red Fuego) | barro 4, sílex 2 | **entregado:** hogar permanente con calor/luz, estación `hearth` para cocinar y fuego cercano para ahumar con un secadero |
 | lámpara de grasa (`fat_lamp`) | `fat_lamp` (sub-red Fuego; Paleolítico superior, las lámparas de piedra de Lascaux) | sílex 1 y grasa 2 por carga | luz sin calor, de radio pequeño y larga duración: coser y tallar de noche en casa (el lector del trabajo fino de la fase 12b). Se recarga con grasa |
 | asiento y banco (`bench`) | `carpentry` | madera 2 | descansar sentado dentro recupera más; hablar sentados dentro suma pertenencia (fase 5b) |
 | secadero (`drying_rack`) | `preserving` | palos 4, cuerda 1 | fase 15; se puede poner dentro |

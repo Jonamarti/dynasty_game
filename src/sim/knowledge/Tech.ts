@@ -220,6 +220,8 @@ export const TECHS = [
   // M15 phase 26e: earthworks opens the first designed ditch; later designs
   // join only when their own readers are ready.
   'earthworks',
+  // M15 phase 16d: the household fire web has the hearth and lamp together.
+  'fireplace', 'fat_lamp',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -338,7 +340,7 @@ export type TechKind = 'practice' | 'device';
  * a node lives never changes what anyone can discover, which is why moving a
  * node between webs is bit-identical.
  */
-export type WebId = 'main' | 'arms' | 'field' | 'domestication' | 'kitchen' | 'metal' | 'preservation' | 'clothing';
+export type WebId = 'main' | 'arms' | 'field' | 'domestication' | 'kitchen' | 'metal' | 'preservation' | 'clothing' | 'fire';
 
 export interface WebDef {
   id: WebId;
@@ -362,6 +364,9 @@ export const WEBS: Record<WebId, WebDef> = {
   preservation: { id: 'preservation', label: 'Preservation', gate: 'preserving', color: '#a88a52' },
   // M15 phase 14c: the clothing recipes open from the existing clothing idea.
   clothing: { id: 'clothing', label: 'Clothes', gate: 'clothing', color: '#b88775' },
+  // M15 phase 16d: `firemaking` already teaches portable warmth; this branch
+  // contains the two built household fire fixtures and their distinct uses.
+  fire: { id: 'fire', label: 'Fire', gate: 'firemaking', color: '#e57c43' },
 };
 
 /** The webs that hang off a gate, in the order a screen should list them. */
@@ -647,6 +652,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   firemaking: {
     id: 'firemaking', label: 'Firemaking', domain: 'fire',
+    opens: 'fire',
     age: 'middle_palaeolithic', firstKnown: 'about 400,000 years ago',
     kind: 'device',
     requires: [], difficulty: 0.35, skill: 'knap',
@@ -2741,6 +2747,39 @@ export const TECH: Record<Tech, TechDef> = {
       'Counting what a trade is worth on both sides, instead of by feel. A band ' +
       'that knows it strikes a fairer bargain, and is the one that can send out a caravan.',
   },
+  // M15 phase 16d: the indoor-fire web has two readers, so its gate opens only
+  // alongside this first real household fireplace.
+  fireplace: {
+    id: 'fireplace', label: 'Indoor fireplace', domain: 'fire', web: 'fire',
+    age: 'neolithic', firstKnown: 'about 12,000 years ago',
+    kind: 'device',
+    requires: ['firemaking'], difficulty: 0.45, skill: 'build',
+    prototype: { mud: 4, flint: 2 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'firemaking' }, { kind: 'holding', item: 'mud' },
+                { kind: 'holding', item: 'flint' }, { kind: 'doing', action: 'build' }],
+        weight: 1.0, story: 'lined the household hearth with mud and stone so its fire could burn inside' },
+      { needs: [{ kind: 'knows', tech: 'firemaking' }, { kind: 'holding', item: 'mud' },
+                { kind: 'feeling', need: 'cold' }, { kind: 'doing', action: 'build' }],
+        weight: 0.6, story: 'kept a tended fire in the room where the family slept through winter' },
+    ],
+    description: 'A clay-and-flint hearth built inside a household home for warmth, light and cooking.',
+  },
+  fat_lamp: {
+    id: 'fat_lamp', label: 'Fat lamp', domain: 'fire', web: 'fire', tier: 'craft',
+    age: 'upper_palaeolithic', firstKnown: 'about 17,000 years ago',
+    kind: 'device', requires: ['firemaking'], difficulty: 0.25, skill: 'build',
+    prototype: { flint: 1, fat: 2 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'firemaking' }, { kind: 'holding', item: 'fat' },
+                { kind: 'holding', item: 'flint' }, { kind: 'doing', action: 'craft' }],
+        weight: 1.0, story: 'scooped animal fat into a hollow stone and caught its wick with a spark' },
+      { needs: [{ kind: 'knows', tech: 'firemaking' }, { kind: 'holding', item: 'fat' },
+                { kind: 'feeling', need: 'company' }, { kind: 'season', season: 'winter' }],
+        weight: 0.5, story: 'wanted a steady light for the long nights spent with family indoors' },
+    ],
+    description: 'A stone lamp that burns animal fat for a small, long-lasting light.',
+  },
 };
 
 /** The web a technology lives in (`'main'` unless its entry says otherwise). */
@@ -2852,9 +2891,13 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
     site: 'ActionSystem.doAttack, via protectionOf; RECIPES.hide_armour',
   },
   firemaking: {
-    summary: 'Warmth you carry with you, wherever you are standing.',
-    site: 'NeedsSystem.update, via warmthFrom',
+    summary: 'Fire carried as warmth, and the idea that opens built household fire.',
+    site: 'NeedsSystem.update via warmthFrom; TECH.firemaking opens the Fire web',
   },
+  fireplace: { summary: 'A household hearth warms and lights the room and serves cooking and smoking.',
+    site: 'BUILDINGS.fireplace; Light.hearthLight/hearthNear; NeedsSystem.update; stationKind hearth' },
+  fat_lamp: { summary: 'A small stone lamp burns fat to light the household at night.',
+    site: 'BUILDINGS.fat_lamp and RECIPES.fat_lamp; Light.fatLampLight' },
   cordage: {
     summary: 'A net and a carrying strap: more in one trip. And rope, to tie up somebody held down.',
     site: 'RECIPES.rope and rope_thatch; the equipped bundle in sim/core/Carry.ts; ActionSystem.doBind',

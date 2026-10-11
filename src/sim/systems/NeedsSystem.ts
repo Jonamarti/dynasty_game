@@ -21,6 +21,7 @@ import { telemetry } from '../core/Telemetry.ts';
 const COLD_HEALTH_START = 75;
 const COLD_HEALTH_PER_POINT = 0.001;
 import { warmthFrom } from '../knowledge/Tech.ts';
+import { hearthLight } from '../core/Light.ts';
 import { malnutrition, MALNUTRITION_HEALTH_CEILING_DROP, MALNUTRITION_RECOVERY_PENALTY } from '../core/Macros.ts';
 
 /**
@@ -220,7 +221,7 @@ export class NeedsSystem {
       let hearth = 0;
       if (buildingHash) {
         for (const fire of buildingHash.queryRadius(person.x, person.y, 3, [])) {
-          if (fire.complete && !fire.ruined && fire.def.id === 'hearth' &&
+          if (hearthLight(fire) !== null &&
               Math.hypot(fire.x + 0.5 - person.x, fire.y + 0.5 - person.y) <= 3) {
             hearth = 0.35;
             telemetry.count('hearth_warm_samples');

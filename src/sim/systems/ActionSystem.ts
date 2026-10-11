@@ -33,7 +33,7 @@ import { companionBonus, rememberHurt } from './WildlifeSystem.ts';
 import type { SpatialHash } from '../core/SpatialHash.ts';
 import type { SocialSystem } from '../social/SocialSystem.ts';
 import {
-  isTrap, isHeap, isHerd, isWell, isStructure, type Building,
+  isTrap, isHeap, isHerd, isWell, isStructure, isStationFor, type Building,
 } from '../entities/Building.ts';
 import { SOW_SEED, SPREAD_LOAD, SOW_TICKS, REAP_TICKS, harvestYield } from '../entities/Field.ts';
 import { activeDraftLease, availableDraftHeads, claimDraftTeam, findDraftPen, hasBusyDraftPen, reservedDraftHeads, hasSeedContainer } from './Draft.ts';
@@ -486,7 +486,7 @@ function answersColdTech(tech: Tech): boolean {
 function answersColdBuilding(building: Building): boolean {
   // A completed fire warms nearby people just as a roof shelters the people
   // inside it; `shelter` alone cannot identify the hearth.
-  return building.def.shelter > 0 || building.def.id === 'hearth';
+  return building.def.shelter > 0 || building.def.id === 'hearth' || building.def.id === 'fireplace';
 }
 
 function answersColdProject(person: Person, ctx: ActionContext): boolean {
@@ -4833,7 +4833,7 @@ export class ActionSystem {
     if (recipe.station !== undefined) {
       const stationId = recipe.station;
       const station = this.reachBuilding(person, ctx, {
-        ok: building => building.complete && !building.ruined && building.def.id === stationId,
+        ok: building => building.complete && !building.ruined && isStationFor(building.def, stationId),
         reason: 'no_station_' + stationId,
       }, 'trespass');
       if (!station) return;

@@ -23,7 +23,7 @@ import { canDigBankMud, DIG_TO, PILE_TO, digTool, digToolFailure, earthworkWorkR
 import type { ResourceNode } from '../entities/ResourceNode.ts';
 import type { World } from '../core/World.ts';
 import type { Building } from '../entities/Building.ts';
-import { BUILDINGS, isStation, isStructure } from '../entities/Building.ts';
+import { BUILDINGS, isStation, isStationFor, isStructure } from '../entities/Building.ts';
 import { canWork } from '../knowledge/Ore.ts';
 import { SOW_SEED } from '../entities/Field.ts';
 import type { Tree } from '../entities/Tree.ts';
@@ -1210,7 +1210,7 @@ function buildingActions(
     if (isStation(building.def)) {
       const crafts: ActionOption[] = [];
       for (const recipe of Object.values(RECIPES)) {
-        if (recipe.station !== building.def.id) continue;
+        if (recipe.station === undefined || !isStationFor(building.def, recipe.station)) continue;
         if (recipeTechPower(actor, recipe) <= 0) continue;
         const option = craftOption(actor, recipe, ctx, building);
         // Still a refusal, unlike every other verb on this building, and on

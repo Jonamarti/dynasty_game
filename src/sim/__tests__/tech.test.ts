@@ -18,7 +18,7 @@ import {
   axeFactor, buildFactor, reapFactor, calendarFactor, answerPressure, workableIdea,
   WEBS, SUB_WEBS, webOf, techsOfWeb, type Tech,
 } from '../knowledge/Tech.ts';
-import { BUILDINGS, isStation } from '../entities/Building.ts';
+import { BUILDINGS, isStation, isStationFor } from '../entities/Building.ts';
 import { ITEMS } from '../entities/Item.ts';
 import { RESOURCE_DEFS } from '../entities/ResourceNode.ts';
 import { TREES } from '../entities/Tree.ts';
@@ -178,7 +178,7 @@ describe('the tech table', () => {
     for (const def of Object.values(BUILDINGS)) {
       if (!isStation(def)) continue;
       expect(
-        Object.values(RECIPES).some(recipe => recipe.station === def.id),
+        Object.values(RECIPES).some(recipe => recipe.station !== undefined && isStationFor(def, recipe.station)),
         def.id + ' is a station with no recipe'
       ).toBe(true);
     }
@@ -633,6 +633,7 @@ describe('the sub-webs (M15 phase 13a)', () => {
       expect(web.label.length).toBeGreaterThan(0);
       expect(web.color).toMatch(/^#[0-9a-f]{6}$/i);
     }
-    expect(SUB_WEBS.map(web => web.id)).toEqual(['arms', 'field', 'domestication', 'kitchen', 'metal', 'preservation', 'clothing']);
+    expect(SUB_WEBS.map(web => web.id)).toEqual(['arms', 'field', 'domestication', 'kitchen', 'metal', 'preservation', 'clothing', 'fire']);
+    expect(techsOfWeb('fire')).toEqual(['fireplace', 'fat_lamp']);
   });
 });

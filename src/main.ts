@@ -49,7 +49,7 @@ import {
 } from './sim/ai/ActionCatalog.ts';
 import { TECH, techPower, type Tech } from './sim/knowledge/Tech.ts';
 import type { Person } from './sim/entities/Person.ts';
-import { BUILDINGS, type Building, type BuildingDef } from './sim/entities/Building.ts';
+import { BUILDINGS, isStationFor, type Building, type BuildingDef } from './sim/entities/Building.ts';
 import { earthworkTiles } from './sim/entities/Earthwork.ts';
 import { ITEMS } from './sim/entities/Item.ts';
 import { JOBS } from './sim/entities/Job.ts';
@@ -1842,7 +1842,7 @@ function nearestStation(who: Person, stationId: string, requiresFire = false, re
   let best: Building | null = null;
   let bestDistance = Infinity;
   for (const building of sim.buildings) {
-    if (!building.complete || building.ruined || building.def.id !== stationId) continue;
+    if (!building.complete || building.ruined || !isStationFor(building.def, stationId)) continue;
     if (requiresFire && !sim.hearthNear(building.centerX, building.centerY, 3)) continue;
     if (requiresSaltWater && !saltSourceNear(sim.world, building.x, building.y, building.def.width, building.def.height)) continue;
     if (sim.mayUseBuilding(who, building).watched) continue;

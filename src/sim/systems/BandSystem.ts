@@ -27,7 +27,7 @@ import type { Person } from '../entities/Person.ts';
 import { averageRenown, type Household } from '../entities/Household.ts';
 import type { Band } from '../core/Simulation.ts';
 import {
-  BUILDINGS, isTrap, isStation, isField, isEarthwork, isHeap, isHerd, isWell, isStructure,
+  BUILDINGS, isTrap, isStation, isStationFor, isField, isEarthwork, isHeap, isHerd, isWell, isStructure,
   type Building, type BuildingDef,
 } from '../entities/Building.ts';
 import { SOW_SEED } from '../entities/Field.ts';
@@ -1573,14 +1573,15 @@ export class BandSystem {
     // inert-content rule failing in the one table it is hardest to see from.
     if (!wanted && underway === 0 && stores.length > 0) {
       const stations = live.filter(b => isStation(b.def));
-      const hasHearth = stations.some(b => b.def.id === 'hearth');
+      const hasHearth = stations.some(b => isStationFor(b.def, 'hearth'));
       const expectsHearth = members.some(m => m.beliefs.expect('warm:hearth').value >= 0.2);
       if (!hasHearth && expectsHearth && buildable.some(def => def.id === 'hearth')) {
         wanted = 'hearth';
       }
       const missing = buildable.filter(def => isStation(def) &&
-        !stations.some(existing => existing.def.id === def.id) &&
-        Object.values(RECIPES).some(recipe => recipe.station === def.id &&
+        !stations.some(existing => isStationFor(existing.def, def.id) ||
+          (def.stationKind !== undefined && isStationFor(existing.def, def.stationKind))) &&
+        Object.values(RECIPES).some(recipe => recipe.station !== undefined && isStationFor(def, recipe.station) &&
           members.some(m => recipeTechPower(m, recipe) > 0)));
       // Cheapest first: a band's first workshop should be the one it can finish.
       if (!wanted) wanted = this.cheapest(missing)?.id ?? null;

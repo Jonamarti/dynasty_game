@@ -95,6 +95,8 @@ export interface BuildingDef {
    * does-not-exist defect, one table along.
    */
   station?: boolean;
+  /** Shared cooking hearth identity; indoor fireplaces serve hearth recipes. */
+  stationKind?: string;
   /**
    * True if this is ground that is worked rather than a structure that stands.
    *
@@ -210,6 +212,11 @@ export function isTrap(def: BuildingDef): boolean {
  */
 export function isStation(def: BuildingDef): boolean {
   return def.station === true;
+}
+
+/** A fireplace is a distinct object but answers every recipe made at a hearth. */
+export function isStationFor(def: BuildingDef, stationId: string): boolean {
+  return isStation(def) && (def.id === stationId || def.stationKind === stationId);
 }
 
 /** True if a design is worked ground rather than a structure. See `field`. */
@@ -346,7 +353,7 @@ export const BUILDINGS: Record<string, BuildingDef> = {
   fat_lamp: {
     id: 'fat_lamp', label: 'Fat lamp', icon: '\u{1F56F}',
     width: 1, height: 1, materials: {}, workTicks: 0, shelter: 0, storage: 0,
-    requiresTech: 'firemaking', furniture: true,
+    requiresTech: 'fat_lamp', furniture: true,
     description: 'A stone lamp that burns animal fat to light a home.',
   },
   shelf: {
@@ -354,6 +361,12 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     width: 1, height: 1, materials: {}, workTicks: 0, shelter: 0, storage: 20,
     requiresTech: 'carpentry', furniture: true,
     description: 'A household shelf for keeping carried goods indoors.',
+  },
+  fireplace: {
+    id: 'fireplace', label: 'Fireplace', icon: '\u{1F525}',
+    width: 1, height: 1, materials: {}, workTicks: 0, shelter: 0, storage: 0,
+    requiresTech: 'fireplace', furniture: true, station: true, stationKind: 'hearth',
+    description: 'A clay-and-flint hearth built inside a household home.',
   },
 
   // --- M11 phase 10, second commit: two more shelters -----------------------

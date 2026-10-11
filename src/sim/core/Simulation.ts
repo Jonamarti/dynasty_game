@@ -66,7 +66,7 @@ import {
   judgeOwn, answerDemand, DISMISSED_GRUDGE, SHAME_RENOWN, REFUSED_STANDING, type Case, judgesByLaw, verdictGrudge,
 } from '../social/Justice.ts';
 import {
-  Building, BUILDINGS, isTrap, isHerd, isStructure, type BuildingDef,
+  Building, BUILDINGS, isTrap, isHerd, isStructure, isStationFor, type BuildingDef,
 } from '../entities/Building.ts';
 import { earthworkTiles, slopeAcross } from '../entities/Earthwork.ts';
 import { fieldSeasonGrowth } from '../entities/Irrigation.ts';
@@ -133,7 +133,7 @@ import { geographicResourceAvailable } from '../world/GeographicResources.ts';
 import { stepMark } from './StepProbe.ts';
 import { approachComarcaEdge, type ComarcaTravel } from '../world/ComarcaTravel.ts';
 import { applyHouseWalls, houseInteriorContains, houseInteriorTiles, houseContainsFootprint, houseForFootprint } from '../world/HouseInterior.ts';
-import { lightAt as measuredLightAt, lightFactor, torchLight, hearthNear } from './Light.ts';
+import { lightAt as measuredLightAt, lightFactor, torchLight, hearthNear, hearthLight } from './Light.ts';
 import { saltSourceNear } from './Preservation.ts';
 import { advanceTorchBurn, torchIgnitionRefusal, torchRefusalText, transferableUnits, burningTorchRefusalText } from './Torch.ts';
 import { advanceFatLamps, FAT_LAMP_FUEL_TICKS, fatLampRefusal, fatLampRefusalText } from './FatLamp.ts';
@@ -4045,7 +4045,7 @@ export class Simulation {
    */
   litNear(x: number, y: number, r: number): boolean {
     if (this.buildingHash.queryRadius(x, y, r + 2).some(b =>
-      b.complete && !b.ruined && b.def.id === 'hearth' &&
+      hearthLight(b) !== null &&
       Math.hypot(b.centerX - x, b.centerY - y) <= r)) return true;
     return this.peopleHash.queryRadius(x, y, r * 2 + 1).some(person =>
       !!torchLight(person) && Math.hypot(person.x - x, person.y - y) <= r * 2);
@@ -4059,7 +4059,7 @@ export class Simulation {
       // Run for the nearest fire, or failing that straight away from it. A
       // bitten person who stood and carried on would simply be bitten again.
       const fire = this.buildingHash.findNearest(person.x, person.y, 40,
-        b => b.complete && !b.ruined && (b.def.id === 'hearth' || b.def.shelter > 0));
+        b => hearthLight(b) !== null || b.def.shelter > 0);
       const dx = person.x - animal.x;
       const dy = person.y - animal.y;
       const length = Math.max(0.001, Math.hypot(dx, dy));
@@ -4361,7 +4361,7 @@ export class Simulation {
           ? null
           : this.buildingsById.get(target.buildingId);
         const label = BUILDINGS[stationId]?.label.toLowerCase() ?? stationId;
-        if (!named || !named.complete || named.def.id !== stationId) {
+        if (!named || !named.complete || named.ruined || !isStationFor(named.def, stationId)) {
           return this.cancelOrder(person, t('that has to be made at {station}', {
             station: aNoun(label),
           }));

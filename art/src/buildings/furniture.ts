@@ -50,10 +50,20 @@ const shelf = (): string =>
   shape(poly([[76, 45], [87, 40], [87, 53], [76, 58]]), '#d0b276', '#71572e') +
   shape(poly([[61, 62], [68, 59], [68, 70], [61, 73]]), '#7b9b70', '#3f5738');
 
+const fireplace = (): string =>
+  ell(72, 101, 35, 7, 'rgba(0,0,0,0.22)') +
+  shape(poly([[38, 60], [57, 50], [89, 50], [107, 60], [101, 85], [45, 85]]), '#a77b55', OUTLINE) +
+  shape(poly([[43, 61], [59, 55], [87, 55], [101, 61], [96, 79], [48, 79]]), '#c19362', '#684a30') +
+  shape(poly([[52, 65], [68, 59], [85, 66], [71, 74]]), '#453328', '#2b2119') +
+  shape(poly([[68, 64], [72, 47], [78, 65], [73, 70]]), '#e67c32', '#99451f') +
+  shape(poly([[71, 62], [73, 53], [75, 63], [73, 66]]), '#ffe5a0') +
+  stroke('M48,67L58,71M89,71L98,67M55,77L63,74M82,74L92,77', '#755034', 2);
+
 export const FURNITURE: BuildingArt[] = [
   ['bedding', 'Lecho', 'cordage', 96, bedding],
   ['bed', 'Cama', 'carpentry', 96, bed],
   ['bench', 'Banco', 'carpentry', 96, bench],
   ['fat_lamp', 'Lámpara de grasa', 'firemaking', 96, fatLamp],
   ['shelf', 'Estante', 'carpentry', 96, shelf],
+  ['fireplace', 'Hogar interior', 'fireplace', 96, fireplace],
 ];

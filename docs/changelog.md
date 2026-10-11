@@ -15126,3 +15126,18 @@ falta de munición y alcance. No hubo calibración ni cohortes. Se regeneró el
 atlas y se capturó la barra visible de recetas en
 `artifacts/screenshots/m15-projectile-ammo-2026-10-12/01-ammunition-recipes.png`.
 Ver `docs/m15_phase13_subwebs.md`.
+## 2026-10-12 — M15 fase 16d, hogar interior
+
+El hogar de barro y sílex se coloca como mueble solo en el interior acabado de
+la vivienda propia, persiste con su host y funciona de forma permanente con
+`fuelRemaining` a cero, según la tabla de la fase. Los lectores compartidos lo
+reconocen para calor y luz local, como estación de cocina `hearth`, y como fuego
+cercano al ahumar carne/pescado en un secadero. Se añade la estación alias sin
+cambiar el contrato de las recetas, pruebas negativas de hogar/propiedad/técnica,
+prueba de cocción y ahumado, arte generado y captura
+`artifacts/screenshots/m15-phase16d-fireplace-2026-10-12/01-fireplace-in-house.png`.
+La luz y el calor todavía cruzan paredes por el lector radial; queda anotado en
+`docs/bugs.md`. La autonomía de materiales/colocación, más muebles, recarga de
+lámpara y 16e/16f siguen abiertas. No se ejecutaron cohortes ni se afirma
+calibración económica. Typecheck y los cuatro archivos focales (94 pruebas de
+furniture/sleep, tech, arte e i18n) pasan; la captura Playwright fechada pasa.

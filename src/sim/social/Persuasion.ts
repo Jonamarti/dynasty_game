@@ -26,7 +26,7 @@ export function support(
   if (listener.bandId !== sponsor.bandId || listener.id === sponsor.id) return -Infinity;
   const regard = ctx.relationships.opinion(listener.id, sponsor.id) / 100 * 0.5;
   const bond = bondBetween(listener, sponsor, ctx.relationships, ctx.chiefByBand.get(listener.bandId));
-  const need = site.def.id === 'hearth'
+  const need = site.def.id === 'hearth' || site.def.id === 'fireplace'
     ? listener.needs.cold / 100 * listener.beliefs.expect('warm:hearth').value
     : site.def.shelter > 0
       ? listener.needs.cold / 100

@@ -57,20 +57,20 @@ icon are generated from `art/src`; no panel or overlay changed.
 
 This is a single shelf per home with the existing 20-unit generic capacity.
 It does not provide category sorting, dedicated stock requests, or shelf
-upgrades. The fireplace and other planned furniture remain open, as do the
+upgrades. Other planned furniture remains open, as do the
 remaining phase 16e/16f measures and comfort work.
 
 ## 2026-10-12: autonomous household fat lamp
 
 Once a completed home already has a sleep surface, bench and shelf, an adult
-with `firemaking` and the recipe materials can craft and place one fat lamp in
+with `fat_lamp` and the recipe materials can craft and place one fat lamp in
 the home. It uses the existing furniture placement checks and receives the
 ordinary full fuel charge on placement, so the night-light reader and renderer
 show a real light source. A home with any hosted lamp does not produce another
 one. No new UI, art, saved field, or RNG draw is involved.
 
 This is one initial charge only. NPC refuelling, lamp upkeep during a long
-campaign, the fireplace and other listed furniture, and the phase 16e/16f
+campaign, other listed furniture, and the phase 16e/16f
 measurements remain open. No cohort or lighting calibration is claimed.
 
 ## 2026-10-10: household autonomy, first surface
@@ -143,7 +143,7 @@ gates. There is no new action label or UI, so no screenshot was needed.
 
 ## 2026-10-11: fat lamp, persistent fuel and room light
 
-`fat_lamp` is a firemaking furniture recipe using one flint and two fat. Placing
+`fat_lamp` is a Fire-web furniture recipe using one flint and two fat. Placing
 it in the finished household home starts a 1200-tick charge. Its fuel is a
 `Building` field, restored from older graphs as empty; each simulation tick
 burns one unit, and two carried fat refill an empty or partly used lamp to full.
@@ -161,3 +161,27 @@ option at `artifacts/screenshots/m15-phase16d-fat-lamp-2026-10-11/`.
 
 When a furniture tile overlaps its host footprint, `buildingAt` resolves the
 small furniture object first so its own contextual actions remain reachable.
+
+## 2026-10-12: indoor household fireplace
+
+`fireplace` is a Fire-web design downstream of `firemaking`; the furniture
+recipe uses four mud and two flint. A household member can place a carried
+fireplace only while inside their own completed, unruined home, on a free
+walkable interior tile. Its hosted `Building` persists through checkpoints.
+Like the planned table, it is a permanent hearth with no `fuelRemaining`
+requirement: a zero fuel value does not disable the fire.
+
+This is a real heat and local-light source through the shared hearth readers.
+The existing recipes that name `station: 'hearth'` can now use the indoor
+fireplace, while smoking recipes keep their `drying_rack` station and accept a
+nearby fireplace through the shared `hearthNear` fire check. Tests exercise
+warmth, bounded local light, cooking at the fireplace, smoke-drying at a rack,
+ownership/interior/design refusals, and checkpoint persistence. The world
+sprite and carried item icon are generated from `art/src`; the capture is
+`artifacts/screenshots/m15-phase16d-fireplace-2026-10-12/01-fireplace-in-house.png`.
+
+NPCs already receive the warmth, light and station behavior from these shared
+readers, but this slice does not make them gather fireplace materials or
+autonomously furnish a home with one. Other comfort furniture, autonomous
+lamp refuelling, and phase 16e/16f remain open. No fuel balance, economy
+improvement, or cohort result is claimed.

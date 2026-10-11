@@ -6,10 +6,13 @@ import { toCheckpointRecord } from '../persistence/CheckpointRecords.ts';
 import { Building, BUILDINGS } from '../entities/Building.ts';
 import { Inventory } from '../entities/Item.ts';
 import { RECIPES, ingredientsFor, missingIngredients } from '../entities/Recipe.ts';
-import { assignedSleepSurface, benchConversationBelonging, seatedOnBench, sleepQualityAt } from '../world/HouseInterior.ts';
+import { assignedSleepSurface, benchConversationBelonging, houseInteriorTiles, seatedOnBench, sleepQualityAt } from '../world/HouseInterior.ts';
 import { telemetry } from '../core/Telemetry.ts';
 import { FAT_LAMP_FUEL_TICKS, FAT_LAMP_REFILL_FAT } from '../core/FatLamp.ts';
 import { fatLampLight, lightAt } from '../core/Light.ts';
+import { hearthLight } from '../core/Light.ts';
+import { NeedsSystem } from '../systems/NeedsSystem.ts';
+import type { TimeManager } from '../core/TimeManager.ts';
 
 function fixture() {
   const sim = new Simulation({ seed: 'furniture-sleep-contract',
@@ -142,10 +145,10 @@ describe('bedding and beds', () => {
 
   it('crafts, lights, saves, burns and refills a household fat lamp without making heat', () => {
     const { sim, person, house } = fixture();
-    person.knownTech.add('firemaking');
+    person.knownTech.add('fat_lamp');
     person.inventory.add('fat_lamp', 1);
     person.inventory.add('fat', FAT_LAMP_REFILL_FAT);
-    expect(RECIPES.fat_lamp).toMatchObject({ tech: 'firemaking', ingredients: { flint: 1, fat: 2 }, output: { fat_lamp: 1 } });
+    expect(RECIPES.fat_lamp).toMatchObject({ tech: 'fat_lamp', ingredients: { flint: 1, fat: 2 }, output: { fat_lamp: 1 } });
     expect(sim.order(person, 'place_furniture', { buildingId: house.id, itemId: 'fat_lamp' })).toBe(true);
     sim.step();
     const lamp = sim.buildings.find(building => building.def.id === 'fat_lamp')!;
@@ -333,7 +336,7 @@ describe('bedding and beds', () => {
 
   it('autonomously crafts and lights one fat lamp after the household essentials', () => {
     const { sim, person, house } = fixture();
-    person.knownTech.add('firemaking');
+    person.knownTech.add('fat_lamp');
     person.inventory.add('flint', 1);
     person.inventory.add('fat', 2);
     for (const [itemId, offset] of [['bed', 0], ['bench', 1], ['shelf', 2]] as const) {
@@ -437,5 +440,123 @@ describe('bedding and beds', () => {
     person.inventory.add('bedding', 1);
     expect(sim.order(person, 'place_furniture', { buildingId: house.id, itemId: 'bedding' })).toBe(false);
     expect(sim.lastRefusal).toBe('There is no room inside the house');
+  });
+});
+
+describe('household fireplaces', () => {
+  it('requires the fireplace design, and cannot be placed at another home or from outside', () => {
+    const { sim, person, house } = fixture();
+    expect(RECIPES.fireplace).toMatchObject({
+      tech: 'fireplace', ingredients: { mud: 4, flint: 2 }, output: { fireplace: 1 },
+    });
+    person.inventory.add('fireplace', 1);
+    person.knownTech.add('firemaking');
+    expect(sim.order(person, 'place_furniture', { buildingId: house.id, itemId: 'fireplace' })).toBe(false);
+    expect(sim.lastRefusal).toBe('Nobody here knows how to make that');
+
+    const householdId = person.householdId;
+    person.knownTech.add('fireplace');
+    person.techLevel.set('fireplace', 0);
+    expect(missingIngredients(person.inventory, RECIPES.fireplace!)).toBe('You need 4 daub and 2 flint');
+
+    person.householdId = null;
+    expect(sim.order(person, 'place_furniture', { buildingId: house.id, itemId: 'fireplace' })).toBe(false);
+    expect(sim.lastRefusal).toBe('That is not your household’s home');
+    person.householdId = householdId;
+
+    house.complete = false;
+    expect(sim.order(person, 'place_furniture', { buildingId: house.id, itemId: 'fireplace' })).toBe(false);
+    expect(sim.lastRefusal).toBe('That is not your household’s home');
+    house.complete = true;
+    house.durability = house.def.workTicks;
+    house.durability = 0;
+    expect(house.ruined).toBe(true);
+    expect(sim.order(person, 'place_furniture', { buildingId: house.id, itemId: 'fireplace' })).toBe(false);
+    expect(sim.lastRefusal).toBe('That is not your household’s home');
+    house.durability = house.def.workTicks;
+
+    sim.peopleHash.remove(person);
+    person.x = house.x - 1; person.y = house.centerY;
+    person.targetX = person.x; person.targetY = person.y;
+    sim.peopleHash.insert(person);
+    expect(sim.order(person, 'place_furniture', { buildingId: house.id, itemId: 'fireplace' })).toBe(false);
+    expect(sim.lastRefusal).toBe('You must be inside the house to place furniture');
+  });
+
+  it('places a fuel-less fireplace, warms and lights locally, serves hearth recipes, and persists its host', () => {
+    const { sim, person, house } = fixture();
+    person.knownTech.add('fireplace');
+    person.knownTech.add('stone_boiling');
+    person.inventory.add('fireplace', 1);
+    expect(sim.order(person, 'place_furniture', { buildingId: house.id, itemId: 'fireplace' })).toBe(true);
+    sim.step();
+    const fireplace = sim.buildings.find(building => building.def.id === 'fireplace')!;
+    expect(fireplace).toMatchObject({ hostId: house.id, complete: true, fuelRemaining: 0 });
+    expect(hearthLight(fireplace)).toMatchObject({ radius: 4, strength: 1 });
+    expect(lightAt(fireplace.centerX, fireplace.centerY, 0, sim.buildingHash)).toBe(1);
+    expect(lightAt(fireplace.centerX + 6, fireplace.centerY, 0, sim.buildingHash)).toBe(0);
+    expect(sim.hearthNear(fireplace.centerX + 2, fireplace.centerY, 3)).toBe(true);
+    expect(sim.hearthNear(fireplace.centerX + 5, fireplace.centerY, 3)).toBe(false);
+
+    // The fireplace deliberately has no carried-fuel lifecycle: its build
+    // materials establish a fixed hearth like the existing camp hearth.
+    const needs = new NeedsSystem(sim.config.needs, sim.world);
+    const coldTime = { temperature: -1, tick: 10 } as unknown as TimeManager;
+    person.needs.hunger = person.needs.thirst = 0;
+    person.needs.cold = 50;
+    sim.buildingHash.remove(fireplace);
+    // Exclude the roof's shelter effect so this comparison isolates the fire
+    // reader rather than measuring two copies of the same house protection.
+    needs.update([person], coldTime, sim.buildings.filter(building => building !== fireplace && building !== house), sim.buildingHash);
+    const withoutFire = person.needs.cold;
+    sim.buildingHash.insert(fireplace);
+    person.needs.cold = 50;
+    needs.update([person], coldTime, sim.buildings.filter(building => building !== house), sim.buildingHash);
+    expect(person.needs.cold).toBeLessThan(withoutFire);
+
+    // `station: 'hearth'` remains the recipe contract; an indoor fireplace
+    // fulfils it, so the same broth menu/order works at home.
+    person.needs.hunger = person.needs.thirst = person.needs.cold = 0;
+    person.inventory.add('bone', 2);
+    expect(availableActions(person, { kind: 'building', x: fireplace.x, y: fireplace.y, building: fireplace },
+      { world: sim.world, nearWater: false }).some(option => option.id === 'craft' && option.recipeId === 'broth')).toBe(true);
+    expect(sim.order(person, 'craft', { recipeId: 'broth', buildingId: fireplace.id })).toBe(true);
+    for (let tick = 0; tick < 500 && person.inventory.count('broth') === 0; tick++) {
+      person.needs.hunger = person.needs.thirst = person.needs.cold = 0;
+      sim.step();
+    }
+    expect(person.inventory.count('broth')).toBe(1);
+
+    // Smoking keeps its own drying-rack station. The fireplace is the nearby
+    // fire reader it asks for, so indoor preservation works without changing
+    // the recipe's station contract.
+    const rackTile = houseInteriorTiles(house).map(tile => ({ x: Math.floor(tile.x), y: Math.floor(tile.y) }))
+      .find(tile => sim.world.isWalkable(tile.x, tile.y) &&
+        Math.hypot(tile.x + 0.5 - fireplace.centerX, tile.y + 0.5 - fireplace.centerY) <= 3 &&
+        !sim.buildings.some(piece => piece.hostId === house.id && piece.x === tile.x && piece.y === tile.y));
+    expect(rackTile).toBeDefined();
+    const rack = new Building(BUILDINGS.drying_rack!, rackTile!.x, rackTile!.y, person.bandId, sim.ids);
+    rack.hostId = house.id;
+    rack.complete = true;
+    rack.durability = rack.def.workTicks;
+    sim.buildings.push(rack);
+    sim.buildingsById.set(rack.id, rack);
+    sim.buildingHash.insert(rack);
+    person.knownTech.add('smoking');
+    person.inventory.add('meat', 2);
+    person.inventory.add('sticks', 1);
+    expect(sim.order(person, 'craft', { recipeId: 'smoked_meat', buildingId: rack.id })).toBe(true);
+    for (let tick = 0; tick < 600 && person.inventory.count('smoked_meat') === 0; tick++) {
+      person.needs.hunger = person.needs.thirst = person.needs.cold = 0;
+      sim.step();
+    }
+    expect(person.inventory.count('smoked_meat')).toBe(2);
+
+    const loaded = Simulation.fromCheckpointRecord(JSON.parse(JSON.stringify(toCheckpointRecord(sim))));
+    const restored = loaded.buildingsById.get(fireplace.id)!;
+    expect(restored.hostId).toBe(loaded.buildingsById.get(house.id)!.id);
+    expect(restored.fuelRemaining).toBe(0);
+    expect(hearthLight(restored)).not.toBeNull();
+    expect(loaded.hearthNear(restored.centerX, restored.centerY, 1)).toBe(true);
   });
 });

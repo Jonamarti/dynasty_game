@@ -28,7 +28,7 @@ import type { SpatialHash } from '../core/SpatialHash.ts';
 import type { Relationship, RelationshipGraph } from '../social/Relationships.ts';
 import { telemetry } from '../core/Telemetry.ts';
 import { CONVERSATION_MODES, chooseMode } from '../social/Conversation.ts';
-import { isTrap, isHeap, isHerd, isWell } from '../entities/Building.ts';
+import { isTrap, isHeap, isHerd, isWell, isStationFor } from '../entities/Building.ts';
 import { earthworkWorkRefusal } from '../core/Earth.ts';
 import { SOW_SEED, SPREAD_LOAD } from '../entities/Field.ts';
 import { ORCHARD_SPACING, findPlantingSpot, plantable } from '../entities/Orchard.ts';
@@ -3517,9 +3517,7 @@ export class Brain {
     const candidateTorch = heldUnlitTorch && person.inventory.count(person.equipment[heldUnlitTorch]!.item) >= 1
       ? person.equipment[heldUnlitTorch]!.item : person.inventory.count('fat_torch') > 0 ? 'fat_torch'
       : person.inventory.count('torch') > 0 ? 'torch' : null;
-    const nearbyHearth = ctx.buildingHash.queryRadius(person.x, person.y, 3)
-      .some(building => building.complete && !building.ruined && building.def.id === 'hearth' &&
-        person.distanceTo({ x: building.centerX, y: building.centerY }) <= 2);
+    const nearbyHearth = hearthNear(ctx.buildingHash, person.x, person.y, 2);
     if (!currentTorch && candidateTorch && nearbyHearth &&
       torchIgnitionRefusal(person, candidateTorch) === null) {
       const warmBelief = person.beliefs.expect('warm:torch').value;
@@ -3779,7 +3777,7 @@ export class Brain {
         const stationId = recipe.station;
         station = this.pickBest(
           ctx.buildings.filter(b =>
-            b.complete && !b.ruined && b.def.id === stationId && this.canUse(person, b, ctx) &&
+            b.complete && !b.ruined && isStationFor(b.def, stationId) && this.canUse(person, b, ctx) &&
             (!recipe.requiresFire || hearthNear(ctx.buildingHash, b.centerX, b.centerY, 3)) &&
             (!recipe.requiresSaltWater || saltSourceNear(ctx.world, b.x, b.y, b.def.width, b.def.height))),
           b => -person.distanceTo({ x: b.centerX, y: b.centerY })

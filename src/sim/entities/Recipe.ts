@@ -99,10 +99,12 @@ export const RECIPES: Record<string, RecipeDef> = {
     workTicks: 140, ingredients: { wood: 3, bedding: 1 }, output: { bed: 1 }, keep: 0 },
   bench: { id: 'bench', label: 'Bench', icon: '\u{1FA91}', tech: 'carpentry', skill: 'build',
     workTicks: 100, ingredients: { wood: 2 }, output: { bench: 1 }, keep: 0 },
-  fat_lamp: { id: 'fat_lamp', label: 'Fat lamp', icon: '\u{1F56F}', tech: 'firemaking', skill: 'build',
+  fat_lamp: { id: 'fat_lamp', label: 'Fat lamp', icon: '\u{1F56F}', tech: 'fat_lamp', skill: 'build',
     workTicks: 100, ingredients: { flint: 1, fat: 2 }, output: { fat_lamp: 1 }, keep: 1 },
   shelf: { id: 'shelf', label: 'Shelf', icon: '\u{1F4DA}', tech: 'carpentry', skill: 'build',
     workTicks: 100, ingredients: { wood: 2 }, output: { shelf: 1 }, keep: 0 },
+  fireplace: { id: 'fireplace', label: 'Fireplace', icon: '\u{1F525}', tech: 'fireplace', skill: 'build',
+    workTicks: 140, ingredients: { mud: 4, flint: 2 }, output: { fireplace: 1 }, keep: 0 },
   // Kept at zero: a raft is made for a journey, not a new universal AI tax.
   raft: { id: 'raft', label: 'Reed raft', icon: '🛶', tech: 'cordage', skill: 'build',
     workTicks: 120, ingredients: { thatch: 6, sticks: 2, rope: 1 }, output: { raft: 1 }, keep: 0 },
