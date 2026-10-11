@@ -15004,3 +15004,13 @@ vestida del pagador se reconcilia al pagar. Se añaden cobertura de compensació
 de prenda, fila inválida y rollback de oferta mixta. Sin instalación ni
 calibración. Typecheck y pruebas focales no pudieron arrancar porque faltan
 `tsc` y `vitest` en el worktree; desgaste/remiendo sigue apagado.
+
+## 2026-10-12 — m15: tributo conserva la prenda transportada
+
+La retirada del almacén al portador dentro de `doRender` usa la transferencia
+explícita de `Inventory`, y el depósito al almacén del overlord conserva la
+misma unidad. Las pruebas cubren condición en los dos tramos y rollback si el
+portador rechaza la inserción. Los selectores autónomos de tributo siguen
+limitados a comida segura. Typecheck y pruebas focales no pudieron arrancar por
+falta de `tsc`/`vitest`; sin instalación ni calibración. Desgaste/remiendo sigue
+apagado.

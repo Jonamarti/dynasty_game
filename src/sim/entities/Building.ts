@@ -1079,10 +1079,13 @@ export class Building {
    * `ActionSystem`, so there is one definition of how much fits rather than a
    * second copy of this arithmetic.
    */
-  accept(from: Inventory, itemId: string, count: number): number {
+  accept(from: Inventory, itemId: string, count: number, garmentUnitIds?: readonly string[]): number {
     const room = this.storageFree;
     if (room <= 0) return 0;
-    return from.transferTo(this.store, itemId, Math.min(room, count, from.count(itemId)));
+    const excluded = garmentUnitIds === undefined ? new Set<string>() : new Set(
+      from.garmentUnitsOf(itemId).filter(unit => !garmentUnitIds.includes(unit.unitId)).map(unit => unit.unitId),
+    );
+    return from.transferTo(this.store, itemId, Math.min(room, count, from.count(itemId)), excluded);
   }
 
   /** Adds work. Returns true if this was the moment it was finished. */

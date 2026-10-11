@@ -1705,15 +1705,15 @@ desgaste/remiendo sigue apagado.
 autónomo cronometrado usan `Inventory.transferTo`, así que una prenda conserva
 identidad, desgaste y progreso de remiendo. Si falla la inserción de una pila
 de prendas, el helper revierte ambas mochilas. `doTrade` sólo elige alimentos y
-no puede seleccionar prendas; amends, tributo, otros movimientos entre
-edificios, escrow y tráfico fuera del mapa siguen pendientes. Desgaste/remiendo
+no puede seleccionar prendas; tributo, otros movimientos entre edificios,
+escrow y tráfico fuera del mapa siguen pendientes. Desgaste/remiendo
 permanece apagado.
 
 **Avance del 2026-10-12 — robo físico:** `doSteal` transfiere las unidades
 concretas del montón de mayor valor con su desgaste y progreso de remiendo. La
 transferencia rechaza filas huérfanas antes de mutar, revierte una inserción
 fallida y reconcilia las capas/bolsillos de ambos participantes. Siguen
-pendientes amends, tributo, transferencias entre edificios, escrow y tráfico;
+pendientes tributo, transferencias entre edificios, escrow y tráfico;
 desgaste/remiendo permanece apagado.
 
 **Avance del 2026-10-12 — compensación física:** `doMakeAmends` usa una
@@ -1722,6 +1722,14 @@ compensa una deuda conserva desgaste, progreso e identidad; cualquier fallo en
 una pila posterior revierte todo lo entregado. El pagador reconcilia sus capas
 vestidas al completar el pago. Siguen pendientes tributo, otros movimientos
 entre edificios, escrow y tráfico; desgaste/remiendo permanece apagado.
+
+**Avance del 2026-10-12 — tributo físico:** el retiro desde el almacén del
+hogar al portador usa transferencia explícita; la entrega al almacén del
+overlord conserva la misma unidad. Pruebas cubren ambos tramos y el rechazo
+atómico del primero. La selección autónoma sigue restringida a comida segura
+(`mostOf`/`bestFood`); el executor genérico también conserva la unidad si recibe
+una prenda. Siguen pendientes otros movimientos entre edificios, escrow y
+tráfico; desgaste/remiendo permanece apagado.
 
 **Avance del 2026-10-11 — base de condición física:** `Inventory` crea una
 unidad íntegra por prenda, permite extraerla/devolverla con condición y trabajo

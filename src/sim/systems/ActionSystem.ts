@@ -3504,20 +3504,30 @@ export class ActionSystem {
       const itemId = person.targetItemId;
       const wanted = person.targetItemCount ?? 1;
       let taken = 0;
+      let garmentUnitIds: string[] | undefined;
       if (itemId !== null && person.targetBuildingId === null) {
         taken = Math.min(wanted, person.inventory.count(itemId));
+        if (ITEMS[itemId]?.garment) {
+          garmentUnitIds = person.inventory.garmentUnitsOf(itemId).slice(0, taken).map(unit => unit.unitId);
+        }
       } else if (itemId !== null) {
         const home = this.reachBuilding(person, ctx, { ok: isLarder, reason: 'nothing_to_render' });
         if (!home) return;
         const room = Math.max(0, itemCapacityFor(person, ctx.carry, itemId) - person.inventory.count(itemId));
-        taken = home.store.remove(itemId, Math.min(wanted, room));
-        stow(person, ctx.carry, itemId, taken);
+        const before = ITEMS[itemId]?.garment
+          ? new Set(person.inventory.garmentUnitsOf(itemId).map(unit => unit.unitId))
+          : null;
+        taken = home.store.transferTo(person.inventory, itemId, Math.min(wanted, room));
+        if (before) {
+          garmentUnitIds = person.inventory.garmentUnitsOf(itemId)
+            .filter(unit => !before.has(unit.unitId)).slice(0, taken).map(unit => unit.unitId);
+        }
       }
       if (taken <= 0 || itemId === null) {
         this.abandon(person, 'nothing_to_render', ctx);
         return;
       }
-      person.renderGoods = { itemId, count: taken };
+      person.renderGoods = { itemId, count: taken, ...(garmentUnitIds ? { garmentUnitIds } : {}) };
       person.renderTo = temple.id;
       person.targetBuildingId = temple.id;
       return;
@@ -3525,11 +3535,14 @@ export class ActionSystem {
     const temple = this.reachBuilding(person, ctx, { ok: isLarder, reason: 'no_temple' });
     if (!temple) return;
     const goods = person.renderGoods;
-    const paid = goods ? temple.accept(person.inventory, goods.itemId, goods.count) : 0;
+    const paid = goods
+      ? temple.accept(person.inventory, goods.itemId, goods.count, goods.garmentUnitIds)
+      : 0;
     if (paid <= 0) {
       this.abandon(person, 'store_full', ctx);
       return;
     }
+    reconcileCarry(person, ctx.carry, ctx.dropAt);
     telemetry.count(person.renderInto !== null ? 'tribute_delivered' : 'tax_collected', paid);
     this.finish(person);
   }

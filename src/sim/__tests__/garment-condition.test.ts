@@ -94,6 +94,89 @@ describe('garment condition ownership foundation', () => {
     expect(thief.garmentUnitsOf('fur_hat')).toEqual([]);
   });
 
+  it('preserves a garment through both physical legs of a tribute delivery', () => {
+    const sim = new Simulation({ seed: 'garment-tribute', world: { width: 48, height: 48 },
+      population: { bands: 1, peoplePerBand: 2 }, carry: { legacyPack: true } });
+    const bearer = sim.livingPeople()[0]!;
+    const home = new Building(BUILDINGS.granary!, 8, 8, bearer.bandId);
+    const overlordStore = new Building(BUILDINGS.granary!, 28, 28, bearer.bandId + 1);
+    home.complete = overlordStore.complete = true;
+    for (const building of [home, overlordStore]) {
+      sim.buildings.push(building);
+      sim.buildingsById.set(building.id, building);
+      sim.buildingHash.insert(building);
+    }
+    bearer.inventory.add('fur_hat', 1);
+    const preexisting = bearer.inventory.garmentUnitsOf('fur_hat')[0]!;
+    bearer.inventory.setGarmentUnitCondition(preexisting.unitId, 0.92, 3);
+    expect(changeGarment(bearer, 'fur_hat', 'wear_garment')).toBeNull();
+    home.store.add('fur_hat', 1);
+    const unit = home.store.garmentUnitsOf('fur_hat')[0]!;
+    home.store.setGarmentUnitCondition(unit.unitId, 0.26, 101);
+    bearer.x = home.centerX;
+    bearer.y = home.centerY;
+    expect(sim.order(bearer, 'render', { buildingId: home.id, itemId: 'fur_hat', count: 1 })).toBe(true);
+    bearer.renderInto = overlordStore.id;
+
+    sim.step();
+    expect(home.store.count('fur_hat')).toBe(0);
+    const carriedTribute = bearer.inventory.garmentUnitsOf('fur_hat').find(
+      garment => garment.unitId !== preexisting.unitId,
+    )!;
+    expect(carriedTribute).toMatchObject({ wear: 0.26, repairProgress: 101 });
+    expect(bearer.inventory.garmentUnitsOf('fur_hat')).toMatchObject([
+      { unitId: preexisting.unitId, wear: 0.92, repairProgress: 3 },
+    ]);
+    expect(bearer.renderGoods).toEqual({
+      itemId: 'fur_hat', count: 1, garmentUnitIds: [carriedTribute.unitId],
+    });
+
+    bearer.x = overlordStore.centerX;
+    bearer.y = overlordStore.centerY;
+    sim.step();
+    expect(bearer.inventory.count('fur_hat')).toBe(1);
+    expect(bearer.inventory.garmentUnitsOf('fur_hat')).toMatchObject([
+      { unitId: preexisting.unitId, wear: 0.92, repairProgress: 3 },
+    ]);
+    expect(overlordStore.store.garmentUnitsOf('fur_hat')).toMatchObject([
+      { unitId: carriedTribute.unitId, wear: 0.26, repairProgress: 101 },
+    ]);
+  });
+
+  it('rolls back a tribute garment withdrawal if the bearer rejects insertion', () => {
+    class RejectGarmentInventory extends Inventory {
+      override putGarmentUnit(unit: GarmentUnit): string {
+        throw new Error(`rejected ${unit.itemId}`);
+      }
+    }
+    const sim = new Simulation({ seed: 'garment-tribute-reject', world: { width: 48, height: 48 },
+      population: { bands: 1, peoplePerBand: 2 }, carry: { legacyPack: true } });
+    const bearer = sim.livingPeople()[0]!;
+    const home = new Building(BUILDINGS.granary!, 8, 8, bearer.bandId);
+    const overlordStore = new Building(BUILDINGS.granary!, 28, 28, bearer.bandId + 1);
+    home.complete = overlordStore.complete = true;
+    for (const building of [home, overlordStore]) {
+      sim.buildings.push(building);
+      sim.buildingsById.set(building.id, building);
+      sim.buildingHash.insert(building);
+    }
+    home.store.add('fur_hat', 1);
+    const unit = home.store.garmentUnitsOf('fur_hat')[0]!;
+    home.store.setGarmentUnitCondition(unit.unitId, 0.26, 101);
+    bearer.inventory = new RejectGarmentInventory();
+    bearer.x = home.centerX;
+    bearer.y = home.centerY;
+    expect(sim.order(bearer, 'render', { buildingId: home.id, itemId: 'fur_hat', count: 1 })).toBe(true);
+    bearer.renderInto = overlordStore.id;
+
+    expect(() => sim.step()).toThrow('rejected fur_hat');
+    expect(home.store.garmentUnitsOf('fur_hat')).toMatchObject([
+      { unitId: unit.unitId, wear: 0.26, repairProgress: 101 },
+    ]);
+    expect(bearer.inventory.count('fur_hat')).toBe(0);
+    expect(overlordStore.store.count('fur_hat')).toBe(0);
+  });
+
   it('rolls back a multi-unit garment transfer when the receiver rejects a unit', () => {
     let inserted = 0;
     class RejectSecondGarment extends Inventory {

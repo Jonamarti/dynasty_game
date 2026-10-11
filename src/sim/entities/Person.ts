@@ -500,7 +500,7 @@ export class Person {
    * leg is done. Cleared with the target.
    */
   renderTo: number | null = null;
-  renderGoods: { itemId: string; count: number } | null = null;
+  renderGoods: { itemId: string; count: number; garmentUnitIds?: string[] } | null = null;
   /**
    * The store a `render` is owed to when it is not the bearer's own band's
    * temple — M15 phase 39d, a tribute carried to an overlord. Set by whoever
