@@ -1,3 +1,11 @@
+## 2026-10-12 — 16d, la lámpara autónoma no se repone sola
+
+El hogar fabrica y coloca una sola lámpara, con la carga inicial de 1200 ticks.
+Cuando se agota, la opción radial permite recargarla con grasa, pero la IA no
+elige esa orden ni fabrica una sustituta; la luz desaparece hasta que intervenga
+el jugador. Este avance de autonomía es una sola carga inicial, no mantenimiento
+doméstico completo. Véase [contrato 16d](m15_phase16d_bedding.md).
+
 ## 2026-10-11 — M15 14c, propiedad de condición aún no conectada al juego
 
 La base por unidad ya conserva condición/progreso en las API de `Inventory` y

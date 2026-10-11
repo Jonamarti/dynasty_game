@@ -15084,3 +15084,13 @@ comportamiento existente; siguen pendientes sus modelos de munición y topes de
 presa. Se añadieron pruebas de impacto, falta de munición y presa no elegible;
 no hubo calibración ni cohortes. Sin cambio de UI visible, no requiere captura.
 Contrato y límites: `docs/m15_phase13_subwebs.md` y `docs/bugs.md`.
+## 2026-10-12 — M15 fase 16d, lámpara de grasa autónoma
+
+Los adultos con `firemaking` fabrican y colocan una lámpara de grasa en su
+hogar después de cama/lecho, banco y estante, si llevan los materiales. La
+colocación existente entrega la carga normal y conserva un solo aparato por
+hogar; no se afirma mantenimiento autónomo tras agotarse. Prueba focal cubre
+receta, materiales, propiedad, carga y colocación. Sin UI ni arte nuevos.
+Verificación `sim:check` no disponible en el worktree: falta `vite-node` local;
+pruebas/typecheck no se ejecutaron: `vitest`/`tsc` tampoco están instalados en
+este worktree. [Contrato](m15_phase16d_bedding.md).

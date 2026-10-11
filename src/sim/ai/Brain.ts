@@ -3705,6 +3705,16 @@ export class Brain {
             furnitureRecipe = 'shelf';
           }
         }
+        // A household lamp is a final furnishing, after the basic sleep,
+        // seating and storage needs. Placement charges it through the same
+        // lifecycle as a player-placed lamp; it is not a free permanent light.
+        if (!furnitureItem && !furnitureRecipe && !pieces.some(piece => piece.def.id === 'fat_lamp')) {
+          if (person.inventory.count('fat_lamp') > 0) furnitureItem = 'fat_lamp';
+          else if (recipeTechPower(person, RECIPES.fat_lamp!) > 0 &&
+              hasIngredients(person.inventory, RECIPES.fat_lamp!)) {
+            furnitureRecipe = 'fat_lamp';
+          }
+        }
         if (furnitureItem) {
           furnitureHome = home;
           add('place_furniture', 0.8 * this.proximityBonus(person,

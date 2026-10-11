@@ -60,6 +60,19 @@ It does not provide category sorting, dedicated stock requests, or shelf
 upgrades. The fireplace and other planned furniture remain open, as do the
 remaining phase 16e/16f measures and comfort work.
 
+## 2026-10-12: autonomous household fat lamp
+
+Once a completed home already has a sleep surface, bench and shelf, an adult
+with `firemaking` and the recipe materials can craft and place one fat lamp in
+the home. It uses the existing furniture placement checks and receives the
+ordinary full fuel charge on placement, so the night-light reader and renderer
+show a real light source. A home with any hosted lamp does not produce another
+one. No new UI, art, saved field, or RNG draw is involved.
+
+This is one initial charge only. NPC refuelling, lamp upkeep during a long
+campaign, the fireplace and other listed furniture, and the phase 16e/16f
+measurements remain open. No cohort or lighting calibration is claimed.
+
 ## 2026-10-10: household autonomy, first surface
 
 An adult with a completed household home and a free room tile can make bedding

@@ -331,6 +331,43 @@ describe('bedding and beds', () => {
     } finally { spy.mockRestore(); }
   });
 
+  it('autonomously crafts and lights one fat lamp after the household essentials', () => {
+    const { sim, person, house } = fixture();
+    person.knownTech.add('firemaking');
+    person.inventory.add('flint', 1);
+    person.inventory.add('fat', 2);
+    for (const [itemId, offset] of [['bed', 0], ['bench', 1], ['shelf', 2]] as const) {
+      const piece = new Building(BUILDINGS[itemId]!, house.x + offset, house.y + 1, person.bandId, sim.ids);
+      piece.hostId = house.id;
+      piece.complete = true;
+      sim.buildings.push(piece);
+      sim.buildingsById.set(piece.id, piece);
+      sim.buildingHash.insert(piece);
+    }
+    person.action = 'idle'; person.order = null; person.needs.fatigue = 0;
+    const brain = (sim as unknown as { brain: Brain }).brain;
+    const score = brain.score.bind(brain);
+    const spy = vi.spyOn(brain, 'score').mockImplementation((actor, ctx) => {
+      const result = score(actor, ctx);
+      if (actor === person) for (const action of result.scores) {
+        if (action.id === 'craft' || action.id === 'place_furniture') action.score = 100;
+      }
+      return result;
+    });
+    try {
+      for (let tick = 0; tick < 500 && !sim.buildings.some(piece =>
+        piece.hostId === house.id && piece.def.id === 'fat_lamp'); tick++) {
+        person.needs.hunger = person.needs.thirst = person.needs.cold = 0;
+        sim.step();
+      }
+      const lamp = sim.buildings.find(piece => piece.hostId === house.id && piece.def.id === 'fat_lamp');
+      expect(lamp).toBeDefined();
+      expect(lamp!.fuelRemaining).toBe(FAT_LAMP_FUEL_TICKS);
+      expect(person.inventory.count('flint')).toBe(0);
+      expect(person.inventory.count('fat')).toBe(0);
+    } finally { spy.mockRestore(); }
+  });
+
   it('resolves bedding from thatch or hide and explains the alternative', () => {
     const inventory = new Inventory();
     expect(ingredientsFor(RECIPES.bedding!, inventory)).toBeNull();
