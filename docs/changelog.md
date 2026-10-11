@@ -15243,3 +15243,11 @@ edificios. La regresión del pathfinder compara contra el comportamiento recto
 anterior en un mapa plano. No se midió disminución de saqueos/daño, ni se
 corrieron cohortes. `sim:check` no arrancó: `vite-node` no está disponible en el
 worktree. No hay cambio de UI ni captura necesaria.
+## 2026-10-12 — m15: consumir primero la comida perecedera en empates (0.15.90-alpha)
+
+El selector común de comida resuelve los empates exactos de atractivo gastando
+primero el alimento que se estropea antes. Esto evita que una ración conservada
+quede protegida solo porque se añadió después al inventario. Prueba focal en
+ambos órdenes de inserción; `sim:check -- --scenario salters` sigue fallando
+0/8 comidas de invierno conservadas, por lo que no se reclama una mejora
+estacional ni económica. No se cambia `needs.spoilRate` ni se ejecutan cohortes.

@@ -1933,6 +1933,10 @@ Todos los objetos, al final de `ITEMS`; los edificios, al final de `BUILDINGS`.
   tu almacén, aprendes `spoils:<item>` (creencia `own`); los que lo ven, `seen`.
   El puntuador de secar, ahumar y salar lee esa creencia: **conserva quien ha
   visto perderse la comida**. No hay un coeficiente de «conserva en otoño».
+- Al elegir qué comer, una igualdad exacta de atractivo prioriza el alimento
+  que se estropea antes. Así una ración fresca no queda detrás de una seca por
+  el orden en que se añadió al inventario; las preferencias nutritivas siguen
+  gobernando cuando los atractivos difieren.
 - La sal en la comarca clásica sale del mar: `legacyIsland` conserva el agua
   potable por una ficción que su cabecera explica, pero el mar sigue siendo
   sal para la salina. Los manantiales salados y la sal gema llegan con el mapa

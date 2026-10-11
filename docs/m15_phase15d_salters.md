@@ -21,6 +21,12 @@ two food units are eaten during the run, outside winter. The check remains
 failed, not skipped. The instrument tests being green do not make this world
 health report green. This is an unresolved15d outcome, recorded in bugs/M16.
 
+The shared food selector now resolves an exact appeal tie in favour of the
+less durable food, so raw meat is spent before equally appealing dried meat
+regardless of inventory insertion order. A focused selector test proves this
+mechanism; it does not explain or resolve the 0/8 winter result, and no winter
+consumption or survival gain is claimed.
+
 Attributed spoiled nutrition was764 versus1381, but `spoilage-is-answered`
 also passed after deleting every preservation-food recipe. It detected a
 fixture/trajectory difference rather than preservation, so that check was

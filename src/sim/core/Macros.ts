@@ -80,7 +80,7 @@ export function appealOf(
   return (beliefsEnabled ? expectedFood(person, itemId) : food.nutrition) * (1 + varietyWeight * pull) * wary;
 }
 
-/** Highest-appeal food in inventory; stack order breaks ties deterministically. */
+/** Highest-appeal food; exact ties spend the food that spoils sooner first. */
 export function bestFoodFor(
   person: Person, varietyWeight = VARIETY_WEIGHT,
   cravingsEnabled = true, beliefsEnabled = true,
@@ -89,7 +89,13 @@ export function bestFoodFor(
   let best = 0;
   for (const [itemId] of person.inventory.entries()) {
     const appeal = appealOf(person, itemId, varietyWeight, cravingsEnabled, beliefsEnabled);
-    if (appeal > best) {
+    // When two meals answer the same craving equally, spend the less durable
+    // one first. Otherwise a preserved batch can sit behind an equal raw
+    // ration solely because its stack was inserted later and spoilage has no
+    // chance to teach the household why it was worth making.
+    const chosenSpoilTicks = chosen ? ITEMS[chosen]?.spoilTicks ?? 0 : Infinity;
+    const candidateSpoilTicks = ITEMS[itemId]?.spoilTicks ?? 0;
+    if (appeal > best || (chosen !== null && appeal === best && candidateSpoilTicks < chosenSpoilTicks)) {
       chosen = itemId;
       best = appeal;
     }
