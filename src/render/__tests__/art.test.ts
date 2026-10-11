@@ -83,7 +83,7 @@ describe('art coverage', () => {
   });
 
   it('draws inventory icons and world sprites for the phase 16d sleep surfaces', () => {
-    for (const id of ['bedding', 'bed', 'bench']) {
+    for (const id of ['bedding', 'bed', 'bench', 'shelf']) {
       expect(props.keys[`item/${id}`], `${id} inventory icon`).toBeDefined();
       expect(buildings.keys[`b/${id}/ext`], `${id} placed furniture`).toBeDefined();
     }

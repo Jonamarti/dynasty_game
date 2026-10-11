@@ -14953,3 +14953,14 @@ control negativo. No cambia la UI visible del mundo. No se pudieron ejecutar
 typecheck ni Vitest en este worktree: `node_modules` no estaba instalado y
 `npm install --legacy-peer-deps` recibió EPERM al crear esa carpeta. No hubo
 calibración ni cohortes; la fase 26 permanece abierta.
+
+## 2026-10-12 — m15: estante doméstico utilizable
+
+Se añade el estante de carpintería de dos maderas: el mueble colocado usa el
+almacén existente con capacidad 20, así que guardar, retirar, consultar desde el
+menú y persistir existencias recorren el mismo contrato que otros edificios.
+La autonomía de mobiliario lo fabrica y coloca una vez en hogares que ya tienen
+una superficie de sueño y un banco. Arte de edificio e icono se generan desde
+`art/src`; no cambia paneles ni overlays. Plan y límites en
+`docs/m15_phase16d_bedding.md`. Pruebas focales cubren la
+transferencia, checkpoint, acciones radiales y colocación autónoma.

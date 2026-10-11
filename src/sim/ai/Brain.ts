@@ -3699,6 +3699,12 @@ export class Brain {
             furnitureRecipe = 'bench';
           }
         }
+        if (!furnitureItem && !furnitureRecipe && !pieces.some(piece => piece.def.id === 'shelf')) {
+          if (person.inventory.count('shelf') > 0) furnitureItem = 'shelf';
+          else if (recipeTechPower(person, RECIPES.shelf!) > 0 && hasIngredients(person.inventory, RECIPES.shelf!)) {
+            furnitureRecipe = 'shelf';
+          }
+        }
         if (furnitureItem) {
           furnitureHome = home;
           add('place_furniture', 0.8 * this.proximityBonus(person,

@@ -18,8 +18,9 @@
 
 The sleep-surface ladder and bench/lamp slices are delivered separately below.
 This document does not close autonomous furniture crafting as a whole, a comfort
-mood, storage furniture, all listed room furniture or family-specific sleeping
-assignments. The recipes use existing technology and current ingredient values;
+mood, storage categories/upgrades beyond the single shelf below, all listed
+room furniture or family-specific sleeping assignments. The recipes use
+existing technology and current ingredient values;
 this change does not claim a measured improvement to the food economy. No cohort
 run was made.
 
@@ -40,6 +41,24 @@ icons. The bed capture is `artifacts/screenshots/m15-phase16d-2026-10-10/01-bed-
 `artifacts/screenshots/m15-phase16d-bench-2026-10-11/`. Browser captures use
 debug fixtures to place furniture; the lamp capture additionally shows its
 Spanish refill option in the physical radial menu.
+
+## 2026-10-12: household shelf storage
+
+`shelf` is a carpentry recipe using two wood. A carried shelf can be placed by
+the household member inside their completed home, using the shared furniture
+placement path. The placed building has 20 capacity in its ordinary
+`Building.store`; radial store/take actions, direct transfer, ownership rules,
+and inventory persistence therefore use the existing store contract. It is
+walkable and does not replace or resize the home store. NPC with carpentry and
+two carried wood autonomously make and place one when their home has a sleep
+surface, a bench and a free room tile. Tests cover autonomous placement, saving
+stock, and storing/retrieving through the normal APIs. The new sprite and item
+icon are generated from `art/src`; no panel or overlay changed.
+
+This is a single shelf per home with the existing 20-unit generic capacity.
+It does not provide category sorting, dedicated stock requests, or shelf
+upgrades. The fireplace and other planned furniture remain open, as do the
+remaining phase 16e/16f measures and comfort work.
 
 ## 2026-10-10: household autonomy, first surface
 
@@ -71,8 +90,8 @@ fallback remains in place.
 The assignment is derived from `Household.memberIds`, live people and hosted
 buildings, so it has no new checkpoint field, RNG draw or UI. The focused
 regression checks stable sorting, distinct surfaces when available, and the
-round-robin case. Individual player-managed assignments, shelf storage,
-fireplace, and the phase 16f measurement remain open. Seated family
+round-robin case. Individual player-managed assignments, shelf categories and
+upgrades, fireplace, and the phase 16f measurement remain open. Seated family
 conversation is covered below.
 
 ## 2026-10-11: bench and seated rest

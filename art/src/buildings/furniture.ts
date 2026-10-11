@@ -40,9 +40,20 @@ const fatLamp = (): string =>
   shape(poly([[67, 65], [71, 47], [77, 66], [73, 72]]), '#f0a443', '#9a431b') +
   shape(poly([[70, 64], [72, 53], [74, 65], [72, 68]]), '#ffe5a0');
 
+const shelf = (): string =>
+  ell(72, 101, 30, 6, 'rgba(0,0,0,0.2)') +
+  shape(poly([[40, 39], [72, 25], [104, 39], [72, 54]]), WOOD_LIGHT, OUTLINE) +
+  shape(poly([[42, 44], [72, 57], [72, 88], [42, 75]]), WOOD, OUTLINE) +
+  shape(poly([[72, 57], [102, 44], [102, 75], [72, 88]]), '#76502f', OUTLINE) +
+  stroke('M43,57L72,70L101,57M43,70L72,83L101,70', WOOD_LIGHT, 3) +
+  shape(poly([[52, 41], [60, 37], [60, 50], [52, 53]]), '#b95f3b', '#65351f') +
+  shape(poly([[76, 45], [87, 40], [87, 53], [76, 58]]), '#d0b276', '#71572e') +
+  shape(poly([[61, 62], [68, 59], [68, 70], [61, 73]]), '#7b9b70', '#3f5738');
+
 export const FURNITURE: BuildingArt[] = [
   ['bedding', 'Lecho', 'cordage', 96, bedding],
   ['bed', 'Cama', 'carpentry', 96, bed],
   ['bench', 'Banco', 'carpentry', 96, bench],
   ['fat_lamp', 'Lámpara de grasa', 'firemaking', 96, fatLamp],
+  ['shelf', 'Estante', 'carpentry', 96, shelf],
 ];

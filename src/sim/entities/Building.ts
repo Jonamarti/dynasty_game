@@ -349,6 +349,12 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     requiresTech: 'firemaking', furniture: true,
     description: 'A stone lamp that burns animal fat to light a home.',
   },
+  shelf: {
+    id: 'shelf', label: 'Shelf', icon: '\u{1F4DA}',
+    width: 1, height: 1, materials: {}, workTicks: 0, shelter: 0, storage: 20,
+    requiresTech: 'carpentry', furniture: true,
+    description: 'A household shelf for keeping carried goods indoors.',
+  },
 
   // --- M11 phase 10, second commit: two more shelters -----------------------
   //

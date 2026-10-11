@@ -89,6 +89,32 @@ describe('bedding and beds', () => {
     expect(before - sleeper.needs.fatigue).toBeGreaterThanOrEqual(0.35 * 1.6);
   });
 
+  it('places a household shelf, stores and retrieves goods through the ordinary store contract, and saves its inventory', () => {
+    const { sim, person, house } = fixture();
+    person.knownTech.add('carpentry');
+    person.inventory.add('shelf', 1);
+    person.inventory.add('berries', 3);
+    expect(RECIPES.shelf).toMatchObject({ tech: 'carpentry', ingredients: { wood: 2 }, output: { shelf: 1 } });
+    expect(sim.order(person, 'place_furniture', { buildingId: house.id, itemId: 'shelf' })).toBe(true);
+    for (let tick = 0; tick < 5 && person.inventory.count('shelf') > 0; tick++) sim.step();
+
+    const shelf = sim.buildings.find(building => building.def.id === 'shelf')!;
+    expect(shelf).toMatchObject({ hostId: house.id, complete: true });
+    expect(shelf.def.storage).toBe(20);
+    expect(sim.storeItem(person, shelf, 'berries', 3)).toBe(3);
+    expect(shelf.store.count('berries')).toBe(3);
+    expect(sim.takeItem(person, shelf, 'berries', 2)).toBe(2);
+    expect(person.inventory.count('berries')).toBe(2);
+
+    const loaded = Simulation.fromCheckpointRecord(JSON.parse(JSON.stringify(toCheckpointRecord(sim))));
+    const loadedShelf = loaded.buildingsById.get(shelf.id)!;
+    expect(loadedShelf.hostId).toBe(loaded.buildingsById.get(house.id)!.id);
+    expect(loadedShelf.store.count('berries')).toBe(1);
+    expect(availableActions(person, { kind: 'building', x: shelf.x, y: shelf.y, building: shelf },
+      { world: sim.world, nearWater: false }).filter(option => option.id === 'store' || option.id === 'take'))
+      .toMatchObject([{ id: 'store', enabled: true }, { id: 'take', enabled: true }]);
+  });
+
   it('recognizes a seated family member as bench company and rewards their conversation', () => {
     const { sim, person, house } = fixture();
     const family = sim.livingPeople().find(candidate => candidate.id !== person.id && !candidate.isChild)!;
@@ -273,6 +299,35 @@ describe('bedding and beds', () => {
       expect(sim.buildings.some(piece => piece.hostId === house.id && piece.def.id === 'bench'),
         JSON.stringify({ action: person.action, order: person.order, inventory: person.inventory.entries(), target: person.targetBuildingId }))
         .toBe(true);
+    } finally { spy.mockRestore(); }
+  });
+
+  it('autonomously crafts and places a shelf for an established household', () => {
+    const { sim, person, house } = fixture();
+    person.knownTech.add('carpentry'); person.inventory.add('wood', 2);
+    const bed = new Building(BUILDINGS.bed!, house.centerX, house.centerY, person.bandId, sim.ids);
+    bed.hostId = house.id; bed.complete = true;
+    sim.buildings.push(bed); sim.buildingsById.set(bed.id, bed); sim.buildingHash.insert(bed);
+    const bench = new Building(BUILDINGS.bench!, house.centerX + 1, house.centerY, person.bandId, sim.ids);
+    bench.hostId = house.id; bench.complete = true;
+    sim.buildings.push(bench); sim.buildingsById.set(bench.id, bench); sim.buildingHash.insert(bench);
+    person.action = 'idle'; person.order = null; person.needs.fatigue = 0;
+    const brain = (sim as unknown as { brain: Brain }).brain;
+    const score = brain.score.bind(brain);
+    const spy = vi.spyOn(brain, 'score').mockImplementation((actor, ctx) => {
+      const result = score(actor, ctx);
+      if (actor === person) for (const action of result.scores) {
+        if (action.id === 'craft' || action.id === 'place_furniture') action.score = 100;
+      }
+      return result;
+    });
+    try {
+      for (let tick = 0; tick < 500 && !sim.buildings.some(piece => piece.hostId === house.id && piece.def.id === 'shelf'); tick++) {
+        person.needs.hunger = person.needs.thirst = person.needs.cold = 0;
+        sim.step();
+      }
+      expect(person.inventory.count('shelf')).toBe(0);
+      expect(sim.buildings.some(piece => piece.hostId === house.id && piece.def.id === 'shelf')).toBe(true);
     } finally { spy.mockRestore(); }
   });
 
