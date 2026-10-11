@@ -152,8 +152,11 @@ export class ComarcaFrontier {
     this.journey = clone(record);
   }
   updateJourney(record: ComarcaJourneyRecord): void {
+    const prior=this.journey?.travellerIds??[];
+    const partyContinues=record.travellerIds.length>=prior.length&&prior.every((id,index)=>record.travellerIds[index]===id)&&
+      new Set(record.travellerIds).size===record.travellerIds.length&&record.travellerIds.every(id=>Number.isSafeInteger(id)&&id>0);
     if (!this.journey || this.journey.actorId !== record.actorId || JSON.stringify(this.journey.source) !== JSON.stringify(record.source) ||
-        JSON.stringify(this.journey.travellerIds) !== JSON.stringify(record.travellerIds) || record.lastAdvancedTick < this.journey.lastAdvancedTick ||
+        !partyContinues || record.lastAdvancedTick < this.journey.lastAdvancedTick ||
         record.transit.lastAdvancedTick!==record.lastAdvancedTick || record.transit.execution.time.tick!==record.lastAdvancedTick ||
         record.arrivalTick<this.journey.arrivalTick) invalid('journey continuity');
     this.journey = clone(record);

@@ -4,6 +4,8 @@ import { findGlobeStart } from '../world/WorldTerrain.ts';
 import { randomWorldGeography } from '../world/WorldGeography.ts';
 import { WorldState } from '../world/WorldState.ts';
 import { toWorldStateRecord } from '../persistence/WorldStateRecords.ts';
+import { Simulation } from '../core/Simulation.ts';
+import { toCheckpointRecord } from '../persistence/CheckpointRecords.ts';
 
 function journeyWorld(): { state: WorldState; destination: { cx: number; cy: number } } {
   const seed = 'wsp-1';
@@ -59,6 +61,44 @@ function tick(state: WorldState): void { state.current.step(); state.advancePeop
     dateSave.world.frontier.journey.transit.lastAdvancedTick++;
     dateSave.world.frontier.journey.transit.execution.time.tick++;
     expect(() => deserializeSave(JSON.stringify(dateSave))).toThrow(/corrupt/i);
+    expect(actor.alive).toBe(true);
+  });
+
+  it('advances only travelling lives at midnight and carries a birth through checkpoint restore', () => {
+    const { state, destination } = journeyWorld();
+    const mother = state.current.people.find(person => person.alive && person.canBearChildren)!;
+    expect(mother).toBeDefined();
+    mother.pregnant = true; mother.gestationLeft = 1; mother.pregnantBy = null;
+    const resident = state.current.people.find(person => person.alive && person.id !== mother.id)!;
+    const residentAge = resident.age;
+    expect(state.startJourney(destination, { actor: mother, travellerIds: [mother.id], requireKnowledge: false })).toBeNull();
+    const ticket = state.frontier.pendingJourney!;
+    const transit = Simulation.fromCheckpointRecord(ticket.transit);
+    transit.peopleById.get(mother.id)!.pregnant = true;
+    transit.peopleById.get(mother.id)!.gestationLeft = 1;
+    const pregnantCheckpoint = toCheckpointRecord(transit);
+    state.frontier.updateJourney({ ...ticket, transit: pregnantCheckpoint });
+    for (let i = 0; i < 3; i++) tick(state);
+    const loaded = deserializeSave(serializeSave(state, 10));
+    for (let i = 0; i < 8; i++) { tick(state); tick(loaded); }
+    expect(state.frontier.pendingJourney).toBeNull();
+    expect(loaded.frontier.pendingJourney).toBeNull();
+    const child = state.current.people.find(person => person.motherId === mother.id);
+    expect(child).toBeDefined();
+    // The source keeps its ordinary one-per-midnight pass while the traveller
+    // receives exactly one journey LifeSystem pass in the separate checkpoint.
+    expect(state.worldPeople().get(resident.id)?.age).toBe(residentAge + 1);
+    expect(toWorldStateRecord(loaded)).toEqual(toWorldStateRecord(state));
+  });
+
+  it('rejects a changed journey party without changing the authoritative ticket', () => {
+    const { state, destination } = journeyWorld();
+    const actor = state.current.possessFirst()!;
+    expect(state.startJourney(destination, { requireKnowledge: false })).toBeNull();
+    const ticket = state.frontier.pendingJourney!;
+    const rejected = { ...ticket, travellerIds: [ticket.actorId + 1] };
+    expect(() => state.frontier.updateJourney(rejected)).toThrow(/journey continuity/i);
+    expect(state.frontier.pendingJourney).toEqual(ticket);
     expect(actor.alive).toBe(true);
   });
 

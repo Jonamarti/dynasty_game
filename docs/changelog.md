@@ -15060,3 +15060,10 @@ extracción o restauración parcial se revierte y puede reintentarse. Se enlazan
 los contratos de fase 34 y ropa 14c. Typecheck y pruebas focales no pudieron
 arrancar por falta de `tsc`/`vitest`; sin instalación ni pruebas largas. No se
 activa desgaste/remiendo mientras el tráfico fuera del mapa siga sin migrar.
+## 2026-10-12 — M15 viajes avanzan el ciclo vital del grupo
+
+Cada medianoche se usa `LifeSystem` sobre viajeros canónicos; nacimiento, edad,
+embarazo y mortalidad siguen sus reglas y los recién nacidos quedan en el
+checkpoint y el grupo persistido. Los residentes de destino quedan fuera de esa
+pasada. Contrato y cobertura de checkpoint/restore/negativa en
+`docs/m15_phase35_journeys.md`.

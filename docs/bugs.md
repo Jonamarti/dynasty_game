@@ -4892,3 +4892,12 @@ supervivencia. Los nodos `irrigation`/`terracing`, el gate `earthworks` y los
 diseños `ditch`/`moat` están conectados con sus lectores. Siguen pendientes
 otros gates de obras, persuasión, desvío/coste defensivo y calibración agrícola.
 El factor 1,25 y la economía siguen sin calibrar para el cierre de 26e/M15.
+
+### 2026-10-12 — viaje de grupo no simula la comarca de destino
+El viaje fechado aplica ahora `LifeSystem.daily` a los propietarios viajeros en
+cada medianoche y persiste nacimientos en el grupo. Los residentes y la ecología
+del checkpoint de destino siguen sin ejecutar sus pases locales mientras ese
+checkpoint pertenece al ticket; se resolverán al reanudar allí la simulación.
+Además, el coordinador exige un `step()` por tick hasta la llegada: saltar varios
+ticks a través de la llegada puede dejar el origen con el reloj por delante y
+sigue siendo una limitación registrada para M16.

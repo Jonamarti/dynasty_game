@@ -5765,6 +5765,51 @@ export class Simulation {
     }
   }
 
+  /** Apply the ordinary calendar-day life rules to the journey's canonical owners only. */
+  advanceJourneyLifeDay(travellerIds: readonly number[]): number[] {
+    this.assertExecutionAuthority();
+    const ids = new Set(travellerIds);
+    const travellers = travellerIds.map(id => this.peopleById.get(id));
+    if (travellers.some(person => !person)) throw new RangeError('Journey traveller is not owned by its checkpoint');
+    const born: number[] = [];
+    const midwifeFor = (mother: Person): Person | null => {
+      let best: Person | null = null, quality = 0;
+      for (const helper of this.peopleHash.queryRadius(mother.x, mother.y, this.config.sightRadius)) {
+        if (!ids.has(helper.id) || helper.id === mother.id || helper.bandId !== mother.bandId) continue;
+        const candidate = midwifeQuality(helper);
+        if (candidate > quality || (candidate === quality && candidate > 0 && best !== null && helper.id < best.id)) {
+          best = helper; quality = candidate;
+        }
+      }
+      return best;
+    };
+    this.lifeSystem.daily(travellers.filter((person): person is Person => !!person), {
+      parentArchive: this.comarcaParent,
+      rng: this.lifeRng,
+      population: this.config.population,
+      tick: this.time.tick,
+      day: this.time.day,
+      peopleById: this.peopleById,
+      householdsById: this.householdsById,
+      roofTonight: new Map(),
+      makeChild: (mother, childRng) => {
+        const name = childRng.pick(NAME_ONSETS) + childRng.pick(NAME_CODAS);
+        const child = new Person(name, mother.x, mother.y, mother.bandId, childRng, this.time.daysPerYear, this.ids);
+        child.skillGain = this.config.learning.skillGain;
+        return child;
+      },
+      onBirth: (child, mother, father) => { this.registerBirth(child, mother, father); born.push(child.id); },
+      onDeath: (person, cause) => person.die(cause),
+      pregnancyCare: {
+        rng: this.healthRng,
+        midwifeFor,
+        onMiscarriage: (mother, father, cause) => this.registerMiscarriage(mother, father, cause),
+        onComplicatedBirth: (mother, midwife) => this.registerComplicatedBirth(mother, midwife),
+      },
+    });
+    return born;
+  }
+
   // -------------------------------------------------------------------------
   // The step
   // -------------------------------------------------------------------------

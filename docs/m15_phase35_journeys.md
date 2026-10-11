@@ -10,7 +10,7 @@ Focused coverage lives in `journey-transport.test.ts`, `journey-world-state.test
 
 The existing item table has no preserved-meat or pemmican item yet. The displayed shelf-stable count is based on edible items with no spoil timer (currently including nuts); it does not claim a preservation recipe or the phase 15 preserved-food system is implemented.
 
-Transit advances the shared destination checkpoint clock, while needs, food use, spoilage, and encounter damage are applied only to the explicit travelling party. Residents and ecology in that destination checkpoint do not run their normal local simulation passes during the route, and pregnancy/lifecycle daily processing is not applied to travellers yet. This is an abstract party journey with a persisted destination checkpoint, not a full off-map simulation; those deferred passes remain a known limitation for follow-up.
+Transit advances the shared destination checkpoint clock. Needs, food use, spoilage, encounter damage, and the normal daily `LifeSystem` rules (aging, pregnancy progression, birth, and old-age mortality) apply only to the explicit travelling party at each midnight. A newborn is added to the persisted party and uses the ordinary global ID allocator. The party's life and health streams are the checkpoint's existing streams; no fork is added. Birth care can use only travelling companions, and conception remains subject to the ordinary shared-roof gate (journeying parties do not acquire a roof by being in transit). Residents and ecology in that destination checkpoint do not run their normal local simulation passes during the route, so residents cannot receive a second daily life pass. This remains an abstract party journey with a persisted destination checkpoint, not a full off-map simulation; destination residents and ecology are deferred until their owner resumes local simulation.
 
 The default global spoilage rate is zero, so journey ticks apply a journey-only baseline spoilage rate of 1 when no positive configured rate exists; ordinary simulation spoilage remains unchanged. The shelf-stable count is therefore a meaningful comparison with perishable berries over the route.
 
@@ -32,3 +32,8 @@ are rejected and camp barter/return manifests leave garments on the traveller
 until a physical-unit manifest is implemented. Wear and mending remain
 disabled pending the full consumption audit. See
 [`m15_garment_condition_design.md`](m15_garment_condition_design.md).
+
+The travelling-party life pass is covered across a mid-route save/restore,
+including a due pregnancy and newborn ownership, plus a refusal case for
+replacing the ticket's party. Updating the party is append-only so lifecycle
+births cannot silently transfer authority to another checkpoint owner.

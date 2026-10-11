@@ -3752,7 +3752,7 @@ envolver la latitud por error.
 
 ## Fase 35 — Llegar más lejos: transporte (M14 fase 17)
 
-**Implementación funcional cerrada el 2026-10-09.** Canoa local, viajes fechados con provisiones, rastra/carro, asnos/caballos vivos y vela tienen efectos físicos, guardado, pruebas negativas y capturas. [Contrato](m15_phase35_transport.md) y [verificación](m15_phase35_verification_20261009.md). La siguiente fase funcional es 36: noticias, caravanas e incursiones (trade ya existe).
+**Implementación funcional cerrada el 2026-10-09; ciclo vital de viajeros completado el 2026-10-12.** Canoa local, viajes fechados con provisiones, rastra/carro, asnos/caballos vivos y vela tienen efectos físicos, guardado, pruebas negativas y capturas. En tránsito, el `LifeSystem` diario avanza únicamente a los viajeros en cada medianoche; un nacimiento se incorpora a la lista persistida del grupo. Residentes/ecología del destino siguen aplazados. [Contrato](m15_phase35_transport.md) y [viajes](m15_phase35_journeys.md). La siguiente fase funcional es 36: noticias, caravanas e incursiones (trade ya existe).
 
 | Medio | Efecto y puerta física |
 |---|---|
