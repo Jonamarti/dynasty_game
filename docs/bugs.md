@@ -1015,18 +1015,18 @@ investigó el selector en este cambio.
   `SpeciesDef.fecundity` y `FED_PER_MEAT`, no el ataque a personas.
 
 
-## SeasonLore aprende «estéril» de un arbusto recogido (2026-10-02)
+## SeasonLore aprende «estéril» de un arbusto recogido (resuelto 2026-10-12)
 
 `Simulation.observePlaces` anota `node.amount >= 1` como «da fruto» o «no» cada
 vez que alguien ve un arbusto, y `SeasonLore.barrenIn` da por estéril una
 estación en la que se vio vacío dos años distintos y nunca con fruto. Un arbusto
-**recogido hasta el suelo en su propia estación de fruto** cuenta como vacío:
-el pueblo puede aprender que una especie «no da en verano» solo porque ellos
-mismos la dejaron pelada. Depende del mundo (`season-lore.test.ts`, «are learned
-species by species», falla en 2 de 4 semillas tras 23c, y pasaba la semilla 3 sin
-ese cambio), así que se fijó la semilla del test en vez de afinarlo. Arreglo
-probable: anotar «vacío» solo si el arbusto está fuera de su fase de fruto
-(`bushPhase`), no si alguien lo ha vaciado. No hecho.
+**recogido hasta el suelo en su propia estación de fruto** podía contar como
+vacío, y enseñaba que la especie no daba esa temporada. `observePlaces` ahora
+registra ausencia para los arbustos solo durante su fase `bare`; un ejemplar
+vacío en fase `ripens`/`holds` no aporta evidencia. Prueba de regresión mantiene
+el avistamiento otoñal y recoge el arbusto en verano durante dos años, y asegura
+que verano no se aprende como estéril. La anterior prueba dependiente de mundo
+se mantiene como cobertura aparte.
 
 
 ## Timeout de Vitest en GitHub Actions (2026-09-30)

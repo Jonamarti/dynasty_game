@@ -21,6 +21,13 @@ alcanzable frente a barrera cerrada, no una ventaja defensiva de las zanjas
 someras ni el coste táctico para una incursión. Typecheck y prueba focal no
 pudieron ejecutarse porque este worktree no tiene dependencias locales
 (`vite-node` no está disponible); `npm run sim:check` tampoco pudo iniciar.
+## 2026-10-12 — m15: no confundir arbustos recogidos con estación estéril
+
+`SeasonLore` solo toma la ausencia de un arbusto como evidencia durante su fase
+botánica `bare`. Un arbusto agotado en su estación de fruto ya no enseña una
+lección falsa. Prueba con especie de verano agotada dos años consecutivos;
+`npm test` focal pendiente al integrar porque este worktree no lleva
+dependencias instaladas.
 
 ## 2026-10-11 — M15 herencia física de prendas
 

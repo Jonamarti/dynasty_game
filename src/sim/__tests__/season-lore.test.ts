@@ -49,6 +49,28 @@ function world(seed: string, sightRadius = 60, daysPerSeason = 1) {
 }
 
 describe('bush species and their seasons', () => {
+  it('does not learn a fruiting season as barren after its bushes are harvested', () => {
+    const sim = world('harvested-season-is-not-barren', 100, 1);
+    const person = sim.livingPeople().find(p => !p.isChild)! as Person;
+    person.knownTech.add('plant_lore');
+    sim.possess(person);
+    const bramble = sim.nodes.find(n => n.kind === 'berries' && n.species === 'bramble')!;
+    person.x = bramble.x;
+    person.y = bramble.y;
+    const observe = (sim as unknown as { observePlaces: (person: Person) => void }).observePlaces.bind(sim);
+    const ticksPerYear = sim.time.daysPerYear * sim.config.time.ticksPerDay;
+
+    // Bramble bears in autumn and summer. A bare count in summer after picking
+    // it must not erase that seasonal fact.
+    for (const [year, season, amount] of [[0, 'autumn', 2], [0, 'summer', 0], [1, 'summer', 0]] as const) {
+      sim.time.tick = year * ticksPerYear + (season === 'summer' ? 1 : 2) * sim.config.time.ticksPerDay;
+      bramble.amount = amount;
+      person.placeMemoryStaticDay = -1;
+      observe(person);
+    }
+    expect(person.seasonLore.barrenIn('bush:bramble', 'summer')).toBe(false);
+  });
+
   it('ripen, hold and go bare in their own seasons', () => {
     const sim = world('bush-seasons');
     const bushes = sim.nodes.filter(n => n.kind === 'berries');

@@ -6667,7 +6667,15 @@ export class Simulation {
         if (lore && isPlantFood(node.def)) {
           // Learned species by species once bushes have them: a sloe in
           // fruit in winter says nothing about a raspberry.
-          person.seasonLore.observe(seasonLoreKind(node), this.time.season, year, node.amount >= 1);
+          const season = this.time.season;
+          if (node.amount >= 1) {
+            person.seasonLore.observe(seasonLoreKind(node), season, year, true);
+          } else if (node.species === null || bushPhase(node.species, season) === 'bare') {
+            // An empty bush in its ripening/holding season may just have been
+            // harvested. Only the species' actual bare phase is evidence that
+            // this season produces no fruit.
+            person.seasonLore.observe(seasonLoreKind(node), season, year, false);
+          }
         }
       }
       for (const tree of this.treeHash.queryRadius(person.x, person.y, radius, this.placeTreeCandidates)) {
