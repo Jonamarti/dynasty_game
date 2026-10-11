@@ -14,7 +14,10 @@ restaura de forma transaccional. El tráfico de personas conserva ya las filas
 durante staging, checkpoint, llegada y regreso, y la hidratación rechaza estados
 con unidades ausentes o duplicadas. Los manifiestos de mercancía de caravana
 siguen siendo count-only: rechazan prendas y el trueque/retorno las deja con el
-viajero hasta que el manifiesto tenga soporte para unidades físicas. `unitId` sigue
+ viajero hasta que el manifiesto tenga soporte para unidades físicas. La demanda
+por amenaza (`doThreaten`) y el rescate (`ransomCaptive`) todavía usan
+remove/add count-only sobre IDs arbitrarios y pueden resetear prendas; convertir
+esas dos rutas es necesario antes de activar desgaste/remiendo. `unitId` sigue
 siendo local al inventario y se reemite al colisionar durante una fusión; una
 identidad global antes de referenciar copias entre inventarios sigue pendiente.
 Por eso no se habilita desgaste ni remiendo. Véase el

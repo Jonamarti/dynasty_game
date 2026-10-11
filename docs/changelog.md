@@ -9,7 +9,9 @@ el trueque/retorno del campamento las deja en el inventario del viajero. Pruebas
 focales añadidas a `world-traffic.test.ts`; no se activan desgaste ni remiendo
 hasta completar la auditoría de consumo. [Contrato de prendas](m15_garment_condition_design.md),
 [contrato de fase 35](m15_phase35_journeys.md). Dependencias no instaladas en
-este worktree; verificación local limitada a checks disponibles.
+este worktree; verificación local limitada a checks disponibles. La auditoría
+también identificó demanda por amenaza (`doThreaten`) y rescate (`ransomCaptive`)
+como transferencias count-only pendientes.
 ## 2026-10-12 — M15 fase 26e: rutas por aberturas en zanjas
 
 Se añade una regresión de Pathfinder para la topología física de una zanja que
