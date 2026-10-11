@@ -38,3 +38,10 @@ capture under `artifacts/screenshots/m15-phase14-ab-2026-10-10/`.
 The art contract for the two torso variants is in `docs/m15_art_contract.md`.
 New garment fields must not be added without implementing their owning reader
 in the same change.
+
+**Ownership follow-through (M15, 2026-10-12):** later condition rows now travel
+with garments through local handovers, stores, estate settlement, and the
+validated Comarca inventory escrow record. The [condition design](m15_garment_condition_design.md)
+and [phase 34 inventory contract](m15_phase34_inventory.md) cover exact identity,
+wear, repair progress, and the remaining live world-traffic boundary. Wear and
+mending remain inactive until that traffic route preserves the same rows.

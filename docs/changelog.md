@@ -15026,3 +15026,13 @@ la prenda en una persona y ya usan las transferencias explícitas. Typecheck y
 pruebas focales no pudieron arrancar por falta de `tsc`/`vitest`; sin
 instalación ni pruebas largas. Escrow y tráfico fuera del mapa siguen
 pendientes; desgaste/remiendo permanece apagado.
+
+## 2026-10-12 — m15: escrow de comarca conserva condición de prendas
+
+El grafo de `ComarcaInventoryTransfer` conserva IDs, desgaste y progreso de
+remiendo al retirar inventarios, consumir alimentos y cruzar JSON validado.
+Filas malformadas, parciales o duplicadas fallan antes de restaurar; una
+extracción o restauración parcial se revierte y puede reintentarse. Se enlazan
+los contratos de fase 34 y ropa 14c. Typecheck y pruebas focales no pudieron
+arrancar por falta de `tsc`/`vitest`; sin instalación ni pruebas largas. No se
+activa desgaste/remiendo mientras el tráfico fuera del mapa siga sin migrar.

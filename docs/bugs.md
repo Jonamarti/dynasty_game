@@ -9,8 +9,10 @@ transfiere prendas. La entrega de tributo a un almacén conserva unidades; sus
 selectores autónomos sólo eligen comida segura. La fusión de hogares es la
 única transferencia directa local entre almacenes y revierte ambos inventarios
 si una inserción falla. Otros recorridos entre almacenes llevan la carga por
-una persona. Siguen pendientes escrow y tráfico fuera del mapa; esas rutas
-pueden destruir o recrear la unidad. `unitId` sigue
+una persona. `ComarcaInventoryTransfer` conserva filas en el escrow JSON y
+restaura de forma transaccional; la copia persistida no concede autoridad ni
+está conectada todavía al tráfico activo. El tráfico fuera del mapa sigue
+pendiente y puede destruir o recrear la unidad. `unitId` sigue
 siendo local al inventario y se reemite al colisionar durante una fusión; una
 identidad global antes de referenciar copias entre inventarios sigue pendiente.
 Por eso no se habilita desgaste ni remiendo. Véase el

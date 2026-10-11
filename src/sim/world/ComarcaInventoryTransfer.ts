@@ -53,6 +53,9 @@ registerGraphPrototype('Inventory', Inventory);
 
 function fail(message: string): never { throw new TypeError(`Invalid comarca inventory transfer: ${message}`); }
 function validSourceId(value: unknown): value is string { return typeof value === 'string' && value.trim().length > 0; }
+function hasInventoryContents(state: InventoryTransferState): boolean {
+  return state.stacks.length > 0 || state.spoilage.length > 0 || state.garmentUnits.length > 0;
+}
 function validateInventory(inventory: Inventory): InventoryTransferState {
   if (!(inventory instanceof Inventory)) fail('source is not an Inventory');
   const state = validateInventoryTransferState(inventory.transferSnapshot());
@@ -118,8 +121,31 @@ export class ComarcaInventoryTransfer {
     const escrow = sources.map(source => fromObjectGraph(toObjectGraph(source.inventory), 'Inventory', 'inventory transfer graph') as Inventory);
     totalNutrition(escrow);
     // Preflight every source first: a late stale/overflowing source cannot leave an earlier one empty.
-    for (let i = 0; i < sources.length; i++) sources[i]!.inventory.assertCanTakeTransferState(states[i]!);
-    for (let i = 0; i < sources.length; i++) sources[i]!.inventory.takeTransferState(states[i]!);
+    for (let i = 0; i < sources.length; i++) {
+      sources[i]!.inventory.assertCanTakeTransferState(states[i]!);
+      if (hasInventoryContents(states[i]!) && states[i]!.version >= Number.MAX_SAFE_INTEGER - 1) {
+        throw new RangeError('inventory version cannot advance for transfer rollback');
+      }
+    }
+    let attempted = -1;
+    try {
+      for (let i = 0; i < sources.length; i++) {
+        attempted = i;
+        sources[i]!.inventory.takeTransferState(states[i]!);
+      }
+    } catch (error) {
+      // Preflight makes failure unlikely, but a later source can still reject
+      // extraction. Do not leave the earlier named sources empty in that case.
+      for (let i = attempted; i >= 0; i--) {
+        const inventory = sources[i]!.inventory;
+        const current = validateInventory(inventory);
+        const original = states[i]!;
+        if (current.stacks.length || current.spoilage.length || current.garmentUnits.length) continue;
+        if (!hasInventoryContents(original)) continue;
+        inventory.restoreTransferState(original);
+      }
+      throw error;
+    }
     return new ComarcaInventoryTransfer(sources.map((source, i) => ({
       sourceId: source.sourceId, destination: source.inventory, escrow: escrow[i]!,
     })));
@@ -247,11 +273,35 @@ export class ComarcaInventoryTransfer {
     this.assertOpen();
     const states = this.sources.map(source => {
       const current = validateInventory(source.destination);
-      if (current.stacks.length || current.spoilage.length) throw new RangeError(`inventory destination ${source.sourceId} is not empty`);
+      if (current.stacks.length || current.garmentUnits.length || current.spoilage.length) {
+        throw new RangeError(`inventory destination ${source.sourceId} is not empty`);
+      }
       return validateInventoryTransferState(source.escrow.transferSnapshot());
     });
     for (let i = 0; i < this.sources.length; i++) this.sources[i]!.destination.assertCanRestoreTransferState(states[i]!);
-    for (let i = 0; i < this.sources.length; i++) this.sources[i]!.destination.restoreTransferState(states[i]!);
+    for (let i = 0; i < this.sources.length; i++) {
+      if (hasInventoryContents(states[i]!) &&
+          Math.max(this.sources[i]!.destination.version, states[i]!.version) >= Number.MAX_SAFE_INTEGER - 1) {
+        throw new RangeError('inventory version cannot advance for transfer rollback');
+      }
+    }
+    let attempted = -1;
+    try {
+      for (let i = 0; i < this.sources.length; i++) {
+        attempted = i;
+        this.sources[i]!.destination.restoreTransferState(states[i]!);
+      }
+    } catch (error) {
+      // A destination hook can fail after applying its state. Return every
+      // already-touched destination to empty so the same escrow can be retried.
+      for (let i = attempted; i >= 0; i--) {
+        const destination = this.sources[i]!.destination;
+        const current = validateInventory(destination);
+        if (!current.stacks.length && !current.spoilage.length && !current.garmentUnits.length) continue;
+        destination.takeTransferState(current);
+      }
+      throw error;
+    }
     this.restored = true;
   }
 

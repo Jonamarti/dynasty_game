@@ -754,11 +754,14 @@ export class Inventory {
 
   /** Legacy checkpoints predate per-unit clothing; their garments start pristine. */
   private ensureGarmentUnits(): void {
-    if (!Array.isArray(this.garmentUnits)) this.garmentUnits = [];
+    // Only a truly legacy object with no garment row field may synthesize
+    // pristine units. Filling gaps in a present array would launder a damaged
+    // transfer/checkpoint record instead of rejecting its count mismatch.
+    if (Array.isArray(this.garmentUnits)) return;
+    this.garmentUnits = [];
     for (const [itemId, count] of this.stacks) {
       if (!ITEMS[itemId]?.garment) continue;
-      const present = this.garmentUnits.filter(unit => unit.itemId === itemId).length;
-      for (let i = present; i < count; i++) this.garmentUnits.push({
+      for (let i = 0; i < count; i++) this.garmentUnits.push({
         unitId: `g:legacy:${this.version}:${itemId}:${i}`,
         itemId,
         wear: 1,

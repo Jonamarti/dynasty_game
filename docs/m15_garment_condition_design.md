@@ -39,6 +39,10 @@ uses `mostOf`, which admits servable food only, and territory access demands
 use `bestFood`. The local building-store audit found no other direct store to
 store mover: household home-store consolidation is the sole seam and uses
 `Inventory.transferAllTo`. Other store trips have a person as the carrier.
+The Comarca escrow graph also retains garment rows through `take`, food
+consumption, validated JSON, and `restore`; partial failures during multi-source
+extraction or restore roll back the inventories. The live off-map traveller
+route is still a separate unresolved ownership boundary.
 
 This is still a foundation: some gameplay transfer seams listed below use
 generic count-based `add`/`remove`. Wear/remending must not be activated until
@@ -81,10 +85,11 @@ validation, not the gameplay routes below.
 ## Existing ownership paths to convert
 
 `Inventory` is reused by people, buildings, piles, and off-map escrow. Its
-current `transferSnapshot()` validates an exact three-field shape (`version`,
-`stacks`, `spoilage`); condition data must be added to that state and its
-validation before escrow can carry worn garments. Here `InventoryTransferState.version`
-is the inventory/cache generation, not a schema version. The enclosing
+`transferSnapshot()` validates `version`, `stacks`, `spoilage`, and physical
+`garmentUnits` rows, including exact count agreement and unique unit identity.
+Legacy transfer snapshots without garment rows synthesize pristine units;
+present-but-incomplete or malformed rows are rejected. Here
+`InventoryTransferState.version` is the inventory/cache generation, not a schema version. The enclosing
 `ComarcaInventoryTransferRecord.version` is the v1 record schema version. The
 graph-based entity checkpoint captures `Inventory` fields, but the explicit
 transfer record validates its inventory state separately.
@@ -98,7 +103,7 @@ The main movement seams found in the current tree are:
 | Store and withdraw | `Building.accept`, `Simulation.storeItem` / `takeItem`, `ActionSystem.doStore` / `doTake` / `doRender`, `Simulation.mergeHouseholdsImpl` | **Delivered for person↔building store**, household home-store merges, and the store-to-bearer leg of tribute: explicit transfer preserves condition and snapshots; whole-inventory merge is validated and rolls back both sides on failure, including colliding local IDs. Audit found no other direct local store-to-store route; cross-building errands move through a person. |
 | Drop, pickup, carry overflow | `Simulation.drop`, `Simulation.takeFromPile`, `Simulation.dropAt`, `Carry.reconcileCarry` | **Delivered:** worn slot references an exact unit; drop, pickup and carry overflow move unit rows and preserve condition/progress. Generic `dropAt` still creates pristine garments for produced goods. |
 | Death and inheritance | `LifeSystem.settleEstate`, called from `Simulation` death handling | **Delivered:** whole estate moves atomically to heir/home, or garment rows drop intact at the deceased's feet. |
-| Comarca staging and restore | `ComarcaInventoryTransfer.take`, `consume`, `restore`, `toRecord` | Include condition in validated escrow graphs and restore it atomically with stacks/spoilage. |
+| Comarca staging and restore | `ComarcaInventoryTransfer.take`, `consume`, `restore`, `toRecord` | **Delivered for escrow records:** validated graphs preserve unit ID, wear, and repair progress through JSON and food consumption; malformed or incomplete present rows and duplicate identities are rejected, and multi-source take/restore roll back on later failure. Consuming a garment itself is explicit destruction. The record codec is not yet wired into live world traffic. |
 | World traffic / traveller cargo | `WorldTrafficCoordinator` plus `WorldState` cargo staging and return | Preserve condition through transit inventory and both directions of travel. |
 | Crafting and explicit consumption | `ActionSystem.doCraft` and other `inventory.remove` consumers | New garment outputs are pristine; a garment used as an ingredient is explicitly destroyed, not silently detached from its condition. |
 
@@ -110,11 +115,12 @@ the common drop, store, or inheritance path as a laundering loophole.
 ## Persistence and compatibility
 
 The ordinary checkpoint path serializes the object graph and retains class
-prototypes. Add condition state to `Inventory` and validate it during graph
-hydration; do not derive it from the worn equipment slot during restore. The
-separate `ComarcaInventoryTransfer` record is stricter: `Inventory` currently
-rejects unknown fields and its record version is v1, so a condition-bearing
-version must explicitly validate, serialize, and restore the additional rows.
+prototypes. Validate `Inventory` condition state during graph hydration; do not
+derive it from the worn equipment slot during restore. The separate
+`ComarcaInventoryTransfer` record uses the allow-listed graph codec and
+validates hydrated inventory state before it can be restored. Its record
+version remains v1: the graph already carries the added Inventory field, while
+legacy count-only transfer snapshots still receive pristine garment rows.
 
 Legacy checkpoints have no condition records. Hydration should assign full
 condition to every garment unit represented by legacy counts and equipment,
