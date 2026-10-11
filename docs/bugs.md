@@ -642,14 +642,14 @@ arranque vengan ya cavados, o `git revert` del commit del silo.
 
 ## M15 fase 26c: lo que las obras de tierra no hacen todavía (2026-10-04)
 
-- **La banda no las propone.** El jugador las coloca y su banda las trabaja
-  (apoyo y órdenes del jefe), pero ningún proponente NPC decide una zanja
-  defensiva tras una incursión ni un canal por el campo seco. La persuasión de la
-  fase 6 existe para `Building.sponsorId`, y encajaría; lo que falta es la
-  *razón* medible de proponer (presión de seguridad, sequía del campo), y
-  `BandSystem.planBuildings` no tiene ni un registro de incursiones por banda que
-  la alimente, ni un lector de sequía por campo. Se deja sin hacer antes que
-  inventar una regla «cava cuando…». Se retoma con 26e.
+- **Las obras aún no tienen una política general de propuestas.** Avance
+  2026-10-12: `BandSystem.planBuildings` propone una zanja defensiva si un adulto
+  recuerda de primera mano un acto hostil interbanda suficientemente saliente
+  contra su banda, esta puede construir `ditch` y un adulto lleva herramienta de
+  cavar. El testigo queda como sponsor;
+  la búsqueda del sitio recorre un anillo fijo y no consume RNG. No se propone
+  canal por sequía: el juego aún carece de un lector agrícola que defina esa
+  presión. Tampoco se mide si la zanja reduce incursiones o daño.
 - **Foso, canal, bancal y terraplén tienen lectores parciales.** Todos cambian
   el relieve, y lo leen la pendiente (25b), la vista (25c) y el llenado (26d);
   el foso solo se llena donde el terreno es bajo, y una playa natural sube unos

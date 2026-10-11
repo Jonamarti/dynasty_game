@@ -31,7 +31,7 @@ import {
   type Building, type BuildingDef,
 } from '../entities/Building.ts';
 import { SOW_SEED } from '../entities/Field.ts';
-import { earthworkWorkRefusal } from '../core/Earth.ts';
+import { digTool, earthworkWorkRefusal } from '../core/Earth.ts';
 import { RECIPES, recipeTechPower } from '../entities/Recipe.ts';
 import { techPower, type Tech } from '../knowledge/Tech.ts';
 import { JOB_IDS, type JobId } from '../entities/Job.ts';
@@ -174,6 +174,11 @@ const RAID_RANGE = 75;
  * stockpile, which is bare ground and costs nothing to place.
  */
 const RAID_GRANARY = 100;
+
+/** Hostile cross-band deeds that can give a witnessed band a security reason to dig. */
+const SECURITY_INCIDENTS = new Set(['theft', 'sabotage', 'assault', 'murder', 'abduction']);
+/** The same salience floor used by Memory's existing gossip readers. */
+const SECURITY_MEMORY_SALIENCE = 0.15;
 
 /**
  * How far past `RAID_HOSTILITY` a grudge has to run before a party goes to
@@ -1633,6 +1638,17 @@ export class BandSystem {
       }
     }
 
+    // A firsthand hostile deed gives a witnessed band a concrete reason to
+    // raise one defensive ditch. Use the retained memory's existing gossip
+    // floor and require a currently buildable design; no invented score or
+    // probability decides whether the reason exists.
+    const hasDitch = live.some(site => (site.def.earthwork?.turnOf ?? site.def.id) === 'ditch');
+    const securityWitness = !wanted && underway === 0 && stores.length > 0 && !hasDitch &&
+      buildable.some(def => def.id === 'ditch') && members.some(person => !person.isChild && digTool(person))
+      ? this.securityWitness(band, members, ctx)
+      : null;
+    if (securityWitness && this.placeSecurityDitch(band, securityWitness, ctx)) return;
+
     if (!wanted && underway === 0 && stores.length > 0) {
       const traps = live.filter(b => isTrap(b.def));
       if (traps.length < TRAPS_PER_BAND) {
@@ -1716,6 +1732,39 @@ export class BandSystem {
     // trap it can never site is the only way this branch fails, and the counter
     // is the difference between finding that out and guessing at it.
     telemetry.count('band_could_not_site_' + wanted);
+  }
+
+  /** The lowest-id living adult who remembers a salient, firsthand attack on this band. */
+  private securityWitness(band: Band, members: Person[], ctx: BandContext): Person | null {
+    for (const person of [...members].sort((a, b) => a.id - b.id)) {
+      if (!person.alive || person.isChild) continue;
+      for (const memory of person.memory.all()) {
+        if (!memory.firsthand || memory.victimBandId !== band.id ||
+            memory.salience < SECURITY_MEMORY_SALIENCE || !SECURITY_INCIDENTS.has(memory.type)) continue;
+        const actor = ctx.personById(memory.actorId);
+        if (actor && actor.bandId !== band.id) return person;
+      }
+    }
+    return null;
+  }
+
+  /** Places one defensive ditch in a stable ring around camp without consuming the planner RNG. */
+  private placeSecurityDitch(band: Band, sponsor: Person, ctx: BandContext): boolean {
+    const homeX = Math.round(band.homeX);
+    const homeY = Math.round(band.homeY);
+    for (let radius = 5; radius <= 8; radius++) {
+      for (let y = homeY - radius; y <= homeY + radius; y++) {
+        for (let x = homeX - radius; x <= homeX + radius; x++) {
+          if (Math.max(Math.abs(x - homeX), Math.abs(y - homeY)) !== radius) continue;
+          const site = ctx.place('ditch', x, y, band.id, sponsor.id);
+          if (!site) continue;
+          telemetry.count('band_planned_defensive_ditch');
+          return true;
+        }
+      }
+    }
+    telemetry.count('band_could_not_site_defensive_ditch');
+    return false;
   }
 
   /** The least work of a set of designs. Ties go to the first, which is stable. */

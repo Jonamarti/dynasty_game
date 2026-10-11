@@ -15393,3 +15393,12 @@ La interfaz conserva el mapa y expone las comarcas por botones accesibles. E2E
 verifica inicio, región reservada y selección persistente; captura nueva en
 `artifacts/screenshots/m15-comarca-choice-2026-10-12/04-comarca-choice-es.png`.
 
+## 2026-10-12 — m15: propone zanjas tras ataques presenciados (0.15.101-alpha)
+
+Una persona adulta que puede cavar y presencia hostilidad entre bandas puede
+patrocinar una zanja defensiva cerca de su hogar. La propuesta pasa por las
+prioridades de supervivencia y agricultura antes de trampas de excedente, y
+usa el sistema de propuestas y apoyos existente. Pruebas negativas cubren falta
+de testigo, adulto o capacidad de cavar. Sin cambio de UI ni calibración del
+efecto defensivo.
+
