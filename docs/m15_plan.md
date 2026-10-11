@@ -2793,7 +2793,12 @@ lleva agua a beber junto al campamento: un valor que la banda descubre sola.
   `World.stepFactor`; controles antes/después comprueban los tres lectores. El
   pathfinding táctico de incursiones sobre zanjas está implementado (avance
   2026-10-12); su efecto en defensa real, la persuasión de obras y la medición
-  económica siguen pendientes.
+  económica siguen pendientes. Avance 2026-10-12: un sponsor adulto puede
+  proponer un canal desde un campo en crecimiento de la clase ambiental más
+  árida hacia agua dulce cercana. El trazado determinista sirve el radio de
+  riego existente; no se modela estrés estacional ni se calibra su factor de
+  producción. Defensa real, persuasión de obras y efecto económico medido
+  siguen pendientes.
 - **Bancal:** un campo en pendiente que conserva la capa fértil al nivelar la
   ladera con corte y relleno; no modela erosión adicional por lluvia.
 

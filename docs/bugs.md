@@ -647,16 +647,23 @@ arranque vengan ya cavados, o `git revert` del commit del silo.
   recuerda de primera mano un acto hostil interbanda suficientemente saliente
   contra su banda, esta puede construir `ditch` y un adulto lleva herramienta de
   cavar. El testigo queda como sponsor;
-  la búsqueda del sitio recorre un anillo fijo y no consume RNG. No se propone
-  canal por sequía: el juego aún carece de un lector agrícola que defina esa
-  presión. Tampoco se mide si la zanja reduce incursiones o daño.
+  la búsqueda del sitio recorre un anillo fijo y no consume RNG. También puede
+  proponer canal el sponsor vivo de un campo que está creciendo en la clase
+  ambiental de humedad más árida si el hash de orillas encuentra agua dulce y
+  un trazado fijo lo acerca al radio de riego. El cultivo no tiene estrés
+  hídrico estacional; se reutiliza la clase 0 ya existente, por lo que esta
+  propuesta no afirma ni mide una sequía del año. Ambas propuestas se enlazan al
+  sponsor, apoyo y trabajo ordinario. Tampoco se mide si la zanja reduce
+  incursiones/daño ni el efecto económico del canal.
 - **Foso, canal, bancal y terraplén tienen lectores parciales.** Todos cambian
   el relieve, y lo leen la pendiente (25b), la vista (25c) y el llenado (26d);
   el foso solo se llena donde el terreno es bajo, y una playa natural sube unos
   4 m por casilla. El movimiento común encarece la subida desde una zanja poco
-  honda (25b); el foso supera `pitDepth` y no se cruza a pie. Sigue pendiente
-  que las incursiones rodeen las obras y su medición táctica, además del riego
-  del canal (`irrigation`) y la fertilidad del bancal.
+  honda (25b); el foso supera `pitDepth` y no se cruza a pie. Las incursiones
+  ya rodean la zanja cuando sale más barato, pero sigue sin medirse el efecto
+  táctico real. El canal ya riega campos cercanos con agua dulce, aunque el
+  crecimiento es provisional y no depende de estrés hídrico estacional; sigue
+  pendiente la fertilidad del bancal.
   Avance 2026-10-11: `earthworks` abre `ditch` y `moat`; el escalón de salida de
   la zanja ya usa el coste de pendiente 25b y el foso rebasa `pitDepth`, por lo
   que no se puede cruzar, y se llena desde la orilla (26d). Avance 2026-10-12:

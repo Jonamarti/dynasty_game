@@ -15402,3 +15402,11 @@ usa el sistema de propuestas y apoyos existente. Pruebas negativas cubren falta
 de testigo, adulto o capacidad de cavar. Sin cambio de UI ni calibración del
 efecto defensivo.
 
+## 2026-10-12 — m15: propone canales para campos secos (0.15.102-alpha)
+
+El sponsor adulto de un campo en crecimiento puede proponer un canal cuando
+el campo pertenece a la clase ambiental más árida y un trazado determinista
+desde agua dulce alcanza su radio de riego. La propuesta usa la obra, apoyo y
+trabajo existentes. No modela estrés hídrico estacional ni calibra el factor de
+producción; sin UI ni cohortes.
+
