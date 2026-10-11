@@ -15345,3 +15345,9 @@ anochecer, el uso de un refugio para dormir y la fabricación o colocación del
 mobiliario doméstico disponible. Neutro/positivo no cambia el regreso; negativo
 eleva el score. Pruebas focales; sin RNG, UI, calibración ni cohortes.
 
+## 2026-10-12 — M15 16d: recarga doméstica autónoma de lámparas (0.15.95-alpha)
+
+Los NPC reponen una lámpara instalada en su propio hogar con dos grasas de su
+estante y la acción existente de recarga. Se conservan propiedad y procedencia
+del jugador al colocarla. Pruebas focales; sin RNG, UI, ni calibración.
+

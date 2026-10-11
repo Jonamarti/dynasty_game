@@ -75,6 +75,8 @@ tiradas; no se afirma calibración. [Contrato](m15_phase16d_bedding.md).
 
 # M15 — El plan maestro: de las manos vacías al Estado
 
+**Avance del 2026-10-12 — 16d, mantenimiento autónomo de lámparas:** adultos reponen lámparas vacías no colocadas por el jugador dentro de su propia casa terminada. Si ya llevan dos grasas, el scorer dirige al `refuel_lamp`; si no, toma exactamente dos del estante del mismo hogar y vuelve a evaluar. No modifica lámparas del jugador, cargas parciales ni hogares ajenos. Siguen abiertos el acopio de grasa, la construcción autónoma del fireplace, otros muebles y la calibración diferida. Pruebas focales; sin cohortes. [Contrato](m15_phase16d_bedding.md).
+
 **Avance del 2026-10-10 — 14c, expectativas de abrigo:** `warm:<prenda>`
 se aprende por protección propia atribuible a la capa, y la ropa visible
 ofrece una hipótesis de baja confianza en invierno. Vestir y confeccionar

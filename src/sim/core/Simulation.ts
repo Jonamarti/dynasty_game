@@ -4990,6 +4990,9 @@ export class Simulation {
     if (!tile || !def) return null;
     const furniture = new Building(def, tile.x, tile.y, host.ownerBandId, this.ids);
     furniture.hostId = host.id;
+    // Player-ordered placement is a deliberate fixture choice; autonomous
+    // household upkeep must leave those fixtures under the player's control.
+    furniture.playerPlaced = person.isPlayer && person.order !== null;
     if (itemId === 'fat_lamp') furniture.fuelRemaining = FAT_LAMP_FUEL_TICKS;
     furniture.sponsorId = person.id;
     furniture.plannedTick = this.time.tick;

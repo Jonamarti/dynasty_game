@@ -182,9 +182,9 @@ sprite and carried item icon are generated from `art/src`; the capture is
 
 NPCs already receive the warmth, light and station behavior from these shared
 readers, but this slice does not make them gather fireplace materials or
-autonomously furnish a home with one. Other comfort furniture, autonomous
-lamp refuelling, and the comfort-motive reader remain open. No fuel balance, economy
-improvement, or cohort result is claimed.
+autonomously furnish a home with one. Other comfort furniture and autonomous
+fireplace construction remain open. Lamp upkeep is recorded below. No fuel
+balance, economy improvement, or cohort result is claimed.
 
 ## 2026-10-12: phase 16e, one midnight sleep and safety sample
 
@@ -217,8 +217,29 @@ passed all seven applicable checks in 2400 steps. This validates the readers
 and fixture, not comfort amplitudes or population outcomes; calibration and
 cohort runs remain deferred.
 
-Still open after 16e/16f: NPC autonomous fireplace construction and lamp
-refuelling, other planned comfort furniture, and deferred calibration.
+## 2026-10-12: NPC upkeep for an empty household fat lamp
+
+An adult scores a refill only for a complete, non-ruined, empty fat lamp hosted
+by their own completed, usable household home, and only when the lamp was not
+placed by the player. With two fat already carried, the existing `refuel_lamp`
+action routes to the room and uses the ordinary refill validation/consumption.
+Otherwise, if the home hosts a completed storage piece with at least two fat,
+the scorer sends the adult to take exactly two from that piece; the next think
+can then select the lamp. Both paths use existing inventory and building state,
+add no fuel rule or RNG draw, and leave other households' goods and player-
+placed lamps alone.
+
+Focused tests inspect the live brain score/target, exercise carried-fat refill,
+and reject player-placed, non-empty, foreign-home and ruined-host candidates.
+Existing explicit-order tests retain the visible refusal for missing fat and
+foreign ownership. NPCs do not gather/craft fat for lamp upkeep, refill lamps
+outside their own home, replace lamps, or refill a player-placed lamp; partial
+charges are left alone until empty. NPC fireplace construction and other
+planned comfort furniture remain open. No calibration or cohort result is
+claimed.
+
+Still open after 16e/16f: NPC autonomous fireplace construction, other planned
+comfort furniture, and deferred calibration.
 
 ## 2026-10-12: phase 16e, the comfort drive reads sleep mood
 

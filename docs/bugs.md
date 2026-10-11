@@ -20,11 +20,17 @@ registró una regresión funcional en esta verificación.
 
 ## 2026-10-12 — 16d, la lámpara autónoma no se repone sola
 
-El hogar fabrica y coloca una sola lámpara, con la carga inicial de 1200 ticks.
-Cuando se agota, la opción radial permite recargarla con grasa, pero la IA no
-elige esa orden ni fabrica una sustituta; la luz desaparece hasta que intervenga
-el jugador. Este avance de autonomía es una sola carga inicial, no mantenimiento
-doméstico completo. Véase [contrato 16d](m15_phase16d_bedding.md).
+**Resuelto en 0.15.72-alpha:** el scorer NPC repone lámparas vacías no
+colocadas por el jugador en su casa propia y puede retirar dos grasas de un
+estante alojado allí. Las negativas por casa ajena, lámpara del jugador,
+anfitrión arruinado y carga parcial siguen cerradas. Continúa pendiente que los
+NPC reúnan o fabriquen grasa y que construyan un fireplace.
+
+La observación inicial describía una lámpara que sólo el jugador podía reponer;
+el ciclo de refill NPC ahora existe. El límite deliberado del mecanismo es que
+usa grasa que la persona lleva o que ya está almacenada en su hogar: no crea
+grasa, busca reservas de hogares ajenos ni construye/reemplaza mobiliario.
+Véase [contrato 16d](m15_phase16d_bedding.md).
 
 ## 2026-10-12 — M15 14c, remiendo inicial: límites y verificación
 

@@ -44,6 +44,21 @@ function fixture() {
   return { sim, person, house };
 }
 
+function scoreOneBrainTick(sim: Simulation, person: ReturnType<typeof fixture>['person']) {
+  const brain = (sim as unknown as { brain: Brain }).brain;
+  const score = brain.score.bind(brain);
+  let result: ReturnType<Brain['score']> | null = null;
+  let context: BrainContext | null = null;
+  const spy = vi.spyOn(brain, 'score').mockImplementation((actor, ctx) => {
+    const scored = score(actor, ctx);
+    if (actor === person) { result = scored; context = ctx; }
+    return scored;
+  });
+  try { sim.step(); } finally { spy.mockRestore(); }
+  if (!result || !context) throw new Error('the controlled actor did not receive a brain score this tick');
+  return { ...(result as ReturnType<Brain['score']>), context: context as BrainContext };
+}
+
 describe('bedding and beds', () => {
   it('samples a sleeping household member once for comfort and security, not an awake one', () => {
     const { sim, person, house } = fixture();
@@ -173,6 +188,7 @@ describe('bedding and beds', () => {
   it('crafts, lights, saves, burns and refills a household fat lamp without making heat', () => {
     const { sim, person, house } = fixture();
     person.knownTech.add('fat_lamp');
+    person.isPlayer = true;
     person.inventory.add('fat_lamp', 1);
     person.inventory.add('fat', FAT_LAMP_REFILL_FAT);
     expect(RECIPES.fat_lamp).toMatchObject({ tech: 'fat_lamp', ingredients: { flint: 1, fat: 2 }, output: { fat_lamp: 1 } });
@@ -180,7 +196,7 @@ describe('bedding and beds', () => {
     sim.step();
     const lamp = sim.buildings.find(building => building.def.id === 'fat_lamp')!;
     expect(sim.buildingAt(lamp.x, lamp.y)).toBe(lamp); // The furniture target must outrank its house footprint.
-    expect(lamp).toMatchObject({ hostId: house.id, complete: true, fuelRemaining: FAT_LAMP_FUEL_TICKS });
+    expect(lamp).toMatchObject({ hostId: house.id, complete: true, fuelRemaining: FAT_LAMP_FUEL_TICKS, playerPlaced: true });
     expect(fatLampLight(lamp)).toMatchObject({ radius: 3, strength: 0.9 });
     expect(lightAt(lamp.centerX, lamp.centerY, 0, sim.buildingHash)).toBeCloseTo(0.9);
 
@@ -237,6 +253,94 @@ describe('bedding and beds', () => {
     expect(sim.order(person, 'refuel_lamp', { buildingId: lamp.id })).toBe(false);
     expect(sim.lastRefusal).toBe('That lamp is not in your household’s home');
     expect(option()).toMatchObject({ enabled: false, reason: 'That lamp is not in your household’s home' });
+  });
+
+  it('autonomously refills only its own NPC lamp, carrying two household fats from a home shelf when needed', () => {
+    const { sim, person, house } = fixture();
+    person.knownTech.add('fat_lamp');
+    person.isPlayer = true;
+    sim.autonomy = 'manual';
+    const lamp = new Building(BUILDINGS.fat_lamp!, house.centerX, house.centerY, person.bandId, sim.ids);
+    lamp.hostId = house.id; lamp.complete = true; lamp.fuelRemaining = 0;
+    sim.buildings.push(lamp); sim.buildingsById.set(lamp.id, lamp); sim.buildingHash.insert(lamp);
+
+    // Carried fat is consumed through the same explicit refill action.
+    person.inventory.add('fat', FAT_LAMP_REFILL_FAT);
+    const carried = scoreOneBrainTick(sim, person);
+    expect(carried.scores.some(row => row.id === 'refuel_lamp')).toBe(true);
+    expect(carried.found.lampToRefuel).toBe(lamp);
+    person.isPlayer = false;
+    const brain = (sim as unknown as { brain: Brain }).brain;
+    expect(brain.think(person, carried.context, new Set(['refuel_lamp']))).toBe('refuel_lamp');
+    expect(person.targetBuildingId).toBe(lamp.id);
+    sim.step();
+    expect(lamp.fuelRemaining).toBe(FAT_LAMP_FUEL_TICKS);
+    expect(person.inventory.count('fat')).toBe(0);
+    person.isPlayer = true;
+    person.clearTarget(); person.action = 'idle'; person.commitment = null;
+
+    // Burn the charge out, then prove the scorer will take the exact household
+    // stack rather than a generic food larder or any unrelated store.
+    lamp.fuelRemaining = 0;
+    person.inventory.remove('fat', FAT_LAMP_REFILL_FAT);
+    const shelf = new Building(BUILDINGS.shelf!, house.centerX + 1, house.centerY, person.bandId, sim.ids);
+    shelf.hostId = house.id; shelf.complete = true; shelf.store.add('fat', 2);
+    sim.buildings.push(shelf); sim.buildingsById.set(shelf.id, shelf); sim.buildingHash.insert(shelf);
+    const stored = scoreOneBrainTick(sim, person);
+    expect(stored.found.lampToRefuel).toBe(lamp);
+    expect(stored.found.lampFatStore).toBe(shelf);
+    expect(stored.found.takeItemId).toBe('fat');
+    expect(stored.found.takeItemCount).toBe(FAT_LAMP_REFILL_FAT);
+    expect(stored.scores.some(row => row.id === 'take')).toBe(true);
+    expect(shelf.store.count('fat')).toBe(FAT_LAMP_REFILL_FAT);
+    person.isPlayer = false;
+    expect(brain.think(person, stored.context, new Set(['take']))).toBe('take');
+    expect(person.targetBuildingId).toBe(shelf.id);
+    expect(person.targetItemId).toBe('fat');
+    expect(person.targetItemCount).toBe(FAT_LAMP_REFILL_FAT);
+    expect(shelf.store.count('fat')).toBe(FAT_LAMP_REFILL_FAT);
+  });
+
+  it('does not autonomously refill player-placed, foreign-home, ruined-host or non-empty lamps', () => {
+    const { sim, person, house } = fixture();
+    person.isPlayer = true;
+    sim.autonomy = 'manual';
+    const lamp = new Building(BUILDINGS.fat_lamp!, house.centerX, house.centerY, person.bandId, sim.ids);
+    lamp.hostId = house.id; lamp.complete = true; lamp.fuelRemaining = 0;
+    sim.buildings.push(lamp); sim.buildingsById.set(lamp.id, lamp); sim.buildingHash.insert(lamp);
+    const scored = () => scoreOneBrainTick(sim, person);
+
+    const withoutFat = scored();
+    expect(withoutFat.found.lampToRefuel).toBe(lamp);
+    expect(withoutFat.scores.some(row => row.id === 'refuel_lamp')).toBe(false);
+    person.inventory.add('fat', FAT_LAMP_REFILL_FAT);
+
+    lamp.playerPlaced = true;
+    expect(scored().found.lampToRefuel).toBeNull();
+    lamp.playerPlaced = false;
+    lamp.fuelRemaining = 2;
+    expect(scored().found.lampToRefuel).toBeNull();
+    lamp.fuelRemaining = 0;
+    house.complete = false;
+    expect(scored().found.lampToRefuel).toBeNull();
+    house.complete = true;
+    const soundDurability = house.durability;
+    house.durability = 0;
+    expect(scored().found.lampToRefuel).toBeNull();
+    house.durability = soundDurability;
+    let otherHome: Building | null = null;
+    for (let y = 4; y < sim.world.height - 8 && !otherHome; y++) {
+      for (let x = 4; x < sim.world.width - 8; x++) {
+        if (!sim.canPlace(BUILDINGS.mud_hut!, x, y)) continue;
+        otherHome = sim.place('mud_hut', x, y, person.bandId);
+        if (otherHome) break;
+      }
+    }
+    if (!otherHome) throw new Error('could not site a second home');
+    otherHome.complete = true;
+    otherHome.durability = otherHome.def.workTicks;
+    sim.householdsById.get(person.householdId!)!.homeBuildingId = otherHome.id;
+    expect(scored().found.lampToRefuel).toBeNull();
   });
 
   it('scores the bedding-to-bed ladder only for an unfinished household need', () => {
