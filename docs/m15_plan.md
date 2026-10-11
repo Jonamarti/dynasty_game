@@ -9,7 +9,9 @@
 
 **2026-10-10: 15a, instrumento por origen entregado.** Pérdidas secas/reales y nutrición en inventario personal, almacén, obra y montón. [Contrato](m15_phase15a_spoilage_sources.md). Cohortes de veinte semillas y activación15c siguen diferidas por AGENTS.md; tasa por defecto cero.
 
-**2026-10-10: 16d, lechos y camas entregados.** Recetas con materiales alternativos, colocación dentro del hogar, persistencia y recuperación según superficie. [Contrato y captura](m15_phase16d_bedding.md). Primera superficie autónoma implementada; asignaciones, acopio específico y otros muebles pendientes.
+**2026-10-10: 16d, lechos y camas entregados.** Recetas con materiales alternativos, colocación dentro del hogar, persistencia y recuperación según superficie. [Contrato y captura](m15_phase16d_bedding.md). Primera superficie autónoma implementada; acopio específico y otros muebles pendientes.
+
+**2026-10-11: 16d, asignación autónoma de superficies de sueño.** Cada miembro vivo de un hogar se dirige a una cama/lecho según un turno estable por ID dentro del hogar; con más miembros que superficies se comparten por turnos. No añade estado guardado ni tiradas. [Contrato](m15_phase16d_bedding.md). Quedan sin cubrir el acopio de estantes, hogar interior, lámpara, banco/asiento, mobiliario de confort y calibración de 16f.
 
 **2026-10-10: conocimiento de madera corregido.** La búsqueda amplia de árboles para obras sólo acepta visión actual o memoria personal. Regresión negativa confirmada; no se relaja people-act-on-what-they-know.
 

@@ -107,7 +107,7 @@ import { noteWorkOutcome } from '../core/Mood.ts';
 import { support } from '../social/Persuasion.ts';
 import { swimRefusal, swimRouteRefusal } from '../core/Swimming.ts';
 import { canWork } from '../knowledge/Ore.ts';
-import { houseInteriorContains, sleepQualityAt } from '../world/HouseInterior.ts';
+import { assignedSleepSurface, houseInteriorContains, sleepQualityAt } from '../world/HouseInterior.ts';
 import { igniteTorch, TORCH_IGNITION_TICKS } from '../core/Torch.ts';
 
 export interface ActionContext {
@@ -4178,7 +4178,11 @@ export class ActionSystem {
         .sort((a, b) => (b.def.sleepQuality ?? 0) - (a.def.sleepQuality ?? 0) ||
           Math.hypot(a.centerX - person.x, a.centerY - person.y) -
             Math.hypot(b.centerX - person.x, b.centerY - person.y) || a.id - b.id);
-      const surface = pieces[0];
+      const household = person.householdId === null ? null : ctx.householdsById.get(person.householdId) ?? null;
+      const householdMembers = household?.memberIds
+        .map(memberId => ctx.peopleById.get(memberId))
+        .filter((member): member is Person => member !== undefined) ?? [];
+      const surface = assignedSleepSurface(person, householdMembers, building, pieces) ?? pieces[0];
       if (surface && Math.hypot(surface.centerX - person.x, surface.centerY - person.y) > 0.3) {
         person.targetX = surface.centerX;
         person.targetY = surface.centerY;

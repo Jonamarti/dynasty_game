@@ -5,7 +5,7 @@ import { toCheckpointRecord } from '../persistence/CheckpointRecords.ts';
 import { Building, BUILDINGS } from '../entities/Building.ts';
 import { Inventory } from '../entities/Item.ts';
 import { RECIPES, ingredientsFor, missingIngredients } from '../entities/Recipe.ts';
-import { sleepQualityAt } from '../world/HouseInterior.ts';
+import { assignedSleepSurface, sleepQualityAt } from '../world/HouseInterior.ts';
 import { telemetry } from '../core/Telemetry.ts';
 
 function fixture() {
@@ -39,6 +39,22 @@ function fixture() {
 }
 
 describe('bedding and beds', () => {
+  it('assigns household members to distinct surfaces in stable person/building order', () => {
+    const { sim, person, house } = fixture();
+    if (person.householdId === null) throw new Error('fixture person has no household');
+    const members = sim.livingPeople().slice(0, 2);
+    for (const member of members) member.householdId = person.householdId;
+    const firstBed = new Building(BUILDINGS.bed!, 10, 10, person.bandId, sim.ids);
+    const secondBed = new Building(BUILDINGS.bed!, 11, 10, person.bandId, sim.ids);
+    for (const bed of [firstBed, secondBed]) { bed.hostId = house.id; bed.complete = true; }
+
+    expect(assignedSleepSurface(members[0]!, [...members].reverse(), house, [secondBed, firstBed]))
+      .toBe(firstBed);
+    expect(assignedSleepSurface(members[1]!, members, house, [firstBed, secondBed]))
+      .toBe(secondBed);
+    expect(assignedSleepSurface(members[0]!, members, house, [secondBed])).toBe(secondBed);
+  });
+
   it('scores the bedding-to-bed ladder only for an unfinished household need', () => {
     const { sim, person, house } = fixture();
     const brain = (sim as unknown as { brain: Brain }).brain;

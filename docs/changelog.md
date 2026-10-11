@@ -1,3 +1,17 @@
+## 2026-10-11 — m15: asignar superficies de sueño por hogar
+
+`0.15.57-alpha`: el sueño autónomo dirige a cada miembro vivo a una superficie
+asignada por orden estable del roster del hogar y los IDs de cama/lecho; si
+faltan superficies, se comparten por turnos. El reparto se deriva sin estado
+guardado ni RNG y se conserva el fallback de mejor superficie cuando no hay
+hogar/superficie válida. Contrato y pendientes en
+`docs/m15_phase16d_bedding.md`. No hay cambio de UI ni captura nueva.
+
+Typecheck y las siete pruebas focales de `furniture-sleep.test.ts` pasan.
+`sim:check` conserva los dos fallos del baseline (cravings-steer-the-diet y
+perf-budget; 2/147). No se hicieron cohortes ni calibración; siguen diferidas
+al cierre de M15.
+
 ## 2026-10-11 — m15: fusionar almacenes con identidad física
 
 `0.15.56-alpha`: la fusión de hogares mueve el inventario del almacén de

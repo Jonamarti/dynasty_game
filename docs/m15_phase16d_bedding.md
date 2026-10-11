@@ -47,7 +47,25 @@ Tests cover the crafting ladder, completed-home suppression, absent-home refusal
 and a real autonomous doorway-to-room trip (selection weight forced in the test,
 no player order). Six furniture tests pass. No new UI or art is introduced.
 
-This ladder supplies one shared surface per home. Separate sleeping assignments,
-material gathering specifically for furniture, upgrades in a completely full
-room, comfort furniture and the rest of16d remain open. It is not completion of
-the whole furnishing phase or evidence of improved household survival.
+This ladder supplies shared surfaces per home. Material gathering specifically
+for furniture, upgrades in a completely full room, comfort furniture, player-
+managed individual assignments and the rest of16d remain open. It is not
+completion of the whole furnishing phase or evidence of improved household
+survival.
+
+## 2026-10-11: household sleep-surface assignment
+
+When a home has several complete sleep surfaces, each living member of the
+household receives one by sorting the household roster and hosted surface IDs
+in ascending order. A household with more members than surfaces reuses them
+round-robin. `doSleep` routes to that assignment before recovering fatigue;
+the existing quality reader still measures the surface the person actually
+reaches. With no household or no valid hosted surface, the prior best-surface
+fallback remains in place.
+
+The assignment is derived from `Household.memberIds`, live people and hosted
+buildings, so it has no new checkpoint field, RNG draw or UI. The focused
+regression checks stable sorting, distinct surfaces when available, and the
+round-robin case. Individual player-managed assignments, shelf storage,
+fireplace, fat lamp, bench/seated comfort, and the phase 16f measurement remain
+open. No screenshot applies because no UI changed.

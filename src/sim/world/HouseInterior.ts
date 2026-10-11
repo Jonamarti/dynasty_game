@@ -36,6 +36,35 @@ export function sleepQualityAt(
   return Math.max(0.9, quality);
 }
 
+/**
+ * Assign household members to the available sleep surfaces in a stable order.
+ * Beds are individual places when a household has enough of them; with fewer
+ * surfaces, members share the roster's round-robin assignment instead of all
+ * routing to whichever bed happens to be nearest at the start of the night.
+ * The assignment is derived from the living household roster and building IDs,
+ * so it needs no save field and cannot consume simulation randomness.
+ */
+export function assignedSleepSurface(
+  person: Person,
+  householdMembers: readonly Person[],
+  host: Building,
+  furnishings: readonly Building[],
+): Building | null {
+  if (person.householdId === null) return null;
+  const surfaces = furnishings
+    .filter(piece => piece.hostId === host.id && piece.complete && !piece.ruined &&
+      (piece.def.sleepQuality ?? 0) > 0)
+    .sort((a, b) => a.id - b.id);
+  if (surfaces.length === 0) return null;
+
+  const members = householdMembers
+    .filter(member => member.alive && member.householdId === person.householdId)
+    .sort((a, b) => a.id - b.id);
+  const index = members.findIndex(member => member.id === person.id);
+  if (index < 0) return null;
+  return surfaces[index % surfaces.length] ?? null;
+}
+
 /** Whether the tile World.isWalkable would use is a room tile. */
 export function houseInteriorContains(building: Building, x: number, y: number): boolean {
   const tileX = Math.floor(x), tileY = Math.floor(y);
