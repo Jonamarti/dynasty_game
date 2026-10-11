@@ -408,15 +408,14 @@ verde. Falta decidir si se alarga el escenario, si los fundadores de `craft`
 empiezan con una receta, o si hace falta una fuente de hueso.
 [Fase 13d](m15_phase13_subwebs.md).
 
-## M15 fase 13d: la honda no gasta munición ni se limita a la caza menor (2026-10-06)
+## M15 fase 13d: munición de honda resuelta; arco y átlatl pendientes (2026-10-12)
 
-`sling` es un arma como el arco: se elige por `hunt * poder` y no consume nada
-al cazar. El plan pedía «piedra de munición (sílex): caza menor a distancia».
-Hoy el sílex es solo el coste de la receta (dos por honda) y el término de caza
-(1,7) vale igual contra una liebre que contra un jabalí; `weaponOf` no sabe qué
-animal se persigue. Falta un modelo de munición (ítem gastado por golpe, o
-`ammo` en `weapon`) y un tope de presa en `weapon`. Arco y átlatl tienen el
-mismo hueco. [Fase 13d](m15_phase13_subwebs.md).
+Resuelto para `sling`: las piedras son unidades de `flint` que debe llevar el
+cazador; una se consume en el impacto exitoso, y sin una la caza de liebre se
+abandona antes de perseguir o tirar RNG, con motivo visible. El selector permite
+la honda solo contra liebres; ciervos y jabalíes usan otro arma disponible o
+ningún arma. No se tocó el comportamiento del arco ni del átlatl: ambos aún
+carecen de munición consumible y límite de presa. [Fase 13d](m15_phase13_subwebs.md).
 
 ## M15 fase 30: límites conservados tras el cierre (2026-10-06)
 

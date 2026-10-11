@@ -225,6 +225,7 @@ export const SAW_WORDS: Record<string, string> = {
   feast: 'sat at a feast', body_found: 'seen one of their own found dead',
   // Reasons their own work stopped, from `ActionSystem`.
   hands_full: 'run out of hands', quarry_escaped: 'lost an animal in the chase',
+  sling_no_ammunition: 'found the sling without a stone to throw',
   node_empty: 'worked a place until nothing was left',
   long_enough: 'worked a whole day at one thing',
   cold: 'given up on a day of work for the cold',

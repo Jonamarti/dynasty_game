@@ -89,9 +89,10 @@ Sigue **paso 2 / fase 34: cruce del borde y TileLedger**. El puente debe transfe
 
 **2026-10-07: fase 40b (`bloomery`) entregada.** La lupia se obtiene de mineral y carbón en el horno; el check corto con orden detecta la receta ausente. Se registra para M16 una regresión nueva de difusión entre pueblos (0,32 → 0,43; test < 0,4), sin ajustar tasas ni aserción. Siguiente entrega: `forging` (yunque, martillo y hierro forjado), después `carburising`, `iron_tools` y `ploughshare`. No se ha medido la producción autónoma de hierro ni se cierra la fase 40. Capturas: `artifacts/screenshots/m15-phase40-bloomery-2026-10-07/`. [Detalle](m15_phase40_iron.md).
 
-**2026-10-06: fase 13d, la honda.** `sling` entregada sin modelo de munición ni
-tope de presa (ver `bugs.md`): un modelo de munición serviría también al arco y
-al átlatl. Siguiente en 13d: el check `sub-webs-are-climbed`.
+**2026-10-12: fase 13d, munición de honda.** `sling` ahora consume sílex físico
+al acertar y solo sirve para caza de liebres. Arco y átlatl conservan la deuda
+de munición y presa descrita en `bugs.md`. Siguiente en 13d: el check
+`sub-webs-are-climbed`.
 [Detalle](m15_phase13_subwebs.md).
 
 **2026-10-07: fase 40a (`bog_iron`) entregada; continúa fase 40.** El mineral, su pasada y stream independiente, la puerta de minería y la era de Hierro están implementados. Sigue con `bloomery`, `forging`, `carburising`, `iron_tools` y `ploughshare`, cada nodo en su commit focal con documentación y tests. El mapa geográfico solo tiene proxy de humedad/orilla para hierro; Atlas aún no modela humedales explícitos. Evidencia visual: `artifacts/screenshots/m15-phase40-bog-iron-2026-10-07/`. [Detalle](m15_phase40_iron.md).

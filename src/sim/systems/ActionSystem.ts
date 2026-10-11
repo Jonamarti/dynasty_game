@@ -73,7 +73,7 @@ import { expectedFood } from '../ai/Beliefs.ts';
 import {
   TECH, awlFactor, axeFactor, buildFactor, calendarFactor, forageYieldFactor,
   orchardFactor, prerequisitesMet, reapFactor, tallyFactor, techPower,
-  workableIdea as chooseWorkableIdea, weaponOf, armourOf, protectionOf, type Tech,
+  workableIdea as chooseWorkableIdea, weaponOf, weaponItemOf, armourOf, protectionOf, type Tech,
 } from '../knowledge/Tech.ts';
 import { MAX_IDEAS, PROTOTYPE_AT, type Idea } from '../knowledge/Synthesis.ts';
 import { mayUse, type PropertyUse } from '../social/Property.ts';
@@ -3083,6 +3083,16 @@ export class ActionSystem {
       return;
     }
 
+    // A sling is a hare weapon and its stones belong to the hunter's pack.
+    // Reject before equipping, walking, or rolling the hunt so an empty pouch
+    // cannot silently become an unarmed attempt or consume another stream.
+    const slingForHare = animal.species === 'hare' &&
+      weaponItemOf(person, true, false, person.armsTaken === 0 ? 2 : 1, 'hare') === 'sling';
+    if (slingForHare && !person.inventory.has('flint')) {
+      this.abandon(person, 'sling_no_ammunition', ctx);
+      return;
+    }
+
     if (this.prepareTool(person, 'hunt', ctx, 'hunger')) return;
 
     const distance = person.distanceTo(animal);
@@ -3123,7 +3133,8 @@ export class ActionSystem {
     // to win brawls. The atlatl arriving in this pass is a weapon whose *whole
     // point* is the throw, so leaving it would have shipped a third node with a
     // decorative stat.
-    const weapon = weaponOf(person, true, ctx.carry.autoEquipTools);
+    const weapon = weaponOf(person, true, ctx.carry.autoEquipTools, animal.species);
+    const weaponItem = weaponItemOf(person, true, ctx.carry.autoEquipTools, 2, animal.species);
     if (distance > REACH + (weapon?.reach ?? 0)) {
       person.targetX = animal.x;
       person.targetY = animal.y;
@@ -3178,6 +3189,11 @@ export class ActionSystem {
       }
       return;
     }
+
+    // Spend the physical stone only when the sling's shot actually lands.
+    // The preflight above ensures this removal cannot fail midway through a
+    // committed hunt; flint has no shared or communal fallback ownership.
+    if (weaponItem === 'sling') person.inventory.remove('flint', 1);
 
     animal.health = 0;
     animal.alive = false;

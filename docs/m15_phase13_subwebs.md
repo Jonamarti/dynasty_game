@@ -282,12 +282,14 @@ fabricar y barata de llevar, de alcance mayor que la lanza.
 que descifrar, a diferencia del arco, que es una técnica (un resorte que hay
 que entender); y la honda del pastor es el arma a distancia más antigua que hay.
 
-**Munición: lo que no se hizo.** No hay modelo de munición: el arco no lo tiene
-(la caza no gasta nada), así que se hizo lo mínimo honesto. El sílex es el coste
-de la receta (dos por honda) y no se gasta al cazar. **Tampoco se limita a la
-caza menor**: `weaponOf` no sabe qué animal se persigue, y el término vale lo
-mismo contra una liebre que contra un jabalí. Ambos huecos están en `bugs.md` y
-en `next-steps.md`; arco y átlatl tienen el mismo.
+**Munición inicial y límite (2026-10-12).** La piedra es sílex físico en el
+inventario del cazador: una honda necesita una unidad antes de perseguir una
+liebre, y gasta una solo cuando el golpe tiene éxito. La comprobación ocurre
+antes de equipar, caminar o tirar RNG; el abandono informa de que no quedaba
+piedra. La honda solo aporta su término de arma contra liebres; contra ciervos y
+jabalíes el selector la descarta. No se ha cambiado el arco ni el átlatl: ambos
+siguen sin munición y sin límite de presa. Pruebas focales cubren gasto, falta
+de piedra, selección de presa y motivo visible. No hubo calibración ni cohortes.
 
 **Arte.** Icono `item/sling` (la bolsa de cuero con una piedra y dos cuerdas) y
 mano `held/sling/{S,E}`, en `art/src/props/items.ts` y `held.ts`; el atlas
@@ -397,9 +399,10 @@ headless en un contenedor Linux en la nube.
 13. **Edad de `fire_hardened_spear`, decidida.** Queda en `middle_palaeolithic`
     (ver la sección de arriba); si se quiere la edad del plan hay que mover
     `spear` y `firemaking` o aflojar el test de edades.
-14. **Honda sin munición ni tope de presa.** Ver arriba y `bugs.md`. ¿Se
-    quiere un modelo de munición para los tres proyectiles (arco, átlatl,
-    honda) en una fase propia?
+14. **Munición restante de proyectiles.** La honda usa sílex y queda limitada
+    a liebres (actualización 2026-10-12). Arco y átlatl siguen sin gasto de
+    munición ni límite de presa; cualquier modelo compartido requiere una
+    decisión propia.
 15. **Honda por encima de la lanza en caza.** Con 1,7 frente a 1,6 la honda
     desplaza a la lanza en una cacería (no a la lanza endurecida, 2,0). Es una
     elección de diseño para que el nodo no sea inerte; el propietario puede

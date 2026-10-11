@@ -15075,3 +15075,12 @@ fuentes silvestres ya medidas. El control negativo detecta materiales sin trabaj
 cobertura en `n/a`. Sin cambios de estado o RNG previstos por el instrumento. Se documenta el
 alcance y lo que aún falta en `docs/m15_phase32b_compact.md` y `docs/bugs.md`. La ventana no se
 ejecutó: no hay tasas ni afirmación de calibración o mejora económica.
+## 2026-10-12 — m15: sílex como munición de honda
+
+La honda solo sirve para liebres y consume una unidad de sílex del inventario
+del cazador cuando acierta. Sin piedra, la orden se abandona antes de iniciar
+la persecución y el motivo es visible y traducido. Arco y átlatl mantienen el
+comportamiento existente; siguen pendientes sus modelos de munición y topes de
+presa. Se añadieron pruebas de impacto, falta de munición y presa no elegible;
+no hubo calibración ni cohortes. Sin cambio de UI visible, no requiere captura.
+Contrato y límites: `docs/m15_phase13_subwebs.md` y `docs/bugs.md`.

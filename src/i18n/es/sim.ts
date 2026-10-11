@@ -186,6 +186,7 @@ export const ES_SIM: Record<string, string> = {
   "watched somebody menaced into handing something over": "visto a alguien entregar algo bajo amenaza",
   "run out of hands": "quedado sin manos",
   "lost an animal in the chase": "perdido un animal en la persecución",
+  "found the sling without a stone to throw": "encontrado la honda sin piedra para lanzar",
   "worked a place until nothing was left": "trabajado un sitio hasta que no quedó nada",
   "worked a whole day at one thing": "trabajado un día entero en una sola cosa",
   "given up on a day of work for the cold": "dejado un día de trabajo por el frío",

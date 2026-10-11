@@ -44,6 +44,7 @@ import type { Person, Skill } from '../entities/Person.ts';
 import type { KnowledgeConfig } from '../core/Config.ts';
 import type { Idea } from './Synthesis.ts';
 import type { Spark } from './Synthesis.ts';
+import type { Species } from '../entities/Animal.ts';
 import { PROTOTYPE_AT, PROTOTYPE_POWER, REFINEMENT_STEP } from './Synthesis.ts';
 import { ITEMS } from '../entities/Item.ts';
 import { GARMENT_SLOTS } from '../entities/Equipment.ts';
@@ -3232,8 +3233,9 @@ export function weaponOf(
   person: Person,
   forHunt: boolean,
   equippedOnly = false,
+  quarry: Species | null = null,
 ): { damage: number; reach: number; hunt: number; power: number } | null {
-  const itemId = weaponItemOf(person, forHunt, equippedOnly);
+  const itemId = weaponItemOf(person, forHunt, equippedOnly, 2, quarry);
   const weapon = itemId ? ITEMS[itemId]?.weapon : null;
   if (!weapon) return null;
   return {
@@ -3264,6 +3266,7 @@ export function weaponItemOf(
   forHunt: boolean,
   equippedOnly = false,
   maxHands: 1 | 2 = 2,
+  quarry: Species | null = null,
 ): string | null {
   let best: { item: string; worth: number } | null = null;
   const equipped = equippedOnly
@@ -3273,6 +3276,9 @@ export function weaponItemOf(
     if (count <= 0 || (equipped && !equipped.has(itemId))) continue;
     const weapon = ITEMS[itemId]?.weapon;
     if (!weapon || ITEMS[itemId]!.hand.hands > maxHands) continue;
+    // The sling's short stone is useful for hare-sized quarry only. Keep this
+    // filter at the choice point so it cannot win over a spear for a deer/boar.
+    if (forHunt && itemId === 'sling' && quarry !== null && quarry !== 'hare') continue;
     const power = weaponPower(person, weapon.tech as Tech);
     if (power <= 0) continue;
     const worth = (forHunt ? weapon.hunt : weapon.damage) * power;

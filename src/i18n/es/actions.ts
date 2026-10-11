@@ -148,6 +148,7 @@ export const ES_ACTIONS: Record<string, string> = {
   "they were gone": "ya no estaba allí",
   "the animal was gone": "el animal ya no estaba",
   "the animal outran them": "el animal le dejó atrás",
+  "their sling had no stone to throw": "su honda no tenía piedra para lanzar",
   "they got away": "se escapó",
   "there was no water within reach": "no había agua al alcance",
   "they had nothing to eat": "no tenía nada que comer",
