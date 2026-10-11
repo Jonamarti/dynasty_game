@@ -1,3 +1,13 @@
+## 2026-10-12 — Escenario `homes` no mide construcción espontánea ni equilibrio
+
+El escenario 16f prepara una vivienda terminada por banda y una cama para
+medir los lectores de sueño, frío y seguridad sin esperar la construcción
+orgánica. Sus siete checks pasan en la muestra de 2400 pasos, pero eso no
+demuestra que una población reúna materiales y construya casas en una partida
+natural ni calibra cuánto ánimo conviene conceder por cada término. Esa
+construcción autónoma y la calibración demográfica siguen abiertas; no se
+registró una regresión funcional en esta verificación.
+
 ## 2026-10-12 — 16d, la lámpara autónoma no se repone sola
 
 El hogar fabrica y coloca una sola lámpara, con la carga inicial de 1200 ticks.

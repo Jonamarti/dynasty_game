@@ -4027,15 +4027,31 @@ export class Simulation {
         ? sleepQualityAt(roof, person.x, person.y, furnishings,
           hearthNear(this.buildingHash, person.x, person.y, 3))
         : sleepQualityAt(null, person.x, person.y, [], hearthNear(this.buildingHash, person.x, person.y, 3));
+      const snowy = !sheltered && isBuried(person.x, person.y, this.snowDepth, this.treeHash);
       const moodChange = sleepMoodChange({
         quality,
         cold: person.needs.cold,
-        snow: !sheltered && isBuried(person.x, person.y, this.snowDepth, this.treeHash),
+        snow: snowy,
         ownCamp,
         huddled,
         guarded,
         claimed,
       });
+      // M15 phase 16f: keep a direct audit trail for the homes scenario. These
+      // are the inputs consumed by this sleeper's mood sample, not a second
+      // telemetry-only reconstruction of what the night looked like.
+      telemetry.count('sleep_mood_samples');
+      telemetry.count('sleep_mood_quality_sum', quality);
+      telemetry.count('sleep_mood_cold_sum', person.needs.cold);
+      telemetry.count('sleep_mood_snow', snowy ? 1 : 0);
+      if (roof?.def.interior) {
+        telemetry.count('sleep_home_samples');
+        if (quality >= 1) telemetry.count('sleep_home_furnished_samples');
+      }
+      telemetry.count('sleep_safety_camp', ownCamp ? 1 : 0);
+      telemetry.count('sleep_safety_huddle', huddled ? 1 : 0);
+      telemetry.count('sleep_safety_guard', guarded ? 1 : 0);
+      telemetry.count('sleep_safety_claimed', claimed ? 1 : 0);
       person.mood.add('comfort', moodChange.comfort,
         t(moodChange.comfort >= 0 ? 'slept comfortably' : 'slept through a cold night'), this.time.tick);
       person.mood.add('security', moodChange.security,

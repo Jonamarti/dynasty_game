@@ -1,3 +1,12 @@
+**Avance del 2026-10-12 — 16f, escenario `homes`:** un fixture determinista
+construye una casa completa por banda y permite medir el uso de camas por la
+muestra real de medianoche, el frío y los cuatro términos de seguridad; los NPC
+colocan el mobiliario y los checks también vigilan paredes y rutas. Los siete
+checks pasan en 2400 pasos de una sola semilla. Es verificación del mecanismo,
+no calibración de amplitudes ni resultado poblacional. [Contrato](m15_phase16d_bedding.md).
+Siguen abiertos el motivo `comfort`, más autonomía y muebles domésticos y las
+cohortes diferidas.
+
 **Avance del 2026-10-12 — 16e, muestra de sueño:** la recuperación lee la
 calidad de la superficie también al raso (0,7; 0,8 junto a una hoguera).
 La muestra única de medianoche escribe `mood.comfort` según superficie, frío
@@ -5,7 +14,8 @@ y nieve, y `mood.security` según campamento propio, compañía cercana, guardia
 y territorio reclamado. El mapa de techo que usa concepción sigue saliendo de
 esa misma pasada; no se añadió otro muestreo. Tests cubren cambios y negativas.
 No se ajustaron amplitudes con cohortes. Sigue abierta la motivación `comfort`
-en `Drives.ts` y toda calibración/escenario de 16f.
+en `Drives.ts` y la calibración diferida; el escenario de mecanismo `homes`
+ya está entregado en 16f.
 
 **Avance del 2026-10-12 — 16d, hogar interior:** `fireplace` usa barro 4 y
 sílex 2 y solo se coloca dentro de la casa terminada del hogar propio. Como
@@ -2060,11 +2070,17 @@ es posible si nadie del hogar lo ve.
 
 - Escenario **`homes`**: fundadores con `carpentry`, `wattle_daub`,
   `firemaking` y `cordage`.
-- `beds-are-slept-in`: de las muestras de sueño nocturno de los hogares que
-  tienen lecho o cama, al menos el 60% están en él. Hoy no hay camas y falla.
+- `beds-are-slept-in`: de las muestras de medianoche bajo el techo interior,
+  al menos el 60% alcanza calidad de lecho o cama.
 - `walls-hold`: nadie acaba un paso en una casilla de muro;
   `nobody-walled-in` y `paths-are-found` siguen en verde.
 - `furniture-is-placed`: hay muebles colocados por NPC en `homes`.
+- `sleep-mood-uses-quality-and-cold` y `sleep-security-reads-all-terms`:
+  confirman que la muestra incorpora frío/calidad y campamento, compañía,
+  guardia y territorio reclamado.
+- **Entregado:** los siete checks pasan en una ejecución de 2400 pasos. El
+  escenario aísla los lectores con casas preparadas y no mide construcción
+  natural, supervivencia ni amplitudes; no se ejecutó calibración ni cohortes.
 - **Coste declarado:** ≤ 3 puntos.
 
 **Commits:** `m15: reparar regiones`; `m15: muros y puerta`; `m15: el tejado

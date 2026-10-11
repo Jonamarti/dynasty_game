@@ -116,6 +116,14 @@ focales. `sim:check` mantiene los dos fallos conocidos del escenario base:
 `cravings-steer-the-diet` y `perf-budget` (569 pasos/s frente al suelo de
 1.678). No hubo calibración ni cohortes. No cambia texto ni controles visibles;
 no se necesitó captura.
+## 2026-10-12 — M15 16f: escenario focal de hogares
+
+`homes` ahora mide la calidad real de las muestras nocturnas bajo techo,
+frío, seguridad, mobiliario NPC y navegación dentro de casas. Se agrega una
+prueba focal del escenario. Los siete checks pasan en 2400 pasos de una
+semilla. Es instrumentación de mecanismos con casas preparadas: no mide la
+economía de construir hogares, no calibra los coeficientes y no ejecuta cohortes.
+Sin cambio de versión porque no cambia comportamiento del juego.
 
 ## 2026-10-11 — M15 herencia física de prendas
 

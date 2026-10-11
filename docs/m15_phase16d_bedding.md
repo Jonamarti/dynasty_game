@@ -203,6 +203,20 @@ Focused tests cover surface/cold/snow direction, each safety term, the sleeping
 gate and outdoor hearth quality. The coefficients are mechanisms only; no
 cohort or calibration is claimed.
 
+## 2026-10-12: phase 16f, the `homes` mechanism scenario
+
+The fast `homes` scenario stages one completed family home per band and gives
+one adult a bed, so it can isolate indoor sleep and mood readers from the
+longer material-gathering and house-construction economy. The NPC still routes
+and places the furniture through the regular action. Its checks require that
+at least 60% of midnight samples under an interior roof reach bedding-or-bed
+quality, observe quality and nonzero cold debt in the same mood sample, observe
+each of camp/huddle/guard/claimed-cell security inputs, see NPC-placed furniture,
+and retain pathfinding and wall-safety checks. The 2026-10-12 single-seed run
+passed all seven applicable checks in 2400 steps. This validates the readers
+and fixture, not comfort amplitudes or population outcomes; calibration and
+cohort runs remain deferred.
+
 Still open in 16e/16f: wiring `mood.comfort` into the `comfort` drive, NPC
-autonomous fireplace construction and lamp refuelling, the `homes` scenario,
-sleep-surface/check measurements, and the deferred calibration.
+autonomous fireplace construction and lamp refuelling, other planned comfort
+furniture, and deferred calibration.
