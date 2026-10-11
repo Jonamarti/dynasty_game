@@ -20,6 +20,8 @@ test('an earthwork is previewed, refused with a reason, turned, placed and dug',
   // Open ground a few tiles from the player, found by the sim's own rule.
   const spot = await page.evaluate(() => {
     const d = (window as any).__dynasty, p = d.sim.player;
+    // This spec measures placement on dry ground; the design is gated in 26e.
+    p.knownTech.add('earthworks'); d.sim.knownTech.add('earthworks');
     for (let r = 4; r < 40; r++) for (let a = 0; a < 32; a++) {
       const x = Math.round(p.x + Math.cos(a * Math.PI / 16) * r), y = Math.round(p.y + Math.sin(a * Math.PI / 16) * r);
       let ok = true;

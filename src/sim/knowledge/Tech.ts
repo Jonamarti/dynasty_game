@@ -1483,8 +1483,8 @@ export const TECH: Record<Tech, TechDef> = {
         weight: 0.6, story: 'heaped earth into a bank and saw it change where people could walk' },
     ],
     description:
-      'Planned cuts and banks of earth. The first design is a ditch; other ' +
-      'works wait for the ground to show what they are for.',
+      'Planned cuts and banks of earth. A ditch slows the climb out of its ' +
+      'cut; a water moat reaches below walking depth and fills from the shore.',
   },
   terracing: {
     id: 'terracing', label: 'Terracing', domain: 'plants', web: 'field',
@@ -2943,8 +2943,8 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
     site: 'BUILDINGS.canal requires irrigation; Simulation.growCrops reads a completed canal carrying freshwater',
   },
   earthworks: {
-    summary: 'A planned ditch can be marked and dug; later earth designs wait for their own readers.',
-    site: 'BUILDINGS.ditch.requiresTech; Simulation.availableDesigns and Simulation.place gate the ditch design',
+    summary: 'A cut slows the crossing; a water moat is deep enough to stop walking through.',
+    site: 'BUILDINGS.ditch and BUILDINGS.moat require earthworks; World.stepFactor reads excavated height, World.pitDepth and water fills read moat depth',
   },
   terracing: {
     summary: 'Level a hillside field with a cut and fill that carries topsoil downhill.',

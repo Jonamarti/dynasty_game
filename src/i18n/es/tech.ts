@@ -1,11 +1,11 @@
 /** Spanish for tech. Keys are the English templates; see `i18n.ts`. */
 export const ES_TECH: Record<string, string> = {
   'Earthworks': 'Obras de tierra',
-  'Planned cuts and banks of earth. The first design is a ditch; other works wait for the ground to show what they are for.': 'Cortes y terraplenes planificados. El primer diseño es una zanja; las demás obras esperan a que el terreno muestre para qué sirven.',
+  'Planned cuts and banks of earth. A ditch slows the climb out of its cut; a water moat reaches below walking depth and fills from the shore.': 'Cortes y terraplenes planificados. La zanja ralentiza la subida desde el corte; el foso llega a una profundidad infranqueable y se llena desde la orilla.',
   'cut a line through the ground and found the earth itself could be shaped into a boundary': 'abrió una línea en el terreno y vio que la propia tierra podía formar un límite',
   'heaped earth into a bank and saw it change where people could walk': 'amontonó tierra en un terraplén y vio cómo cambiaba por dónde podía pasar la gente',
-  'A planned ditch can be marked and dug; later earth designs wait for their own readers.': 'Una zanja planificada puede marcarse y cavarse; los demás diseños esperan a tener un uso propio.',
-  'BUILDINGS.ditch.requiresTech; Simulation.availableDesigns and Simulation.place gate the ditch design': 'BUILDINGS.ditch.requiresTech; Simulation.availableDesigns y Simulation.place control el diseño de zanja',
+  'A cut slows the crossing; a water moat is deep enough to stop walking through.': 'Un corte ralentiza el cruce; un foso con agua tiene profundidad para impedir el paso a pie.',
+  'BUILDINGS.ditch and BUILDINGS.moat require earthworks; World.stepFactor reads excavated height, World.pitDepth and water fills read moat depth': 'BUILDINGS.ditch y BUILDINGS.moat requieren earthworks; World.stepFactor lee la altura excavada, World.pitDepth y el llenado de agua leen la profundidad del foso',
   'Irrigation': 'Riego',
   'Terracing': 'Abancalado',
   'about 6000 BC': 'hacia 6000 a. C.',

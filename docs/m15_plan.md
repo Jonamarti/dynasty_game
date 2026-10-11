@@ -2498,13 +2498,16 @@ se ve más`.
 pala a 3× con `carpentry`) y los verbos y el relieve visible de 26c. Las recetas,
 el equipo llevado, el sprite al cavar y los motivos de rechazo están probados.
 También está `regions-stay-true` de 26f, aplicado a toda la matriz. La conservación de
-fertilidad y la extracción de barro de 26a también están (2026-10-04). El agua sigue a la zanja (26d) y el check `water-follows-the-trench` también (2026-10-04). Los diseños de 26c (hoyo, zanja, foso, montículo,
-terraplén, canal y bancal; `Building.earth`, progreso por casilla, razones, menú
-con vista previa y rechazo) están hechos (2026-10-04); también el reubicado de lo
-que queda bajo el agua. Faltan la puerta `earthworks`
-y los nodos de sus diseños de 26b, la persuasión de la banda como proponente, el
-26e. El silo que se cava está hecho y medido aparte (2026-10-04; coste −3,7 puntos a 20 semillas, ver `changelog.md`). El escenario `diggers` con `earthworks-are-dug` de 26f
-está hecho (2026-10-04). `pitDepth`, que ya alcanza el diseño del hoyo, está probado en `World`.
+fertilidad y la extracción de barro de 26a también están (2026-10-04). El agua
+sigue a la zanja (26d) y el check `water-follows-the-trench` también
+(2026-10-04). Los diseños de 26c (hoyo, zanja, foso, montículo, terraplén,
+canal y bancal; `Building.earth`, progreso por casilla, razones y vista previa)
+están hechos (2026-10-04); también el reubicado de lo que queda bajo el agua.
+`earthworks` ya abre `ditch` y `moat`; faltan gates/lectores de los demás
+diseños, la persuasión de la banda y las mediciones de 26e. El silo está hecho y
+medido aparte (2026-10-04; coste −3,7 puntos a 20 semillas, ver `changelog.md`).
+El escenario `diggers` con `earthworks-are-dug` de 26f está hecho (2026-10-04).
+`pitDepth`, que leen el hoyo y el foso, está probado en `World`.
 Ver `changelog.md`.
 
 **Objetivo.** El terreno se puede cambiar: hoyos, silos, zanjas, fosos con
@@ -2533,17 +2536,17 @@ sin fabricar un segundo objeto idéntico. El pico se fabrica con dos huesos y
 la pala con una madera; los multiplicadores se leen por `techPower` y se elige
 la mejor potencia efectiva, incluidos prototipos y refinamientos. Tener la
 herramienta sin saber usarla da un motivo propio en el menú, al dar la orden y
-al interrumpirse. La puerta y los nodos de obras esperan a sus lectores: no se
-declaran tecnologías que todavía no puedan hacer nada.
+al interrumpirse. **Avance 2026-10-11:** `earthworks` abre `ditch` y `moat`;
+los demás diseños esperan a tener lectores propios antes de recibir gates.
 
 | herramienta o nodo | edad | requiere | efecto |
 |---|---|---|---|
 | palo de cavar (`digging_stick`) | Paleolítico inferior | — (palos 1) | cavar a 1× |
 | pico de asta (`antler_pick`) | Mesolítico | `bone_working` (hueso 2) | 2× |
 | pala de madera (`spade`) | Neolítico | `carpentry` (madera 1) | 3× |
-| `earthworks` (puerta Tierra, en la red principal) | Neolítico | `ground_stone`, `basketry` | abre `ditch`; otros diseños se conectan al llegar sus lectores |
+| `earthworks` (puerta Tierra, en la red principal) | Neolítico | `ground_stone`, `basketry` | abre `ditch` y `moat`; otros diseños esperan a sus lectores |
 | `ditch` | Neolítico | `earthworks` | diseño excavable de 26c; mueve suelo y modifica el relieve |
-| `moat` | Neolítico | `earthworks` (además, requiere un borde de agua) | diseño de foso de 26c; gate aún pendiente |
+| `moat` | Neolítico | `earthworks` (además, requiere un borde de agua) | diseño de foso de 26c; ring hondo e inundable |
 | `terracing` | Bronce | `irrigation` | bancal de 26e, lector de topsoil; diseño ya implementado |
 | `irrigation` (sub-red Campo) | Neolítico final (Mesopotamia) | `earthworks`, `farming` | abre el canal que riega (26e) |
 
@@ -2579,7 +2582,9 @@ lleva agua a beber junto al campamento: un valor que la banda descubre sola.
 
 - **Zanja:** cruzarla cuesta (la pendiente de 25b), y si es honda no se
   cruza. Las incursiones la rodean o buscan el paso.
-- **Foso:** zanja con agua; no se camina.
+- **Foso:** `moat` excava 16 unidades de tierra por casilla, más que el umbral
+  `pitDepth`; queda intransitable y 26d deja entrar agua donde el ring toca la
+  orilla. La puerta `earthworks` también lo habilita (avance 2026-10-11).
 - **Montón y terraplén:** más altura, y por tanto más vista (25c), y quien sube
   a atacar va más lento (25b). Es la defensa que la fase 38 convierte en
   muralla.
@@ -2591,13 +2596,15 @@ lleva agua a beber junto al campamento: un valor que la banda descubre sola.
   requiere `farming` y `earthworks`, y abre el canal; su factor no está calibrado. `terracing`
   requiere `irrigation` y abre el bancal: el corte y relleno existente lleva la
   capa fértil de la parte alta a la baja. No hay un modelo separado de erosión
-  de ladera. Siguen pendientes los nodos específicos del foso y otras obras,
-  la persuasión de obras y la medición final de 26e.
+  de ladera. Sigue pendiente la persuasión de obras y la medición final de 26e.
 - **Puerta Tierra (avance 2026-10-11):** `earthworks` requiere `ground_stone` y
-  `basketry`; su primer lector es `ditch`, que permanece bloqueado hasta conocer
-  la puerta. La puerta está en la red principal mientras solo tenga un diseño
-  lector. El canal requiere también `earthworks` a través de `irrigation`; el
-  foso, montones y terraplenes siguen pendientes hasta conectar cada lector.
+  `basketry`; abre la zanja y el foso. La zanja de seis unidades queda bajo el
+  umbral de `pitDepth` y sigue caminable; `World.stepFactor` encarece salir del
+  corte mediante la lectura de elevación excavada de 25b. El foso de 16 unidades
+  rebasa `pitDepth` y el llenado de 26d lo conecta al agua de la orilla. La
+  puerta permanece en la red principal hasta que haya dos nodos de Tierra; el
+  canal la exige a través de `irrigation`. Los demás diseños esperan sus
+  propios lectores; el rodeo de incursiones y su coste defensivo siguen pendientes.
 - **Bancal:** un campo en pendiente que conserva la capa fértil al nivelar la
   ladera con corte y relleno; no modela erosión adicional por lluvia.
 

@@ -518,12 +518,15 @@ arranque vengan ya cavados, o `git revert` del commit del silo.
 - **Foso, canal, bancal y terraplén tienen lectores parciales.** Todos cambian
   el relieve, y lo leen la pendiente (25b), la vista (25c) y el llenado (26d);
   el foso solo se llena donde el terreno es bajo, y una playa natural sube unos
-  4 m por casilla. Pero el coste de cruzar una zanja *honda*, las incursiones que la
-  rodean, el riego del canal (`irrigation`) y la fertilidad del bancal son 26e.
-  Avance 2026-10-11: `earthworks` ahora abre el diseño `ditch`, y `irrigation`
-  también lo requiere. Faltan el coste de cruce defensivo, la reacción de las
-  incursiones, y puertas con lectores propios para foso, terraplén y las demás
-  obras. Los agujeros simples siguen abiertos a todos.
+  4 m por casilla. El movimiento común encarece la subida desde una zanja poco
+  honda (25b); el foso supera `pitDepth` y no se cruza a pie. Sigue pendiente
+  que las incursiones rodeen las obras y su medición táctica, además del riego
+  del canal (`irrigation`) y la fertilidad del bancal.
+  Avance 2026-10-11: `earthworks` abre `ditch` y `moat`; el escalón de salida de
+  la zanja ya usa el coste de pendiente 25b y el foso rebasa `pitDepth`, por lo
+  que no se puede cruzar, y se llena desde la orilla (26d). Faltan el desvío de
+  las incursiones, una medición de coste defensivo y gates para montones,
+  terraplenes y otras obras. Los agujeros simples siguen abiertos a todos.
 - **Una casilla de plan que se hace honda bajo los pies de otro peón.** El que
   cava no está nunca en la casilla que se hará pozo (trabaja desde el borde),
   pero otro compañero de la cuadrilla sí puede estar en ella cuando alguien
@@ -4858,7 +4861,7 @@ Perfil en vez de Equipo: se corrigió el test y su repetición pasa.
 El primer lector de la fase 26e aplica un factor 1,25 al crecimiento diario de
 campos próximos a canales con agua dulce. Es un mecanismo funcional, no una
 medición económica: no se ejecutaron cohortes y no se afirma que mejore la
-supervivencia. Los nodos `irrigation`/`terracing` y sus puertas funcionales se
-entregaron después; siguen pendientes la puerta genérica `earthworks`, sus
-nodos de zanja/foso y persuasión. El factor 1,25 y la economía agrícola
-continúan sin calibrar para el cierre de 26e/M15.
+supervivencia. Los nodos `irrigation`/`terracing`, el gate `earthworks` y los
+diseños `ditch`/`moat` están conectados con sus lectores. Siguen pendientes
+otros gates de obras, persuasión, desvío/coste defensivo y calibración agrícola.
+El factor 1,25 y la economía siguen sin calibrar para el cierre de 26e/M15.

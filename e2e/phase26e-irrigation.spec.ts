@@ -57,6 +57,19 @@ test('Earthworks node describes the first ditch design in Spanish', async ({ pag
   await expect(node).toHaveCount(1);
   await node.hover();
   await expect(page.locator('.techweb-title')).toHaveText('Obras de tierra');
-  await expect(page.locator('.techweb-detail')).toContainText('El primer diseño es una zanja');
+  await expect(page.locator('.techweb-detail')).toContainText('el foso llega a una profundidad infranqueable');
   await page.screenshot({ path: shots + '/01-obras-de-tierra-red-principal.png' });
+});
+
+test('the locked moat names its earthworks gate in the Spanish build bar', async ({ page }) => {
+  const shots = 'artifacts/screenshots/m15-phase26e-moat-2026-10-11';
+  mkdirSync(shots, { recursive: true });
+  await page.setViewportSize({ width: 1400, height: 900 });
+  await page.goto('/?seed=m15-phase26e-moat&skipIntro=1&lang=es');
+  await expect(page.locator('.hud-clock')).not.toBeEmpty({ timeout: 30_000 });
+  await page.keyboard.press('b');
+
+  const locked = page.locator('.hud-buildbar-locked').filter({ hasText: 'Foso (requiere Obras de tierra)' });
+  await expect(locked).toBeVisible();
+  await page.screenshot({ path: shots + '/01-foso-bloqueado-por-obras-de-tierra.png' });
 });

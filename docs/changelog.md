@@ -14906,3 +14906,18 @@ la medición económica; la fase 26 permanece abierta.
 El `sim:check` único de `band` conserva los dos fallos de baseline conocidos:
 `cravings-steer-the-diet` y `perf-budget` (531 pasos/s frente al piso de 1.678).
 No se atribuyen a esta puerta.
+
+## 2026-10-11 — Fase 26e, foso y lectura de profundidad
+
+El gate `earthworks` abre también `moat`. Su ring excava 16 unidades de tierra,
+supera `World.pitDepth` y queda intransitable; 26d lo llena donde toca agua. La
+zanja existente excava 6 unidades, sigue transitable y la subida desde su corte
+usa el coste de pendiente de 25b a partir de la elevación excavada. Un control
+negativo del gate falló antes del cambio; tests focalizados cubren el gate,
+profundidad y coste. Typecheck limpio, 73/73 pruebas focalizadas y e2e 4/4. La
+UI explica el gate en español; captura:
+`artifacts/screenshots/m15-phase26e-moat-2026-10-11/`. Coste defensivo y reacción
+de incursiones siguen pendientes; no se corrieron cohortes ni calibración.
+
+El `sim:check` único de `band` repite los fallos conocidos de dieta y
+`perf-budget` (478 pasos/s frente al piso de 1.678); no se atribuyen a este gate.
