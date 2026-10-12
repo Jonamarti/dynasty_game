@@ -15374,3 +15374,12 @@ barro y sílex para una receta de fireplace; luego fabrican y colocan el hogar
 en su casa propia. La presión de warmth reconoce recolección, craft y colocación;
 solo fireplace queda exento del umbral de frío, no de hambre ni sed. Tests
 focales de controles negativos y cadena de acciones; sin RNG, UI ni calibración.
+## 2026-10-12 — m15: completa la puerta de desgaste y remiendo de tailors (0.15.99-alpha)
+
+El escenario `tailors` ofrece una oportunidad reproducible para observar el
+desgaste real de una prenda vestida y completar un remiendo con la acción
+normal de sastrería. El tercer check exige que ocurran ambos; controles
+negativos prueban que cualquiera de las dos ausencias lo hace fallar. El
+contrato aclara que el remiendo es una orden controlada del instrumento y no
+una afirmación de autonomía o supervivencia. Sin cambio de UI ni cohortes.
+

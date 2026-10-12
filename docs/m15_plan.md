@@ -1926,12 +1926,13 @@ fracción de muestras. `the-clothed-are-warmer` compara dos copias del mismo
 cuerpo con el lector real de necesidades, con/sin ropa y sin refugio ni hogar.
 Las sondas no alteran el checkpoint ni los contadores del mundo. Contrato:
 [tailors](m15_phase14e_tailors.md). No mide confección autónoma ni mejora de
-supervivencia; desgaste/remiendo y cohortes siguen pendientes.
+supervivencia; el remiendo es una orden controlada del instrumento. Cohortes
+siguen pendientes.
 
 - Escenario **`tailors`**: invierno duro; fundadores con `clothing`, `cordage`,
   `bone_working` y `tailoring`.
 - `clothes-are-worn`: en invierno, la fracción de muestras frías con alguna
-  prenda puesta. Hoy no hay prendas puestas y falla.
+  prenda puesta.
 - `the-clothed-are-warmer`: el frío medio de quien lleva ropa es menor que el
   de quien no. Se verifica contra un build en el que `garment.warmth` no se lee.
 - `garments-wear-and-mend`: hay prendas gastadas y remendadas.

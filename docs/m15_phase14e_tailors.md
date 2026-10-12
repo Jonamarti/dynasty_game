@@ -27,10 +27,15 @@ item definition; the warmer check fails. This is a controlled
 mechanism measurement, not a comparison between differently selected residents
 or a measure of survival.
 
-`garments-wear-and-mend` is intentionally not included: wear and repair remain
-pending. The initial `sim:check -- --scenario tailors` baseline could not run
-because the scenario did not yet exist. No seed cohort or matrix was run.
+`garments-wear-and-mend` supplies one controlled repair order and a worn hat
+whose final daily wear point lands within the two-day window. It passes only
+when the production wear system breaks that unit and the real `ActionSystem`
+completes tailoring repair on a separate owned coat. This is a mechanism
+fixture, not an autonomous-mending or survival claim. In the 2,400-step single
+seed run, 6/7 supplied adults wore a garment, and both the break and repair
+events occurred once. No seed cohort or matrix was run.
 
-Validation: typecheck passes, 5 focused tests pass and the 2 scenario checks
-pass. Logs: `artifacts/m15-tailors-{typecheck,tests,health}-20261010.log`.
+Validation: typecheck passes, 6 focused tests pass, and all 3 scenario checks
+pass. The logs listed above are historical and predate the third check; the
+integration run was executed directly from this checkout.
 The full unit/browser regression will be recorded with the garment delivery.

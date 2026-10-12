@@ -330,7 +330,8 @@ export const SCENARIOS: Record<string, Scenario> = {
       time: { daysPerSeason: 6, startDay: 18 }, needs: { coldRate: 0.16 },
       population: { bands: 1, peoplePerBand: 8,
         startingTech: withPrerequisites(['clothing', 'cordage', 'bone_working', 'tailoring']) } },
-    steps: 2400, setup: setupTailors, checks: ['clothes-are-worn', 'the-clothed-are-warmer'],
+    steps: 2400, setup: setupTailors,
+    checks: ['clothes-are-worn', 'the-clothed-are-warmer', 'garments-wear-and-mend'],
   },
   homes: {
     name: 'homes',

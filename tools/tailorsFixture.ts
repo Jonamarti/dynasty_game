@@ -4,6 +4,7 @@ import { NeedsSystem } from '../src/sim/systems/NeedsSystem.ts';
 import { GARMENT_SLOTS } from '../src/sim/entities/Equipment.ts';
 import type { Person } from '../src/sim/entities/Person.ts';
 import { ITEMS } from '../src/sim/entities/Item.ts';
+import { changeGarment } from '../src/sim/core/ToolEquipment.ts';
 
 const observedWearers = new WeakMap<Simulation, Set<number>>();
 const suppliedAdults = new WeakMap<Simulation, Set<number>>();
@@ -13,6 +14,22 @@ export function setupTailors(sim: Simulation): void {
   const adults = sim.livingPeople().filter(person => !person.isChild);
   if (adults.length < 2) throw new Error('tailors needs at least two adult founders');
   for (const person of adults) person.inventory.add('fur_hat', 1);
+  // Supply one real production wear event and one bounded repair opportunity.
+  const wearer = adults[0]!;
+  const tailor = adults[1]!;
+  changeGarment(wearer, 'fur_hat', 'wear_garment');
+  const hat = wearer.inventory.garmentUnitsOf('fur_hat')[0]!;
+  wearer.inventory.setGarmentUnitCondition(hat.unitId, ITEMS.fur_hat!.garment!.wearPerDay, 0);
+  tailor.knownTech.add('tailoring');
+  tailor.skills.build = Math.max(tailor.skills.build, 70);
+  tailor.inventory.add('fur_coat', 1);
+  tailor.inventory.add('needle', 1);
+  tailor.inventory.add('thread', 1);
+  const coat = tailor.inventory.garmentUnitsOf('fur_coat')[0]!;
+  tailor.inventory.setGarmentUnitCondition(coat.unitId, 0.5, 0);
+  if (!sim.order(tailor, 'mend_garment', { itemId: 'fur_coat', garmentUnitId: coat.unitId })) {
+    throw new Error('tailors could not stage the controlled mending order');
+  }
   observedWearers.set(sim, new Set());
   suppliedAdults.set(sim, new Set(adults.map(person => person.id)));
   telemetry.count('tailors_adult_founders', adults.length);
@@ -107,6 +124,8 @@ export function tailorsChecks(tel: Record<string, number>): Array<{ id: string; 
   const probes = tel.tailors_paired_probes ?? 0;
   const benefit = tel.tailors_paired_cold_benefit ?? 0;
   const withoutBenefit = tel.tailors_paired_no_benefit ?? 0;
+  const wornOut = tel.garment_worn_out ?? 0;
+  const mended = tel.garment_mended_tailoring ?? 0;
   return [
     {
       id: 'clothes-are-worn',
@@ -120,6 +139,12 @@ export function tailorsChecks(tel: Record<string, number>): Array<{ id: string; 
       detail: probes + ' same-person winter cold probes; mean one-tick cold avoided with the worn garment=' +
         (probes > 0 ? (benefit / probes).toFixed(5) : 'n/a') +
         '; no-benefit pairs=' + withoutBenefit + ' (isolated NeedsSystem pairs, outdoor with no hearth or shelter)',
+    },
+    {
+      id: 'garments-wear-and-mend',
+      ok: wornOut > 0 && mended > 0,
+      detail: wornOut + ' supplied worn garments broke through the daily wear system; ' +
+        mended + ' controlled tailoring orders completed through ActionSystem',
     },
   ];
 }
