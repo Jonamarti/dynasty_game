@@ -1,3 +1,18 @@
+## 2026-10-12 — M15 fase 16: observación de hogares y controles A/B
+
+`sim:seeds` informa por semilla hogares vivos con casa interior completa,
+muestras nocturnas por superficie, deltas de confort/seguridad, calidad física
+y efectiva, y craft/colocación NPC por mueble. Población y muertes por hambre
+por edad quedan junto a esas observaciones; los porcentajes y medias sin
+denominador se muestran como `n/a`. Los controles
+`motivation.comfortDriveEnabled` y `motivation.sleepQualityEffectsEnabled`
+se pueden ablar por `--set` como controles experimentales fuera de la UI; ambos
+siguen activos por defecto y no añaden tiradas RNG. Contrato y comandos en
+`m15_homes_cohort_protocol.md`. Typecheck y tests focales pasan. No se lanzó
+ninguna cohorte mientras 12f sigue activa; no se afirma calibración. Versión
+`0.15.121-alpha`; el incremento cubre los controles experimentales aunque la
+configuración predeterminada conserve la mecánica existente.
+
 ## 2026-10-12 — M15 fase 15d: gastar la reserva aprendida en invierno
 
 El selector usa un índice de recetas para reconocer comida conservada y,

@@ -362,6 +362,10 @@ export interface MotivationConfig {
   beliefChoice: boolean;
   /** M15 1d diagnostic: let timed social work ignore needs while keeping attack/family/work-limit interruptions. */
   interruptSocialNeeds: boolean;
+  /** M15 phase 16e: disable only action pressure sourced from sleep comfort. */
+  comfortDriveEnabled: boolean;
+  /** M15 phase 16e: ablate sleep-surface multipliers and their comfort contribution. */
+  sleepQualityEffectsEnabled: boolean;
   /** M15 phase 4: rate at which unmet motives enter the long-term memory. */
   chronicRate: number;
   /** M15 phase 4: chronic pressure at which a motive can spark an idea. */
@@ -651,6 +655,7 @@ export const DEFAULT_CONFIG: SimConfig = {
     urgentNursing: true, motherOnlyFeeds: true, babyToHouse: true,
     kinDefence: true, cravings: true, beliefChoice: true,
     interruptSocialNeeds: true,
+    comfortDriveEnabled: true, sleepQualityEffectsEnabled: true,
     chronicRate: 0.02, wantAt: 0.3, needComfort: 0.4,
     backersWanted: 3, persuadeAt: 0.5,
     raidUrge: 0.45, relocateAfter: 10,

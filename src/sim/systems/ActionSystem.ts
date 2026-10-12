@@ -110,6 +110,7 @@ import { support } from '../social/Persuasion.ts';
 import { swimRefusal, swimRouteRefusal } from '../core/Swimming.ts';
 import { canWork } from '../knowledge/Ore.ts';
 import { assignedSleepSurface, benchConversationBelonging, houseInteriorContains, sleepQualityAt } from '../world/HouseInterior.ts';
+import { effectiveSleepRecoveryQuality } from '../core/SleepComfort.ts';
 import { FAT_LAMP_FUEL_TICKS, FAT_LAMP_REFILL_FAT, fatLampRefusal, fatLampRefusalText } from '../core/FatLamp.ts';
 import { igniteTorch, TORCH_IGNITION_TICKS } from '../core/Torch.ts';
 
@@ -4395,7 +4396,7 @@ export class ActionSystem {
     // Furniture is in the room but does not occupy a blocking tile. Route to
     // the best sleep surface before the first recovery tick so a house with a
     // bed is mechanically different from its bare floor.
-    if (building?.def.interior) {
+    if (building?.def.interior && ctx.motivation.sleepQualityEffectsEnabled) {
       const pieces = ctx.buildingHash.queryRadius(building.centerX, building.centerY,
         Math.max(building.def.width, building.def.height) + 1)
         .filter(piece => piece.hostId === building.id && piece.complete && !piece.ruined &&
@@ -4414,17 +4415,25 @@ export class ActionSystem {
         this.travel(person, ctx);
         return;
       }
-      const quality = sleepQualityAt(building, person.x, person.y, pieces);
+      const physicalQuality = sleepQualityAt(building, person.x, person.y, pieces);
+      const quality = effectiveSleepRecoveryQuality(physicalQuality, ctx.motivation.sleepQualityEffectsEnabled);
       telemetry.count('sleep_quality_' + Math.round(quality * 10));
+      telemetry.count('homes_sleep_recovery_quality_samples');
+      telemetry.count('homes_sleep_recovery_physical_quality_sum', physicalQuality);
+      telemetry.count('homes_sleep_recovery_effective_quality_sum', quality);
       telemetry.count(surface ? 'sleeping_furniture' : 'sleeping');
       person.needs.fatigue = Math.max(0, person.needs.fatigue - SLEEP_RECOVERY * quality);
       return;
     }
 
     telemetry.count(building ? 'sleeping' : 'sleeping_open');
-    person.needs.fatigue = Math.max(0, person.needs.fatigue -
-      SLEEP_RECOVERY * (building ? 1 : sleepQualityAt(null, person.x, person.y, [],
-        ctx.hearthNear?.(person.x, person.y, 3) ?? false)));
+    const physicalQuality = building ? 1 : sleepQualityAt(null, person.x, person.y, [],
+      ctx.hearthNear?.(person.x, person.y, 3) ?? false);
+    const quality = effectiveSleepRecoveryQuality(physicalQuality, ctx.motivation.sleepQualityEffectsEnabled);
+    telemetry.count('homes_sleep_recovery_quality_samples');
+    telemetry.count('homes_sleep_recovery_physical_quality_sum', physicalQuality);
+    telemetry.count('homes_sleep_recovery_effective_quality_sum', quality);
+    person.needs.fatigue = Math.max(0, person.needs.fatigue - SLEEP_RECOVERY * quality);
 
     // Note what is *not* here: `person.workedTicks++`. Sleeping is not work, and
     // counting it toward `MAX_WORK_STRETCH` would eventually report that
@@ -4465,6 +4474,7 @@ export class ActionSystem {
     person.inventory.remove(itemId, 1);
     person.handled.set(itemId, ctx.tick);
     telemetry.count('furniture_placed_' + itemId);
+    if (!person.isPlayer) telemetry.count('homes_furniture_placed_' + itemId);
     this.finish(person);
   }
 
@@ -5105,6 +5115,9 @@ export class ActionSystem {
     }
     for (const [itemId, count] of Object.entries(recipe.output)) {
       person.inventory.add(itemId, count);
+      if (!person.isPlayer && ITEMS[itemId]?.furniture) {
+        telemetry.count('homes_furniture_crafted_' + itemId, count);
+      }
       if (foodRecipe) {
         telemetry.count('compact_production_output_processing_' + itemId, count);
         telemetry.count('compact_production_output_recipe_' + recipe.id + '_' + itemId, count);

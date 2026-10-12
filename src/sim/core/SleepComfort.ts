@@ -17,6 +17,16 @@ export interface SleepComfortSample {
 
 export interface SleepMoodChange { comfort: number; security: number }
 
+/** Preserve measurements of the actual surface while allowing a quality-effect ablation. */
+export function effectiveSleepRecoveryQuality(physicalQuality: number, enabled: boolean): number {
+  return enabled ? physicalQuality : 1;
+}
+
+/** 0.7 is the exposed-ground baseline in the comfort reader; disabling quality keeps cold/snow active. */
+export function effectiveSleepMoodQuality(physicalQuality: number, enabled: boolean): number {
+  return enabled ? physicalQuality : 0.7;
+}
+
 export function sleepMoodChange(sample: SleepComfortSample): SleepMoodChange {
   const quality = Number.isFinite(sample.quality) ? Math.max(0, Math.min(1.5, sample.quality)) : 0.7;
   const cold = Number.isFinite(sample.cold) ? Math.max(0, Math.min(100, sample.cold)) : 100;

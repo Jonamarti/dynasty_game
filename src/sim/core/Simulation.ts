@@ -137,7 +137,7 @@ import { stepMark } from './StepProbe.ts';
 import { approachComarcaEdge, type ComarcaTravel } from '../world/ComarcaTravel.ts';
 import { applyHouseWalls, houseInteriorContains, houseInteriorTiles, houseContainsFootprint, houseForFootprint, sleepQualityAt } from '../world/HouseInterior.ts';
 import { lightAt as measuredLightAt, lightFactor, torchLight, hearthNear, hearthLight } from './Light.ts';
-import { sleepMoodChange } from './SleepComfort.ts';
+import { effectiveSleepMoodQuality, sleepMoodChange } from './SleepComfort.ts';
 import { saltSourceNear } from './Preservation.ts';
 import { advanceTorchBurn, torchIgnitionRefusal, torchRefusalText, transferableUnits, burningTorchRefusalText } from './Torch.ts';
 import { advanceFatLamps, FAT_LAMP_FUEL_TICKS, fatLampRefusal, fatLampRefusalText } from './FatLamp.ts';
@@ -4049,8 +4049,9 @@ export class Simulation {
           hearthNear(this.buildingHash, person.x, person.y, 3))
         : sleepQualityAt(null, person.x, person.y, [], hearthNear(this.buildingHash, person.x, person.y, 3));
       const snowy = !sheltered && isBuried(person.x, person.y, this.snowDepth, this.treeHash);
+      const effectiveQuality = effectiveSleepMoodQuality(quality, this.config.motivation.sleepQualityEffectsEnabled);
       const moodChange = sleepMoodChange({
-        quality,
+        quality: effectiveQuality,
         cold: person.needs.cold,
         snow: snowy,
         ownCamp,
@@ -4064,10 +4065,29 @@ export class Simulation {
       telemetry.count('sleep_mood_samples');
       telemetry.count('sleep_mood_quality_sum', quality);
       telemetry.count('sleep_mood_cold_sum', person.needs.cold);
+      telemetry.count('homes_sleep_comfort_delta_sum', moodChange.comfort);
+      telemetry.count('homes_sleep_security_delta_sum', moodChange.security);
       telemetry.count('sleep_mood_snow', snowy ? 1 : 0);
       if (roof?.def.interior) {
         telemetry.count('sleep_home_samples');
         if (quality >= 1) telemetry.count('sleep_home_furnished_samples');
+      }
+      const sleptSurface = roof?.def.interior
+        ? furnishings
+          .filter(piece => piece.hostId === roof.id && piece.complete && !piece.ruined &&
+            piece.x === Math.floor(person.x) && piece.y === Math.floor(person.y) &&
+            (piece.def.sleepQuality ?? 0) > 0)
+          .sort((a, b) => (b.def.sleepQuality ?? 0) - (a.def.sleepQuality ?? 0) || a.id - b.id)[0]
+        : null;
+      const surfaceKind = !roof?.def.interior ? 'outdoors'
+        : sleptSurface?.def.id === 'bed' ? 'bed'
+          : sleptSurface && (sleptSurface.def.id === 'bedding' || sleptSurface.def.id === 'rug')
+            ? 'bedding_or_rug' : sleptSurface ? 'other' : 'bare_interior';
+      telemetry.count('homes_night_surface_' + surfaceKind);
+      if (this.config.motivation.sleepQualityEffectsEnabled) {
+        telemetry.count('homes_sleep_quality_effective_sum', quality);
+      } else {
+        telemetry.count('homes_sleep_quality_effective_sum', 0.7);
       }
       telemetry.count('sleep_safety_camp', ownCamp ? 1 : 0);
       telemetry.count('sleep_safety_huddle', huddled ? 1 : 0);

@@ -16,10 +16,10 @@ import { hearthLight } from '../core/Light.ts';
 import { NeedsSystem } from '../systems/NeedsSystem.ts';
 import type { TimeManager } from '../core/TimeManager.ts';
 
-function fixture() {
+function fixture(motivation: { sleepQualityEffectsEnabled?: boolean; comfortDriveEnabled?: boolean } = {}) {
   const sim = new Simulation({ seed: 'furniture-sleep-contract',
     world: { width: 64, height: 64, predators: 0, gameHerds: 0 },
-    population: { bands: 1, peoplePerBand: 4 } });
+    population: { bands: 1, peoplePerBand: 4 }, motivation });
   const person = sim.livingPeople().find(candidate => !candidate.isChild)!;
   let house: Building | null = null;
   for (let y = 4; y < sim.world.height - 8 && !house; y++) {
@@ -68,8 +68,17 @@ describe('bedding and beds', () => {
     person.targetBuildingId = house.id;
     person.mood.recent = [];
     const sample = (sim as unknown as { shareTheHearth(): void }).shareTheHearth.bind(sim);
-
-    sample();
+    telemetry.reset();
+    telemetry.enable();
+    try {
+      sample();
+      expect(telemetry.get('homes_night_surface_bare_interior')).toBe(1);
+      expect(telemetry.get('sleep_mood_samples')).toBe(1);
+      expect(telemetry.get('homes_sleep_quality_effective_sum')).toBeCloseTo(0.9);
+    } finally {
+      telemetry.disable();
+      telemetry.reset();
+    }
 
     expect(person.mood.recent.map(entry => entry.channel)).toContain('comfort');
     expect(person.mood.recent.map(entry => entry.channel)).toContain('security');
@@ -671,6 +680,45 @@ describe('bedding and beds', () => {
     expect(loadedPerson.needs.fatigue).toBeLessThan(80);
     expect(telemetry.snapshot().sleeping_furniture).toBe(1);
     telemetry.disable();
+  });
+
+  it('can neutralize sleep-surface effects while preserving the furniture and sleep action', () => {
+    const recovery = (enabled: boolean) => {
+      const { sim, person, house } = fixture({ sleepQualityEffectsEnabled: enabled });
+      person.knownTech.add('carpentry');
+      person.inventory.add('bed', 1);
+      expect(sim.order(person, 'place_furniture', { buildingId: house.id, itemId: 'bed' })).toBe(true);
+      for (let tick = 0; tick < 5 && person.inventory.count('bed') > 0; tick++) sim.step();
+      const bed = sim.buildings.find(building => building.def.id === 'bed')!;
+      sim.peopleHash.remove(person);
+      person.x = bed.centerX; person.y = bed.centerY;
+      person.targetX = person.x; person.targetY = person.y;
+      sim.peopleHash.insert(person);
+      person.needs.fatigue = 80;
+      expect(sim.order(person, 'sleep', { buildingId: house.id })).toBe(true);
+      const before = person.needs.fatigue;
+      telemetry.reset();
+      telemetry.enable();
+      try {
+        sim.step();
+        return {
+          recovered: before - person.needs.fatigue,
+          samples: telemetry.get('homes_sleep_recovery_quality_samples'),
+          physical: telemetry.get('homes_sleep_recovery_physical_quality_sum'),
+          effective: telemetry.get('homes_sleep_recovery_effective_quality_sum'),
+        };
+      } finally {
+        telemetry.disable();
+        telemetry.reset();
+      }
+    };
+    const enabled = recovery(true);
+    const ablated = recovery(false);
+    expect(enabled.recovered).toBeGreaterThan(ablated.recovered);
+    expect(enabled.samples).toBeGreaterThan(0);
+    expect(enabled.effective).toBeCloseTo(enabled.physical);
+    expect(ablated.samples).toBeGreaterThan(0);
+    expect(ablated.effective).toBe(ablated.samples);
   });
 
   it('refuses a different household’s home before changing the actor state', () => {

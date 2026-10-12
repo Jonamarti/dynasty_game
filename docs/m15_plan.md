@@ -1,3 +1,11 @@
+**Avance del 2026-10-12 — fase 16, controles y observación por semilla:**
+`sim:seeds` registra hogares completos, superficies en muestras nocturnas,
+calidad y deltas de ánimo, y muebles NPC fabricados/colocados. Los controles
+`motivation.comfortDriveEnabled` y `motivation.sleepQualityEffectsEnabled`
+permiten la comparación marginal; ambos siguen activos por defecto y no añaden
+tiradas. Contrato y límites en [`m15_homes_cohort_protocol.md`](m15_homes_cohort_protocol.md).
+La calibración demográfica y el resultado poblacional siguen pendientes.
+
 **Avance del 2026-10-12 — 14d, tinte por unidad:** `dyeing` consume un
 depósito físico de ocre rojo y guarda `GarmentUnit.dye` junto a un punto de
 estatus. Transferencias y checkpoints preservan el color; el renderer lo aplica

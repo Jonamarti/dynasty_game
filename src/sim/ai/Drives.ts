@@ -84,7 +84,8 @@ export function drivePressures(person: Person, ctx?: AnchorContext & {
     // Reuse the existing need curve directly: positive comfort cannot create
     // a competing want, and the full 0–100 deficit maps to the established
     // 0–1 pressure range without a second coefficient to calibrate.
-    comfort: urgencyCurve(Math.max(0, -person.mood.comfort)),
+    comfort: ctx?.motivation.comfortDriveEnabled === false
+      ? 0 : urgencyCurve(Math.max(0, -person.mood.comfort)),
     variety,
     safety,
   };

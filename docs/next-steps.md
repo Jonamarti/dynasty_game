@@ -1,3 +1,13 @@
+**Avance del 2026-10-12 — fase 16, contrato de cohorte doméstica:**
+`sim:seeds` registra por semilla hogares completos, superficies nocturnas,
+deltas de confort/seguridad, calidad física/efectiva, craft/colocación NPC y
+mortalidad por hambre por edad; los denominadores vacíos dan `n/a`. Los
+controles experimentales `motivation.comfortDriveEnabled` y
+`motivation.sleepQualityEffectsEnabled` permiten ablaciones A/B por `--set`,
+ambos activos por defecto. No se lanzó cohorte ni se afirma calibración. Ver
+[protocolo de hogares](m15_homes_cohort_protocol.md); fase 16 sigue pendiente
+de medición poblacional.
+
 **Avance del 2026-10-12 — fase 16d, alfombra de piel:** una piel con cordaje
 produce una superficie interior de calidad 1,0; el NPC la fabrica cuando no
 hay un lecho mejor. No añade tiradas ni estado guardado. Sin calibración o

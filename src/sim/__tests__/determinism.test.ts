@@ -104,6 +104,33 @@ describe('Simulation determinism', () => {
       telemetry.reset();
     }
   });
+
+  it('phase 16 cohort controls default on without shifting the seeded run', () => {
+    const defaults = new Simulation(SMALL);
+    const explicit = new Simulation({ ...SMALL,
+      motivation: { comfortDriveEnabled: true, sleepQualityEffectsEnabled: true } });
+    for (let i = 0; i < 500; i++) { defaults.step(); explicit.step(); }
+    expect(fingerprint(explicit)).toBe(fingerprint(defaults));
+    expect(explicit.rng.getState()).toEqual(defaults.rng.getState());
+  });
+
+  it('phase 16 cohort observations are read-only', () => {
+    telemetry.reset();
+    telemetry.disable();
+    const quiet = new Simulation(SMALL);
+    for (let i = 0; i < 600; i++) quiet.step();
+    telemetry.reset();
+    telemetry.enable();
+    const observed = new Simulation(SMALL);
+    try {
+      for (let i = 0; i < 600; i++) observed.step();
+      expect(fingerprint(observed)).toBe(fingerprint(quiet));
+      expect(observed.rng.getState()).toEqual(quiet.rng.getState());
+    } finally {
+      telemetry.disable();
+      telemetry.reset();
+    }
+  });
   // The simulation writes some of its own sentences — a line in somebody's
   // life, a refusal, a band's name — through `t`, in whatever language is set.
   // Words must never feed back into the world: a Spanish player and an English

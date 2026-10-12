@@ -33,6 +33,7 @@ import { DemographyWatch, formatDemography, type Demography } from './demography
 import { observeFrontierCohort } from './frontierFixture.ts';
 import { CohesionWatch, formatCohesion, type Cohesion } from './cohesion.ts';
 import { HistoryWatch, formatHistory, type HistoryReport } from './history.ts';
+import { formatHomeCohort, homeCohortObservations, type HomeCohortObservations } from './homeCohort.ts';
 import {
   SCENARIOS, thousands, watchConflict, peoplesApart, apartAroundIncidents, type ConflictWatch,
 } from './simcheck.ts';
@@ -136,6 +137,7 @@ interface SeedResult {
   orders: Record<string, number>;
   /** M15 phase 8: why a raid was weighed, approved, raised and joined. */
   raids: { proposed: number; approved: number; rejected: number; called: number; neverRaised: number; joined: number };
+  homes: HomeCohortObservations;
 }
 
 /** Ages at or below this are wholly dependent: they are fed or they die. */
@@ -254,6 +256,12 @@ function runSeed(scenarioName: string, seed: string, steps: number, size: number
   const soilRatio = soilCapacity > 0 && (counts.field_reaped ?? 0) > 0
     ? soilHeld / soilCapacity : NaN;
   const bandStanding = sim.bandRelations.stats();
+  const livingHouseholds = [...sim.householdsById.values()].filter(household =>
+    household.memberIds.some(id => sim.peopleById.get(id)?.alive));
+  const completedHouseholds = livingHouseholds.filter(household => {
+    const home = household.homeBuildingId === null ? null : sim.buildingsById.get(household.homeBuildingId) ?? null;
+    return !!home?.def.interior && home.complete && !home.ruined;
+  }).length;
 
   return {
     demography: demography.finish(sim.peopleById.values(), sim.time.tick),
@@ -347,6 +355,7 @@ function runSeed(scenarioName: string, seed: string, steps: number, size: number
       neverRaised: counts.raid_never_raised ?? 0,
       joined: counts.raid_joined ?? 0,
     },
+    homes: homeCohortObservations(counts, completedHouseholds, livingHouseholds.length),
   };
 }
 
@@ -450,16 +459,17 @@ function main(): void {
   for (const seed of seeds) {
     const r = runSeed(scenarioName, seed, steps, size, sets);
     results.push(r);
-    const pct = r.peak === 0 ? 0 : Math.round((r.end / r.peak) * 100);
+    const survived = r.peak === 0 ? 'n/a' : Math.round((r.end / r.peak) * 100) + '%';
     console.log(
       '  ' + r.seed.padEnd(10) +
       String(r.peak).padStart(4) + String(r.end).padStart(6) +
-      (pct + '%').padStart(11) + String(r.born).padStart(7) +
+      survived.padStart(11) + String(r.born).padStart(7) +
       String(r.starvedInfants).padStart(14) +
       String(r.starvedChildren).padStart(4) + String(r.starvedAdults).padStart(4) +
       String(r.known).padStart(8) + String(r.pastRoots).padStart(5) +
       String(r.transmitted).padStart(7)
     );
+    console.log(formatHomeCohort(r.seed, r.homes));
   }
 
   const sum = (pick: (r: SeedResult) => number) => results.reduce((n, r) => n + pick(r), 0);
@@ -548,7 +558,7 @@ function main(): void {
     '   ·  bands still viable ' + sum(r => r.viableBands)
   );
   console.log(
-    '  MEAN SURVIVAL ' + ((totalEnd / Math.max(1, totalPeak)) * 100).toFixed(1) + '%' +
+    '  MEAN SURVIVAL ' + (totalPeak > 0 ? ((totalEnd / totalPeak) * 100).toFixed(1) + '%' : 'n/a') +
     '   ·  ' + collapsed + '/' + results.length + ' collapsed below a quarter' +
     '   ·  ' + sum(r => r.born) + ' born'
   );

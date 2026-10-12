@@ -3621,12 +3621,13 @@ export class Brain {
           const pieces = ctx.buildingHash.queryRadius(b.centerX, b.centerY,
             Math.max(b.def.width, b.def.height) + 1)
             .filter(piece => piece.hostId === b.id && piece.complete && !piece.ruined);
-          const roomQuality = b.def.interior
+          const roomQuality = ctx.motivation.sleepQualityEffectsEnabled && b.def.interior
             ? Math.max(0.9, ...pieces.map(piece => piece.def.sleepQuality ?? 0))
             : 1;
           // A better sleep surface can win over a slightly warmer hut; doSleep
           // routes the last room tiles to that surface before fatigue recovers.
-          return b.def.shelter * 40 + roomQuality * (10 + drive.comfort) -
+          return b.def.shelter * 40 + roomQuality *
+            (10 + (ctx.motivation.sleepQualityEffectsEnabled ? drive.comfort : 0)) -
             person.distanceTo({ x: b.centerX, y: b.centerY });
         });
       if (restShelter) {
@@ -3838,8 +3839,9 @@ export class Brain {
         recipeTechPower(person, RECIPES.fireplace!) > 0))) {
       const pieces = ctx.buildingHash.queryRadius(home.centerX, home.centerY,
         Math.max(home.def.width, home.def.height) + 1).filter(piece => piece.hostId === home.id);
-      const quality = pieces.reduce((best, piece) => piece.complete && !piece.ruined
+      const physicalQuality = pieces.reduce((best, piece) => piece.complete && !piece.ruined
         ? Math.max(best, piece.def.sleepQuality ?? 0) : best, 0);
+      const quality = ctx.motivation.sleepQualityEffectsEnabled ? physicalQuality : 1.1;
       const free = houseInteriorTiles(home).some(tile => ctx.world.isWalkable(tile.x, tile.y) &&
         !pieces.some(piece => piece.x === Math.floor(tile.x) && piece.y === Math.floor(tile.y)));
       if (free) {

@@ -81,6 +81,24 @@ describe('physical drives', () => {
     expect(scoreGoingHome(-50)).toBeGreaterThan(comfortableControl);
   });
 
+  it('can ablate the comfort drive without changing the other drive pressures', () => {
+    const person = new Person('Test', 0, 0, 0, new RNG('comfort-drive-ablation'), 40);
+    person.mood.comfort = -60;
+    person.needs.hunger = 34;
+    const enabled = drivePressures(person);
+    const controlConfig = makeConfig({ motivation: { comfortDriveEnabled: false } }).motivation;
+    const disabled = drivePressures(person, {
+      time: { daylight: 1 }, motivation: controlConfig,
+      world: new World(DEFAULT_CONFIG.world, new RNG('comfort-ablation-world')),
+      peopleById: new Map([[person.id, person]]), buildingsById: new Map(),
+      householdsById: new Map(), homes: new Map(),
+    });
+    expect(enabled.comfort).toBe(urgencyCurve(60));
+    expect(disabled.comfort).toBe(0);
+    expect(disabled.hunger).toBe(enabled.hunger);
+    expect(disabled.warmth).toBe(enabled.warmth);
+  });
+
   it('scales belonging pressure with loyalty while keeping the population midpoint neutral', () => {
     const person = new Person('Test', 0, 0, 0, new RNG('belonging-drive'), 40);
     person.traits.loyalty = 0;
