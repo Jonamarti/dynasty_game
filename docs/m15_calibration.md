@@ -107,6 +107,7 @@ Se actualizaron checks cortos tras M15, sin cambiar parámetros:
 |---|---|---|---|
 | `food-news` | `npm.cmd run sim:check -- --scenario food-news` | PASS 1/1, `word-of-food-travels` | 600 pasos; prueba el mecanismo de rumor, no su adopción poblacional. |
 | `frontier` | `npm.cmd run sim:check -- --scenario frontier` | PASS 2/2, `nobody-drinks-the-sea`, `rivers-are-crossed` | 300 pasos; prueba agua/frontera en una semilla. |
+| `frontier-cohort` | `npm.cmd run sim:seeds -- --scenario frontier-cohort --seeds 20` | supervivencia media 91,8%; `worldLost` 0/20; colapso 0/20; 43 nacimientos; 2 muertes por deshidratación y 24 por hambre | 12.000 pasos/semilla; 485,1 s bajo cohortes simultáneas. Sin comparación emparejada ni inferencia de mejora. |
 | `band` | `npm.cmd run sim:check -- --scenario band` | 3 fallos: `cravings-steer-the-diet`, `perf-budget`, `hills-see-farther` | Una sola semilla, ejecutada mientras corrían cohortes largas; la cifra de rendimiento no es una medición válida bajo esa carga. |
 | `salters` | `npm.cmd run sim:check -- --scenario salters` | FAIL `preserved-food-lasts`: 0/3 comidas invernales conservadas | El monitor de pérdida sigue sin comparación que detecte el build sin recetas de conserva; no demuestra mejora ni habilita 15c. |
 
@@ -117,7 +118,11 @@ citados como ejemplos de escenarios de mapa en notas históricas, no están
 registrados en `tools/simcheck.ts`. `sim:seeds` no calcula checks de mapa
 personal; esos checks se ejecutan con un escenario individual. La cohorte
 `frontier-cohort` existente mide una dimensión geográfica y no sustituye una
-cohorte de viajes o caravanas.
+cohorte de viajes o caravanas. La pasada nueva tuvo 91,8% de supervivencia
+media y cero colapsos o mundos perdidos; se observaron dos muertes por
+deshidratación y 24 por hambre. El 97,9% de la referencia del 6 de octubre era
+población final/pico, una métrica distinta, así que no se calcula delta entre
+ambas.
 
 El fallo de `salters` reproduce el problema registrado el 2026-10-10, entonces
 con 0/8 comidas conservadas. La semilla actualizó el conteo a 0/3; ambos son

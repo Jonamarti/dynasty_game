@@ -1,3 +1,10 @@
+## 2026-10-12 — docs: registrar cohorte M15 frontier
+
+La cohorte actual de `frontier-cohort` (20 semillas, 12.000 pasos) dio 91,8%
+de supervivencia media, sin colapsos ni mundos perdidos; hubo 2 muertes por
+deshidratación y 24 por hambre. Se aclara que no es comparable con el 97,9%
+histórico, que medía población final/pico. No se infiere mejora ni calibración.
+
 ## 2026-10-12 — docs: actualizar lectura de salters
 
 La lectura de 2.400 pasos vuelve a fallar `preserved-food-lasts` (0/3 comidas
