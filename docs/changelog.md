@@ -13,6 +13,15 @@ quality off; ninguna superficie de cama apareció. Límites y protocolo en
 m15_homes_cohort_protocol.md; datos pareados en
 m15_homes_cohort_per_seed_2026-10-13.csv. Cambio docs-only, sin bump de versión.
 
+## 2026-10-13 — M15 fase 17: plantar un árbol también se ve
+
+`plant` usa cuatro poses generadas de mano al suelo solo durante trabajo real
+en un objetivo alcanzado y todavía apto para árboles. El selector no consulta
+fruta/inventario ni crea el árbol; la acción conserva el control completo.
+Pruebas de arte, selector y orden real en navegador; captura en
+`artifacts/screenshots/m15-planting-animation-2026-10-13/`. Versión
+`0.15.123-alpha`.
+
 ## 2026-10-12 — M15 fase 17: cortar hierba también se ve
 
 `cut_grass` usa cuatro poses generadas de barrido bajo, seleccionadas solo

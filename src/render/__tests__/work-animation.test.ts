@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Person } from '../../sim/entities/Person.ts';
 import { RNG } from '../../sim/core/RNG.ts';
-import { buildingPose, cuttingGrassPose, diggingPose, extractionPose, farmingPose, fishingPose, gatheringPose, mendingPose } from '../WorkAnimation.ts';
+import { buildingPose, cuttingGrassPose, diggingPose, extractionPose, farmingPose, fishingPose, gatheringPose, mendingPose, plantingPose } from '../WorkAnimation.ts';
 import type { Simulation } from '../../sim/core/Simulation.ts';
 
 function fixture() {
@@ -289,6 +289,50 @@ describe('grass cutting animation', () => {
     expect(cuttingGrassPose(person, sim, false, 0.5)).toBe('q0');
     expect(cuttingGrassPose(person, sim, false, 1)).toBe('q1');
     expect(cuttingGrassPose(person, sim, false, 50)).toBe('q1');
+  });
+});
+
+describe('tree planting animation', () => {
+  function plantingFixture() {
+    const person = new Person('Planter', 4.5, 4.5, 0, new RNG('plant-animation'));
+    person.action = 'plant'; person.targetX = 4; person.targetY = 4;
+    person.actionTimer = 10; person.workedTicks = 1;
+    let biome = 'grass', depth = 0;
+    const sim = { world: { biomeAt: () => biome, depthDug: () => depth } } as unknown as Pick<Simulation, 'world'>;
+    return { person, sim, setGround: (nextBiome: string, nextDepth: number) => { biome = nextBiome; depth = nextDepth; } };
+  }
+
+  it('cycles four low hand-to-soil poses after planting work starts', () => {
+    const { person, sim } = plantingFixture();
+    expect([1, 3, 5, 7, 9].map(ticks => { person.workedTicks = ticks; return plantingPose(person, sim, false, 0); }))
+      .toEqual(['p0', 'p1', 'p2', 'p3', 'p0']);
+    expect(person.actionTimer).toBe(10);
+    expect(person.workedTicks).toBe(9);
+  });
+
+  it('hides the gesture while travelling, outside the tile, before work or on invalid ground', () => {
+    const { person, sim, setGround } = plantingFixture();
+    expect(plantingPose(person, sim, true)).toBeNull();
+    person.x = 7;
+    expect(plantingPose(person, sim, false)).toBeNull();
+    person.x = 4.5; person.workedTicks = 0;
+    expect(plantingPose(person, sim, false)).toBeNull();
+    person.workedTicks = 1; person.actionTimer = 0;
+    expect(plantingPose(person, sim, false)).toBeNull();
+    person.actionTimer = 10; setGround('water', 0);
+    expect(plantingPose(person, sim, false)).toBeNull();
+    setGround('grass', 0.2);
+    expect(plantingPose(person, sim, false)).toBeNull();
+    setGround('forest', 0); person.alive = false;
+    expect(plantingPose(person, sim, false)).toBeNull();
+  });
+
+  it('advances only by the bounded simulation fraction', () => {
+    const { person, sim } = plantingFixture();
+    person.workedTicks = 2;
+    expect(plantingPose(person, sim, false, 0.5)).toBe('p0');
+    expect(plantingPose(person, sim, false, 1)).toBe('p1');
+    expect(plantingPose(person, sim, false, 50)).toBe('p1');
   });
 });
 

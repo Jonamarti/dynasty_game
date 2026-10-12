@@ -2,7 +2,7 @@
 import type { Simulation } from '../sim/core/Simulation.ts';
 import type { Person } from '../sim/entities/Person.ts';
 import { ARRIVAL_RADIUS } from '../sim/systems/MovementSystem.ts';
-import { BUILD_POSES, CHOP_POSES, CUT_GRASS_POSES, DIG_POSES, EXTRACT_POSES, FARM_POSES, FISH_POSES, GATHER_POSES, MAKE_POSES, MEND_POSES, type ArtPose } from './ArtManifest.ts';
+import { BUILD_POSES, CHOP_POSES, CUT_GRASS_POSES, DIG_POSES, EXTRACT_POSES, FARM_POSES, FISH_POSES, GATHER_POSES, MAKE_POSES, MEND_POSES, PLANT_POSES, type ArtPose } from './ArtManifest.ts';
 import { RECIPES } from '../sim/entities/Recipe.ts';
 import { isStationFor } from '../sim/entities/Building.ts';
 import { CUT_FLOOR } from '../sim/core/Grass.ts';
@@ -167,4 +167,19 @@ export function cuttingGrassPose(
   // target threshold would show a swing after a herd has already cropped it.
   if (Math.hypot(dx, dy) >= ARRIVAL_RADIUS || sim.world.grassAt(tx, ty) < CUT_FLOOR + 0.05) return null;
   return workFrame(CUT_GRASS_POSES, person.workedTicks, alpha);
+}
+
+/** Planting is a low hand-to-soil motion on the real, reached target tile. */
+export function plantingPose(
+  person: Person, sim: Pick<Simulation, 'world'>,
+  moving: boolean, alpha = 1,
+): ArtPose | null {
+  if (moving || !person.alive || person.action !== 'plant' || person.actionTimer <= 0 || person.workedTicks <= 0 ||
+      person.targetX === null || person.targetY === null) return null;
+  const tx = Math.floor(person.targetX), ty = Math.floor(person.targetY);
+  const dx = person.x - (tx + 0.5), dy = person.y - (ty + 0.5);
+  if (Math.hypot(dx, dy) >= ARRIVAL_RADIUS) return null;
+  const biome = sim.world.biomeAt(tx, ty);
+  if ((biome !== 'grass' && biome !== 'forest') || sim.world.depthDug(tx, ty) !== 0) return null;
+  return workFrame(PLANT_POSES, person.workedTicks, alpha);
 }

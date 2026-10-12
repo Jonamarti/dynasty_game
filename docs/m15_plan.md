@@ -2334,8 +2334,18 @@ el gesto; viajar, interrumpir, morir o agotar la hierba lo ocultan. El selector
 no muta simulación ni usa RNG. Contrato:
 [m15_cutgrass_animation.md](m15_cutgrass_animation.md). Captura:
 `artifacts/screenshots/m15-cutgrass-animation-2026-10-12/00-active-thatch-cutting.png`.
-La fase 17 sigue abierta para plantar, procesar pieles/prendas y otras acciones
-de trabajo sin pose propia.
+La fase 17 sigue abierta para procesar pieles/prendas y otras acciones de
+trabajo sin pose propia.
+
+**Avance del 2026-10-13 (plantar árboles frutales).** La orden real `plant`
+usa cuatro poses generadas `p0`–`p3`: colocar el fruto, presionarlo en el suelo,
+cubrirlo y retirar la mano. Solo aparecen con `workedTicks` positivos, la acción
+activa y el objetivo alcanzado en suelo plantable; el selector no consulta
+inventario ni altera el progreso. Contrato:
+[m15_planting_animation.md](m15_planting_animation.md). Captura:
+`artifacts/screenshots/m15-planting-animation-2026-10-13/00-active-tree-planting.png`.
+La fase 17 sigue abierta para vestir pieles, teñir, atender, extender compost y
+otras familias sin gesto propio.
 
 **Avance del 2026-10-03 (animales):** cuatro poses de comer, correr y atacar
 en ciervo, jabalí, liebre, lobo, oso y lince, compartidas por especie. El renderer
