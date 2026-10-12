@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Inventory, type GarmentUnit, validateInventoryTransferState } from '../entities/Item.ts';
 import { Simulation } from '../core/Simulation.ts';
-import { RNG } from '../core/RNG.ts';
 import { changeGarment } from '../core/ToolEquipment.ts';
 import { DEFAULT_CONFIG } from '../core/Config.ts';
 import { Person } from '../entities/Person.ts';
@@ -202,7 +201,8 @@ describe('garment condition ownership foundation', () => {
     expect(() => sim.step()).toThrow(/garment units do not match garment counts/);
     expect(victim!.inventory.count('wool_cloak')).toBe(1);
     expect(leader!.inventory.count('wool_cloak')).toBe(0);
-    expect(victim!.equipment.cloak?.unitId).toBe(unit.unitId);
+    const equippedCloak = (victim!.equipment as { cloak?: { unitId: string } }).cloak;
+    expect(equippedCloak?.unitId).toBe(unit.unitId);
   });
 
   it('rejects an orphaned garment row before a multi-item offer changes either owner', () => {

@@ -25,6 +25,7 @@ function garmentRow(record: ComarcaInventoryTransferRecord, index: number): { fi
   const graph = record.sources[0]!.graph as ObjectGraph;
   const ref = garmentRows(record).values[index];
   if (!ref || typeof ref !== 'object' || !('ref' in ref)) throw new Error('Garment row must be an object reference');
+  if (typeof ref.ref !== 'number' || !Number.isSafeInteger(ref.ref)) throw new Error('Garment row reference must be an integer');
   const node = graph.nodes[ref.ref];
   if (!node || node.kind !== 'object') throw new Error('Garment row must be an object');
   return node as { fields: [string, unknown][] };

@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { Simulation } from '../core/Simulation.ts';
-import { changeGarment } from '../core/ToolEquipment.ts';
 import { warmthFrom, TECH } from '../knowledge/Tech.ts';
 import { wornGarmentsOf } from '../../render/Renderer.ts';
 import { RECIPES, hasIngredients } from '../entities/Recipe.ts';

@@ -21,7 +21,7 @@ function sample<T>(rng: RNG, pool: readonly T[], count: number): T[] {
  * in this repository describes terrain and climate, not languages, so this
  * deliberately makes no claim about historical language families.
  */
-export function regionalPhonology(seed: string, geography: 'earth' | 'random' | 'legacyIsland', regionId: number): RegionalPhonology {
+export function regionalPhonology(seed: string | number, geography: 'earth' | 'random' | 'legacyIsland', regionId: number): RegionalPhonology {
   const rng = new RNG(`resident-phonology-v1|${seed}|${geography}|${regionId}`);
   return {
     onsets: sample(rng, ONSET_POOL, 5),
@@ -32,7 +32,7 @@ export function regionalPhonology(seed: string, geography: 'earth' | 'random' | 
 }
 
 /** Name stream is derived from stable world/region/person identity, never a Simulation fork. */
-export function regionalResidentName(seed: string, geography: 'earth' | 'random' | 'legacyIsland', regionId: number, personId: number): string {
+export function regionalResidentName(seed: string | number, geography: 'earth' | 'random' | 'legacyIsland', regionId: number, personId: number): string {
   const phonology = regionalPhonology(seed, geography, regionId);
   const rng = new RNG(`resident-name-v1|${seed}|${geography}|${regionId}|${personId}`);
   const syllable = () => `${rng.pick(phonology.onsets)}${rng.pick(phonology.vowels)}${rng.pick(phonology.codas)}`;
