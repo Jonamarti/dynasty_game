@@ -15487,6 +15487,13 @@ terminada contiene una lámpara NPC vacía. La acción usa el pickup y los permi
 de propiedad existentes, recoge una unidad y reevalúa la necesidad. No crea
 grasa, inicia una cacería ni cambia la UI o el estado guardado.
 
+## 2026-10-12 — m15: remiendo autónomo de prendas (0.15.110-alpha)
+
+Un adulto NPC sin presión de necesidades puede seleccionar una prenda propia,
+dañada y sin vestir, y remendarla con el método disponible. Reutiliza la acción
+interrumpible y conserva objetivo y progreso en la unidad física. La conducta
+no busca materiales y no activa ni calibra el desgaste.
+
 ## 2026-10-12 — m15: limita el remiendo autónomo a adultos (0.15.111-alpha)
 
 La selección autónoma comprueba `Person.isChild`, que usa el umbral adulto del
