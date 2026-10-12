@@ -74,6 +74,8 @@ export interface ItemDef {
     wearPerDay: number;
     /** M15 phase 14c: extra room for `small` items, only while worn and owned. */
     pocket?: number;
+    /** Physical hide garments can be grease-dressed; fibres and wool cannot. */
+    material?: 'hide';
   };
   /**
    * M15 phase 11a. What kind of thing this is for a container's `accepts`
@@ -195,7 +197,7 @@ export const ITEMS: Record<string, ItemDef> = {
     // legs 0.2, head bare.
     protects: { torso: 0.5, left_arm: 0.25, right_arm: 0.25, left_leg: 0.2, right_leg: 0.2 },
     class: 'bulky', hand: { perHand: 1, perArms: 1, hands: 1 },
-    garment: { slot: 'torso', warmth: 0.1, wearPerDay: 0.005 },
+    garment: { slot: 'torso', warmth: 0.1, wearPerDay: 0.005, material: 'hide' },
   },
   // --- M8.1: what comes off a carcass once you know what to do with it -------
   //
@@ -241,7 +243,7 @@ export const ITEMS: Record<string, ItemDef> = {
     // warmth first, so it is a fifth of what a hide cuirass gives the torso.
     protects: { torso: 0.2, left_arm: 0.12, right_arm: 0.12, left_leg: 0.06, right_leg: 0.06 },
     class: 'bulky', hand: { perHand: 1, perArms: 1, hands: 1 },
-    garment: { slot: 'torso', warmth: 0.4, pocket: 2, wearPerDay: 0.005 },
+    garment: { slot: 'torso', warmth: 0.4, pocket: 2, wearPerDay: 0.005, material: 'hide' },
   },
   // The only object in the game that does nothing useful at all, and the most
   // valuable thing a Palaeolithic band owns for exactly that reason.
@@ -478,9 +480,9 @@ export const ITEMS: Record<string, ItemDef> = {
   fat_torch: { id: 'fat_torch', label: 'Fat torch', nutrition: 0, spoilTicks: 0, baseValue: 8,
     class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 } },
   hide_cape: { id: 'hide_cape', label: 'Hide cape', nutrition: 0, spoilTicks: 0, baseValue: 6,
-    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'cloak', warmth: 0.25, wearPerDay: 0.005 } },
+    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'cloak', warmth: 0.25, wearPerDay: 0.005, material: 'hide' } },
   sewn_tunic: { id: 'sewn_tunic', label: 'Sewn tunic', nutrition: 0, spoilTicks: 0, baseValue: 9,
-    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'torso', warmth: 0.30, pocket: 4, wearPerDay: 0.005 } },
+    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'torso', warmth: 0.30, pocket: 4, wearPerDay: 0.005, material: 'hide' } },
   dried_meat: { id: 'dried_meat', label: 'Dried meat', nutrition: 30, spoilTicks: 12000,
     macros: { fat: 0.45, protein: 0.55, carb: 0 }, baseValue: 8,
     class: 'food', hand: { perHand: 3, perArms: 8, hands: 1 } },
@@ -505,23 +507,23 @@ export const ITEMS: Record<string, ItemDef> = {
     macros: { fat: 0.35, protein: 0.65, carb: 0 }, baseValue: 11,
     class: 'food', hand: { perHand: 3, perArms: 8, hands: 1 } },
   foot_wraps: { id: 'foot_wraps', label: 'Foot wraps', nutrition: 0, spoilTicks: 0, baseValue: 4,
-    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'feet', warmth: 0.08, wearPerDay: 0.005 } },
+    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'feet', warmth: 0.08, wearPerDay: 0.005, material: 'hide' } },
   hide_loincloth: { id: 'hide_loincloth', label: 'Hide loincloth', nutrition: 0, spoilTicks: 0, baseValue: 3,
-    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'hips', warmth: 0.02, wearPerDay: 0.005 } },
+    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'hips', warmth: 0.02, wearPerDay: 0.005, material: 'hide' } },
   fibre_skirt: { id: 'fibre_skirt', label: 'Fibre skirt', nutrition: 0, spoilTicks: 0, baseValue: 3,
     class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'hips', warmth: 0.03, wearPerDay: 0.005 } },
   leggings: { id: 'leggings', label: 'Leggings', nutrition: 0, spoilTicks: 0, baseValue: 7,
-    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'legs', warmth: 0.15, wearPerDay: 0.005 } },
+    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'legs', warmth: 0.15, wearPerDay: 0.005, material: 'hide' } },
   moccasins: { id: 'moccasins', label: 'Moccasins', nutrition: 0, spoilTicks: 0, baseValue: 6,
-    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'feet', warmth: 0.12, wearPerDay: 0.005 } },
+    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'feet', warmth: 0.12, wearPerDay: 0.005, material: 'hide' } },
   fur_hat: { id: 'fur_hat', label: 'Fur hat', nutrition: 0, spoilTicks: 0, baseValue: 5,
-    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'head', warmth: 0.10, wearPerDay: 0.005 } },
+    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'head', warmth: 0.10, wearPerDay: 0.005, material: 'hide' } },
   wool_cloak: { id: 'wool_cloak', label: 'Wool cloak', nutrition: 0, spoilTicks: 0, baseValue: 15,
     class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'cloak', warmth: 0.35, wearPerDay: 0.005 } },
   // M15 phase 14c: bone toggles close a fur coat, adding torso warmth only
   // after the garment has been crafted and equipped.
   toggled_coat: { id: 'toggled_coat', label: 'Toggled coat', nutrition: 0, spoilTicks: 0, baseValue: 18,
-    class: 'bulky', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'torso', warmth: 0.48, pocket: 4, wearPerDay: 0.005 } },
+    class: 'bulky', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'torso', warmth: 0.48, pocket: 4, wearPerDay: 0.005, material: 'hide' } },
   // M15 phase 14c: the first woven garment is warmer and carries a few small
   // things only when worn; packed cloth does not grant extra carrying room.
   linen_tunic: { id: 'linen_tunic', label: 'Linen tunic', nutrition: 0, spoilTicks: 0, baseValue: 10,
@@ -666,6 +668,17 @@ export class Inventory {
     if (index < 0) return false;
     const unit = validateGarmentUnit({ ...this.garmentUnits[index]!, wear, repairProgress });
     this.garmentUnits[index] = unit;
+    this.version++;
+    return true;
+  }
+
+  /** Store interruptible dressing work and its finished treatment on one unit. */
+  setGarmentDressing(unitId: string, hideDressed: boolean, dressingProgress: number): boolean {
+    this.ensureGarmentUnits();
+    const index = this.garmentUnits.findIndex(unit => unit.unitId === unitId);
+    if (index < 0) return false;
+    const current = this.garmentUnits[index]!;
+    this.garmentUnits[index] = validateGarmentUnit({ ...current, hideDressed, dressingProgress });
     this.version++;
     return true;
   }
@@ -970,17 +983,31 @@ export interface GarmentUnit {
   readonly itemId: string;
   readonly wear: number;
   readonly repairProgress: number;
+  /** M15 phase 14c: grease treatment belongs to this physical hide garment. */
+  readonly hideDressed?: boolean;
+  /** Interruptible dressing work, independent of repair work. */
+  readonly dressingProgress?: number;
 }
 
 function validateGarmentUnit(value: unknown): GarmentUnit {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new TypeError('garment unit must be an object');
   const unit = value as Partial<GarmentUnit>;
-  if (Object.keys(value).length !== 4 || typeof unit.unitId !== 'string' || !unit.unitId ||
-      typeof unit.itemId !== 'string' || !unit.itemId || !Number.isFinite(unit.wear) || unit.wear! < 0 || unit.wear! > 1 ||
+  const fields = Object.keys(value);
+  const legacy = fields.length === 4 && !Object.hasOwn(value, 'hideDressed') && !Object.hasOwn(value, 'dressingProgress');
+  if ((!legacy && (fields.length !== 6 || typeof unit.hideDressed !== 'boolean' ||
+        !Number.isFinite(unit.dressingProgress) || unit.dressingProgress! < 0 || unit.dressingProgress! > 140)) ||
+      typeof unit.unitId !== 'string' || !unit.unitId || typeof unit.itemId !== 'string' || !unit.itemId ||
+      !Number.isFinite(unit.wear) || unit.wear! < 0 || unit.wear! > 1 ||
       !Number.isFinite(unit.repairProgress) || unit.repairProgress! < 0 || unit.repairProgress! > 140) {
-    throw new RangeError('garment unit has invalid identity, condition, or repair progress');
+    throw new RangeError('garment unit has invalid identity, condition, repair, or dressing progress');
   }
-  return { unitId: unit.unitId, itemId: unit.itemId, wear: unit.wear!, repairProgress: unit.repairProgress! };
+  const hideDressed = legacy ? false : unit.hideDressed!;
+  const dressingProgress = legacy ? 0 : unit.dressingProgress!;
+  if ((hideDressed || dressingProgress > 0) && ITEMS[unit.itemId]?.garment?.material !== 'hide') {
+    throw new RangeError('only hide garments can carry dressing state');
+  }
+  return { unitId: unit.unitId, itemId: unit.itemId, wear: unit.wear!, repairProgress: unit.repairProgress!,
+    ...(hideDressed || dressingProgress > 0 ? { hideDressed, dressingProgress } : {}) };
 }
 
 export function validateInventoryTransferState(value: unknown): InventoryTransferState {
@@ -1042,7 +1069,8 @@ function sameInventoryTransferState(a: InventoryTransferState, b: InventoryTrans
     left.length === right.length && left.every((unit, i) => {
       const other = right[i]!;
       return unit.unitId === other.unitId && unit.itemId === other.itemId &&
-        unit.wear === other.wear && unit.repairProgress === other.repairProgress;
+        unit.wear === other.wear && unit.repairProgress === other.repairProgress &&
+        unit.hideDressed === other.hideDressed && unit.dressingProgress === other.dressingProgress;
     });
   return a.version === b.version && equalRows(a.stacks, b.stacks) && equalRows(a.spoilage, b.spoilage) &&
     equalUnits(a.garmentUnits, b.garmentUnits);

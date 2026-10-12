@@ -62,7 +62,7 @@ export const TECHS = [
   // Phase 5: the first things made to be *used on* something. Until these,
   // `doAttack` had no item term at all and a hunt could only be won by
   // outlasting an animal that runs faster than a person.
-  'spear', 'bow', 'leatherwork',
+  'spear', 'bow', 'leatherwork', 'hide_dressing',
   // M8.1: the food half of the tree, see m8_plan_the_ages.md. `fishing` came
   // first, with mechanism 2; these four are mechanism 3 and the two carried
   // tools that lead to it. The rest of the fourteen-node tier follows.
@@ -774,6 +774,20 @@ export const TECH: Record<Tech, TechDef> = {
     description:
       'Hide worked until it bends without cracking. Warm, and it turns a blow ' +
       'that bare skin does not.',
+  },
+  hide_dressing: {
+    id: 'hide_dressing', label: 'Hide dressing', domain: 'cloth', tier: 'craft', web: 'clothing',
+    age: 'middle_palaeolithic', firstKnown: 'Grease-dressed hides; the first date is uncertain',
+    kind: 'device', requires: ['leatherwork'], difficulty: 0.35, skill: 'build',
+    prototype: { fat: 1 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'leatherwork' }, { kind: 'holding', item: 'fat' }],
+        weight: 0.8, story: 'rubbed grease into a hide garment and saw it stay supple longer' },
+      { needs: [{ kind: 'knows', tech: 'leatherwork' }, { kind: 'feeling', need: 'cold' },
+                { kind: 'season', season: 'winter' }],
+        weight: 0.5, story: 'noticed that a greased hide kept its shape through winter wear' },
+    ],
+    description: 'Work animal fat into an unworn hide garment. The treated hide loses condition at half its usual rate.',
   },
   tracking: {
     id: 'tracking', label: 'Tracking', domain: 'beasts',
@@ -2875,6 +2889,8 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
     site: 'RECIPES.wool_cloak; ITEMS.wool_cloak garment; warmthFrom and Renderer.wornGarmentsOf' },
   linen_tunic: { summary: 'A linen tunic warms the torso only while worn.',
     site: 'RECIPES.linen_tunic retained needle; ITEMS.linen_tunic garment; warmthFrom and Renderer.wornGarmentsOf' },
+  hide_dressing: { summary: 'A grease-dressed hide garment loses condition at half its usual rate.',
+    site: 'RECIPES.hide_dressing; GarmentUnit.hideDressed and GarmentSystem.wearWornGarments' },
   toggles: { summary: 'Bone toggles fasten a fur coat closed and warm the torso only while worn.',
     site: 'RECIPES.toggled_coat; ITEMS.toggled_coat garment; warmthFrom and Renderer.wornGarmentsOf' },
   fur_hat: { summary: 'A sewn fur hat warms the head only while worn.',

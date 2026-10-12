@@ -1,3 +1,11 @@
+**Avance del 2026-10-12 — 14c, engrasado por unidad:** el nodo hide_dressing
+requiere leatherwork; la receta hide_dressing consume una grasa y trabaja sobre
+una unidad concreta de piel, fuera del cuerpo. El progreso interrumpible y el
+tratamiento quedan guardados en GarmentUnit; esa pieza pierde condición a la
+mitad, sin cambiar la definición compartida ni el ritmo de otras copias. Las
+rutas de propiedad y persistencia preservan ambos campos. NPC no eligen la
+acción autónomamente; calibración de desgaste y cohortes siguen diferidas.
+
 **Avance del 2026-10-12 — 16f, escenario `homes`:** un fixture determinista
 construye una casa completa por banda y permite medir el uso de camas por la
 muestra real de medianoche, el frío y los cuatro términos de seguridad; los NPC

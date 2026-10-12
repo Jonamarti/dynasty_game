@@ -486,7 +486,10 @@ describe('recipes', () => {
         expect(count).toBeGreaterThan(0);
       }
       const out = Object.entries(recipe.output);
-      expect(out.length, recipe.id + ' produces nothing').toBe(1);
+      if (recipe.operation === 'hide_dressing') {
+        expect(recipe.output).toEqual({});
+        expect(recipe.ingredients).toEqual({ fat: 1 });
+      } else expect(out.length, recipe.id + ' produces nothing').toBe(1);
       for (const [itemId, count] of out) {
         expect(ITEMS[itemId], recipe.id + ' produces unknown item ' + itemId).toBeDefined();
         expect(count).toBeGreaterThan(0);
@@ -522,7 +525,7 @@ describe('recipes', () => {
     for (const recipe of Object.values(RECIPES)) {
       const output = Object.keys(recipe.output)[0]!;
       expect(
-        recipe.keep > 0 || wantedByBuildings.has(output) ||
+        recipe.operation !== undefined || recipe.keep > 0 || wantedByBuildings.has(output) ||
           (ITEMS[output]?.furniture === true && BUILDINGS[output]?.furniture === true) ||
           ['raft', 'logboat', 'sail'].includes(output),
         recipe.id + ' makes ' + output + ', which nothing wants'

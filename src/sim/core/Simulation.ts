@@ -33,7 +33,7 @@ import { equipContainer, itemCapacityFor, reconcileCarry } from './Carry.ts';
 import {
   manualEquipReasonText, manualEquipRefusal, manualEquipSlot,
   manualGarmentReasonText, manualGarmentRefusal, planGarmentMending,
-  garmentMendingReasonText, type GarmentMendingMethod,
+  garmentMendingReasonText, planHideDressing, hideDressingReasonText, type GarmentMendingMethod,
 } from './ToolEquipment.ts';
 import {
   BUSH_SPECIES, BUSHES, WILD_PLANTS, RESOURCE_KINDS, ORE_COUNTS, bushPhase, ResourceNode, isFoodKind, isPlantFood, seasonLoreKind,
@@ -4349,6 +4349,14 @@ export class Simulation {
       }
       target = { ...target, garmentUnitId: plan.unitId, garmentMendingMethod: plan.method };
     }
+    if (action === 'dress_hide') {
+      const plan = planHideDressing(person, target.itemId ?? '', target.garmentUnitId);
+      if (typeof plan === 'string') {
+        this.lastRefusal = hideDressingReasonText(plan);
+        return false;
+      }
+      target = { ...target, garmentUnitId: plan.unitId };
+    }
     if (action === 'light_torch') {
       const refusal = torchIgnitionRefusal(person, target.itemId ?? '', this.hearthNear(person.x, person.y, 2));
       if (refusal) { this.lastRefusal = torchRefusalText(refusal); return false; }
@@ -4424,6 +4432,10 @@ export class Simulation {
     if (target.mode !== undefined) person.talkMode = target.mode;
 
     if (target.recipeId !== undefined) {
+      const recipe = RECIPES[target.recipeId];
+      if (recipe?.operation === 'hide_dressing') {
+        return this.cancelOrder(person, t('Choose a hide garment to dress'));
+      }
       person.targetRecipe = target.recipeId;
 
       // M8.1, mechanism 4: the first of the two channels a missing station

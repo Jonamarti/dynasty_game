@@ -50,6 +50,7 @@ import { swimRefusal, swimRouteRefusal, swimRefusalText } from '../core/Swimming
 import { houseInteriorContains, houseInteriorTiles } from '../world/HouseInterior.ts';
 import {
   manualGarmentReasonText, manualGarmentRefusal, planGarmentMending, garmentMendingReasonText,
+  planHideDressing, hideDressingReasonText,
 } from '../core/ToolEquipment.ts';
 import { torchIgnitionRefusal, torchRefusalText, transferableUnits, burningTorchRefusalText } from '../core/Torch.ts';
 import { fatLampRefusal, fatLampRefusalText } from '../core/FatLamp.ts';
@@ -358,6 +359,14 @@ export function itemActions(
       enabled: typeof mending !== 'string',
       reason: typeof mending === 'string' ? garmentMendingReasonText(mending) : undefined,
     });
+    if (def.garment.material === 'hide') {
+      const dressing = planHideDressing(actor, itemId);
+      options.push({
+        id: 'dress_hide', label: t('Dress hide'), icon: '\u{1F9F4}',
+        enabled: typeof dressing !== 'string',
+        reason: typeof dressing === 'string' ? hideDressingReasonText(dressing) : undefined,
+      });
+    }
   }
   if (itemId === 'torch' || itemId === 'fat_torch') {
     const refusal = torchIgnitionRefusal(actor, itemId, torchNearFire);

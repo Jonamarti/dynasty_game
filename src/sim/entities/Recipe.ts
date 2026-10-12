@@ -88,6 +88,8 @@ export interface RecipeDef {
    * on `handaxe` in `Brain` is what stops the next recipe from needing a fourth
    * special case in the scorer.
    */
+  /** Target-based work performed on one physical garment, with no item output. */
+  operation?: 'hide_dressing';
   keep: number;
 }
 
@@ -846,6 +848,9 @@ export const RECIPES: Record<string, RecipeDef> = {
     workTicks: 120, ingredients: { cloth: 2, thread: 1 }, toolOptions: ['needle'], output: { linen_tunic: 1 }, keep: 1 },
   wool_cloak: { id: 'wool_cloak', label: 'Wool cloak', icon: '🧶', tech: 'wool_cloak', skill: 'build',
     workTicks: 120, ingredients: { wool_cloth: 2 }, output: { wool_cloak: 1 }, keep: 1 },
+  // Operates on one owned unit. This recipe has no item output; see the dedicated action.
+  hide_dressing: { id: 'hide_dressing', label: 'Dress hide', icon: '🧴', tech: 'hide_dressing', skill: 'build',
+    workTicks: 100, ingredients: { fat: 1 }, output: {}, operation: 'hide_dressing', keep: 0 },
 };
 
 /** Every item any recipe can produce. Used by the "is this reachable?" tests. */

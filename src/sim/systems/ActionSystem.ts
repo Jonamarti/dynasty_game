@@ -61,6 +61,7 @@ import { canTake, equipContainer, itemCapacityFor, reconcileCarry, reconcileGarm
 import {
   changeGarment, equipFor as fitToolForAction, equipItemInSlot, manualEquipRefusal,
   manualEquipSlot, manualGarmentRefusal, planGarmentMending,
+  planHideDressing, hideDressingReasonText,
   type ToolAction, type ManualGarmentVerb,
 } from '../core/ToolEquipment.ts';
 import { RECIPES, hasIngredients, ingredientsFor, recipeTechPower } from '../entities/Recipe.ts';
@@ -808,6 +809,7 @@ export class ActionSystem {
       case 'wear_garment':
       case 'take_off_garment': this.doChangeGarment(person, ctx); break;
       case 'mend_garment': this.doMendGarment(person, ctx); break;
+      case 'dress_hide': this.doDressHide(person, ctx); break;
       case 'light_torch': this.doLightTorch(person, ctx); break;
       case 'shelter': this.doShelter(person, ctx); break;
       case 'sleep': this.doSleep(person, ctx); break;
@@ -1687,6 +1689,58 @@ export class ActionSystem {
       return;
     }
     telemetry.count('garment_mended_' + method);
+    this.finish(person);
+  }
+
+  /** Apply the target-based dressing recipe to the selected physical hide garment. */
+  private doDressHide(person: Person, ctx: ActionContext): void {
+    const itemId = person.targetItemId;
+    const unitId = person.targetGarmentUnitId;
+    if (!itemId || !unitId) {
+      this.abandon(person, 'garment_order_lost', ctx);
+      return;
+    }
+    const plan = planHideDressing(person, itemId, unitId);
+    if (typeof plan === 'string') {
+      this.abandon(person, hideDressingReasonText(plan), ctx);
+      return;
+    }
+    const unit = person.inventory.garmentUnitsOf(itemId).find(candidate => candidate.unitId === unitId);
+    if (!unit) {
+      this.abandon(person, 'garment_not_owned', ctx);
+      return;
+    }
+    const interrupted = this.interruption(person, ctx, { ignoreLaden: true });
+    if (interrupted) {
+      this.stop(person, interrupted, ctx);
+      return;
+    }
+
+    const recipe = RECIPES.hide_dressing!;
+    const threshold = recipe.workTicks;
+    const pace = ctx.fineWorkPace?.(person) ?? 1;
+    const progress = Math.min(threshold,
+      (unit.dressingProgress ?? 0) + person.skillFactor(recipe.skill) * pace);
+    person.actionTimer = 1;
+    person.actionTotal = threshold;
+    person.workedTicks++;
+    person.practice(recipe.skill, 0.2);
+    if (progress < threshold) {
+      person.inventory.setGarmentDressing(unitId, false, progress);
+      return;
+    }
+
+    try {
+      person.inventory.consumeItems(Object.entries(recipe.ingredients), () => {
+        if (!person.inventory.setGarmentDressing(unitId, true, 0)) {
+          throw new Error('garment changed during dressing');
+        }
+      });
+    } catch {
+      this.abandon(person, hideDressingReasonText('dressing_fat_missing'), ctx);
+      return;
+    }
+    telemetry.count('garment_hide_dressed');
     this.finish(person);
   }
 
@@ -4883,6 +4937,10 @@ export class ActionSystem {
     const recipe = person.targetRecipe === null ? null : RECIPES[person.targetRecipe];
     if (!recipe) {
       this.abandon(person, 'no_recipe', ctx);
+      return;
+    }
+    if (recipe.operation !== undefined) {
+      this.abandon(person, 'Choose a hide garment to dress', ctx);
       return;
     }
     if (recipeTechPower(person, recipe) <= 0) {

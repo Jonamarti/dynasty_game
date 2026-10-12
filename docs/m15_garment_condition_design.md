@@ -1,7 +1,7 @@
 # Garment condition ownership — design note
 
-Status: ownership foundation, daily wear, and repairable mending are delivered
-as of 2026-10-12. `Inventory` now holds one condition row per garment count and exposes
+Status: ownership foundation, daily wear, repairable mending, and player-led
+hide dressing are delivered as of 2026-10-12. `Inventory` now holds one condition row per garment count and exposes
 `takeGarmentUnit` / `putGarmentUnit` so an explicit caller can move a garment
 without resetting condition. `setGarmentUnitCondition` bounds condition and
 banked repair progress. New and legacy garments start pristine, and explicit
@@ -91,6 +91,14 @@ Interrupted work remains on `repairProgress`, so another worker can resume it.
 Refusals and runtime failures are localized and visible. These fixed starting
 thresholds are bounded design values, not cohort-calibrated claims.
 
+Hide dressing now extends the physical unit contract: only garment definitions
+marked as hide carry hideDressed and dressingProgress. The target-based
+hide_dressing recipe consumes one fat only when 100 build-work points finish;
+interrupted work is banked on that same unit. A completed treatment halves only
+that unit's daily wear. Existing transfer/checkpoint validators preserve both
+fields and synthesize untreated defaults for legacy four-field garment rows.
+The treatment is an explicit player action; autonomous dressing is not shipped.
+
 This is an ownership foundation with daily wear and manual mending. Generic
 `remove` treats a garment as consumed and destroys its row; it is never a
 transfer operation. A garment ingredient must go through the transactional
@@ -115,12 +123,16 @@ identity) that exists independently of a worn slot.
 The current Inventory boundary makes unit movement explicit:
 
 ```ts
-type GarmentUnit = { unitId: string; itemId: string; wear: number; repairProgress: number };
+type GarmentUnit = {
+  unitId: string; itemId: string; wear: number; repairProgress: number;
+  hideDressed?: boolean; dressingProgress?: number;
+};
 
 inventory.takeGarmentUnit(itemId): GarmentUnit | null;
 inventory.putGarmentUnit(unit): void;
 inventory.garmentUnitsOf(itemId?): readonly GarmentUnit[];
 inventory.setGarmentUnitCondition(unitId, wear, repairProgress): boolean;
+inventory.setGarmentDressing(unitId, hideDressed, dressingProgress): boolean;
 ```
 
 The current unit identity is local to its Inventory; merges re-key collisions,
@@ -193,6 +205,6 @@ Any future condition display must preserve the existing knowledge boundary.
 
 ## Separate future behavior
 
-This initial action is intentionally narrow: it repairs only an owned garment
-that is off the body. Further repair materials, wear-rate balance and any
-public condition display remain separate design work.
+Mending and hide dressing are explicit actions on owned garments off the body.
+Autonomous garment work, additional repair materials, wear-rate calibration,
+and any public condition display remain separate design work.

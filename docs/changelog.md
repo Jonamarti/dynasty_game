@@ -21,6 +21,29 @@ familias lingüísticas históricas: esa limitación y el diseño están en
 regionales y continuidad de nombres/IDs tras viajes y guardado. Sin UI ni
 cohortes. Verificación pendiente: este worktree no incluye `node_modules` ni
 `tsc`/`vitest`; no se ejecutaron typecheck ni pruebas.
+=======
+## 2026-10-12 — m15: engrasado físico de prendas (0.15.91-alpha)
+
+Se añade el nodo de ropa hide_dressing, detrás de leatherwork, y una receta
+que aplica una grasa a una unidad concreta de prenda de piel. La prenda debe
+estar fuera del cuerpo; el trabajo interrumpible se guarda en ella y sólo al
+terminar se consume la grasa y queda marcado el tratamiento. El lector de
+desgaste aplica 0,0025 por día a esa unidad, frente a 0,005 sin tratar; no se
+modifican los ItemDef compartidos. Los enlaces entre mochila, almacén, regalo,
+escolta, escrow, viajero y checkpoint trasladan los campos del estado físico.
+Las prendas de lana y tejido quedan excluidas. NPC no eligen la acción por sí
+solos y no se calibraron los valores por cohortes.
+
+Vitest focalizado: 49/49 pasan (prueba nueva y tech.test), más i18n.test: 6/6.
+El typecheck normal
+no puede resolver dependencias ausentes en este worktree; el typecheck selectivo
+con runtimes locales no marcó errores en archivos cambiados, pero conserva dos
+errores de base en tech.test.ts (tipos de vitest) y Simulation.ts:7086.
+La prueba e2e preparada es `e2e/hide-dressing.spec.ts`; la comprobación de UI en
+Chromium confirmó que el botón aparece habilitado y envía `dress_hide`. Captura:
+`artifacts/screenshots/2026-10-12-hide-dressing/01-hide-dressing-option.png`.
+La especificación no pudo ejecutarse con Playwright Test porque faltan sus
+dependencias en este worktree. No se ejecutaron matrices de mundo ni cohortes.
 
 ## 2026-10-12 — m15: remiendo físico de prendas (0.15.88-alpha)
 

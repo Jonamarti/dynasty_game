@@ -29,7 +29,8 @@ export function wearWornGarments(person: Person, tick: number): number {
     // twice in the same day. Valid clothing has one canonical worn slot.
     if (seenUnits.has(unit.unitId)) continue;
     seenUnits.add(unit.unitId);
-    const result = person.inventory.applyGarmentWear(unit.unitId, garment.wearPerDay);
+    const result = person.inventory.applyGarmentWear(unit.unitId,
+      garment.wearPerDay * (unit.hideDressed ? 0.5 : 1));
     if (result === 'missing') {
       delete person.equipment[slot];
       continue;
