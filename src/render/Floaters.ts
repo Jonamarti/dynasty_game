@@ -323,6 +323,7 @@ export const STOP_REASONS: Record<string, string> = {
 
   // The job finished itself.
   node_empty: 'there was nothing left to take',
+  gathered_enough: 'they had gathered enough for the hearth',
   tree_bare: 'there was no fruit left on it',
 
   // The world changed underneath them.

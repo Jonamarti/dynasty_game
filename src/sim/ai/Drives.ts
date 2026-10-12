@@ -20,7 +20,7 @@ export const DRIVES: Record<DriveId, DriveDef> = {
   hunger: { id: 'hunger', label: t('Hunger drive'), readers: ['eat', 'forage', 'pick', 'explore', 'steal', 'threaten', 'reap', 'take', 'hunt'] },
   thirst: { id: 'thirst', label: t('Thirst drive'), readers: ['drink', 'eat', 'ask_water', 'explore'] },
   rest: { id: 'rest', label: t('Rest drive'), readers: ['sleep', 'rest'] },
-  warmth: { id: 'warmth', label: t('Warmth drive'), readers: ['shelter'] },
+  warmth: { id: 'warmth', label: t('Warmth drive'), readers: ['shelter', 'gather_for_site', 'craft', 'place_furniture'] },
   company: { id: 'company', label: t('Company drive'), readers: ['talk'] },
   home: { id: 'home', label: t('Home drive'), readers: ['go_home', 'wander', 'forage', 'hunt'] },
   comfort: { id: 'comfort', label: t('Comfort drive'), readers: ['go_home', 'sleep', 'place_furniture', 'craft'] },

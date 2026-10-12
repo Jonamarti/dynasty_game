@@ -15367,3 +15367,10 @@ arte añade su icono y su capa visible. La prueba focal mide ambos lectores y
 la conservación de la unidad. Captura: `artifacts/screenshots/m15-phase14d-2026-10-12/01-bone-beads.png`.
 El teñido sigue apartado porque el sistema aún no persiste ni representa color
 por unidad; véase bugs.
+## 2026-10-12 — M15 16d: autonomía del fireplace doméstico (0.15.98-alpha)
+
+Ante una deuda de frío, adultos con la técnica buscan cantidades exactas de
+barro y sílex para una receta de fireplace; luego fabrican y colocan el hogar
+en su casa propia. La presión de warmth reconoce recolección, craft y colocación;
+solo fireplace queda exento del umbral de frío, no de hambre ni sed. Tests
+focales de controles negativos y cadena de acciones; sin RNG, UI ni calibración.

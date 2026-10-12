@@ -498,7 +498,8 @@ function answersColdProject(person: Person, ctx: ActionContext): boolean {
 }
 
 function answersColdRecipe(recipe: (typeof RECIPES)[string]): boolean {
-  return (recipe.tech !== null && answersColdTech(recipe.tech)) ||
+  return recipe.id === 'fireplace' ||
+    (recipe.tech !== null && answersColdTech(recipe.tech)) ||
     Object.keys(recipe.output).some(item =>
       item === 'fur_coat' || item === 'cloth' || item === 'wool_cloth');
 }
@@ -1871,10 +1872,22 @@ export class ActionSystem {
       (1 + person.skillFactor(node.def.skill)) * forageYieldFactor(person, node.kind) *
         (harpoon ? 1.5 : 1)
     ));
+    // Some errands name a physical quantity (`targetItemCount`) on the person.
+    // Respect it for harvesting too: otherwise a clay bank's repeated pulls
+    // can fill a carrier before they return for the other fireplace material.
+    const requestedCount = person.targetItemId === node.itemId && person.targetItemCount !== null
+      ? person.targetItemCount : null;
+    const requestedRemaining = requestedCount === null ? null
+      : Math.max(0, requestedCount - person.inventory.count(node.itemId));
+    if (requestedRemaining === 0) {
+      this.stop(person, 'gathered_enough', ctx);
+      return;
+    }
+    const pullUnits = requestedRemaining === null ? yieldUnits : Math.min(yieldUnits, requestedRemaining);
     const feeds = (ITEMS[node.itemId]?.nutrition ?? 0) > 0;
     let eatenAtSource = 0;
     if (feeds && person.needs.hunger >= ctx.carry.eatAtSourceAt) {
-      while (eatenAtSource < yieldUnits && person.needs.hunger >= ctx.carry.eatAtSourceAt &&
+      while (eatenAtSource < pullUnits && person.needs.hunger >= ctx.carry.eatAtSourceAt &&
         node.amount > 0 && node.take(1) > 0) {
         consumeFoodAtSource(person, node.itemId, ctx.tick, ctx.motivation.cravings, ctx.healthRng,
           ctx.world.waterKind !== undefined);
@@ -1887,7 +1900,7 @@ export class ActionSystem {
       person.carryCapacity - person.carrying,
       itemCapacityFor(person, ctx.carry, node.itemId) - person.inventory.count(node.itemId),
     ));
-    const taken = node.take(Math.min(yieldUnits - eatenAtSource, room));
+    const taken = node.take(Math.min(pullUnits - eatenAtSource, room));
     if (room === 0 && !node.depleted) telemetry.count('hand_capacity_blocked');
     if (taken > 0 || eatenAtSource > 0) {
       telemetry.count('compact_food_nutrition_' + (node.kind === 'fish' ? 'fish' : 'gather'), (ITEMS[node.itemId]?.nutrition ?? 0) * (taken + eatenAtSource));
@@ -1920,7 +1933,9 @@ export class ActionSystem {
     // one bush and flint at the next, and only one of those is a reason to keep
     // going while hungry.
     const nextPull = Math.ceil(node.def.harvestTicks / person.skillFactor(node.def.skill));
-    const stop = node.depleted
+    const stop = requestedCount !== null && person.inventory.count(node.itemId) >= requestedCount
+      ? 'gathered_enough'
+      : node.depleted
       ? 'node_empty'
       : room === 0
         ? 'hands_full'

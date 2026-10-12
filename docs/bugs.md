@@ -35,12 +35,23 @@ registró una regresión funcional en esta verificación.
 colocadas por el jugador en su casa propia y puede retirar dos grasas de un
 estante alojado allí. Las negativas por casa ajena, lámpara del jugador,
 anfitrión arruinado y carga parcial siguen cerradas. Continúa pendiente que los
-NPC reúnan o fabriquen grasa y que construyan un fireplace.
+NPC reúnan o fabriquen grasa; la autonomía del fireplace se resuelve en la
+entrada posterior de esta fecha.
 
 La observación inicial describía una lámpara que sólo el jugador podía reponer;
 el ciclo de refill NPC ahora existe. El límite deliberado del mecanismo es que
 usa grasa que la persona lleva o que ya está almacenada en su hogar: no crea
 grasa, busca reservas de hogares ajenos ni construye/reemplaza mobiliario.
+Véase [contrato 16d](m15_phase16d_bedding.md).
+
+## 2026-10-12 — 16d, el fireplace doméstico no se construía por autonomía
+
+**Resuelto en 0.15.98-alpha:** ante deuda de frío, un adulto con el diseño y
+casa terminada propia ya puede buscar cantidades exactas de barro/sílex,
+fabricar el fireplace y colocarlo dentro del hogar. La comprobación focal
+controla técnica, frío, hogar incompleto y destino de cada acción. Esto valida
+la ruta aislada, no cuántos hogares se construyen de forma natural ni su efecto
+demográfico; la autonomía de fuentes y de otros muebles sigue abierta.
 Véase [contrato 16d](m15_phase16d_bedding.md).
 
 ## 2026-10-12 — M15 14c, remiendo inicial: límites y verificación

@@ -180,11 +180,20 @@ ownership/interior/design refusals, and checkpoint persistence. The world
 sprite and carried item icon are generated from `art/src`; the capture is
 `artifacts/screenshots/m15-phase16d-fireplace-2026-10-12/01-fireplace-in-house.png`.
 
-NPCs already receive the warmth, light and station behavior from these shared
-readers, but this slice does not make them gather fireplace materials or
-autonomously furnish a home with one. Other comfort furniture and autonomous
-fireplace construction remain open. Lamp upkeep is recorded below. No fuel
-balance, economy improvement, or cohort result is claimed.
+### Fireplace construction autonomy — 2026-10-12
+
+When an adult has fireplace design, cold debt, a completed own home and a free
+tile, the recipe takes priority over comfort furnishings. The NPC targets the
+first missing ingredient (four mud from clay nodes, then two flint from flint
+nodes), bounds the harvest to that shortage, then crafts and places the hearth
+through existing actions. Only fireplace work is exempted from the cold work
+threshold because it answers that need; hunger and thirst still interrupt it.
+No resource source, fuel rule, RNG stream or player authority was added.
+
+Tests cover missing-tech, no-cold and incomplete-home controls plus gather,
+craft and place targets. The fixture isolates the scored chain; it does not
+measure natural adoption, comfort balance or population effects. Autonomous
+sources and other planned comfort furniture remain open. Lamp upkeep is below.
 
 ## 2026-10-12: phase 16e, one midnight sleep and safety sample
 
@@ -236,14 +245,14 @@ and reject player-placed, non-empty, foreign-home and ruined-host candidates.
 Existing explicit-order tests retain the visible refusal for missing fat and
 foreign ownership. NPCs do not gather/craft fat for lamp upkeep, refill lamps
 outside their own home, replace lamps, or refill a player-placed lamp; partial
-charges are left alone until empty. NPC fireplace construction and other
-planned comfort furniture remain open. No calibration or cohort result is
-claimed. NPCs do not seek or kill quarry just to maintain the lamp, and no
+charges are left alone until empty. Other planned comfort furniture remains
+open. No calibration or cohort result is claimed. NPCs do not seek or kill
+quarry just to maintain the lamp, and no
 renderer/crafting recipe produces fat; ordinary deer/boar hunts remain the
 physical source.
 
-Still open after 16e/16f: NPC autonomous fireplace construction, other planned
-comfort furniture, and deferred calibration.
+Still open after 16e/16f: other planned comfort furniture and deferred
+calibration.
 
 ## 2026-10-12: phase 16e, the comfort drive reads sleep mood
 

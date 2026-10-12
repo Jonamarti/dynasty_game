@@ -252,6 +252,11 @@ interface FoundTargets {
   torchItem: string | null;
   furnitureItem: string | null;
   furnitureHome: Building | null;
+  /** Household home whose fireplace materials this gather trip is for. */
+  fireplaceGatherHome: Building | null;
+  fireplaceGatherItem: string | null;
+  fireplaceGatherCount: number | null;
+  furnitureRecipe: string | null;
   waterQuestionPeer: Person | null;
   explorePoint: { x: number; y: number } | null;
   waterExplorePoint: { x: number; y: number } | null;
@@ -423,7 +428,13 @@ function actionAnswersDrive(drive: CommitmentDrive, action: string, found: Found
       return action === 'eat' && found.foodToEat !== null &&
         hydrationOf(found.foodToEat, ctx.world.waterKind !== undefined) > 0;
     case 'rest': return action === 'sleep' || action === 'rest';
-    case 'warmth': return action === 'shelter' && found.shelter !== null;
+    case 'warmth':
+      if (action === 'shelter') return found.shelter !== null;
+      if (action === 'gather_for_site') return found.fireplaceGatherHome !== null &&
+        found.fireplaceGatherItem !== null;
+      if (action === 'craft') return found.recipe === 'fireplace';
+      return action === 'place_furniture' && found.furnitureItem === 'fireplace' &&
+        found.furnitureHome !== null;
     case 'company':
       if (action === 'talk') return found.companion !== null;
       if (action === 'court') return found.suitor !== null;
@@ -3738,8 +3749,14 @@ export class Brain {
     let furnitureItem: string | null = null;
     let furnitureHome: Building | null = null;
     let furnitureRecipe: string | null = null;
+    let fireplaceGatherHome: Building | null = null;
+    let fireplaceGatherItem: string | null = null;
+    let fireplaceGatherCount: number | null = null;
+    const ordinaryFurnitureWorkAllowed = !pressedByNeed(person, ctx.needs.workLimits);
+    const fireplaceWorkAllowed = !pressedByNeed(person, ctx.needs.workLimits, 'cold');
     if (!person.isChild && home?.def.interior && home.complete && !home.ruined &&
-      !pressedByNeed(person, ctx.needs.workLimits)) {
+      (ordinaryFurnitureWorkAllowed || (person.needs.cold > 0 && fireplaceWorkAllowed &&
+        recipeTechPower(person, RECIPES.fireplace!) > 0))) {
       const pieces = ctx.buildingHash.queryRadius(home.centerX, home.centerY,
         Math.max(home.def.width, home.def.height) + 1).filter(piece => piece.hostId === home.id);
       const quality = pieces.reduce((best, piece) => piece.complete && !piece.ruined
@@ -3747,41 +3764,79 @@ export class Brain {
       const free = houseInteriorTiles(home).some(tile => ctx.world.isWalkable(tile.x, tile.y) &&
         !pieces.some(piece => piece.x === Math.floor(tile.x) && piece.y === Math.floor(tile.y)));
       if (free) {
-        const canMakeBed = recipeTechPower(person, RECIPES.bed!) > 0;
-        if (quality < 1.1 && person.inventory.count('bed') >= 1) furnitureItem = 'bed';
-        else if (quality < 1 && person.inventory.count('bedding') >= 1 &&
-          !(canMakeBed && hasIngredients(person.inventory, RECIPES.bed!))) furnitureItem = 'bedding';
-        if (quality < (canMakeBed ? 1.1 : 1) && !furnitureItem) {
-          furnitureRecipe = canMakeBed && hasIngredients(person.inventory, RECIPES.bed!) ? 'bed' :
-            person.inventory.count('bedding') < 1 ? 'bedding' : null;
+        // An indoor hearth is the direct answer to an active cold need, so it
+        // takes priority over comfort furnishings such as a second bed. The
+        // same recipe/ownership gates still prevent speculative house work.
+        const hasUsableFireplace = pieces.some(piece => piece.def.id === 'fireplace' &&
+          piece.complete && !piece.ruined);
+        if (!hasUsableFireplace && person.needs.cold > 0 &&
+            recipeTechPower(person, RECIPES.fireplace!) > 0) {
+          if (person.inventory.count('fireplace') > 0) furnitureItem = 'fireplace';
+          else furnitureRecipe = 'fireplace';
         }
-        if (!furnitureItem && !furnitureRecipe && !pieces.some(piece => piece.def.id === 'bench')) {
-          if (person.inventory.count('bench') > 0) furnitureItem = 'bench';
-          else if (recipeTechPower(person, RECIPES.bench!) > 0 && hasIngredients(person.inventory, RECIPES.bench!)) {
-            furnitureRecipe = 'bench';
+        if (ordinaryFurnitureWorkAllowed) {
+          const canMakeBed = recipeTechPower(person, RECIPES.bed!) > 0;
+          if (!furnitureItem && !furnitureRecipe && quality < 1.1 && person.inventory.count('bed') >= 1) furnitureItem = 'bed';
+          else if (!furnitureItem && !furnitureRecipe && quality < 1 && person.inventory.count('bedding') >= 1 &&
+            !(canMakeBed && hasIngredients(person.inventory, RECIPES.bed!))) furnitureItem = 'bedding';
+          if (quality < (canMakeBed ? 1.1 : 1) && !furnitureItem && !furnitureRecipe) {
+            furnitureRecipe = canMakeBed && hasIngredients(person.inventory, RECIPES.bed!) ? 'bed' :
+              person.inventory.count('bedding') < 1 ? 'bedding' : null;
           }
-        }
-        if (!furnitureItem && !furnitureRecipe && !pieces.some(piece => piece.def.id === 'shelf')) {
-          if (person.inventory.count('shelf') > 0) furnitureItem = 'shelf';
-          else if (recipeTechPower(person, RECIPES.shelf!) > 0 && hasIngredients(person.inventory, RECIPES.shelf!)) {
-            furnitureRecipe = 'shelf';
+          if (!furnitureItem && !furnitureRecipe && !pieces.some(piece => piece.def.id === 'bench')) {
+            if (person.inventory.count('bench') > 0) furnitureItem = 'bench';
+            else if (recipeTechPower(person, RECIPES.bench!) > 0 && hasIngredients(person.inventory, RECIPES.bench!)) {
+              furnitureRecipe = 'bench';
+            }
           }
-        }
-        // A household lamp is a final furnishing, after the basic sleep,
-        // seating and storage needs. Placement charges it through the same
-        // lifecycle as a player-placed lamp; it is not a free permanent light.
-        if (!furnitureItem && !furnitureRecipe && !pieces.some(piece => piece.def.id === 'fat_lamp')) {
-          if (person.inventory.count('fat_lamp') > 0) furnitureItem = 'fat_lamp';
-          else if (recipeTechPower(person, RECIPES.fat_lamp!) > 0 &&
-              hasIngredients(person.inventory, RECIPES.fat_lamp!)) {
-            furnitureRecipe = 'fat_lamp';
+          if (!furnitureItem && !furnitureRecipe && !pieces.some(piece => piece.def.id === 'shelf')) {
+            if (person.inventory.count('shelf') > 0) furnitureItem = 'shelf';
+            else if (recipeTechPower(person, RECIPES.shelf!) > 0 && hasIngredients(person.inventory, RECIPES.shelf!)) {
+              furnitureRecipe = 'shelf';
+            }
+          }
+          // A household lamp is a final furnishing, after the basic sleep,
+          // seating and storage needs. Placement charges it through the same
+          // lifecycle as a player-placed lamp; it is not a free permanent light.
+          if (!furnitureItem && !furnitureRecipe && !pieces.some(piece => piece.def.id === 'fat_lamp')) {
+            if (person.inventory.count('fat_lamp') > 0) furnitureItem = 'fat_lamp';
+            else if (recipeTechPower(person, RECIPES.fat_lamp!) > 0 &&
+                hasIngredients(person.inventory, RECIPES.fat_lamp!)) {
+              furnitureRecipe = 'fat_lamp';
+            }
           }
         }
         if (furnitureItem) {
           furnitureHome = home;
-          add('place_furniture', 0.8 * (1 + drive.comfort) * this.proximityBonus(person,
+          const furnishingDrive = furnitureItem === 'fireplace' ? drive.warmth : drive.comfort;
+          add('place_furniture', 0.8 * (1 + furnishingDrive) * this.proximityBonus(person,
             { x: home.centerX, y: home.centerY }, ctx.sightRadius));
         }
+      }
+    }
+    // Fireplace parts are both gathered directly from ordinary clay/flint
+    // nodes. Bound the pull to this recipe's remaining quantity so a clay bank
+    // cannot fill both hands before the scorer gets a chance to fetch flint.
+    if (furnitureRecipe === 'fireplace' && site === null && ctx.nodeHash &&
+        ctx.time !== undefined && ctx.carry && fireplaceWorkAllowed) {
+      const recipe = RECIPES.fireplace!;
+      const missing = Object.entries(recipe.ingredients)
+        .find(([itemId, count]) => person.inventory.count(itemId) < count);
+      const kindFor: Record<string, string> = { mud: 'clay', flint: 'flint' };
+      const missingItem = missing?.[0] ?? null;
+      const kind = missingItem ? kindFor[missingItem] : undefined;
+      const node = kind ? this.findNode(person, ctx, candidate => candidate.kind === kind && !candidate.depleted)
+        : null;
+      if (home && node && missingItem && missing) {
+        matNode = node;
+        fireplaceGatherHome = home;
+        fireplaceGatherItem = missingItem;
+        fireplaceGatherCount = missing[1];
+        // Cold is the need this permanent hearth answers. The general
+        // comfortable-weather work curve stops these same people at its
+        // threshold, so use the existing warmth pressure rather than making
+        // cold work impossible precisely when the household needs it.
+        add('gather_for_site', drive.warmth * this.proximityBonus(person, node, ctx.sightRadius));
       }
     }
     // Table-driven, so a new recipe needs no edit here. Two reasons to make
@@ -3800,8 +3855,11 @@ export class Brain {
     // next tick, re-score and choose it again. The threshold is asked of
     // `ActionSystem` rather than copied, because two copies of a number like
     // this drift and the drift resurfaces as exactly that thrash.
-    for (const recipe of
-      pressedByNeed(person, ctx.needs.workLimits) ? [] : Object.values(RECIPES)) {
+    for (const recipe of Object.values(RECIPES)) {
+      // The fireplace is a long answer to cold itself. Do not let the cold
+      // threshold erase its recipe from the scorer at the moment it is needed;
+      // other recipe work still obeys all three ordinary work limits.
+      if (pressedByNeed(person, ctx.needs.workLimits, recipe.id === 'fireplace' ? 'cold' : undefined)) continue;
       if (recipeTechPower(person, recipe) <= 0) continue;
       if (!hasIngredients(person.inventory, recipe)) continue;
       const output = Object.keys(recipe.output)[0]!;
@@ -3860,7 +3918,8 @@ export class Brain {
         foodGain = Math.max(0, Math.min(1.5,
           gain / 10 * Math.min(person.inventory.count(raw), 4)));
       }
-      const comfortPriority = ITEMS[output]?.furniture ? 1 + drive.comfort : 1;
+      const furnishingDrive = recipe.id === 'fireplace' ? drive.warmth : drive.comfort;
+      const comfortPriority = ITEMS[output]?.furniture ? 1 + furnishingDrive : 1;
       const score = (forSite ? 0.75 : 0.55) * (0.4 + person.skillFactor(recipe.skill)) *
         nearness * foodGain * comfortPriority;
       if (score > craftScore) {
@@ -4164,7 +4223,8 @@ export class Brain {
         victim, foe, attackRoute, intruder, restrainee, kinDefence, correctee, amendsTo, complainTo, parleyWith, peaceWith, helpCallerTarget, bindTarget, patrolPoint, investigatePoint, concealCorpse, giftee, giftItem, feastStore, feastHost, beneficiary, nursingChild, playmate, tradePartner, fleeFrom, fleePoint,
         quarry,
         site, shelter, restShelter, restFurniture, storeTarget, storeItemId, storeItemCount, larderTarget,
-        lampFatStore, takeItemId, takeItemCount, lampToRefuel, sabotageTarget, fruitTree, fellTree,
+        lampFatStore, takeItemId, takeItemCount, lampToRefuel, fireplaceGatherHome,
+        fireplaceGatherItem, fireplaceGatherCount, furnitureRecipe, sabotageTarget, fruitTree, fellTree,
         recipe: craftRecipe, craftStation, fieldTarget, record, unfinished,
         patient, strayAnimal, slanderSubjectId, praiseSubjectId, proposalListener, proposalSite,
       },
@@ -4879,6 +4939,11 @@ export class Brain {
           // Keep the named destination on the trip: the site crew instrument
           // must count a sponsor/backer gathering its materials as a worker.
           person.targetBuildingId = found.site.id;
+        } else if (action === 'gather_for_site' && found.fireplaceGatherHome &&
+            found.fireplaceGatherItem && found.fireplaceGatherCount !== null) {
+          person.targetBuildingId = found.fireplaceGatherHome.id;
+          person.targetItemId = found.fireplaceGatherItem;
+          person.targetItemCount = found.fireplaceGatherCount;
         }
         const node = action === 'forage' ? found.foodNode : found.matNode;
         if (node) {

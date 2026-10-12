@@ -54,8 +54,8 @@ sílex 2 y solo se coloca dentro de la casa terminada del hogar propio. Como
 hogar permanente sin `fuelRemaining`, da calor y luz local, sirve a las recetas
 de estación `hearth` y enciende el lector de humo junto a un secadero. Host y
 arte generado; pruebas cubren negativas, cocina, ahumado y checkpoint. NPC
-reciben los lectores, pero no buscan ni construyen este mueble autónomamente.
-Siguen abiertos más muebles, autonomía y fases 16e/16f; sin calibración ni
+pueden usar sus lectores y buscar materiales, fabricar y colocar este hogar
+cuando el frío lo pide. Otros muebles y la calibración siguen abiertos; sin
 cohortes. [Contrato y captura](m15_phase16d_bedding.md).
 
 **Avance del 2026-10-12 — 16d, lámpara autónoma:** tras completar cama/lecho,

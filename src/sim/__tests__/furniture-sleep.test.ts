@@ -5,6 +5,8 @@ import { Simulation } from '../core/Simulation.ts';
 import { toCheckpointRecord } from '../persistence/CheckpointRecords.ts';
 import { Building, BUILDINGS } from '../entities/Building.ts';
 import { Inventory } from '../entities/Item.ts';
+import { ResourceNode } from '../entities/ResourceNode.ts';
+import { RNG } from '../core/RNG.ts';
 import { RECIPES, ingredientsFor, missingIngredients } from '../entities/Recipe.ts';
 import { assignedSleepSurface, benchConversationBelonging, houseInteriorTiles, seatedOnBench, sleepQualityAt } from '../world/HouseInterior.ts';
 import { telemetry } from '../core/Telemetry.ts';
@@ -641,6 +643,116 @@ describe('bedding and beds', () => {
 });
 
 describe('household fireplaces', () => {
+  it('routes cold-home gathering, craft and placement to the fireplace recipe', () => {
+    const { sim, person, house } = fixture();
+    person.isPlayer = false;
+    person.knownTech.add('fireplace');
+    person.techLevel.set('fireplace', 0);
+    person.needs.cold = 80;
+    person.needs.company = 0;
+    person.clearTarget();
+    person.action = 'idle';
+    person.order = null;
+    const colleague = sim.livingPeople().find(other => other.id !== person.id && !other.isChild);
+    if (!colleague) throw new Error('fixture has no second adult');
+    // Keep the NPC's ordinary proponent contract intact while making this
+    // fixture's adult available for the independent household furnishing.
+    for (const proposal of sim.buildings.filter(piece => !piece.complete &&
+      (piece.sponsorId === person.id || piece.backers.includes(person.id)))) {
+      for (let i = proposal.backers.length - 1; i >= 0; i--) {
+        if (proposal.backers[i] === person.id) proposal.backers.splice(i, 1);
+      }
+      if (proposal.sponsorId === person.id) proposal.sponsorId = colleague.id;
+      if (!proposal.backers.includes(colleague.id)) proposal.backers.push(colleague.id);
+    }
+    for (const [index, itemId] of ['bed', 'bench', 'shelf'].entries()) {
+      const tile = houseInteriorTiles(house)[index]!;
+      const piece = new Building(BUILDINGS[itemId]!, Math.floor(tile.x), Math.floor(tile.y), person.bandId, sim.ids);
+      piece.hostId = house.id;
+      piece.complete = true;
+      piece.durability = piece.def.workTicks;
+      sim.buildings.push(piece);
+      sim.buildingsById.set(piece.id, piece);
+      sim.buildingHash.insert(piece);
+    }
+    const clay = new ResourceNode('clay', house.x + house.def.width + 1, house.y + 1, new RNG('fireplace-clay'), sim.ids);
+    const flint = new ResourceNode('flint', house.x + house.def.width + 2, house.y + 1, new RNG('fireplace-flint'), sim.ids);
+    clay.amount = 24;
+    flint.amount = 30;
+    sim.nodes.push(clay, flint);
+    sim.nodeHash.insert(clay);
+    sim.nodeHash.insert(flint);
+    sim.peopleHash.remove(person);
+    person.x = clay.x + 0.5;
+    person.y = clay.y + 0.5;
+    person.targetX = person.x;
+    person.targetY = person.y;
+    sim.peopleHash.insert(person);
+
+    person.needs.cold = 80;
+    person.needs.company = 0;
+    const scored = scoreOneBrainTick(sim, person);
+    expect(scored.found.furnitureRecipe).toBe('fireplace');
+    expect(scored.found.fireplaceGatherHome?.id).toBe(house.id);
+    expect(scored.found.fireplaceGatherItem).toBe('mud');
+    expect(scored.found.fireplaceGatherCount).toBe(4);
+
+    // Force only this already-scored verb so this contract proves the actual
+    // target-routing path independently of unrelated shelter/social choices.
+    person.action = 'idle';
+    person.clearTarget();
+    const brain = (sim as unknown as { brain: Brain }).brain;
+    expect(brain.think(person, scored.context, new Set(['gather_for_site']))).toBe('gather_for_site');
+    expect(person).toMatchObject({ action: 'gather', targetBuildingId: house.id,
+      targetItemId: 'mud', targetItemCount: 4, targetNodeId: clay.id });
+    expect(clay.amount).toBe(24);
+    expect(flint.amount).toBe(30);
+
+    person.action = 'idle';
+    person.clearTarget();
+    person.inventory.add('mud', 4);
+    person.inventory.add('flint', 2);
+    expect(brain.think(person, scored.context, new Set(['craft']))).toBe('craft');
+    expect(person).toMatchObject({ action: 'craft', targetRecipe: 'fireplace' });
+    person.action = 'idle';
+    person.clearTarget();
+    person.inventory.remove('mud', 4);
+    person.inventory.remove('flint', 2);
+    person.inventory.add('fireplace', 1);
+    expect(brain.think(person, scored.context, new Set(['place_furniture']))).toBe('place_furniture');
+    expect(person).toMatchObject({ action: 'place_furniture', targetBuildingId: house.id,
+      targetItemId: 'fireplace' });
+  });
+
+  it('does not gather fireplace materials without the design, cold need, or a finished own home', () => {
+    const { sim, person, house } = fixture();
+    person.isPlayer = true;
+    sim.autonomy = 'manual';
+    const clay = new ResourceNode('clay', house.x + house.def.width + 1, house.y + 1, new RNG('fireplace-negative'), sim.ids);
+    sim.nodes.push(clay);
+    sim.nodeHash.insert(clay);
+    const scored = () => scoreOneBrainTick(sim, person);
+    const seeksFireplace = () => scored().found.fireplaceGatherHome !== null;
+
+    person.needs.cold = 80;
+    expect(scored().found.furnitureRecipe).toBeNull();
+    person.needs.cold = 20;
+    expect(seeksFireplace()).toBe(false);
+    person.knownTech.add('fireplace');
+    person.techLevel.set('fireplace', 0);
+    person.needs.cold = 0;
+    expect(seeksFireplace()).toBe(false);
+    person.needs.cold = 20;
+    house.complete = false;
+    expect(seeksFireplace()).toBe(false);
+    house.complete = true;
+    house.durability = 0;
+    expect(seeksFireplace()).toBe(false);
+    house.durability = house.def.workTicks;
+    clay.amount = 0;
+    expect(seeksFireplace()).toBe(false);
+  });
+
   it('requires the fireplace design, and cannot be placed at another home or from outside', () => {
     const { sim, person, house } = fixture();
     expect(RECIPES.fireplace).toMatchObject({

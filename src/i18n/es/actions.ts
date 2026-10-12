@@ -161,6 +161,7 @@ export const ES_ACTIONS: Record<string, string> = {
   "nobody sleeps through the day": "nadie duerme de día",
   "they had slept enough": "ya había dormido bastante",
   "there was nothing left to take": "no quedaba nada que coger",
+  "they had gathered enough for the hearth": "había reunido suficiente para el hogar",
   "there was no fruit left on it": "no le quedaba fruta",
   "it was gone": "ya no estaba",
   "the place was already picked over": "el lugar ya estaba agotado",
