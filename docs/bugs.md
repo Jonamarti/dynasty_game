@@ -5026,10 +5026,15 @@ real de esas primeras conservas y demanda posterior antes de medir/activar15c.
 
 2026-10-12 follow-up: `npm.cmd run sim:check -- --scenario salters` volvió a
 fallar `preserved-food-lasts`, esta vez con 0/3 comidas invernales conservadas
-(la ejecución del 2026-10-10 observó 0/8). La comparación de pérdidas volvió a
-fallar su control negativo y no está disponible como check. La diferencia de
-conteo entre semillas no acredita mejora ni cambio de tendencia; 15c permanece
-sin activar.
+(la ejecución del 2026-10-10 observó 0/8). La comparación vieja de pérdidas
+no discrimina y sigue retirada. Se añadió un control focal válido: consume
+`dried_meat` por `Simulation.eatItem` en invierno, verifica que el observador
+cuente la comida como conservada, y repite sin recetas para comprobar que sigue
+contando la comida real pero ya no la conserva atribuida. Typecheck y 2/2
+pruebas focales pasan. El healthcheck autónomo continúa fallido; 15c permanece
+sin activar. El rerun tras la modificación siguió en 0/3 y notificó pérdidas
+716/1151; siguen siendo datos de trayectoria, no una comparación económica
+válida.
 
 2026-10-12: `bestFoodFor` ahora gasta primero la comida menos durable cuando dos
 opciones tienen atractivo exactamente igual, sin depender del orden del pack.

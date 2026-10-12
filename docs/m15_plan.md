@@ -2035,13 +2035,19 @@ está.
 - Escenario **`salters`**: costa, dos bandas en la misma semilla, una con
   `pottery`, `preserving`, `saltmaking` y `salting` y otra sin ellas.
 - `preserved-food-lasts`: fracción de las comidas de invierno que son comida
-  conservada, en la banda que sabe. En un build sin `preserving` es 0 y falla.
-- `spoilage-is-answered`: la pérdida por descomposición de la banda que conserva
-  es menor que la de la que no. **Ojo:** en M8.1 salió al revés (la banda que
-  podía conservar sobrevivía peor). Este check se escribe y **se verifica que
-  detecta** antes de confiar en él; si no discrimina, se borra, como los dos
-  checks del granero (`AGENTS.md`).
-- **Coste declarado:** ≤ 4 puntos.
+  conservada, en la banda que sabe. El informe actual sigue fallando (0/3 en
+  la última ejecución), sin convertirlo en `n/a`.
+- `salters-checks.test.ts` verifica un control focal positivo y negativo:
+  consume una conserva nutritiva de verdad en invierno por
+  `Simulation.eatItem`, comprueba que el observador la cuente como conservada,
+  retira temporalmente todas las recetas y comprueba que la comida real siga
+  contándose pero deje de atribuirse a conservación. Esto valida el instrumento,
+  no el comportamiento autónomo del escenario.
+- `spoilage-is-answered` se retiró: la pérdida nutritiva por banda no discrimina
+  preservación y también pasa al retirar las recetas.
+- **Coste declarado:** ≤ 4 puntos, todavía sin medir. La activación por defecto
+  de 15c permanece diferida mientras falle la comida de invierno y no haya una
+  comparación económica discriminante.
 
 **Commits:** `m15: medir la comida que se pierde`; `m15: secar y ahumar`;
 `m15: la sal`; `m15: la comida se estropea`; `m15: el escenario salters`.
@@ -4340,10 +4346,13 @@ de baya elevó `lean` a 12,8% y redujo muertes por hambre de 489 a 408, pero dej
 18/20 colapsos y 3 extinciones; el coste de la estacionalidad merece revisión,
 no un cambio automático. Una tercera ablación con coste metabólico de lactancia
 cero dio 5,3% de supervivencia y 486 muertes por hambre, sin rescate consistente.
-Faltan resolver persistencia/recuperación y `answered`, resolver o aceptar los
-fallos heredados sin rebajar checks, revisar `architecture.md` y reescribir
-`next-steps.md` para cerrar M15. Evidencia y cifras: `m15_calibration.md` y
-`bugs.md`.
+Se mejoró el control negativo de 15d con una prueba focal de consumo de conserva
+en invierno, pero `salters` sigue con 0/3 comidas conservadas en su ejecución
+autónoma (pérdidas atribuidas 716/1151, sin lectura causal); no se activa 15c.
+Faltan resolver persistencia/recuperación y
+`answered`, resolver o aceptar los fallos heredados sin rebajar checks, revisar
+`architecture.md` y reescribir `next-steps.md` para cerrar M15. Evidencia y
+cifras: `m15_calibration.md` y `bugs.md`.
 
 - La segunda pasada completa del protocolo de la fase 10 en `generations`,
   `century`, `lean` y los escenarios con mapa, con la tabla en

@@ -5,9 +5,12 @@ import { RECIPES } from '../src/sim/entities/Recipe.ts';
 import { ITEMS } from '../src/sim/entities/Item.ts';
 import { equipContainer } from '../src/sim/core/Carry.ts';
 
-const preserved = new Set(Object.values(RECIPES)
-  .filter(recipe => recipe.tech === 'preserving' || TECH[recipe.tech].web === 'preservation')
-  .flatMap(recipe => Object.keys(recipe.output)).filter(item => ITEMS[item]!.nutrition > 0));
+/** Resolve this from the live catalog so a missing recipe cannot pass by using a stale cache. */
+export function isPreservedFood(itemId: string): boolean {
+  return Object.values(RECIPES).some(recipe =>
+    (recipe.tech === 'preserving' || TECH[recipe.tech].web === 'preservation') &&
+    Object.hasOwn(recipe.output, itemId) && ITEMS[itemId]?.nutrition > 0);
+}
 interface Watch { knowing: number; other: number; day: number; eaten: Map<number, Map<string, number>> }
 const watches = new WeakMap<Simulation, Watch>();
 
@@ -63,7 +66,7 @@ export function observeSalters(sim: Simulation): void {
       if (meals > 0 && sim.time.season === 'winter') {
         const role = person.bandId === watch.knowing ? 'knowing' : 'other';
         telemetry.count('salters_winter_meals_' + role, meals);
-        if (preserved.has(item)) telemetry.count('salters_winter_preserved_' + role, meals);
+        if (isPreservedFood(item)) telemetry.count('salters_winter_preserved_' + role, meals);
       }
     }
     watch.eaten.set(person.id, new Map(person.eatenToday));

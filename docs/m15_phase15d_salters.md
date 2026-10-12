@@ -15,7 +15,7 @@ comparison. These counters are observational and disabled in ordinary play.
 
 ## What the measurement found
 
-Single-seed final report: **FAIL preserved-food-lasts:0/8 winter meals** in the
+Single-seed final report (earlier run): **FAIL preserved-food-lasts:0/8 winter meals** in the
 knowledgeable band were preserved. One real drying batch completes and its
 two food units are eaten during the run, outside winter. The check remains
 failed, not skipped. The instrument tests being green do not make this world
@@ -27,22 +27,33 @@ regardless of inventory insertion order. A focused selector test proves this
 mechanism; it does not explain or resolve the 0/8 winter result, and no winter
 consumption or survival gain is claimed.
 
-Attributed spoiled nutrition was764 versus1381, but `spoilage-is-answered`
-also passed after deleting every preservation-food recipe. It detected a
-fixture/trajectory difference rather than preservation, so that check was
-deleted under the plan's explicit negative-verification rule. Loss values
-remain diagnostic text, never a claimed economy improvement. Starting in
-winter instead also gave0/12 meals and the same false-positive comparison;
-the original autumn-to-winter fixture was retained without coefficient tuning.
+Attributed spoiled nutrition was764 versus1381, but the old
+`spoilage-is-answered` comparison also passed after deleting every
+preservation-food recipe. It measured a fixture/trajectory difference, so it
+remains deleted. A focused negative-control test now resolves preservation
+outputs from the live recipe catalog, consumes a real preserved meal through
+`Simulation.eatItem` during winter, and verifies the observer counts it; with
+all preservation recipes removed, the same winter meal is still counted as a
+meal but no longer as preserved. This validates the instrument without
+pretending the autonomous scenario succeeds. Loss values remain diagnostic
+text, never a claimed economy improvement. Starting in winter instead also
+gave0/12 meals; the original autumn-to-winter fixture remains without
+coefficient tuning.
 
 ## Verification
 
-Typecheck passed.21/21 tests in five files passed: faithful report/attribution,
-failure without working recipes, and existing spoilage/drying/smoking/salting
-mechanisms. The actual single-seed report has1/1 check failed. No E2E/UI change
-in this instrument commit. Logs: artifacts/m15-salters-first.log,
+Typecheck passed. The focused `salters-checks.test.ts` passes 2/2, including the
+positive winter meal and recipe-removal negative control. The actual
+single-seed report still has1/1 check failed. No E2E/UI change in this
+instrument commit. Logs: artifacts/m15-salters-first.log,
 m15-salters-winter.log and m15-salters-final.log.
 
-15d is partially delivered: scenario, meal monitor and attributed losses exist.
-A discriminating loss check and the winter food outcome remain open.15c default
-activation and long cohorts remain deferred by the owner's M15 instruction.
+2026-10-12 rerun after the observer change: `npm.cmd run sim:check --
+--scenario salters` still fails `preserved-food-lasts`, now 0/3; attributed
+spoiled nutrition was 716 (knowing) versus 1151 (other). These are trajectory
+diagnostics, not a preservation comparison or economy claim.
+
+15d is partially delivered: scenario, meal monitor, focused recipe negative
+control and attributed losses exist. The autonomous winter food outcome
+remains open.15c default activation remains deferred until economy evidence
+supports it.

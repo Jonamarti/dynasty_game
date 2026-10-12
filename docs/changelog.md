@@ -1,3 +1,14 @@
+## 2026-10-12 — m15: prueba discriminante de conservas en invierno
+
+El observador `salters` consulta ahora el catálogo vivo de recetas para decidir
+si un alimento consumido cuenta como conserva. Una prueba focal consume
+`dried_meat` en invierno por la ruta real, verifica su atribución y luego
+comprueba que retirar las recetas conserva el conteo de comida pero elimina la
+atribución. El escenario autónomo sigue fallando 0/3 comidas de invierno; 15c
+no se activa. Typecheck y prueba focal (2/2) pasan.
+El rerun del healthcheck autónomo permanece en 0/3, con pérdidas 716/1151;
+no se toma como comparación económica.
+
 ## 2026-10-12 — docs: registrar ablación del coste de lactancia
 
 `lean` con `childhood.lactationHunger=0` dio 5,3% de supervivencia y 486
