@@ -95,7 +95,7 @@ import {
 import { drivePressures, urgencyCurve, type DrivePressures } from './Drives.ts';
 import { actionsForDrive, carriesEdibleFood, chooseCommitmentDrive, commitmentGoal, COMMITMENT_DRIVES, type CommitmentDrive } from './Commitment.ts';
 import { purposeAppetite, sensitivity } from './Temperament.ts';
-import { appealOf, cravings, hydrationOf, VARIETY_WEIGHT } from '../core/Macros.ts';
+import { appealOf, bestFoodFor, cravings, hydrationOf, VARIETY_WEIGHT } from '../core/Macros.ts';
 import type { ChildhoodConfig, MotivationConfig } from '../core/Config.ts';
 import { anchorOf, childRadius, reachOf, withinReach, type Anchor } from './Anchor.ts';
 import { cryOf, infantNeedingNursing } from './Nursing.ts';
@@ -1089,7 +1089,12 @@ export class Brain {
     // so a hungry person holding berries should always eat before setting out
     // for more. Getting this wrong is subtle and lethal — people harvested
     // plenty, carried it around, and starved with full packs.
-    const carriedFood = person.inventory.bestFood();
+    // Route autonomous eating through the same appeal and perishability rule
+    // as the action itself. `Inventory.bestFood()` is nutrition-only and kept
+    // selecting the first stack on exact ties, bypassing the reserve-aware
+    // choice in `bestFoodFor()` before `doEat` ever got a target.
+    const carriedFood = bestFoodFor(person, undefined,
+      ctx.motivation.cravings, ctx.motivation.beliefChoice);
     let hydratingFood: string | null = null;
     let hydration = 0;
     for (const [itemId, count] of person.inventory.entries()) {

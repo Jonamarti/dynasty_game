@@ -31,6 +31,30 @@ describe('drying on a physical rack', () => {
     expect(loss.get('dried_fish')).toBeCloseTo(loss.get('fish')! / 10);
   });
 
+  it('routes autonomous eating through the perishable-first tie chooser', () => {
+    const { sim, person } = fixture();
+    person.isPlayer = false; person.action = 'idle'; person.order = null;
+    person.needs.hunger = 70;
+    // Insert the durable stack first: Inventory.bestFood() would preserve this
+    // insertion-order tie, while bestFoodFor() spends the shorter-lived meal.
+    person.inventory.add('dried_meat', 1);
+    person.inventory.add('meat', 1);
+    expect(person.inventory.bestFood()).toBe('dried_meat');
+
+    const brain = (sim as unknown as { brain: Brain }).brain;
+    const score = brain.score.bind(brain);
+    let checked = false;
+    const spy = vi.spyOn(brain, 'score').mockImplementation((actor, ctx) => {
+      if (actor === person && !checked) {
+        checked = true;
+        expect(score(actor, ctx).found.foodToEat).toBe('meat');
+      }
+      return score(actor, ctx);
+    });
+    try { for (let tick = 0; tick < 30 && !checked; tick++) sim.step(); expect(checked).toBe(true); }
+    finally { spy.mockRestore(); }
+  });
+
   it('dries meat and fish at the rack, consumes each input once and persists the station', () => {
     const { sim, person, rack } = fixture();
     for (const [raw, dried] of [['meat', 'dried_meat'], ['fish', 'dried_fish']] as const) {

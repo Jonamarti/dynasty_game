@@ -104,3 +104,21 @@ systemic policy should change: neither weakening the nutrition chooser nor
 raising global eat urgency is justified by this fixture. The existing
 `preserved-food-lasts` check still fails visibly; this diagnostic makes its
 failure mode actionable without claiming the autonomous behavior is fixed.
+
+## 2026-10-12 autonomous selector correction
+
+The diagnostic exposed a second, concrete selector defect. `bestFoodFor()`
+already resolves an exact appeal tie by eating the shorter-lived item first,
+but `Brain.score()` had selected its `foodToEat` target through
+`Inventory.bestFood()`, which compares nutrition only and leaves exact ties in
+stack insertion order. `doEat()` honors that target, so the autonomous route
+could bypass the shared perishability rule. `Brain.score()` now uses
+`bestFoodFor()` with the active craving/belief settings. A focused test inserts
+`dried_meat` before equal-nutrition `meat` and verifies the autonomous target
+is `meat`.
+
+This correction fixes the tie-policy bypass; it does not make the salters
+carrier hungry or override a more nutritious alternative. The rerun still
+records 0/3 preserved winter meals, with 480/480 carrier ticks ranking another
+food ahead and no carrier hunger ≥40. No economy or survival gain is claimed;
+15d's autonomous winter outcome and 15c activation remain pending.

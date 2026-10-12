@@ -1,3 +1,11 @@
+## 2026-10-12 — M15 15d: respetar el selector de comida perecedera
+
+La planificación autónoma ya usa el mismo selector de atractivo y perecibilidad
+que la acción de comer. Así, en un empate, la persona no deja carne fresca sin
+tocar solo por el orden de inserción de los montones. `salters` aún no demuestra
+consumo de conservas en invierno; el cambio corrige la ruta de desempate, no la
+política de hambre global. Versión `0.15.116-alpha`.
+
 ## 2026-10-12 — M15: preservar el pastoreo nocturno observable
 
 Un herbívoro alimentado ya no se duerme mientras tenga hierba comestible bajo

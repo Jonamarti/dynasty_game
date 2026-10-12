@@ -1,3 +1,11 @@
+**Corrección del 2026-10-12 — 15d, selector autónomo de comida:** Brain usa
+`bestFoodFor()` para escoger el objetivo que después ejecuta `doEat`, así la
+planificación conserva la regla compartida de gastar primero el alimento más
+perecedero en un empate de atractivo. La prueba invierte el orden de inserción
+de carne y carne seca y verifica el objetivo real. El check `salters` aún falla:
+la persona no tiene hambre suficiente y otra comida gana por atractivo; no se
+declara activada la conservación invernal ni una mejora económica.
+
 **Corrección del 2026-10-12 — 17, descanso animal y pastoreo:** los
 herbívoros alimentados descansan en noches templadas solo si no tienen hierba
 comestible bajo sus patas; si la hay, siguen pastando y registran la comida
