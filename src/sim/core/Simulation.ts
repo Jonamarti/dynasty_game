@@ -7089,7 +7089,7 @@ export class Simulation {
   private isFinishedDitchTile(x: number, y: number): boolean {
     const nearby = this.buildingHash.queryRadius(x + 0.5, y + 0.5, 8, this.raidDitchScratch);
     return nearby.some(building => building.complete && !building.ruined &&
-      building.def.earthwork?.kind === 'ditch' &&
+      (building.def.id === 'ditch' || building.def.id === 'city_wall') &&
       building.earth?.some(tile => tile.x === x && tile.y === y));
   }
 

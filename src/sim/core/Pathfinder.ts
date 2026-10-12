@@ -316,10 +316,11 @@ export class Pathfinder {
           (rise[neighbor]! + dug[neighbor]! - rise[current]! - dug[current]!) * climb);
         const stepCost = NEIGHBOR_COST[i]! * (mode === 'swim' && this.world.isSwimTile(nx, ny) ? SWIM_COST : 1);
         const tentativeG = this.gScore[current]! + stepCost + up +
-          // A shallow ditch remains ordinary walkable ground. Raiding parties
-          // pay one tile of extra travel per cut tile, so A* prefers an open
-          // end when the detour is shorter than crossing the whole trench.
-          (raider && this.raidDitchAt(nx, ny) ? 1 : 0) +
+          // A shallow ditch remains ordinary walkable ground, but raiders use
+          // the same bounded detour cost as a blocked target. One tile of cost
+          // was too small: it made a one-tile-wide trench strictly cheaper to
+          // cross than to go around, so the intended defensive route never ran.
+          (raider && this.raidDitchAt(nx, ny) ? AVOID_PENALTY : 0) +
           (neighbor === avoidIndex ? AVOID_PENALTY : 0);
         if (this.seen[neighbor] === this.gen && tentativeG >= this.gScore[neighbor]!) continue;
 

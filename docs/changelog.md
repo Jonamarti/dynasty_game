@@ -15410,3 +15410,12 @@ desde agua dulce alcanza su radio de riego. La propuesta usa la obra, apoyo y
 trabajo existentes. No modela estrés hídrico estacional ni calibra el factor de
 producción; sin UI ni cohortes.
 
+## 2026-10-12 — m15: completa el coste táctico de zanjas y city_walls (0.15.103-alpha)
+
+El hash espacial de rutas incluye las casillas excavadas de una muralla de
+Estado terminada, además de las zanjas. A* cobra el mismo coste acotado que
+usa para desviar una ruta de un obstáculo: la unidad anterior no hacía rodear
+un corte de una casilla, pues cruzarlo costaba menos que ir por un extremo.
+Las pruebas cubren el rodeo, la excepción de obra inacabada y la conectividad
+de la puerta. Sin cambio UI; la disuasión en una cohorte queda para calibración.
+
