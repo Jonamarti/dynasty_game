@@ -21,8 +21,9 @@ familias lingüísticas históricas: esa limitación y el diseño están en
 regionales y continuidad de nombres/IDs tras viajes y guardado. Sin UI ni
 cohortes. Verificación pendiente: este worktree no incluye `node_modules` ni
 `tsc`/`vitest`; no se ejecutaron typecheck ni pruebas.
-=======
-## 2026-10-12 — m15: engrasado físico de prendas (0.15.91-alpha)
+
+
+## 2026-10-12 — m15: engrasado físico de prendas (0.15.93-alpha)
 
 Se añade el nodo de ropa hide_dressing, detrás de leatherwork, y una receta
 que aplica una grasa a una unidad concreta de prenda de piel. La prenda debe
@@ -163,6 +164,7 @@ focales. `sim:check` mantiene los dos fallos conocidos del escenario base:
 `cravings-steer-the-diet` y `perf-budget` (569 pasos/s frente al suelo de
 1.678). No hubo calibración ni cohortes. No cambia texto ni controles visibles;
 no se necesitó captura.
+
 ## 2026-10-12 — M15 16f: escenario focal de hogares
 
 `homes` ahora mide la calidad real de las muestras nocturnas bajo techo,
