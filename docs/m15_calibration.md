@@ -108,6 +108,7 @@ Se actualizaron checks cortos tras M15, sin cambiar parámetros:
 | `food-news` | `npm.cmd run sim:check -- --scenario food-news` | PASS 1/1, `word-of-food-travels` | 600 pasos; prueba el mecanismo de rumor, no su adopción poblacional. |
 | `frontier` | `npm.cmd run sim:check -- --scenario frontier` | PASS 2/2, `nobody-drinks-the-sea`, `rivers-are-crossed` | 300 pasos; prueba agua/frontera en una semilla. |
 | `band` | `npm.cmd run sim:check -- --scenario band` | 3 fallos: `cravings-steer-the-diet`, `perf-budget`, `hills-see-farther` | Una sola semilla, ejecutada mientras corrían cohortes largas; la cifra de rendimiento no es una medición válida bajo esa carga. |
+| `salters` | `npm.cmd run sim:check -- --scenario salters` | FAIL `preserved-food-lasts`: 0/3 comidas invernales conservadas | El monitor de pérdida sigue sin comparación que detecte el build sin recetas de conserva; no demuestra mejora ni habilita 15c. |
 
 La lectura de `band` no cambia el registro de fallos previos. Los tres checks
 ya constan como fallos heredados en la línea base; no se ajustaron sus umbrales.
@@ -117,6 +118,13 @@ registrados en `tools/simcheck.ts`. `sim:seeds` no calcula checks de mapa
 personal; esos checks se ejecutan con un escenario individual. La cohorte
 `frontier-cohort` existente mide una dimensión geográfica y no sustituye una
 cohorte de viajes o caravanas.
+
+El fallo de `salters` reproduce el problema registrado el 2026-10-10, entonces
+con 0/8 comidas conservadas. La semilla actualizó el conteo a 0/3; ambos son
+mediciones de una sola ejecución con distinta trayectoria, no una tendencia.
+`spoilage-is-answered` continúa retirado porque no supera su control negativo.
+El detalle y la decisión de no activar la tasa global siguen en
+[`m15_phase15d_salters.md`](m15_phase15d_salters.md) y [`bugs.md`](bugs.md).
 
 Mientras se completan las cohortes descritas abajo, no hay un barrido de
 parámetros ni una decisión de calibración. Los resultados se deben incorporar

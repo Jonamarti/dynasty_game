@@ -4992,6 +4992,13 @@ contadores físicos e informe de pérdidas; falta una comparación discriminante
 Contrato/logs docs/m15_phase15d_salters.md. Seguimiento M16: investigar destino
 real de esas primeras conservas y demanda posterior antes de medir/activar15c.
 
+2026-10-12 follow-up: `npm.cmd run sim:check -- --scenario salters` volvió a
+fallar `preserved-food-lasts`, esta vez con 0/3 comidas invernales conservadas
+(la ejecución del 2026-10-10 observó 0/8). La comparación de pérdidas volvió a
+fallar su control negativo y no está disponible como check. La diferencia de
+conteo entre semillas no acredita mejora ni cambio de tendencia; 15c permanece
+sin activar.
+
 2026-10-12: `bestFoodFor` ahora gasta primero la comida menos durable cuando dos
 opciones tienen atractivo exactamente igual, sin depender del orden del pack.
 La prueba focal demuestra ese desempate, pero no resuelve el resultado de salters:

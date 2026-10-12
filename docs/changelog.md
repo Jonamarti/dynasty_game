@@ -1,3 +1,11 @@
+## 2026-10-12 — docs: actualizar lectura de salters
+
+La lectura de 2.400 pasos vuelve a fallar `preserved-food-lasts` (0/3 comidas
+invernales conservadas). Se registra junto al 0/8 del 10 de octubre como una
+segunda trayectoria de semilla, no como tendencia. El comparador de pérdidas
+sigue sin pasar su control negativo; no se activa la tasa global ni se afirma
+mejora económica.
+
 ## 2026-10-12 — docs: document M15 phase 41 instrument limits
 
 Recorded short mechanism checks for `food-news` (1/1) and `frontier` (2/2),
