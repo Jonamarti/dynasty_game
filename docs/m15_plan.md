@@ -4319,6 +4319,16 @@ alcanzable. **Checks:** uno por nodo, cada uno contra el build sin el nodo.
 
 ## Fase 41 — Calibración final y cierre de M15
 
+**Límite del instrumento (revisado 2026-10-12):** los nombres `drought`,
+`migrants` y `caravans` que aparecen en documentación anterior no son
+escenarios registrados en `tools/simcheck.ts`; no se pueden lanzar como
+cohortes `sim:seeds`. `frontier-cohort` sí existe, pero mide pueblos y agua en
+el mapa global, no migración o caravanas. Los checks de mapa personal se leen
+en una sola semilla con `sim:check -- --scenario band`; los escenarios
+`food-news` y `frontier` tienen sus propios checks cortos. Véanse los resultados
+y límites en [m15_calibration.md](m15_calibration.md). La tabla de 34–40 más
+abajo expresa objetivos de evidencia, no comandos actualmente disponibles.
+
 - La segunda pasada completa del protocolo de la fase 10 en `generations`,
   `century`, `lean` y los escenarios con mapa, con la tabla en
   `m15_calibration.md`.

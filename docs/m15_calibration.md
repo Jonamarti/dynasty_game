@@ -98,3 +98,27 @@ las cohortes más cortas y merecen seguimiento, no ajuste:
 - **La segunda pasada de calibración (fase 41)**, después de los bloques
   III-VI (manos, sal, noche, cuerpo, fauna), que es la que de verdad fija
   `Config.motivation` para el resto de M15.
+
+## Lecturas de fase 41 — 2026-10-12
+
+Se actualizaron checks cortos tras M15, sin cambiar parámetros:
+
+| Escenario | Comando | Resultado | Límite |
+|---|---|---|---|
+| `food-news` | `npm.cmd run sim:check -- --scenario food-news` | PASS 1/1, `word-of-food-travels` | 600 pasos; prueba el mecanismo de rumor, no su adopción poblacional. |
+| `frontier` | `npm.cmd run sim:check -- --scenario frontier` | PASS 2/2, `nobody-drinks-the-sea`, `rivers-are-crossed` | 300 pasos; prueba agua/frontera en una semilla. |
+| `band` | `npm.cmd run sim:check -- --scenario band` | 3 fallos: `cravings-steer-the-diet`, `perf-budget`, `hills-see-farther` | Una sola semilla, ejecutada mientras corrían cohortes largas; la cifra de rendimiento no es una medición válida bajo esa carga. |
+
+La lectura de `band` no cambia el registro de fallos previos. Los tres checks
+ya constan como fallos heredados en la línea base; no se ajustaron sus umbrales.
+La auditoría del CLI también confirmó que `drought`, `migrants` y `caravans`,
+citados como ejemplos de escenarios de mapa en notas históricas, no están
+registrados en `tools/simcheck.ts`. `sim:seeds` no calcula checks de mapa
+personal; esos checks se ejecutan con un escenario individual. La cohorte
+`frontier-cohort` existente mide una dimensión geográfica y no sustituye una
+cohorte de viajes o caravanas.
+
+Mientras se completan las cohortes descritas abajo, no hay un barrido de
+parámetros ni una decisión de calibración. Los resultados se deben incorporar
+cuando termine cada trabajo; la muestra única de los escenarios cortos solo
+confirma sus checks de mecanismo.

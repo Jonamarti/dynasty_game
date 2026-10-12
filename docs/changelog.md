@@ -1,3 +1,11 @@
+## 2026-10-12 — docs: document M15 phase 41 instrument limits
+
+Recorded short mechanism checks for `food-news` (1/1) and `frontier` (2/2),
+plus the `band` single-seed failures. The latter ran alongside long cohorts, so
+its performance number is explicitly excluded. Clarified that map cohort names
+in older notes are not CLI scenarios and corrected phase 41's measurement
+scope. No parameter or game behavior changed.
+
 ## 2026-10-12 — docs: reconcile M15 interior status
 
 Added a current phase 16 status snapshot covering the interior fireplace,
