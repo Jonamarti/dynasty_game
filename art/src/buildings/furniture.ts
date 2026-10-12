@@ -15,6 +15,13 @@ const bedding = (): string =>
   stroke('M48,68L73,78M57,64L82,74M68,60L93,70', '#d4c39f', 1.5) +
   stroke('M47,72L71,83M76,57L99,68', '#907952', 1);
 
+const rug = (): string =>
+  ell(72, 100, 40, 7, 'rgba(0,0,0,0.2)') +
+  shape(poly([[30, 69], [72, 49], [114, 69], [72, 91]]), '#9b714c', OUTLINE) +
+  shape(poly([[37, 68], [72, 53], [107, 69], [72, 86]]), '#c3a06d', '#705133') +
+  stroke('M43,68L72,82L101,68M50,64L72,75L94,64M58,60L72,67L86,60', '#754c34', 2) +
+  [0, 1, 2, 3, 4, 5].map(i => stroke(`M${42 + i * 12},70L${38 + i * 13},74`, '#e1c28a', 1.2)).join('');
+
 const bed = (): string =>
   ell(72, 101, 42, 7, 'rgba(0,0,0,0.22)') +
   shape(poly([[36, 62], [74, 46], [111, 63], [73, 82]]), WOOD_LIGHT, OUTLINE) +
@@ -61,6 +68,7 @@ const fireplace = (): string =>
 
 export const FURNITURE: BuildingArt[] = [
   ['bedding', 'Lecho', 'cordage', 96, bedding],
+  ['rug', 'Alfombra de piel', 'cordage', 96, rug],
   ['bed', 'Cama', 'carpentry', 96, bed],
   ['bench', 'Banco', 'carpentry', 96, bench],
   ['fat_lamp', 'Lámpara de grasa', 'firemaking', 96, fatLamp],

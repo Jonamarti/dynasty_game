@@ -1,7 +1,7 @@
 {
   "name": "dynasty",
   "private": true,
-  "version": "0.15.111-alpha",
+  "version": "0.15.112-alpha",
   "type": "module",
   "scripts": {
     "dev": "vite",

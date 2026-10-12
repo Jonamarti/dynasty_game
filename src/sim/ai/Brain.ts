@@ -3845,12 +3845,18 @@ export class Brain {
         }
         if (ordinaryFurnitureWorkAllowed) {
           const canMakeBed = recipeTechPower(person, RECIPES.bed!) > 0;
+          const canMakeRug = recipeTechPower(person, RECIPES.rug!) > 0;
           if (!furnitureItem && !furnitureRecipe && quality < 1.1 && person.inventory.count('bed') >= 1) furnitureItem = 'bed';
           else if (!furnitureItem && !furnitureRecipe && quality < 1 && person.inventory.count('bedding') >= 1 &&
             !(canMakeBed && hasIngredients(person.inventory, RECIPES.bed!))) furnitureItem = 'bedding';
+          else if (!furnitureItem && !furnitureRecipe && quality < 1 && person.inventory.count('rug') >= 1 &&
+            person.inventory.count('bedding') < 1) furnitureItem = 'rug';
           if (quality < (canMakeBed ? 1.1 : 1) && !furnitureItem && !furnitureRecipe) {
             furnitureRecipe = canMakeBed && hasIngredients(person.inventory, RECIPES.bed!) ? 'bed' :
-              person.inventory.count('bedding') < 1 ? 'bedding' : null;
+              person.inventory.count('bedding') < 1 &&
+                (hasIngredients(person.inventory, RECIPES.bedding!) || !canMakeRug ||
+                  !hasIngredients(person.inventory, RECIPES.rug!)) ? 'bedding' :
+              canMakeRug && hasIngredients(person.inventory, RECIPES.rug!) ? 'rug' : null;
           }
           if (!furnitureItem && !furnitureRecipe && !pieces.some(piece => piece.def.id === 'bench')) {
             if (person.inventory.count('bench') > 0) furnitureItem = 'bench';

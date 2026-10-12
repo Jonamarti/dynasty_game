@@ -14,6 +14,19 @@
   surface before restoring fatigue. Bare interior uses 0.9 recovery, bedding
   1.0, and a bed 1.1. These are multipliers on the existing recovery rate.
 
+## 2026-10-12: hide rug as a low-cost sleep surface
+
+`rug` is a one-hide cordage recipe and a walkable 1×1 household furnishing.
+It raises sleep quality on its room tile to 1.0, the same reader used by
+bedding. NPC household furnishing can choose it when the room has no better
+sleep surface and the adult has the recipe materials; the normal placement
+path checks ownership, interior space and checkpoints the host. The recipe
+offers an alternative when one hide is available but the bedding recipe's
+thatch or two-hide load is not. It adds no save fields or RNG draws. The
+focused capture is
+`artifacts/screenshots/m15-phase16d-hide-rug-2026-10-12/01-hide-rug-in-house.png`.
+This is a mechanism delivery, not comfort calibration or a population claim.
+
 ## Deliberate scope
 
 The sleep-surface ladder and bench/lamp slices are delivered separately below.

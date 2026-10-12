@@ -97,6 +97,8 @@ export const RECIPES: Record<string, RecipeDef> = {
   bedding: { id: 'bedding', label: 'Bedding', icon: '\u{1F6CF}', tech: 'cordage', skill: 'build',
     workTicks: 110, ingredients: { thatch: 4 }, ingredientOptions: [{ hide: 2 }],
     output: { bedding: 1 }, keep: 0 },
+  rug: { id: 'rug', label: 'Hide rug', icon: '\u{1F9F6}', tech: 'cordage', skill: 'build',
+    workTicks: 80, ingredients: { hide: 1 }, output: { rug: 1 }, keep: 0 },
   bed: { id: 'bed', label: 'Bed', icon: '\u{1F6CF}', tech: 'carpentry', skill: 'build',
     workTicks: 140, ingredients: { wood: 3, bedding: 1 }, output: { bed: 1 }, keep: 0 },
   bench: { id: 'bench', label: 'Bench', icon: '\u{1FA91}', tech: 'carpentry', skill: 'build',

@@ -105,6 +105,8 @@ export type ItemClass = 'food' | 'long' | 'small' | 'bulky' | 'loose';
 export const ITEMS: Record<string, ItemDef> = {
   bedding: { id: 'bedding', label: 'Bedding', nutrition: 0, spoilTicks: 0, baseValue: 5,
     class: 'bulky', hand: { perHand: 0, perArms: 1, hands: 2 }, furniture: true },
+  rug: { id: 'rug', label: 'Hide rug', nutrition: 0, spoilTicks: 0, baseValue: 4,
+    class: 'bulky', hand: { perHand: 0, perArms: 1, hands: 2 }, furniture: true },
   bed: { id: 'bed', label: 'Bed', nutrition: 0, spoilTicks: 0, baseValue: 12,
     class: 'bulky', hand: { perHand: 0, perArms: 1, hands: 2 }, furniture: true },
   bench: { id: 'bench', label: 'Bench', nutrition: 0, spoilTicks: 0, baseValue: 8,

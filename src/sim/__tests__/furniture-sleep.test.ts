@@ -476,6 +476,35 @@ describe('bedding and beds', () => {
     } finally { spy.mockRestore(); }
   });
 
+  it('autonomously makes a one-hide rug when a bare household floor has no cheaper bedding recipe', () => {
+    const { sim, person, house } = fixture();
+    person.knownTech.add('cordage'); person.inventory.add('hide', 1);
+    person.action = 'idle'; person.order = null; person.needs.fatigue = 0;
+    expect(RECIPES.rug).toMatchObject({ tech: 'cordage', ingredients: { hide: 1 }, output: { rug: 1 } });
+    expect(scoreOneBrainTick(sim, person).found.recipe).toBe('rug');
+
+    const brain = (sim as unknown as { brain: Brain }).brain;
+    const score = brain.score.bind(brain);
+    const spy = vi.spyOn(brain, 'score').mockImplementation((actor, ctx) => {
+      const result = score(actor, ctx);
+      if (actor === person) for (const action of result.scores) {
+        if (action.id === 'craft' || action.id === 'place_furniture') action.score = 100;
+      }
+      return result;
+    });
+    try {
+      for (let tick = 0; tick < 400 && !sim.buildings.some(piece => piece.hostId === house.id && piece.def.id === 'rug'); tick++) {
+        person.needs.hunger = person.needs.thirst = person.needs.cold = 0;
+        sim.step();
+      }
+    } finally { spy.mockRestore(); }
+
+    const rug = sim.buildings.find(piece => piece.hostId === house.id && piece.def.id === 'rug');
+    expect(rug).toMatchObject({ hostId: house.id, complete: true });
+    expect(sleepQualityAt(house, rug!.centerX, rug!.centerY, [rug!])).toBe(1);
+    expect(sleepQualityAt(house, house.centerX, house.centerY, [])).toBe(0.9);
+  });
+
   it('autonomously carries its bed from the doorway into the room before placing it', () => {
     const { sim, person, house } = fixture();
     person.knownTech.add('carpentry'); person.inventory.add('bed', 1);

@@ -338,6 +338,12 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     requiresTech: null, furniture: true, sleepQuality: 1.0,
     description: 'A bed of grass or hide laid inside a home.',
   },
+  rug: {
+    id: 'rug', label: 'Hide rug', icon: '\u{1F9F6}',
+    width: 1, height: 1, materials: {}, workTicks: 0, shelter: 0, storage: 0,
+    requiresTech: 'cordage', furniture: true, sleepQuality: 1.0,
+    description: 'A hide rug that softens the floor inside a home.',
+  },
   bed: {
     id: 'bed', label: 'Bed', icon: '\u{1F6CF}',
     width: 1, height: 1, materials: {}, workTicks: 0, shelter: 0, storage: 0,

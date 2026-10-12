@@ -101,6 +101,8 @@ export const ES_DATA: Record<string, string> = {
   "A lined hollow. Holds a band’s surplus through a season.": "Un hoyo revestido. Guarda el excedente de una banda durante una estación.",
   "Mud hut": "Choza de barro",
   "Bedding": "Lecho",
+  "Hide rug": "Alfombra de piel",
+  "A hide rug that softens the floor inside a home.": "Una alfombra de piel que hace más cómodo el suelo dentro de una casa.",
   "Bed": "Cama",
   "Bench": "Banco",
   "A wooden seat for resting inside a home.": "Un asiento de madera para descansar dentro de una casa.",

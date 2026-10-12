@@ -2122,6 +2122,7 @@ es posible si nadie del hogar lo ve.
 | mueble | técnica | materiales | efecto (su lector, en el mismo commit) |
 |---|---|---|---|
 | lecho (`bedding`) | ninguna | paja 4 o piel 2 | dormir a 1,0 (16e). El lecho de hierba de Sibudu tiene ~77.000 años |
+| alfombra de piel (`rug`) | `cordage` | piel 1 | dormir a 1,0 (16e), como alternativa física cuando no hay paja suficiente para un lecho |
 | cama (`bed`) | `carpentry` | madera 3, lecho 1 | dormir a 1,1 (16e) |
 | estante (`shelf`) | `carpentry` | madera 2 | **entregado:** 20 de almacenamiento en el mueble, incluido en el inventario normal de `Building.store` |
 | hogar interior (`fireplace`) | `fireplace` (sub-red Fuego) | barro 4, sílex 2 | **entregado:** hogar permanente con calor/luz, estación `hearth` para cocinar y fuego cercano para ahumar con un secadero |

@@ -1,3 +1,8 @@
+**Avance del 2026-10-12 — fase 16d, alfombra de piel:** una piel con cordaje
+produce una superficie interior de calidad 1,0; el NPC la fabrica cuando no
+hay un lecho mejor. No añade tiradas ni estado guardado. Sin calibración o
+resultado demográfico. Ver [contrato 16d](m15_phase16d_bedding.md).
+
 **Avance del 2026-10-12 — fase 41, calibración M15 aún abierta:** la cohorte
 `generations` de 20 semillas terminó con 14,7% de supervivencia, 9 extinciones
 y solo 2 mundos por encima de su punto mínimo. La ablación `lean` sin

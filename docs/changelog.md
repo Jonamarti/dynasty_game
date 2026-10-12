@@ -15691,3 +15691,11 @@ completadas, y se aclaró que `lean`/`generations` no siguen en curso. Se
 mantienen pendientes el diagnóstico de recuperación y `answered`; no se
 calibraron parámetros.
 
+
+## 2026-10-12 — m15: alfombra de piel para dormir
+
+Se añadió una superficie doméstica fabricable con una piel y cordaje. Dormir
+encima usa la calidad 1,0 del lector existente; los hogares NPC pueden
+fabricarla como alternativa cuando falta un lecho. La razón es ofrecer una
+opción real cuando solo hay una piel y no hay paja disponible. Sin calibración
+ni afirmaciones demográficas. Captura: `artifacts/screenshots/m15-phase16d-hide-rug-2026-10-12/`.
