@@ -15427,3 +15427,9 @@ canónico del mundo y compara la representación JSON tras guardar y cargar;
 Vitest consideraba desiguales objetos rehidratados con la misma estructura
 serializada. Sin cambio de comportamiento ni de versión.
 
+## 2026-10-12 — m15: traduce la falta de grasa al engrasar pieles (0.15.104-alpha)
+
+La negativa `need_fat` ya tiene una frase visible y su traducción al español,
+igual que el resto de las interrupciones de engrasado. Corrige la cobertura de
+motivos de parada; no cambia cuándo se interrumpe la acción.
+

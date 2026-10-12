@@ -62,6 +62,7 @@ export const ES_ACTIONS: Record<string, string> = {
   "dressing hide": "engrasando piel",
   "could not dress that hide garment": "no pudo engrasar esa prenda de piel",
   "the hide dressing order was lost": "se perdió la orden de engrasar la prenda de piel",
+  "they ran out of fat before finishing the hide": "se quedó sin grasa antes de terminar de engrasar la piel",
   "that was not a garment": "eso no era una prenda",
   "they no longer had that garment": "ya no tenían esa prenda",
   "that garment was already being worn": "esa prenda ya estaba puesta",

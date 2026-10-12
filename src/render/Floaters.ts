@@ -289,6 +289,7 @@ export const STOP_REASONS: Record<string, string> = {
   torch_order_lost: 'the torch order was lost',
   unknown_torch: 'that was not a torch',
   no_fire_near: 'there was no lit hearth nearby',
+  need_fat: 'they ran out of fat before finishing the hide',
   no_salt_water: 'there was no salt water nearby',
   torch_not_owned: 'they no longer had that torch',
   no_free_hand: 'they had no free hand for the torch',
