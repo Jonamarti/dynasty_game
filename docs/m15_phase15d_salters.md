@@ -141,3 +141,23 @@ preserved. That is evidence that the behavior can fire, not an economic or
 survival improvement. No cohort was run while the paired phase 12f comparison
 was active. Phase 15c default spoilage activation remains deferred until a
 paired, discriminating economy comparison is available.
+
+## 2026-10-13 diagnostic interpretation
+
+The `.123-alpha` rerun still passes `preserved-food-lasts` 1/1 with 1/5 winter
+meals preserved. Do not read `normal appeal chooser chose preserved=0` or
+`eat-action ticks=0` as proof that the winter reserve was never selected: the
+fixture calls `bestFoodFor()`, which intentionally excludes
+`Brain.winterReserveFood()`, and samples `person.action` after the step. In a
+trace of the current scorer, Narak carried two dried meat at winter entry with
+hunger 11.3; ordinary roast meat had higher appeal. When hunger crossed 25 at
+ticks 736–737, the learned reserve raised the eat score to 1.2 and he ate dried
+meat at tick 754. Eligibility also requires winter, carried preserved food and
+a positive `spoils:<input>` belief; knowing `preserving` or `eat:dried_meat`
+alone does not supply that belief. The band meal count is direct consumption
+evidence, but one meal in one supplied world is not evidence of economic gain.
+
+The next useful instrument change is to observe the actual scored food target
+and count reserve eligibility at scoring time, then retain `eatenToday` as the
+execution outcome. No runtime behavior or default spoilage rate changes from
+this diagnosis; 15c remains deferred pending a paired, discriminating cohort.

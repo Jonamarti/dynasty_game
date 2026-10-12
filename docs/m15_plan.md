@@ -2104,11 +2104,13 @@ está.
 - El observador también separa stock accesible, hambre del portador y elección:
   en el rerun del 2026-10-12 hubo 480 person-ticks con conserva (960
   unidad-ticks), hambre media 24,5 y ningún tick con hambre ≥40; el selector
-  prefirió otra comida en los 480 ticks. No era una barrera de acceso: el scorer
-  tenía un bypass del selector compartido, y además no reservaba una conserva
-  para hambre invernal moderada. Ahora en invierno y con hambre ≥25 prioriza una
-  conserva solo cuando la persona aprendió `spoils:<input>`; fuera de esa
-  necesidad conserva el ranking normal. El escenario focal registra 1/5.
+  **normal por atractivo** prefirió otra comida en los 480 ticks. Esa métrica
+  no llama a la regla de reserva invernal ni observa el objetivo elegido durante
+  el scoring, así que no prueba que la reserva no se eligiera. El scorer ahora
+  puede dar prioridad a una conserva en invierno con hambre ≥25, stock y una
+  creencia positiva `spoils:<input>`; el escenario focal registra 1/5 comidas
+  invernales conservadas. La fixture sigue necesitando observar el objetivo en
+  el momento de scoring para separar elegibilidad, selección y consumo.
 - `spoilage-is-answered` se retiró: la pérdida nutritiva por banda no discrimina
   preservación y también pasa al retirar las recetas.
 - **Coste declarado:** ≤ 4 puntos, todavía sin medir. 15c (activar `spoilRate`

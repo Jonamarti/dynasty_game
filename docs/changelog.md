@@ -38,6 +38,14 @@ corregidos pasan ahora; quedan compact-correspondence, la telemetría de comida
 compacta, people-knowledge y dos pruebas de polity. Métricas y límites en
 `docs/bugs.md`; no se rebajaron umbrales.
 
+## 2026-10-13 — M15 fase 15d: aclarar la métrica del selector invernal
+
+El diagnóstico confirmó que el selector normal observado por la fixture no
+incluye la reserva invernal de `Brain`, y que la muestra de `action` ocurre
+después del paso. La traza actual muestra reserva elegible y consumo a hambre
+25 con creencia de deterioro. Se documentó la lectura correcta de 1/5 comidas
+sin afirmar una mejora económica; falta observar el objetivo durante el scoring.
+
 ## 2026-10-12 — M15 fase 17: cortar hierba también se ve
 
 `cut_grass` usa cuatro poses generadas de barrido bajo, seleccionadas solo
