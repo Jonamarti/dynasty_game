@@ -127,6 +127,10 @@ function setupDiggers(sim: Simulation): void {
   const band = sim.bands.find(b => !b.outcast)!;
   const chief = sim.bandSystem.chiefByBand.get(band.id);
   const members = sim.people.filter(p => p.alive && p.bandId === band.id && !p.isChild);
+  // The constructor grants founder knowledge after its first build-menu cache
+  // was initialized. This harness places the sites before the first daily
+  // refresh, so expose the founders' known earthworks to the real placement gate.
+  sim.knownTech.add('earthworks');
   for (const [i, person] of members.entries()) {
     person.inventory.add('sticks', 1);
     if (i % 2 === 0) person.inventory.add('spade', 1);
@@ -139,10 +143,11 @@ function setupDiggers(sim: Simulation): void {
         const x = Math.round(band.homeX + Math.cos(a * Math.PI / 12) * r);
         const y = Math.round(band.homeY + Math.sin(a * Math.PI / 12) * r);
         if (!sim.canPlace(BUILDINGS[design]!, x, y)) continue;
-        sim.place(design, x, y, band.id, sponsor, false);
+        if (!sim.place(design, x, y, band.id, sponsor, false)) continue;
         placed++;
       }
     }
+    if (placed !== wanted) throw new Error(`diggers fixture could only place ${placed} ${design} sites`);
   }
 }
 
@@ -1187,7 +1192,7 @@ export const SCENARIOS: Record<string, Scenario> = {
       world: { berryBushes: 220, gameHerds: 14, regrowthRate: 0.4 },
       population: {
         bands: 1, peoplePerBand: 12,
-        startingTech: ['firemaking', 'plant_lore', 'grinding', 'farming', 'carpentry', 'basketry'],
+        startingTech: withPrerequisites(['firemaking', 'plant_lore', 'grinding', 'farming', 'carpentry', 'basketry', 'earthworks']),
       },
     },
     steps: 9600,

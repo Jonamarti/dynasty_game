@@ -22,6 +22,14 @@ Pruebas de arte, selector y orden real en navegador; captura en
 `artifacts/screenshots/m15-planting-animation-2026-10-13/`. Versión
 `0.15.123-alpha`.
 
+## 2026-10-13 — M15: mantener vigentes las premisas de los tests
+
+Se actualizaron las pruebas de controles de sueño, colocación de recursos y
+obras de tierra. `diggers` ahora prepara la puerta tecnológica que exige la
+colocación, falla si no puede crear sus obras y permite que el control negativo
+de progreso detecte un fallo real. 117 pruebas focales pasan; no cambia el
+comportamiento de la simulación.
+
 ## 2026-10-12 — M15 fase 17: cortar hierba también se ve
 
 `cut_grass` usa cuatro poses generadas de barrido bajo, seleccionadas solo

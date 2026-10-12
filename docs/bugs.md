@@ -5242,3 +5242,36 @@ menos, tres nacimientos más y 22 muertes por hambre menos. Diez mundos aún
 acabaron sin banda viable y `HISTORY recovered` fue 0/52 (52 censuradas); solo
 3/20 quedaron sobre su mínimo al final. Mejora parcial, no rescate de la
 persistencia. La configuración global no se modifica.
+
+### 2026-10-13 — M15 final fast verification is not green on 0.15.122-alpha
+
+`npm.cmd test -- --maxWorkers=1 --testTimeout=15000` completed with 2,221
+passed, 10 failed and 1 skipped across 306 files. The failures were:
+`compact-correspondence` (lean thirst delta 16.90 > 15), `config.test.ts`
+(the default-ablation test does not include the two phase-16 controls),
+`determinism.test.ts` (the compact-food telemetry counter stayed zero),
+`earthwork-checks.test.ts` (the broken-progress expectation passes, while the
+real diggers check is marked skipped), `herbs.test.ts` and `metal.test.ts`
+(resource-order assertions shifted by appended red ochre),
+`people-knowledge.test.ts` (dispersion 0.70 > 0.60), and `polity.test.ts`
+(tribute not delivered and the plot leader remains unchanged). Several match
+known findings elsewhere in this file; the current checkout was not compared
+to a clean historical baseline, so this run does not attribute them to a
+recent commit. The stale premises have since been corrected: `config.test.ts`
+asserts both new default-true phase-16 controls; `herbs.test.ts` and
+`metal.test.ts` compare resource placements instead of globally shifted IDs;
+and `diggers` now knows `earthworks`, verifies both sites were placed and
+proves the broken-progress control fails without being skipped. These changes
+passed 117 focused tests across the four affected files on 0.15.123-alpha. The
+remaining behavior/telemetry failures are still unresolved and no assertion
+threshold was relaxed. The full suite has not yet been rerun after these fixes.
+
+The default single-seed `npm.cmd run sim:check` also finished non-green:
+143/147 applicable checks passed; `cravings-steer-the-diet`,
+`moods-move-choices`, `perf-budget` (467 steps/s vs floor 1,678), and
+`hills-see-farther` failed in `band`. The relevant household mechanism run
+`npm.cmd run sim:check -- --scenario homes` passed all 7 applicable checks.
+The isolated `perf-budget` value is machine-sensitive; do not infer a renderer
+regression from it. No thresholds were relaxed. Full outputs were returned by
+the commands in the 2026-10-13 M15 task session; they were not saved to a
+tracked log file.

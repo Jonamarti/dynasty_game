@@ -212,9 +212,11 @@ describe('native copper', () => {
     // this: a new kind in `spawnResources`' plan would move every herd and
     // person. Switch the ore off and compare the world with it on.
     const key = (sim: Simulation) => ({
-      nodes: sim.nodes.filter(n => !(n.kind in ORE_COUNTS)).map(n => `${n.id}:${n.kind}:${n.x},${n.y}:${n.amount}`),
-      animals: sim.animals.map(a => `${a.id}:${a.species}:${a.x},${a.y}`),
-      people: sim.people.map(p => `${p.id}:${p.name}:${p.x},${p.y}`),
+      // IDs are global allocation order. Independent passes added after the
+      // metal pass can shift them without moving anything in the shared stream.
+      nodes: sim.nodes.filter(n => !(n.kind in ORE_COUNTS)).map(n => `${n.kind}:${n.species}:${n.x},${n.y}:${n.amount}`),
+      animals: sim.animals.map(a => `${a.species}:${a.x},${a.y}`),
+      people: sim.people.map(p => `${p.name}:${p.x},${p.y}`),
     });
     const withOre = key(new Simulation({ seed: 'metal-ore' }));
     const saved = { ...ORE_COUNTS };

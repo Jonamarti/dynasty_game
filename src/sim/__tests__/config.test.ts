@@ -85,7 +85,10 @@ describe('the tunable table', () => {
 
   it('enables every M15 survival ablation by default', () => {
     const motivation = makeConfig().motivation;
-    expect(Object.values(motivation).filter(value => typeof value === 'boolean')).toEqual(Array(11).fill(true));
+    expect(Object.values(motivation).filter(value => typeof value === 'boolean')).toEqual(Array(13).fill(true));
+    // Phase 16 added two sleep controls after the original eleven ablations.
+    expect(motivation.comfortDriveEnabled).toBe(true);
+    expect(motivation.sleepQualityEffectsEnabled).toBe(true);
   });
   it('has no path that fails to resolve', () => {
     // The failure this catches is silent rather than loud: `needs.hungerrate`

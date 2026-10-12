@@ -2966,8 +2966,11 @@ el rechazo de etiquetas obsoletas tras cortar un puente, regiones falsamente
 divididas o fundidas y entradas de tamaño que ya no existen. No corre dentro
 de `Simulation.step()` ni modifica el mundo. **Hechos (2026-10-04):**
 `water-follows-the-trench` (26d), el escenario `diggers` y `earthworks-are-dug`
-(26c; `diggers` sin la puerta `earthworks`, que espera a 26e: las obras están
-abiertas a todos), medidos contra el build roto (`earthwork-checks.test.ts`).
+(26c; medidos contra el build roto en `earthwork-checks.test.ts`). El 2026-10-13
+se actualizó la fixture: ahora concede `earthworks` antes de colocar las obras,
+falla si no consigue los dos sitios y comprueba que el control de progreso
+roto no quede como check omitido. `earthwork-checks.test.ts` ya discrimina el
+fallo real en vez de aceptar un escenario que no alcanzó ninguna obra.
 
 - Escenario **`diggers`**: una banda que cultiva, con `earthworks`,
   `basketry` y `carpentry`.

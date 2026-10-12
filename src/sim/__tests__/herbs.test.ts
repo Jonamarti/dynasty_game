@@ -8,7 +8,7 @@ import { describe, it, expect } from 'vitest';
 import { Simulation } from '../core/Simulation.ts';
 import { RNG } from '../core/RNG.ts';
 import { appealOf, consumeFood, knowsPoisonous } from '../core/Macros.ts';
-import { BUSHES, BUSH_SPECIES, ORE_COUNTS, WILD_PLANTS, bushPhase } from '../entities/ResourceNode.ts';
+import { BUSHES, BUSH_SPECIES, WILD_PLANTS, bushPhase } from '../entities/ResourceNode.ts';
 import { dress, newBody, soothe, sicken, wound, type Condition } from '../entities/Body.ts';
 import { nodeName } from '../../ui/Hud.ts';
 
@@ -28,13 +28,25 @@ describe('the wild plants', () => {
     expect(wild.length).toBeGreaterThan(0);
     const bushes = sim.nodes.filter(n => ordinary(n.species));
     expect(bushes.length).toBeGreaterThan(wild.length);
-    // Every plant of the new pass has a higher id than every ordinary node of
-    // the old ones: it was planted after them, from its own stream. The ore
-    // (M15 phase 37) is the one pass planted after the herbs, so it is not an
-    // "old" node here: a premise this spec used to hold without saying so.
-    const lastOrdinary = Math.max(...sim.nodes
-      .filter(n => (n.species === null && !(n.kind in ORE_COUNTS)) || ordinary(n.species)).map(n => n.id));
-    for (const plant of wild) expect(plant.id).toBeGreaterThan(lastOrdinary);
+    // The herb pass has its own stream. Prove it leaves every earlier placement
+    // alone by suppressing only that pass and comparing positions, not global
+    // IDs: later ore and ochre passes allocate IDs after the herbs.
+    const prototype = Simulation.prototype as unknown as { spawnWildPlants: (rng: RNG) => void };
+    const realSpawn = prototype.spawnWildPlants;
+    let withoutHerbs: Simulation;
+    prototype.spawnWildPlants = () => {};
+    try {
+      withoutHerbs = new Simulation(SMALL);
+    } finally {
+      prototype.spawnWildPlants = realSpawn;
+    }
+    const placements = (world: Simulation) => ({
+      nodes: world.nodes.filter(n => !(WILD_PLANTS as readonly string[]).includes(n.species ?? ''))
+        .map(n => `${n.kind}:${n.species}:${n.x},${n.y}:${n.amount}`),
+      animals: world.animals.map(a => `${a.species}:${a.x},${a.y}`),
+      people: world.people.map(p => `${p.name}:${p.x},${p.y}`),
+    });
+    expect(placements(sim)).toEqual(placements(withoutHerbs));
   });
 
   it('give what their species gives, and the baneberry is appetising to the ignorant', () => {
