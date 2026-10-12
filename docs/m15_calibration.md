@@ -198,3 +198,19 @@ adultos por hambre. Se midieron 615 golpes entre pueblos (91% cerca de un
 campamento), 18 asesinatos y 14/20 mundos elegibles superaron 20 puntos de
 standing. La métrica de recuperación sigue por debajo del objetivo (no se
 interpreta como censura: el escenario terminó). Hallazgo en `bugs.md`.
+
+### Ablación emparejada `lean`: arbustos genéricos todo el año
+
+`npm.cmd run sim:seeds -- --scenario lean --seeds 20 --set world.bushSeasons=false`
+terminó en 957,4 s, 20 semillas × 24.000 pasos. El switch conserva los
+arbustos genéricos antiguos sin estacionalidad. Supervivencia media 12,8%
+(+8,3 puntos frente al 4,5% del control), extinción 3/20 (control 2/20),
+colapso <25% en 18/20 (control 20/20), 6 nacimientos y 645 muertes (control
+702). El hambre bajó de 489 a 408 muertes: 92 lactantes, 63 niños mayores y
+253 adultos, frente a 99/64/326. Ocho mundos acabaron sin banda recuperable
+(control 17/20); `recovered` siguió 0/60 censurada. En los registros por seed
+13 subieron los supervivientes, 4 bajaron, 2 quedaron iguales y no se recuperó
+la fila de `omicron`. Es evidencia emparejada de que la disponibilidad anual
+de bayas puede mejorar esta cohorte `lean`, pero no resuelve las extinciones ni
+demuestra que deba desactivarse la estacionalidad en el juego. Se mide aparte
+la penalización metabólica de lactancia. Hallazgo en `bugs.md`.

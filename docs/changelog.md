@@ -1,3 +1,11 @@
+## 2026-10-12 — docs: registrar ablación de bayas en fase 41
+
+La prueba emparejada `lean` con bayas genéricas todo el año dio 12,8% de
+supervivencia y 408 muertes por hambre frente a 4,5% y 489 en el control,
+pero dejó 18/20 colapsos y 3 extinciones. No cambia la configuración del
+juego; se registra como evidencia de coste estacional con límites. Se
+actualizaron bugs, plan y próximos pasos; detalle en `m15_calibration.md`.
+
 ## 2026-10-12 — docs: contextualizar cohorte lean con fase 27
 
 El control emparejado de fase 27 ya medía 3,26% → 2,89% de supervivencia en

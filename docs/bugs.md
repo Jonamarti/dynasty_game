@@ -5153,3 +5153,17 @@ a 4,9%, mantuvo colapso en 20/20 y elevó extinciones de 2/20 a 4/20. Quitó 51
 asesinatos, pero añadió 80 muertes por hambre; los supervivientes por semilla
 variaron sin dirección consistente. Depredadores no explican por sí solos la
 crisis de `lean`. Resultados completos: `m15_calibration.md`.
+
+### 2026-10-12 — M15 fase 41: estacionalidad de bayas agrava `lean`
+
+En una segunda ablación emparejada de 20 seeds (`world.bushSeasons=false`, que
+recupera arbustos genéricos presentes todo el año), `lean` subió de 4,5% a
+12,8% de supervivencia y bajó de 489 a 408 muertes por hambre. El colapso cayó
+de 20/20 a 18/20 y las bandas sin capacidad de recuperación de 17 a 8, pero las
+extinciones aumentaron de 2/20 a 3/20 y `recovered` siguió 0/60 censurado. En
+13 seeds aumentaron supervivientes, en 4 bajaron, en 2 quedaron iguales; falta
+la fila individual de `omicron`. El contraste apunta a un coste real de la
+disponibilidad estacional de bayas en `lean`, pero la recuperación y las
+extinciones siguen fallando, así que no se desactiva el sistema ni se calibra
+el juego con una sola lectura. La ablación separada de `childhood.lactationHunger`
+está pendiente. Cifras: `m15_calibration.md`.
