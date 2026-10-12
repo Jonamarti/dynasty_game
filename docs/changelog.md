@@ -1,3 +1,11 @@
+## 2026-10-12 — docs: reconcile M15 interior status
+
+Added a current phase 16 status snapshot covering the interior fireplace,
+sleep surfaces, shelf, lamp autonomy, comfort sampling, and the seven-check
+`homes` mechanism scenario. Older phase notes now identify remaining furniture,
+dedicated fat stockpiling, and cohort calibration accurately. No gameplay
+behavior changed.
+
 ## 2026-10-12 — docs: reconcile M15 garment and nights status
 
 Updated the historical 14c notes to point to later delivery of physical
