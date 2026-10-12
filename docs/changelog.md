@@ -15500,3 +15500,10 @@ La selección autónoma comprueba `Person.isChild`, que usa el umbral adulto del
 modelo de vida en años. La prueba negativa protege a menores aunque tengan ropa
 y materiales disponibles; las órdenes explícitas conservan su puerta existente.
 
+## 2026-10-12 — corrige la prueba de propiedad del tráfico
+
+El caso de party ownership añadía un ID inexistente al roster interno, que el
+codec de roster rechazaba antes de llegar a la validación de propietarios. La
+regresión ahora deja el checkpoint válido y añade el extra al manifiesto de
+viajeros, probando específicamente el desacuerdo entre ambos propietarios.
+

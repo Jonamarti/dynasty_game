@@ -121,7 +121,7 @@ describe('WorldTrafficCoordinator root transactions',()=>{
   };
   const orphan=create();orphan.parties=[];expect(()=>WorldTrafficCoordinator.fromRecord(orphan)).toThrow(/scheduler ownership/);
   const future=create();future.caravans.tick=future.tick+1;expect(()=>WorldTrafficCoordinator.fromRecord(future)).toThrow(/scheduler ownership or clock/);
-  const extra=create();extra.parties[0].party.roster.activePersonIds.push(999999);expect(()=>WorldTrafficCoordinator.fromRecord(extra)).toThrow(/party checkpoint ownership/);
+  const extra=create();extra.parties[0].travellerIds.push(999999);expect(()=>WorldTrafficCoordinator.fromRecord(extra)).toThrow(/party checkpoint ownership/);
  });
  it('passes one selected theft each way only after a real parked barter, resolving foreign culprits from the root archive',()=>{
   const {state}=fixture();const ids=IdSpace.fromSnapshot(state.ids.snapshot());
