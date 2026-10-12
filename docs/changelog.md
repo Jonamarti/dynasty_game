@@ -1,3 +1,9 @@
+## 2026-10-12 — docs: refresh M15 plan summaries
+
+Clarified that the phase 14c and phase 16 lamp-upkeep notes describe earlier
+cuts, and linked their then-open items to the later deliveries. Cohort
+calibration and additional furniture remain open. No gameplay behavior changed.
+
 ## 2026-10-12 — docs: registrar cohorte M15 frontier
 
 La cohorte actual de `frontier-cohort` (20 semillas, 12.000 pasos) dio 91,8%
