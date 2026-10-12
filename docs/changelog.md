@@ -15472,3 +15472,10 @@ su utilidad y siente frío decide hacerlo junto a un hogar real. `torches-are-ca
 ahora acredita esa ruta autónoma; la prueba negativa sin antorcha falla. Es una
 medición controlada de una persona, no una tasa de adopción poblacional. Sin UI.
 
+## 2026-10-12 — m15: grasa de montones para lámparas domésticas (0.15.109-alpha)
+
+Un adulto puede recoger grasa física de un montón cercano cuando su casa
+terminada contiene una lámpara NPC vacía. La acción usa el pickup y los permisos
+de propiedad existentes, recoge una unidad y reevalúa la necesidad. No crea
+grasa, inicia una cacería ni cambia la UI o el estado guardado.
+

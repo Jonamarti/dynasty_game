@@ -6,6 +6,14 @@ misma acción interrumpible y el mismo `GarmentUnit` del jugador. No buscan
 materiales ni se afirma calibración/cohorte. Contrato en
 [`m15_garment_condition_design.md`](m15_garment_condition_design.md).
 
+**Avance del 2026-10-12 — 16d, grasa en montones para lámparas:** si la casa
+terminada de un adulto tiene una lámpara NPC vacía, puede recoger grasa real de
+un montón cercano mediante el pickup existente, dentro de la misma región y
+sujeto a permisos y capacidad de carga. Recoge una unidad y reevalúa; no caza ni
+genera grasa. La comprobación focal cubre el objetivo y el filtro de objeto.
+Sin UI, RNG ni calibración/cohortes. Contrato:
+[`m15_phase16d_bedding.md`](m15_phase16d_bedding.md).
+
 **Avance del 2026-10-12 — 14c, engrasado por unidad:** el nodo hide_dressing
 requiere leatherwork; la receta hide_dressing consume una grasa y trabaja sobre
 una unidad concreta de piel, fuera del cuerpo. El progreso interrumpible y el

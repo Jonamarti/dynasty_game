@@ -341,6 +341,30 @@ describe('bedding and beds', () => {
     expect(loaded.buildingsById.get(shelf.id)?.store.count('fat')).toBe(1);
   });
 
+  it('recovers real fat from a nearby ground pile for its own empty lamp', () => {
+    const { sim, person, house } = fixture();
+    person.isPlayer = true;
+    sim.autonomy = 'manual';
+    const lamp = new Building(BUILDINGS.fat_lamp!, house.centerX, house.centerY, person.bandId, sim.ids);
+    lamp.hostId = house.id; lamp.complete = true; lamp.fuelRemaining = 0;
+    sim.buildings.push(lamp); sim.buildingsById.set(lamp.id, lamp); sim.buildingHash.insert(lamp);
+    sim.dropAt(person.x + 1, person.y, 'fat', 1);
+    sim.dropAt(person.x + 5, person.y, 'berries', 1);
+    const fatPile = sim.piles.find(pile => pile.contents.count('fat') > 0)!;
+    const unrelatedPile = sim.piles.find(pile => pile.contents.count('berries') > 0)!;
+    const scored = scoreOneBrainTick(sim, person);
+    expect(scored.found.pickupPile).toBe(fatPile);
+    expect(scored.found.pickupItem).toBe('fat');
+    expect(scored.scores.some(row => row.id === 'pickup')).toBe(true);
+    expect(scored.found.pickupPile).not.toBe(unrelatedPile);
+
+    const brain = (sim as unknown as { brain: Brain }).brain;
+    person.isPlayer = false;
+    expect(brain.think(person, scored.context, new Set(['pickup']))).toBe('pickup');
+    expect(person.targetPileId).toBe(fatPile.id);
+    expect(person.targetItemId).toBe('fat');
+  });
+
   it('does not route partial fat to a player lamp, charged lamp or full home shelf', () => {
     const { sim, person, house } = fixture();
     person.isPlayer = true;

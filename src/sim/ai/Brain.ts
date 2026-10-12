@@ -3238,6 +3238,24 @@ export class Brain {
       : [];
     lampToRefuel = householdHomePieces.find(piece => piece.def.id === 'fat_lamp' &&
       !piece.playerPlaced && piece.fuelRemaining === 0) ?? null;
+    // Hunting overflow is already a physical item on the ground. When a real
+    // empty lamp needs its last unit, recover nearby fat through the ordinary
+    // pile pickup route instead of inventing stock or starting a hunt for it.
+    if (lampToRefuel && person.inventory.count('fat') < FAT_LAMP_REFILL_FAT &&
+        ctx.pileHash && ctx.pilesById?.size && ctx.carry &&
+        person.carrying < person.carryCapacity) {
+      for (const pile of ctx.pileHash.queryRadius(person.x, person.y, ctx.sightRadius, this.nearbyPiles)) {
+        if (pile.empty || !ctx.world.sameRegion(person.x, person.y, pile.x, pile.y) ||
+            !mayTakeFromPile(person, pile, ctx.peopleById, ctx) ||
+            pile.contents.count('fat') < 1 || !canTake(person, ctx.carry, 'fat', 1)) continue;
+        const score = 0.8 * this.proximityBonus(person, pile, ctx.sightRadius);
+        if (score > pickupBest) {
+          pickupBest = score;
+          pickupPile = pile;
+          pickupItem = 'fat';
+        }
+      }
+    }
     // A hunt's fixed deer/boar yield is already real, edible fat. When that
     // small yield cannot refill an empty lamp yet, bring it to this household's
     // own shelf through the ordinary `store` transfer; do not pull from a
