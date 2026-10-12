@@ -106,6 +106,8 @@ Se actualizaron checks cortos tras M15, sin cambiar parámetros:
 |---|---|---|---|
 | `food-news` | `npm.cmd run sim:check -- --scenario food-news` | PASS 1/1, `word-of-food-travels` | 600 pasos; prueba el mecanismo de rumor, no su adopción poblacional. |
 | `frontier` | `npm.cmd run sim:check -- --scenario frontier` | PASS 2/2, `nobody-drinks-the-sea`, `rivers-are-crossed` | 300 pasos; prueba agua/frontera en una semilla. |
+| `homes` | `npm.cmd run sim:check -- --scenario homes` | PASS 7/7: camas usadas, muebles, ánimo de sueño/seguridad, muros y rutas | 2.400 pasos; lector preparado, no mide construcción natural ni calibración demográfica. |
+| `tailors` | `npm.cmd run sim:check -- --scenario tailors` | PASS 3/3: uso 6/7; 3.272/10.073 cold person-ticks; evitó 0,03253 de frío/probe tick; 1 rotura y 1 reparación | 2.400 pasos; mecanismo de ropa y remiendo, no economía ni supervivencia. |
 | `frontier-cohort` | `npm.cmd run sim:seeds -- --scenario frontier-cohort --seeds 20` | supervivencia media 91,8%; `worldLost` 0/20; colapso 0/20; 43 nacimientos; 2 muertes por deshidratación y 24 por hambre | 12.000 pasos/semilla; 485,1 s bajo cohortes simultáneas. Sin comparación emparejada ni inferencia de mejora. |
 | `band` | `npm.cmd run sim:check -- --scenario band` | 3 fallos: `cravings-steer-the-diet`, `perf-budget`, `hills-see-farther` | Una sola semilla, ejecutada mientras corrían cohortes largas; la cifra de rendimiento no es una medición válida bajo esa carga. |
 | `salters` | `npm.cmd run sim:check -- --scenario salters` | FAIL `preserved-food-lasts`: 0/3 comidas invernales conservadas | El monitor de pérdida sigue sin comparación que detecte el build sin recetas de conserva; no demuestra mejora ni habilita 15c. |

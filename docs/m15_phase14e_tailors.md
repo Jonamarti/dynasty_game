@@ -39,3 +39,13 @@ Validation: typecheck passes, 6 focused tests pass, and all 3 scenario checks
 pass. The logs listed above are historical and predate the third check; the
 integration run was executed directly from this checkout.
 The full unit/browser regression will be recorded with the garment delivery.
+
+## Recheck 2026-10-12
+
+`npm.cmd run sim:check -- --scenario tailors` on the integrated checkout passed
+all three checks in 2,400 steps. Six of seven supplied adults wore garments
+during 3,272/10,073 winter cold person-ticks (32.5%); the paired NeedsSystem
+probe measured 0.03253 cold avoided per tick with no no-benefit pairs. One
+supplied unit broke and one controlled tailoring repair completed. These
+current-run values replace neither the earlier contract measurements nor the
+need for population calibration.

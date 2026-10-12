@@ -2180,9 +2180,10 @@ es posible si nadie del hogar lo ve.
 - `sleep-mood-uses-quality-and-cold` y `sleep-security-reads-all-terms`:
   confirman que la muestra incorpora frío/calidad y campamento, compañía,
   guardia y territorio reclamado.
-- **Entregado:** los siete checks pasan en una ejecución de 2400 pasos. El
-  escenario aísla los lectores con casas preparadas y no mide construcción
-  natural, supervivencia ni amplitudes; no se ejecutó calibración ni cohortes.
+- **Entregado:** los siete checks pasan en las ejecuciones de 2400 pasos; la
+  repetición 2026-10-12 volvió a pasar 7/7. El escenario aísla los lectores
+  con casas preparadas y no mide construcción natural, supervivencia ni
+  amplitudes. La calibración y las cohortes siguen pendientes.
 - **Coste declarado:** ≤ 3 puntos.
 
 **Commits:** `m15: reparar regiones`; `m15: muros y puerta`; `m15: el tejado

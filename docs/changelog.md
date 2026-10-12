@@ -1,3 +1,9 @@
+## 2026-10-12 — docs: registrar rechecks de `homes` y `tailors`
+
+`homes` volvió a pasar 7/7 checks y `tailors` 3/3 en 2.400 pasos cada uno.
+Se actualizaron los datos de uso/efecto de ropa y la tabla de checks; son
+pruebas de mecanismo, no calibración de población.
+
 ## 2026-10-12 — docs: reconciliar estado de la ropa 14c
 
 La sección histórica del catálogo de ropa ya no enumera como pendientes los
