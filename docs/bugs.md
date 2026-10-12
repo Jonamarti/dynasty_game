@@ -506,19 +506,22 @@ Auditoría de fuentes académicas del 2026-10-12 (detalle y enlaces en
 [`m15_phase29_sources.md`](m15_phase29_sources.md) y
 [`public/world/SOURCES.md`](../public/world/SOURCES.md)):
 
-- **Sorgo (13°N, 1°E):** [Winchell et al. (2017)](https://doi.org/10.1086/693898)
-  aporta evidencia de cultivo/domesticación cerca de Kassala, Sudán oriental,
-  no para el Sahel occidental de la semilla. Falta definir si se representa
-  foco arqueobotánico o rango silvestre y, para este último, una fuente del
-  rango en el punto.
-- **Caballo (48°N, 35°E):** [Librado et al. (2021)](https://doi.org/10.1038/s41586-021-04018-9)
-  infiere el linaje doméstico moderno en especial en el bajo Volga–Don; no
-  respalda el centroide ni determina el rango natural silvestre. Falta definir
-  qué fenómeno representa la semilla.
+- **Sorgo silvestre (13°N, 1°E):** Kassala es un foco arqueobotánico de cultivo
+  y domesticación, no la localidad de esta semilla. [Kew POWO](https://powo.science.kew.org/taxon/77083517-1)
+  registra el progenitor silvestre como nativo de Níger y Burkina Faso, respaldando la
+  aproximación regional del Sahel occidental para `wildSorghum`. El registro
+  por países no confirma la celda, abundancia ni presencia en 12.000 a. C.
+- **Caballo silvestre (48°N, 35°E):** el significado `wildHorse` queda aclarado.
+  [Leonardi et al. (2018)](https://doi.org/10.1126/sciadv.aar5589) dan base a
+  una aproximación amplia de la estepa póntica oriental mediante hallazgos y
+  reconstrucción del rango euroasiático. El centroide no es una localidad
+  fósil comprobada ni el paper demuestra presencia puntual en 12.000 a. C.;
+  los estudios de linaje doméstico DOM2 no deben sustituir esa evidencia.
 - **Oro del Sinaí (25°N, 33°E):** [Surour et al. (2003)](https://doi.org/10.1016/S0375-6742(02)00268-6)
-  documenta oro en sedimentos de Dahab, sudeste del Sinaí; no valida el punto,
-  que está al sur de la península. Falta identificar la zona geológica buscada
-  y una fuente que la ubique.
+  respalda oro detrítico en Dahab, sudeste del Sinaí. Esto confirma una región
+  aurífera amplia, pero no el centroide guardado, que queda fuera de la
+  península. Falta seleccionar un distrito y ubicarlo con cartografía o una
+  fuente de campo compatible con la rejilla.
 - **Sílex levantino (35°N, 35°E):** [Hovers y Belfer-Cohen (2013)](https://doi.org/10.1086/673880)
   respalda disponibilidad ampliamente extendida en el sustrato geológico del
   Levante, suficiente para una semilla regional aproximada pero no para afirmar
@@ -530,7 +533,11 @@ Auditoría de fuentes académicas del 2026-10-12 (detalle y enlaces en
   si la semilla representa salmuera/evaporación costera o un depósito emergido,
   y ubicar ese recurso. No inferir explotación a partir de geología.
 
-No se cambian coordenadas, semillas o activos hasta resolver esos datos.
+La precisión local, cronológica y de accesibilidad sigue abierta para estas
+filas: las fuentes regionales no justifican por sí solas mover coordenadas,
+semillas o activos. Para sorgo y caballo se acepta únicamente la interpretación
+de semilla regional aproximada; para oro, sílex y sal continúan pendientes
+los datos indicados arriba.
 
 Los centros se conservan para no cambiar los binarios en una entrega de
 procedencia. Corregirlos exige nuevas fuentes, mover semillas y regenerar

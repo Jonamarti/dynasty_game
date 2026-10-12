@@ -178,11 +178,26 @@ y sal del Mar Muerto. La bibliografía confirma disponibilidad regional de síle
 y existencia geológica de halita, con los límites de escala y acceso terrestre
 declarados; no demuestra canteras puntuales ni explotación prehistórica. Las
 discrepancias del centroide de sorgo, caballo y oro, además del acceso a sal en
-la celda, permanecen abiertas con el dato necesario para resolverlas. Contrato
+la celda, se dejaron abiertas en esa primera pasada con el dato necesario para
+resolverlas; la reconciliación regional posterior distingue los casos con
+respaldo amplio de los centroides que siguen sin validar. Contrato
 y enlaces en `docs/m15_phase29_sources.md` y `public/world/SOURCES.md`; plan y
 bugs actualizados. Documentación solamente: sin cambios de coordenadas,
 semillas, mapas, versión ni capturas. `sim:check` no pudo iniciar porque
 `vite-node` no está instalado en este worktree.
+
+## 2026-10-12 — M15 29c: reconciliación regional de sorgo, caballo y oro
+
+La revisión separa el rango silvestre del lugar de domesticación. Kew registra
+el progenitor silvestre del sorgo como nativo en Níger y Burkina Faso, lo que
+respalda la región amplia de la semilla, no su celda o fecha. El registro
+fósil/modelado euroasiático respalda al caballo silvestre en una región póntica
+oriental, mientras los estudios DOM2 describen caballos domésticos. Surour et
+al. documentan oro aluvial de wadis de Dahab, sudeste del Sinaí; el punto
+25°N, 33°E sigue sin respaldo. Sin cambios de datos, coordenadas, semillas,
+atlas o versión; incertidumbre de celda, tiempo y recurso accesible queda
+declarada en `public/world/SOURCES.md`, el contrato y la lista de bugs.
+Documentación solamente, sin captura ni pruebas de comportamiento.
 
 ## 2026-10-11 — M15 herencia física de prendas
 

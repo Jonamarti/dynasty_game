@@ -3211,9 +3211,11 @@ Cada semilla regional lleva una clave bibliográfica; `SOURCES.md` documenta
 evidencia, licencia y límites. El manifiesto y el generador declaran que el
 mapa antiguo solo modifica el nivel del mar: no contiene paleoclima ni rangos
 históricos de recursos. La regresión de activos pasa 4/4. No se alteran los
-binarios ni las posiciones. Persisten discrepancias de sorgo/caballo/oro y
-evidencia insuficiente de sílex levantino/sal del mar Muerto, registradas en
-`bugs.md`; la puerta de fuentes completas sigue abierta.
+binarios ni las posiciones. La auditoría regional posterior respalda sorgo y
+caballo silvestres como aproximaciones amplias, no sus celdas o fechas; el oro
+del Sinaí conserva una discrepancia de centroide, y sílex/sal conservan límites
+de precisión o accesibilidad. Se registran en `bugs.md`; la puerta de fuentes
+completas sigue abierta.
 [Detalle](m15_phase29_sources.md). Captura geográfica nueva revisada:
 `artifacts/screenshots/m15-phase29-sources-2026-10-05/`.
 
@@ -3356,14 +3358,15 @@ historia tenga la misma forma sin ser la misma.
   - clima: la clasificación de Köppen-Geiger de Beck y otros (2018, CC BY 4.0,
     con su atribución en los créditos);
   - zonas iniciales aproximadas para recursos y antepasados silvestres, con
-    bibliografía por fila en `public/world/SOURCES.md`; la auditoría de
-    2026-10-12 deja explícitas las cinco filas que aún necesitan aclarar el
-    alcance de la semilla o ubicar un dato compatible (sorgo, caballo, oro del
-    Sinaí, sílex levantino y sal del Mar Muerto). El sílex tiene respaldo de
-    disponibilidad regional, no de cantera puntual; la sal, de existencia
-    geológica, no de nodo terrestre/explotación antigua. No se han movido
-    centros ni regenerado mapas. Se mantienen las preguntas de dónde
-    crecían los antepasados silvestres de las plantas domesticadas (trigo y
+    bibliografía por fila en `public/world/SOURCES.md`. La auditoría de
+    2026-10-12 respalda sorgo silvestre (Níger/Burkina) y caballo silvestre
+    (estepa póntica oriental) como aproximaciones regionales, pero no confirma
+    sus celdas ni una presencia fechada. El centroide del oro del Sinaí queda
+    sin resolver: hay oro documentado en Dahab/sudeste del Sinaí, no en
+    25°N, 33°E. Sílex tiene respaldo de disponibilidad regional, no de cantera
+    puntual; la sal, de existencia geológica, no de nodo terrestre/explotación
+    antigua. No se han movido centros ni regenerado mapas. Se mantienen las
+    preguntas de dónde crecían los antepasados silvestres de las plantas domesticadas (trigo y
     cebada en el Creciente Fértil, arroz en el Yangtsé, mijo en el río
     Amarillo, maíz en Mesoamérica, patata en los Andes, sorgo en el Sahel…),
     los de los animales (uro, oveja y cabra en los Zagros, caballo en la
