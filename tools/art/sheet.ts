@@ -14,7 +14,7 @@ import { createServer } from 'vite';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const OUT = join(ROOT, 'artifacts', 'art');
-const SECTIONS = ['tribes', 'ages', 'faces', 'wear', 'hands', 'belly', 'walk', 'gather', 'dig', 'chop', 'make', 'items', 'buildings', 'animals', 'animal-e', 'animal-r', 'animal-a', 'animal-s'];
+const SECTIONS = ['tribes', 'ages', 'faces', 'wear', 'hands', 'belly', 'walk', 'gather', 'cutgrass', 'dig', 'chop', 'make', 'items', 'buildings', 'animals', 'animal-e', 'animal-r', 'animal-a', 'animal-s'];
 
 mkdirSync(OUT, { recursive: true });
 const server = await createServer({ root: ROOT, logLevel: 'error', server: { port: 0, host: '127.0.0.1' } });
@@ -26,7 +26,9 @@ try {
   const errors: string[] = [];
   page.on('pageerror', e => errors.push(String(e)));
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
-  await page.goto(new URL('tools/art/sheet.html', url).href);
+  // Loading all generated atlas sheets can outlast Playwright's default `load`
+  // navigation wait even though the page is ready to compose its review rows.
+  await page.goto(new URL('tools/art/sheet.html', url).href, { waitUntil: 'domcontentloaded', timeout: 60_000 });
   await page.waitForSelector('body[data-ready="1"]', { timeout: 60000 });
   for (const id of SECTIONS) {
     await page.locator('#' + id).screenshot({ path: join(OUT, `contact-${id}.png`) });

@@ -2316,6 +2316,16 @@ Contrato: [m15_mending_animation.md](m15_mending_animation.md). Captura real:
 `artifacts/screenshots/m15-mending-animation-2026-10-12/00-active-garment-mending.png`.
 Quedan otras familias de trabajo y la fase 17 sigue abierta.
 
+**Avance del 2026-10-12 (corte de hierba).** La orden real `cut_grass` muestra
+cuatro poses generadas `q0`–`q3` solo al trabajar sobre la casilla alcanzada con
+hierba todavía cortable. El reloj de trabajo y la fracción de render gobiernan
+el gesto; viajar, interrumpir, morir o agotar la hierba lo ocultan. El selector
+no muta simulación ni usa RNG. Contrato:
+[m15_cutgrass_animation.md](m15_cutgrass_animation.md). Captura:
+`artifacts/screenshots/m15-cutgrass-animation-2026-10-12/00-active-thatch-cutting.png`.
+La fase 17 sigue abierta para plantar, procesar pieles/prendas y otras acciones
+de trabajo sin pose propia.
+
 **Avance del 2026-10-03 (animales):** cuatro poses de comer, correr y atacar
 en ciervo, jabalí, liebre, lobo, oso y lince, compartidas por especie. El renderer
 lee marcas de eventos reales. Cuenta también desplazamientos norte/sur y conserva

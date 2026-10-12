@@ -31,7 +31,7 @@ Key: `p/<slot>/<variant>/<age>.<sex>/<dir>/<pose>` (`personKey`).
 - **pose** `idle w0 w1 w2 w3 g0 g1 g2 g3 f0 f1 f2 f3` (four walk, gathering
   and shallow-water fishing frames), plus the work families `x`, `d`, `c`, `m`,
   `a`, `b` and `r` for extraction, digging, chopping, crafting, farming,
-  construction and garment mending.
+  construction and garment mending, and `q` for cutting grass into thatch.
   Other work, sleep, sit and swim poses come with their phases: add a name to `ART_POSES`, draw it in
   `people/rig.ts`, rebuild. A pose is a set of layers like any other.
 - **Cell** 96 px, feet on row 88. The upper body bobs by
@@ -145,8 +145,10 @@ rule (and the key), and the two pictures stay.
   fruit; shallow-water fishing has its own four-frame low reach. The extraction
   gesture covers flint, clay and copper/tin/iron ores. Garment mending has its
   own four-frame waist-level needle gesture; repairing a building uses the
-  hammer pose. The same hand gesture is used for bush and tree fruit; different
-  reaching heights remain a possible visual refinement. The procedural fallback
+  hammer pose; grass cutting has a four-frame low sweep. The same hand gesture
+  is used for bush and tree fruit; different reaching heights remain a possible
+  visual refinement. Planting, dressing hides, dyeing, tending, taming and
+  spreading compost still have no dedicated work pose. The procedural fallback
   has no work gesture.
 - **Trees, resource nodes and terrain** are still drawn in code.
 

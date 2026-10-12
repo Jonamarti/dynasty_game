@@ -124,7 +124,7 @@ export function geometry(age: ArtAge, sex: ArtSex): Geo {
 }
 
 /** Whole-pixel upper-body dip; gathering keeps its feet planted like idle. */
-export const POSE_BOB: Record<ArtPose, number> = { idle: 0, w0: 0, w1: 1, w2: 0, w3: 1, g0: 0, g1: 1, g2: 2, g3: 1, f0: 0, f1: 0, f2: 0, f3: 0, x0: 0, x1: 0, x2: 0, x3: 0, d0: 0, d1: 0, d2: 0, d3: 0, c0: 0, c1: 0, c2: 0, c3: 0, m0: 1, m1: 2, m2: 1, m3: 0, a0: 1, a1: 2, a2: 1, a3: 0, b0: 0, b1: 1, b2: 0, b3: 1, r0: 0, r1: 0, r2: 0, r3: 0 };
+export const POSE_BOB: Record<ArtPose, number> = { idle: 0, w0: 0, w1: 1, w2: 0, w3: 1, g0: 0, g1: 1, g2: 2, g3: 1, f0: 0, f1: 0, f2: 0, f3: 0, x0: 0, x1: 0, x2: 0, x3: 0, d0: 0, d1: 0, d2: 0, d3: 0, c0: 0, c1: 0, c2: 0, c3: 0, m0: 1, m1: 2, m2: 1, m3: 0, a0: 1, a1: 2, a2: 1, a3: 0, b0: 0, b1: 1, b2: 0, b3: 1, r0: 0, r1: 0, r2: 0, r3: 0, q0: 0, q1: 0, q2: 0, q3: 0 };
 
 const DIG_FRONT: readonly { reach: number; handY: number; elbowY: number }[] = [
   { reach: 0.4, handY: -0.3, elbowY: 0.05 }, { reach: 0.25, handY: -0.6, elbowY: -0.1 },
@@ -159,6 +159,12 @@ const FARM_FRONT: readonly { reach: number; handY: number; elbowY: number }[] = 
   { reach: 1, handY: 0.9, elbowY: 0.62 }, { reach: 0.48, handY: 0.73, elbowY: 0.48 },
 ];
 const FARM_SIDE: readonly (readonly [number, number])[] = [[20, 62], [42, 82], [55, 100], [30, 68]];
+// A low four-part sweep, with the feet planted like the other work cycles.
+const CUT_GRASS_FRONT: readonly { reach: number; handY: number; elbowY: number }[] = [
+  { reach: 0.2, handY: 0.95, elbowY: 0.62 }, { reach: 0.8, handY: 1.08, elbowY: 0.7 },
+  { reach: 1.15, handY: 0.92, elbowY: 0.65 }, { reach: 0.45, handY: 0.82, elbowY: 0.57 },
+];
+const CUT_GRASS_SIDE: readonly (readonly [number, number])[] = [[24, 66], [48, 88], [70, 108], [30, 72]];
 // Raise, strike the frame, drive the next blow and recover. Held tools follow
 // the right-hand anchor so a mallet remains aligned through the whole cycle.
 const BUILD_FRONT: readonly { reach: number; handY: number; elbowY: number }[] = [
@@ -714,6 +720,10 @@ function frontLayers(spec: PersonSpec, back: boolean): PersonOut {
       const { reach, handY, elbowY } = FARM_FRONT[Number(spec.pose.slice(1))]!;
       hand = [cx + side * (sh + g.arm * 0.4 * reach), sY + g.arm * handY];
       elbow = [cx + side * (sh + g.arm * 0.25), sY + g.arm * elbowY];
+    } else if (spec.pose.startsWith('q') && isRight) {
+      const { reach, handY, elbowY } = CUT_GRASS_FRONT[Number(spec.pose.slice(1))]!;
+      hand = [cx + side * (sh + g.arm * 0.42 * reach), sY + g.arm * handY];
+      elbow = [cx + side * (sh + g.arm * 0.25), sY + g.arm * elbowY];
     } else if (spec.pose.startsWith('g') && isRight) {
       const reach = [0.25, 0.8, 1, 0.45][Number(spec.pose.slice(1))]!;
       hand = [cx + side * (sh + g.arm * 0.35 * reach), sY + g.arm * (0.7 - 0.38 * reach)];
@@ -801,6 +811,8 @@ function sideLayers(spec: PersonSpec): PersonOut {
       [a1, a2] = EXTRACT_SIDE[Number(spec.pose.slice(1))]!;
     } else if (spec.pose.startsWith('a') && near) {
       [a1, a2] = FARM_SIDE[Number(spec.pose.slice(1))]!;
+    } else if (spec.pose.startsWith('q') && near) {
+      [a1, a2] = CUT_GRASS_SIDE[Number(spec.pose.slice(1))]!;
     } else if (spec.pose.startsWith('g') && near) {
       const phase = Number(spec.pose.slice(1));
       a1 = [20, 48, 62, 28][phase]!;

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Person } from '../../sim/entities/Person.ts';
 import { RNG } from '../../sim/core/RNG.ts';
-import { buildingPose, diggingPose, extractionPose, farmingPose, fishingPose, gatheringPose, mendingPose } from '../WorkAnimation.ts';
+import { buildingPose, cuttingGrassPose, diggingPose, extractionPose, farmingPose, fishingPose, gatheringPose, mendingPose } from '../WorkAnimation.ts';
 import type { Simulation } from '../../sim/core/Simulation.ts';
 
 function fixture() {
@@ -245,6 +245,50 @@ describe('garment mending animation', () => {
     person.action = 'mend_garment'; person.actionTimer = 1; person.actionTotal = 100; person.workedTicks = 2;
     expect(mendingPose(person, false, 0.5)).toBe('r0');
     expect(mendingPose(person, false, 1)).toBe('r1');
+  });
+});
+
+describe('grass cutting animation', () => {
+  function grassFixture() {
+    const person = new Person('Cutter', 4.5, 4.5, 0, new RNG('cut-grass-animation'));
+    person.action = 'cut_grass'; person.targetX = 4; person.targetY = 4;
+    person.actionTimer = 10; person.workedTicks = 1;
+    let height = 0.9;
+    const sim = { world: { grassAt: () => height } } as unknown as Pick<Simulation, 'world'>;
+    return { person, sim, setHeight: (next: number) => { height = next; } };
+  }
+
+  it('cycles four low cutting strokes only over real tall grass', () => {
+    const { person, sim } = grassFixture();
+    expect([1, 3, 5, 7, 9].map(ticks => { person.workedTicks = ticks; return cuttingGrassPose(person, sim, false, 0); }))
+      .toEqual(['q0', 'q1', 'q2', 'q3', 'q0']);
+    expect(person.actionTimer).toBe(10);
+    expect(person.workedTicks).toBe(9);
+  });
+
+  it('hides the swing during travel, away from its tile, without work, or after grass is cut', () => {
+    const { person, sim, setHeight } = grassFixture();
+    expect(cuttingGrassPose(person, sim, true)).toBeNull();
+    person.x = 7;
+    expect(cuttingGrassPose(person, sim, false)).toBeNull();
+    person.x = 4.5; person.workedTicks = 0;
+    expect(cuttingGrassPose(person, sim, false)).toBeNull();
+    person.workedTicks = 1; person.actionTimer = 0;
+    expect(cuttingGrassPose(person, sim, false)).toBeNull();
+    person.actionTimer = 10; setHeight(0.49);
+    expect(cuttingGrassPose(person, sim, false)).toBeNull();
+    person.action = 'idle'; setHeight(0.9);
+    expect(cuttingGrassPose(person, sim, false)).toBeNull();
+    person.action = 'cut_grass'; person.alive = false;
+    expect(cuttingGrassPose(person, sim, false)).toBeNull();
+  });
+
+  it('interpolates only the bounded simulation fraction', () => {
+    const { person, sim } = grassFixture();
+    person.workedTicks = 2;
+    expect(cuttingGrassPose(person, sim, false, 0.5)).toBe('q0');
+    expect(cuttingGrassPose(person, sim, false, 1)).toBe('q1');
+    expect(cuttingGrassPose(person, sim, false, 50)).toBe('q1');
   });
 });
 

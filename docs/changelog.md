@@ -1,3 +1,12 @@
+## 2026-10-12 — M15 fase 17: cortar hierba también se ve
+
+`cut_grass` usa cuatro poses generadas de barrido bajo, seleccionadas solo
+durante trabajo real en una casilla alcanzada con hierba disponible. La
+presentación no cambia altura, paja, progreso ni RNG. Incluye cobertura de arte,
+selector y orden real en navegador; captura en
+`artifacts/screenshots/m15-cutgrass-animation-2026-10-12/`. Versión
+`0.15.122-alpha`.
+
 ## 2026-10-12 — M15 fase 16: observación de hogares y controles A/B
 
 `sim:seeds` informa por semilla hogares vivos con casa interior completa,

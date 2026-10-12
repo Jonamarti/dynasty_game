@@ -2,9 +2,10 @@
 import type { Simulation } from '../sim/core/Simulation.ts';
 import type { Person } from '../sim/entities/Person.ts';
 import { ARRIVAL_RADIUS } from '../sim/systems/MovementSystem.ts';
-import { BUILD_POSES, CHOP_POSES, DIG_POSES, EXTRACT_POSES, FARM_POSES, FISH_POSES, GATHER_POSES, MAKE_POSES, MEND_POSES, type ArtPose } from './ArtManifest.ts';
+import { BUILD_POSES, CHOP_POSES, CUT_GRASS_POSES, DIG_POSES, EXTRACT_POSES, FARM_POSES, FISH_POSES, GATHER_POSES, MAKE_POSES, MEND_POSES, type ArtPose } from './ArtManifest.ts';
 import { RECIPES } from '../sim/entities/Recipe.ts';
 import { isStationFor } from '../sim/entities/Building.ts';
+import { CUT_FLOOR } from '../sim/core/Grass.ts';
 
 /** Shared clock contract: two work ticks per frame, with a bounded accumulator. */
 function workFrame(poses: readonly ArtPose[], workedTicks: number, alpha: number): ArtPose {
@@ -151,4 +152,19 @@ export function mendingPose(person: Person, moving: boolean, alpha = 1): ArtPose
   if (moving || !person.alive || person.action !== 'mend_garment' || person.actionTimer <= 0 ||
       person.actionTotal <= 0 || person.workedTicks <= 0) return null;
   return workFrame(MEND_POSES, person.workedTicks, alpha);
+}
+
+/** Low sweeping motion only while cutting reachable grass into thatch. */
+export function cuttingGrassPose(
+  person: Person, sim: Pick<Simulation, 'world'>,
+  moving: boolean, alpha = 1,
+): ArtPose | null {
+  if (moving || !person.alive || person.action !== 'cut_grass' || person.actionTimer <= 0 || person.workedTicks <= 0 ||
+      person.targetX === null || person.targetY === null) return null;
+  const tx = Math.floor(person.targetX), ty = Math.floor(person.targetY);
+  const dx = person.x - (tx + 0.5), dy = person.y - (ty + 0.5);
+  // Keep the gesture tied to the actual tile the action is cutting. A high
+  // target threshold would show a swing after a herd has already cropped it.
+  if (Math.hypot(dx, dy) >= ARRIVAL_RADIUS || sim.world.grassAt(tx, ty) < CUT_FLOOR + 0.05) return null;
+  return workFrame(CUT_GRASS_POSES, person.workedTicks, alpha);
 }
