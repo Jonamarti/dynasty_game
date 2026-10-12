@@ -10,6 +10,7 @@ export interface HistoryReport {
   days: number; populationYears: number; dailyPopulation: Record<number, number[]>; drawdowns: number[]; recoveries: DropEpisode[];
   bandLost: Record<string, number>; worldLost: boolean; selfDestroyed: number; inBandKills: number;
   violentAdultDeaths: number; adultDeaths: number; blowRepeat: number; blowRepeatUnanswered: number; warPairs: WarPair[];
+  blowRepeatActions: Record<string, number>; blowRepeatUnansweredActions: Record<string, number>;
   fireBy: number | null; adoptionDays: number[]; adoptionNotReached: number; malnutrition: number;
   proteinNutrition: number; totalNutrition: number;
 }
@@ -145,6 +146,12 @@ export class HistoryWatch {
     const totalNutrition = telemetrySnapshot.diet_nutrition_total ?? 0;
     const proteinNutrition = telemetrySnapshot.diet_nutrition_protein ?? 0;
     const repeat = telemetrySnapshot.blow_repeat ?? 0;
+    const repeatActions = Object.fromEntries(Object.entries(telemetrySnapshot)
+      .filter(([key]) => key.startsWith('blow_repeat_action_'))
+      .map(([key, value]) => [key.slice('blow_repeat_action_'.length), value]));
+    const unansweredActions = Object.fromEntries(Object.entries(telemetrySnapshot)
+      .filter(([key]) => key.startsWith('blow_repeat_unanswered_action_'))
+      .map(([key, value]) => [key.slice('blow_repeat_unanswered_action_'.length), value]));
     const ownKills = [...this.killCounts.values()].reduce((a, b) => a + b, 0);
     const selfDestroyed = [...this.killCounts.entries()].filter(([id, kills]) => kills >= (this.peaks.get(id) ?? 0) * .5).length;
     return {
@@ -153,6 +160,7 @@ export class HistoryWatch {
       bandLost: this.bandLost, worldLost: sim.livingPeople().length === 0, selfDestroyed,
       inBandKills: ownKills, violentAdultDeaths: this.violentAdultDeaths, adultDeaths: this.adultDeaths,
       blowRepeat: repeat, blowRepeatUnanswered: telemetrySnapshot.blow_repeat_unanswered ?? 0,
+      blowRepeatActions: repeatActions, blowRepeatUnansweredActions: unansweredActions,
       warPairs: [...this.warDays.values()], fireBy: this.fireBy, adoptionDays: this.adoptionDays,
       adoptionNotReached: this.adoptionNotReached,
       malnutrition: this.malnutritionSamples ? this.malnutritionSum / this.malnutritionSamples : 0,
@@ -191,6 +199,13 @@ export function formatHistory(rows: HistoryReport[]): string {
   const fire = rows.map(r => r.fireBy).filter((x): x is number => x !== null);
   const adoption = rows.flatMap(r => r.adoptionDays);
   const nutrition = sum(r => r.totalNutrition);
+  const actionCounts = (field: 'blowRepeatActions' | 'blowRepeatUnansweredActions') => {
+    const counts = new Map<string, number>();
+    for (const row of rows) for (const [action, count] of Object.entries(row[field])) {
+      counts.set(action, (counts.get(action) ?? 0) + count);
+    }
+    return [...counts].sort(([a], [b]) => a.localeCompare(b)).map(([action, count]) => action + ':' + count).join(',') || 'none';
+  };
   return '  HISTORY drawdown p50/p90/max ' + [0.5, 0.9, 1].map(q => {
     const s = [...allDrawdowns].sort((a, b) => a - b);
     return s.length ? s[Math.min(s.length - 1, Math.floor((s.length - 1) * q))]!.toFixed(3) : 'n/a';
@@ -201,6 +216,8 @@ export function formatHistory(rows: HistoryReport[]): string {
     ' · in-band kills/1,000 person-years ' + ratio(sum(r => r.inBandKills) * 1000, sum(r => r.populationYears)) +
     ' · violent adult deaths ' + ratio(sum(r => r.violentAdultDeaths), sum(r => r.adultDeaths)) +
     ' · answered ' + ratio(sum(r => r.blowRepeat - r.blowRepeatUnanswered), sum(r => r.blowRepeat)) +
+    ' (' + sum(r => r.blowRepeatUnanswered) + '/' + sum(r => r.blowRepeat) + ' unanswered; actions ' +
+    actionCounts('blowRepeatActions') + '; unanswered ' + actionCounts('blowRepeatUnansweredActions') + ')' +
     ' · war episodes/year ' + ratio(episodes.length * 365, totalDays) + ' median days ' + String(median(durations) ?? 'n/a') +
     ' peace share ' + ratio(peaceDays, warSpan) + ' · firemaking first known day ' + (fire.length ? Math.min(...fire) : 'never') +
     ' · adoption median days ' + String(median(adoption) ?? 'n/a') + ' not reached ' + sum(r => r.adoptionNotReached) +

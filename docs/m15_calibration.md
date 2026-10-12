@@ -160,6 +160,14 @@ violencia (13 huidas, 1 agresor desaparecido) miden todos los golpes, mientras
 Una muestra de un solo evento no explica el 79,5% de century; la causa sigue
 abierta y no se ajusta el umbral ni los coeficientes.
 
+La instrumentación de fase 41 ahora desglosa cada segundo golpe por la acción
+que ejecutaba la víctima y, dentro de ellos, los que el proxy clasifica como
+sin respuesta. `sim:seeds` agrega esos contadores al renglón `HISTORY answered`
+sin cambiar la definición, los draws ni las decisiones de IA. Si no hay
+segundos golpes, el cociente continúa como `n/a` y las listas se muestran como
+`none`; el detalle es evidencia diagnóstica, no una atribución causal. Hay que
+recogerlo en la siguiente cohorte antes de valorar un ajuste.
+
 No hay un barrido de parámetros ni una decisión de calibración. La muestra
 única de los escenarios cortos solo confirma sus checks de mecanismo; las
 cohortes y la ablación de fase 41 se registran abajo, sin afirmar causalidad

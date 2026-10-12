@@ -5182,8 +5182,11 @@ probe temporal de `generations` (144.000 pasos) observó solo una repetición
 ejecutaba `give`. El script `violence --cases` registró 13 huidas y un agresor
 desaparecido, pero son todos los ataques, no el denominador reducido de este
 proxy. Una muestra no diagnostica el porcentaje del cohorte; no se cambió el
-umbral ni la IA. Hace falta telemetría por seed del numerador/denominador antes
-de ajustar respuesta. Ver `m15_calibration.md`.
+umbral ni la IA. La instrumentación ahora informa, en la siguiente salida de
+`sim:seeds`, qué acción ejecutaba la víctima en cada segundo golpe y qué
+acciones forman el numerador sin respuesta. Aún falta medir un cohorte con ese
+detalle; la instrumentación por sí sola no identifica la causa. Ver
+`m15_calibration.md`.
 
 ### 2026-10-12 — M15 fase 41: estacionalidad de bayas agrava `lean`
 

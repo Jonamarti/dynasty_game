@@ -7098,9 +7098,16 @@ export class ActionSystem {
       ctx.tick - other.lastHarmedTick <= UNDER_ATTACK_TICKS &&
       !isHeld(other, ctx.tick) && other.captiveOf === null) {
       telemetry.count('blow_repeat');
+      // Keep the `answered` calibration actionable: the aggregate ratio alone
+      // cannot tell whether a low result is mostly lessons, work, or another
+      // committed action occupying the victim at the second blow.
+      telemetry.count('blow_repeat_action_' + other.action);
       const answering = other.action === 'flee' ||
         (other.action === 'attack' && other.targetPersonId === person.id);
-      if (!answering) telemetry.count('blow_repeat_unanswered');
+      if (!answering) {
+        telemetry.count('blow_repeat_unanswered');
+        telemetry.count('blow_repeat_unanswered_action_' + other.action);
+      }
     }
     other.lastHarmedBy = person.id;
     other.lastHarmedTick = ctx.tick;

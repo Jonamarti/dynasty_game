@@ -15691,6 +15691,15 @@ completadas, y se aclaró que `lean`/`generations` no siguen en curso. Se
 mantienen pendientes el diagnóstico de recuperación y `answered`; no se
 calibraron parámetros.
 
+## 2026-10-12 — m15: desglosar el proxy `answered` por acción
+
+La telemetría de segundos golpes ahora clasifica los eventos por la acción de
+la víctima, y el resumen de `sim:seeds` muestra el total y el subconjunto sin
+respuesta. Esto permite ver qué acciones componen la medida sin cambiar su
+definición ni la IA; con denominador cero conserva `n/a`. La prueba focal de
+historial pasa; falta una cohorte que recoja el nuevo desglose;
+no se ajustó balance ni se afirma una causa.
+
 ## 2026-10-12 — M15 fase 17: descanso animal real
 
 Los herbívoros tranquilos y alimentados duermen en noches templadas; el hambre,
