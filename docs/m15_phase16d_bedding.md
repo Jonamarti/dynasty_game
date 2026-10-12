@@ -195,6 +195,19 @@ craft and place targets. The fixture isolates the scored chain; it does not
 measure natural adoption, comfort balance or population effects. Autonomous
 sources and other planned comfort furniture remain open. Lamp upkeep is below.
 
+### Hosted light and fire stay inside the room — 2026-10-12
+
+The shared `lightAt` and `hearthNear` readers resolve the host of a placed
+fireplace or fueled lamp and apply its radius only to tiles inside that
+finished, unruined home's room. Outdoor hearths and furniture hosted by a
+ruined home remain unoccluded. This closes the recorded leak where indoor
+light, warmth and smoking fuel crossed a house wall; it does not model light
+or smoke escaping through the doorway.
+
+The focused fireplace regression checks that a room tile still sees light and
+fire while a nearby tile beyond a wall sees neither. No new fields, UI, art,
+RNG streams or balance coefficients were added.
+
 ## 2026-10-12: phase 16e, one midnight sleep and safety sample
 
 Sleep recovery and the mood writer use the same surface-quality ladder: open

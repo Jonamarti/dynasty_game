@@ -201,6 +201,9 @@ describe('bedding and beds', () => {
     expect(lamp).toMatchObject({ hostId: house.id, complete: true, fuelRemaining: FAT_LAMP_FUEL_TICKS, playerPlaced: true });
     expect(fatLampLight(lamp)).toMatchObject({ radius: 3, strength: 0.9 });
     expect(lightAt(lamp.centerX, lamp.centerY, 0, sim.buildingHash)).toBeCloseTo(0.9);
+    const beyondWall = { x: house.x - 0.5, y: house.centerY };
+    expect(Math.hypot(beyondWall.x - lamp.centerX, beyondWall.y - lamp.centerY)).toBeLessThan(3);
+    expect(lightAt(beyondWall.x, beyondWall.y, 0, sim.buildingHash)).toBe(0);
 
     const loaded = Simulation.fromCheckpointRecord(JSON.parse(JSON.stringify(toCheckpointRecord(sim))));
     const loadedLamp = loaded.buildingsById.get(lamp.id)!;
@@ -804,8 +807,14 @@ describe('household fireplaces', () => {
     expect(hearthLight(fireplace)).toMatchObject({ radius: 4, strength: 1 });
     expect(lightAt(fireplace.centerX, fireplace.centerY, 0, sim.buildingHash)).toBe(1);
     expect(lightAt(fireplace.centerX + 6, fireplace.centerY, 0, sim.buildingHash)).toBe(0);
-    expect(sim.hearthNear(fireplace.centerX + 2, fireplace.centerY, 3)).toBe(true);
+    const roomTile = houseInteriorTiles(house).find(tile =>
+      Math.hypot(tile.x - fireplace.centerX, tile.y - fireplace.centerY) <= 3)!;
+    expect(sim.hearthNear(roomTile.x, roomTile.y, 3)).toBe(true);
     expect(sim.hearthNear(fireplace.centerX + 5, fireplace.centerY, 3)).toBe(false);
+    const outsideWall = { x: house.x - 0.5, y: house.centerY };
+    expect(Math.hypot(outsideWall.x - fireplace.centerX, outsideWall.y - fireplace.centerY)).toBeLessThan(4);
+    expect(lightAt(outsideWall.x, outsideWall.y, 0, sim.buildingHash)).toBe(0);
+    expect(sim.hearthNear(outsideWall.x, outsideWall.y, 4)).toBe(false);
 
     // The fireplace deliberately has no carried-fuel lifecycle: its build
     // materials establish a fixed hearth like the existing camp hearth.

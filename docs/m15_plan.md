@@ -15,6 +15,12 @@ retirarla al completar las dos unidades. No genera grasa ni crea una caza de
 mantenimiento; no se implementa acopio/craft dedicado. [Contrato](m15_phase16d_bedding.md).
 Sin RNG ni cohortes/calibración.
 
+**Avance del 2026-10-12 — 16d, oclusión del hogar interior:** las fuentes de
+luz y fuego hospedadas en una casa terminada solo alcanzan las casillas de su
+habitación. Los radios exteriores y los de muebles cuya casa está arruinada
+siguen abiertos. Prueba focal para luz/calor dentro y fuera; sin interfaz, RNG
+ni calibración. Se resuelve el hallazgo de `docs/bugs.md`.
+
 **Avance del 2026-10-12 — 16d, autonomía del hogar interior:** ante una deuda
 de frío, un adulto con el diseño elige la receta permanente del fireplace antes
 que muebles de confort, busca barro/sílex de nodos cercanos para completar el

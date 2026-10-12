@@ -15449,3 +15449,11 @@ el rack arruinado se rechaza al ordenar sin consumir carne. Se alinearon además
 los dobles de estación/ropa con los campos de dominio actuales. Sin cambio de
 comportamiento ni de versión.
 
+## 2026-10-12 — m15: los muros contienen la luz y el calor del hogar (0.15.106-alpha)
+
+Los lectores de luz y fuego limitan las fuentes hospedadas a la habitación de
+su casa terminada. El fireplace y la lámpara siguen iluminando y calentando el
+interior; sus radios ya no cruzan el perímetro. Las fuentes exteriores y las de
+una casa arruinada conservan su radio abierto. Una prueba focal cubre el caso
+interior y exterior. No hay cambio de interfaz, arte, RNG ni calibración.
+

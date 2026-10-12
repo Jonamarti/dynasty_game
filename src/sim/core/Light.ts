@@ -3,6 +3,7 @@ import type { Person } from '../entities/Person.ts';
 import type { SpatialHash } from './SpatialHash.ts';
 import { torchInHand } from './Torch.ts';
 import { FAT_LAMP_RADIUS, FAT_LAMP_STRENGTH } from './FatLamp.ts';
+import { houseInteriorContains } from '../world/HouseInterior.ts';
 
 /** A measured source, independent of presentation and of any observer's knowledge. */
 export interface LightSource { readonly x: number; readonly y: number; readonly radius: number; readonly strength: number }
@@ -30,10 +31,26 @@ export function fatLampLight(building: Building): LightSource | null {
     : null;
 }
 
+/** Hosted fires and lamps illuminate only their finished room; their radius does not pass through a wall. */
+function hostedRoomContains(
+  buildings: SpatialHash<Building>, source: Building, x: number, y: number,
+): boolean {
+  if (source.hostId === null) return true;
+  // A house is at most eight tiles wide today. Search beyond one hash cell so
+  // furniture near its center can resolve the host dwelling by ID.
+  const host = buildings.queryRadius(source.centerX, source.centerY, buildings.cellSize + 8)
+    .find(candidate => candidate.id === source.hostId);
+  // Ruined homes have no standing walls, so their furniture's radius behaves
+  // like an outdoor source again.
+  if (!host || !host.complete || host.ruined || !host.def.interior) return true;
+  return houseInteriorContains(host, x, y);
+}
+
 /** Physical fire for ignition and smoking; daylight and torches cannot replace it. */
 export function hearthNear(buildings: SpatialHash<Building>, x: number, y: number, radius: number): boolean {
   return buildings.queryRadius(x, y, radius + 1).some(building =>
-    hearthLight(building) !== null && Math.hypot(building.centerX - x, building.centerY - y) <= radius);
+    hearthLight(building) !== null && Math.hypot(building.centerX - x, building.centerY - y) <= radius &&
+    hostedRoomContains(buildings, building, x, y));
 }
 
 /** A lit torch is carried by its person, so its position follows the spatial hash. */
@@ -60,7 +77,9 @@ export function lightAt(
   // Hearths are one tile; the extra tile covers an index anchored on its origin.
   for (const building of buildings.queryRadius(x, y, Math.max(HEARTH_LIGHT_RADIUS, FAT_LAMP_RADIUS) + 1)) {
     const source = hearthLight(building) ?? fatLampLight(building);
-    if (source) light = Math.max(light, sourceLightAt(source, x, y));
+    if (source && hostedRoomContains(buildings, building, x, y)) {
+      light = Math.max(light, sourceLightAt(source, x, y));
+    }
   }
   if (people) for (const person of people.queryRadius(x, y, TORCH_LIGHT_RADIUS + 1)) {
     const source = torchLight(person);

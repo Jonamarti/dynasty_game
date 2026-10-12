@@ -5048,16 +5048,18 @@ checkpoint pertenece al ticket; se resolverán al reanudar allí la simulación.
 Además, el coordinador exige un `step()` por tick hasta la llegada: saltar varios
 ticks a través de la llegada puede dejar el origen con el reloj por delante y
 sigue siendo una limitación registrada para M16.
-### 2026-10-12 — radio del hogar interior sin oclusión por paredes
+### Resuelto 2026-10-12 — radio del hogar interior sin oclusión por paredes
 
 El nuevo `fireplace` usa el lector compartido `hearthNear`/`lightAt`, cuya
 distancia es radial y no consulta el límite de `houseInteriorContains`. En una
 casa pequeña, la luz y el calor pueden alcanzar el exterior a través de una
 pared; también es posible ahumar si el secadero está a tres casillas, incluso
 si queda al otro lado de un muro. El fuego funciona correctamente dentro de la
-habitación y el plan no prescribe propagación de humo a través de paredes. Se
-deja registrado para una futura lectura de luz/temperatura con oclusión; no se
-afirma que la casa bloquee esos radios.
+habitación; como el plan no prescribe propagación de humo a través de paredes,
+se limita la fuente hospedada a la habitación de su casa
+terminada. Las pruebas focales confirman luz/fuego dentro y ausencia al otro
+lado del muro. No se modela propagación por la puerta; la oclusión de una casa
+arruinada también cesa porque sus paredes ya no están.
 
 ## 2026-10-12 — M15 fase 16e, amplitudes de ánimo aún sin calibrar
 
