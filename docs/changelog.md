@@ -1,3 +1,11 @@
+## 2026-10-12 — docs: acotar el cuello de botella del fixture `salters`
+
+Un probe temporal ubicó la tanda real en otoño (tick 140) y su agotamiento
+antes del invierno (tick 480). Retener unidades o inyectar una conserva en
+invierno produce comidas atribuibles solo con hambre/stock forzados; al quitar
+las recetas desaparece la atribución. Se documenta como control del camino de
+consumo, no como resultado de economía autónoma. No se cambian reglas del juego.
+
 ## 2026-10-12 — docs: registrar rechecks de `homes` y `tailors`
 
 `homes` volvió a pasar 7/7 checks y `tailors` 3/3 en 2.400 pasos cada uno.

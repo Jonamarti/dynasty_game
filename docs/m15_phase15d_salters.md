@@ -53,6 +53,19 @@ m15-salters-winter.log and m15-salters-final.log.
 spoiled nutrition was 716 (knowing) versus 1151 (other). These are trajectory
 diagnostics, not a preservation comparison or economy claim.
 
+An ephemeral fixture probe located a specific bottleneck without changing the
+scenario: the real first batch enters inventory at tick 140 (autumn) and is
+gone before winter begins at tick 480 (day 6). With an adult in the knowing
+band artificially set to hunger 80 on winter arrival and the two produced
+units retained until then, the fixture records 9 winter meals, 1 preserved.
+Adding one `dried_meat` directly to that adult's inventory at winter arrival
+records 8 meals, 1 preserved. The same injected-stock setup with all seven
+preservation recipes removed records 12 meals, 0 preserved. This is a useful
+recipe-sensitive positive/negative control for the observer and consumption
+path, but it injects both timing and need: it does not show that autonomous
+NPCs save the batch, or establish an economic benefit. No production, AI,
+activation or balance rules were changed.
+
 15d is partially delivered: scenario, meal monitor, focused recipe negative
 control and attributed losses exist. The autonomous winter food outcome
 remains open.15c default activation remains deferred until economy evidence

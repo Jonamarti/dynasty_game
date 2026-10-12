@@ -5203,3 +5203,17 @@ supervivientes finales frente a 33, pero la mejora se concentró en pocas
 semillas (rho 9 frente a 1) y hubo pérdidas en alpha, theta y sigma. No muestra
 un rescate agregado; la penalización metabólica de lactancia por sí sola no
 explica la crisis. Cifras: `m15_calibration.md`.
+
+### 2026-10-12 — M15 fase 15d: tanda de conserva agotada antes del invierno
+
+El `salters` autónomo sigue en 0/3 comidas invernales conservadas. Un probe
+temporal constató que la primera tanda real aparece en inventario en tick 140
+(otoño) y se consume antes del inicio del invierno en tick 480. Retener esas
+dos unidades hasta el invierno o inyectar `dried_meat` en el inventario de un
+adulto con hambre 80 sí permite comidas conservadas; retirar las siete recetas
+en memoria elimina la atribución del mismo montaje. Esto confirma el camino de
+consumo y el control negativo bajo condiciones preparadas, no que la IA
+reserve producción ni que haya un beneficio económico autónomo. No se cambió
+producción, scorer ni balance; decidir si 15d acepta otro gate o necesita un
+mecanismo de reserva requiere diseñar una verificación que no oculte la
+carencia observada.
