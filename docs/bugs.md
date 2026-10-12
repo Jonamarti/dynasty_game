@@ -612,6 +612,12 @@ arranque vengan ya cavados, o `git revert` del commit del silo.
   puerta también abre montones y terraplenes; los lectores físicos de altura,
   pendiente y visión se cubren en sus controles focales. Canales/bancales usan
   sus puertas propias y los agujeros simples siguen abiertos a todos.
+- **La muralla del Estado no es una defensa autónoma ni da seguridad directa.**
+  `city_walls` abre un anillo profundo con una casilla transitable y bloquea
+  paso físico en las otras una vez cavadas; no hay scorer que proponga
+  construirlo ni bono propio en `mood.security`. No se midió reducción de daño
+  de incursiones. La empalizada, la autonomía y el lector de perímetro siguen
+  en la propuesta de fase 16, no en este primer uso de earthworks.
 - **La ruta por una zanja se verifica como topología, no como táctica.** El test
   `earthwork-routing.test.ts` confirma que Pathfinder usa una abertura y que
   `pitDepth` cierra la ruta al cerrar la última abertura. Sigue sin medirse si

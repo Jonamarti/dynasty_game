@@ -138,8 +138,10 @@ export const TECHS = [
   // and shipped with its three readers: `Fear.sightIntruders` (strangers),
   // `WildlifeSystem.victimFor` (predators) and `companionBonus` (the hunt).
   'dog',
-  // M15 phase 38b: the State, one node per commit with its reader — see
-  // `social/Polity.ts`. `redistribution` is the temple store.
+  // M15 phase 38: the State, one node per commit with its reader — see
+  // `social/Polity.ts`. Fortification comes first and builds on earthworks.
+  'city_walls',
+  // `redistribution` is the temple store.
   'redistribution',
   // The written ledger: contributions to the temple and debts before the chief.
   'accounting',
@@ -2177,12 +2179,29 @@ export const TECH: Record<Tech, TechDef> = {
       'heel of the one who feeds it.',
   },
 
-  // --- M15 phase 38b: the State, in historical order --------------------------
+  // --- M15 phase 38: the State, in historical order ---------------------------
   //
   // `m14_plan.md` phase 20b's table, one node per commit, each shipped with
   // its reader. All of them hang off the chief's own head — see
   // `social/Polity.ts` — so a State is a chief who knows how to run one, and
   // it lapses the day that chief is replaced by somebody who does not.
+  city_walls: {
+    id: 'city_walls', label: 'City walls', domain: 'people',
+    age: 'neolithic', firstKnown: 'about 6,000 BC',
+    kind: 'device', requires: ['chiefdom', 'masonry', 'earthworks'], difficulty: 0.55, skill: 'build',
+    prototype: { flint: 10, mud: 6 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'earthworks' }, { kind: 'saw', what: 'assault' }],
+        weight: 1.0, story: 'watched a raid reach the camp and thought of raising a wall around it' },
+      { needs: [{ kind: 'knows', tech: 'earthworks' }, { kind: 'doing', action: 'dig' },
+                { kind: 'knows', tech: 'chiefdom' }],
+        weight: 0.7, story: 'dug a boundary for the whole band and left one gate to pass through' },
+      { needs: [{ kind: 'knows', tech: 'masonry' }, { kind: 'knows', tech: 'earthworks' },
+                { kind: 'doing', action: 'build' }],
+        weight: 0.5, story: 'joined stonework to a deep earthwork and made a defended boundary' },
+    ],
+    description: 'Earthworks made into a defended perimeter, with a gate left open.',
+  },
   redistribution: {
     id: 'redistribution', label: 'Redistribution', domain: 'people',
     age: 'neolithic', firstKnown: 'about 5500 BC',
@@ -2988,7 +3007,7 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   },
   earthworks: {
     summary: 'A cut slows the crossing; a water moat is deep enough to stop walking through.',
-    site: 'BUILDINGS.ditch, BUILDINGS.moat, BUILDINGS.mound and BUILDINGS.embankment require earthworks; World.stepFactor reads raised and excavated height, World.sightBonusAt reads prominence, World.pitDepth and water fills read moat depth',
+    site: 'BUILDINGS.ditch, BUILDINGS.moat, BUILDINGS.mound and BUILDINGS.embankment require earthworks; city_walls also requires earthworks and opens BUILDINGS.city_wall; World.stepFactor reads raised and excavated height, World.sightBonusAt reads prominence, World.pitDepth and water fills read moat depth',
   },
   terracing: {
     summary: 'Level a hillside field with a cut and fill that carries topsoil downhill.',
@@ -3143,6 +3162,10 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   dog: {
     summary: 'A tamed wolf that hears strangers and predators before you do, and hunts at your heel.',
     site: 'Fear.sightIntruders via Simulation.dogSight; WildlifeSystem.victimFor; WildlifeSystem.companionBonus',
+  },
+  city_walls: {
+    summary: 'Earthworks made into a defended perimeter, with a gate left open.',
+    site: 'BUILDINGS.city_wall uses EarthworkSpec.ring and gate; finished deep cuts block through the existing World.pitDepth rule',
   },
   redistribution: {
     summary: 'The chief\'s granary becomes the temple: the loyal store their surplus there, and the chief feasts the band from it.',

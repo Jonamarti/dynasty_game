@@ -1,3 +1,15 @@
+## 2026-10-12 — m15: city_walls convierte earthworks en perímetro de Estado (0.15.92-alpha)
+
+Portada de forma acotada desde `fcb642d` al checkout wave3: `city_walls`
+requiere `chiefdom`, `masonry` y `earthworks`, y desbloquea una zanja seca
+profunda de 7×7 que reutiliza las obras de tierra existentes y deja una puerta.
+`EarthworkSpec.gate` omite la casilla de paso y ajusta el total del trabajo; la
+profundidad usa el bloqueo ya existente. Pruebas comprueban el requisito,
+desbloqueo y conectividad, con control negativo que muestra que el anillo sin
+puerta aísla el interior. Sin cohortes ni calibración. `typecheck`, Vitest y
+captura de menú no se pudieron ejecutar en este worktree: faltan dependencias
+locales; la captura queda pendiente de integración visual.
+
 ## 2026-10-12 — m15: nombres reproducibles para residentes regionales (0.15.91-alpha)
 
 Al materializar población distante, se asignan nombres desde fonologías

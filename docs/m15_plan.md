@@ -3965,14 +3965,13 @@ metal.
 # Bloque IX — Civilización y hierro (M14 bloque VIII; M8.4)
 
 **Alcance acordado con el propietario (2026-10-03).** El bloque se empezó con
-los bloques VII y VIII a medias: no hay muros (16b), ni conservación (15), ni
-banco (16d), ni pueblos de nivel 2 (32), ni caravanas (36), ni Bronce (37). El
+los bloques VII y VIII a medias. En el checkout wave3, los interiores y muros
+de vivienda de 16b, la conservación (15), los bancos (16d), los pueblos de
+nivel 2 (32), las caravanas (36) y el Bronce (37) ya están integrados. El
 propietario eligió hacer **las fases 38 y 39 dentro de la comarca**, entre
-bandas, con el nivel 2 como enganche para después. Quedan fuera hasta que
-existan sus requisitos: `city_walls` (necesita los muros de 16b), toda la
-fase 40 (el hierro necesita `charcoal`, `mining`, `smelting` y `bellows` de la
-37) y la fase 41 (el cierre de M15). Se hace en la rama `m15/block9`, en un
-worktree propio, porque otro agente trabaja a la vez en `master`.
+bandas, con el nivel 2 como enganche para después. Quedan fuera toda la fase 40
+(el hierro necesita `charcoal`, `mining`, `smelting` y `bellows` de la 37) y la
+fase 41 (el cierre de M15).
 
 ## Fase 38 — De la jefatura al Estado (M14 fase 20)
 
@@ -3990,9 +3989,10 @@ derivado, que el juego nunca obliga a alcanzar.
   civilización **ya hay otras**, más adelantadas o más atrasadas, con las que
   comerciar, pactar o luchar. El globo (fase 31) las pinta cuando tu personaje
   sabe de ellas.
-- **`city_walls` ya tiene toda su maquinaria**: los muros de la fase 16 (el
-  perímetro que deja de ser caminable, con su puerta), la reparación de regiones
-  (16a) y los terraplenes (26). Una muralla es una línea de muro con puertas.
+- **`city_walls` construye sobre obras de tierra**: la puerta es parte del
+  anillo de `city_wall`, una obra profunda desbloqueada después de
+  `earthworks`; la regla existente de profundidad impide el paso y deja abierta
+  una casilla de acceso. Los muros de vivienda de 16b son otra mecánica.
 - El banquete usa la comida conservada (15) y el pan y la cerveza, y reúne a la
   banda **sentada** alrededor del hogar (el banco de 16d).
 - El impuesto lo recoge el estante y el granero del templo: el almacén del
@@ -4078,8 +4078,8 @@ rey no lo transmite. Sólo el desafío de `considerRebellion` lo depone (la
 conspiración contra el rey es la 39c). La autoridad sobre bandas tributarias
 llega con la 39d. Check `kings-reign-for-life`: en `polity`, 140 días-banda
 gobernados más allá del mandato normal; ninguna corona heredada (ningún rey
-murió en la partida; la herencia se prueba en los tests). Con esto quedan los
-seis nodos del Estado salvo `city_walls`.
+murió en la partida; la herencia se prueba en los tests). Con `city_walls` se
+completa también el primer nodo de los siete del Estado.
 
 **Avance del 2026-10-03 (38c, la civilización).** Campo derivado y nunca
 guardado (`Polity.civilisationLacks`, `Simulation.isCivilisation`): una
@@ -4088,8 +4088,21 @@ banda es una civilización el día que sus adultos vivos saben entre todos
 `kingship` y su jefe reina como rey, y deja de serlo cuando falta algo. La
 interfaz la nombra en la línea de estado y, en la sección de gobierno del
 jugador, dice qué le falta. «O varias bajo un rey» espera a los tributarios
-de la 39d. Check `civilisation-is-derived`. **La fase 38 queda hecha salvo
-`city_walls`**, que espera a los muros de la 16b.
+de la 39d. Check `civilisation-is-derived`.
+
+**Avance del 2026-10-12 (`city_walls`, fase 38).** El checkout wave3 ya incluye
+los muros interiores reales de 16b; no son la implementación de murallas del
+Estado. El nuevo dispositivo `city_walls` requiere `chiefdom`, `masonry` y
+`earthworks`, y habilita `BUILDINGS.city_wall`, que usa la excavación profunda
+de las obras existentes: un anillo seco de 7×7 con una puerta abierta. El
+`gate` de `EarthworkSpec` omite esa casilla al generar tiles y ajusta el total
+de obra; los cortes terminados bloquean por la regla existente de `pitDepth`.
+El test focal comprueba los requisitos, que el diseño se desbloquea y la
+conectividad del mundo; su control negativo cava el anillo sin puerta y aísla
+el interior. No se añade IA de construcción ni una métrica de seguridad: esa
+propuesta sigue en `m15_phase16_defense.md`. Sin calibración ni cohortes. La
+captura del menú queda pendiente por falta de navegador/dependencias en el
+worktree.
 
 ## Fase 39 — Lo que un Estado puede hacer (M14 fase 21)
 
@@ -4165,7 +4178,7 @@ peor se niega a la cara, sin tirada. Fuga: la de siempre. Rebelión: tres o
 más siervos de una banda que confían entre sí se alzan juntos y se liberan.
 La ficha dice «siervo de los X». Check `serfs-are-owned`, n/a en `polity`
 (no hay cautivos: la guerra no llega a las manos). **Con esto quedan hechas
-las fases 38 (salvo `city_walls`) y 39 dentro de la comarca.**
+las fases 38 y 39 dentro de la comarca.**
 
 **Avance del 2026-10-03 (escenario `conquest`).** Un Estado con rey (lo que
 saben los fundadores de `polity`) y un pueblo menor sin ley, acampados a un

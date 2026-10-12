@@ -846,6 +846,12 @@ const EARTHWORK_DEFS: BuildingDef[] = [
     { layout: 'cutfill', kind: 'dig', depth: 2, slope: 2 },
     'The slope cut level: the high edge dug away and the low edge built up with it.',
     'terracing')),
+  // The State turns earthworks into a defended perimeter: the same deep
+  // ground ring as a moat, but dry, with one gate left open.
+  earthworkDef('city_wall', 'City wall', '\u{1F3F0}', 7, 7,
+    { layout: 'ring', kind: 'dig', depth: 16, gate: true },
+    'Earthworks made into a defended perimeter, with a gate left open.',
+    'city_walls'),
 ];
 for (const def of EARTHWORK_DEFS) BUILDINGS[def.id] = def;
 

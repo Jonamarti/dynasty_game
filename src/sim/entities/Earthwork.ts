@@ -80,6 +80,8 @@ export interface EarthworkSpec {
   water?: 'end' | 'ring';
   /** The ground has to fall away from one side to the other, by at least this many items of earth. */
   slope?: number;
+  /** Ring layout only: leave the top edge's middle tile open as a permanent gate. */
+  gate?: boolean;
 }
 
 /**
@@ -90,7 +92,7 @@ export interface EarthworkSpec {
 export function designTotal(spec: EarthworkSpec, width: number, height: number): number {
   switch (spec.layout) {
     case 'fill': return width * height * spec.depth;
-    case 'ring': return (width * 2 + height * 2 - 4) * spec.depth;
+    case 'ring': return (width * 2 + height * 2 - 4 - (spec.gate ? 1 : 0)) * spec.depth;
     case 'cone': {
       let total = 0;
       const cx = (width - 1) / 2;
@@ -146,7 +148,8 @@ export function earthworkTiles(
       break;
     }
     case 'ring': {
-      for (let dx = 0; dx < width; dx++) push(dx, 0, spec.kind, spec.depth);
+      const gateAt = spec.gate ? Math.floor(width / 2) : -1;
+      for (let dx = 0; dx < width; dx++) if (dx !== gateAt) push(dx, 0, spec.kind, spec.depth);
       for (let dy = 1; dy < height; dy++) push(width - 1, dy, spec.kind, spec.depth);
       for (let dx = width - 2; dx >= 0; dx--) push(dx, height - 1, spec.kind, spec.depth);
       for (let dy = height - 2; dy >= 1; dy--) push(0, dy, spec.kind, spec.depth);

@@ -5,7 +5,7 @@ export const ES_TECH: Record<string, string> = {
   'cut a line through the ground and found the earth itself could be shaped into a boundary': 'abrió una línea en el terreno y vio que la propia tierra podía formar un límite',
   'heaped earth into a bank and saw it change where people could walk': 'amontonó tierra en un terraplén y vio cómo cambiaba por dónde podía pasar la gente',
   'A cut slows the crossing; a water moat is deep enough to stop walking through.': 'Un corte ralentiza el cruce; un foso con agua tiene profundidad para impedir el paso a pie.',
-  'BUILDINGS.ditch and BUILDINGS.moat require earthworks; World.stepFactor reads excavated height, World.pitDepth and water fills read moat depth': 'BUILDINGS.ditch y BUILDINGS.moat requieren earthworks; World.stepFactor lee la altura excavada, World.pitDepth y el llenado de agua leen la profundidad del foso',
+  'BUILDINGS.ditch, BUILDINGS.moat, BUILDINGS.mound and BUILDINGS.embankment require earthworks; city_walls also requires earthworks and opens BUILDINGS.city_wall; World.stepFactor reads raised and excavated height, World.sightBonusAt reads prominence, World.pitDepth and water fills read moat depth': 'BUILDINGS.ditch, BUILDINGS.moat, BUILDINGS.mound y BUILDINGS.embankment requieren earthworks; city_walls también requiere earthworks y abre BUILDINGS.city_wall; World.stepFactor lee la altura excavada y elevada, World.sightBonusAt lee la prominencia y World.pitDepth y el llenado de agua leen la profundidad del foso',
   'Irrigation': 'Riego',
   'Terracing': 'Abancalado',
   'about 6000 BC': 'hacia 6000 a. C.',
