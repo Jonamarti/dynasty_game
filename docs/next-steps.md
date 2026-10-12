@@ -13,8 +13,10 @@ antes del cierre. En 15d, el control focal de conserva invernal discrimina
 recetas presentes/ausentes, aunque el escenario autónomo sigue en 0/3; 15c no
 se activa hasta tener evidencia económica válida. Dos reruns verificaron que
 la tanda natural sigue disponible dentro del invierno y se consume fuera de él;
-los resultados favorables solo aparecen con hambre/stock preparados, así que
-la causa autónoma sigue sin aislarse.
+el bando come tres veces durante ese invierno, pero elige manzana/carne y no
+selecciona las conservas en el inventario. La causa de esa selección sigue sin
+aislarse; los resultados favorables con hambre/stock preparados no prueban
+autonomía.
 [Resultados](m15_calibration.md).
 
 **Avance del 2026-10-12 — 14c, remiendo autónomo:** adultos NPC pueden remendar

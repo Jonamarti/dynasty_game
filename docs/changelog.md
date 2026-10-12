@@ -1,3 +1,11 @@
+## 2026-10-12 — docs: precisar selección de comida invernal en `salters`
+
+El probe por tick confirma que Narak conserva ambas unidades de `dried_meat`
+todo el primer invierno; el bando come manzana/carne y no selecciona conserva.
+El lote se consume después, fuera del invierno. El stock no se pierde ni se
+pudre: el fallo observado está en la selección temporal, cuya causa sigue sin
+aislar. Sin cambios de comportamiento.
+
 ## 2026-10-12 — docs: corregir trazado de stock en `salters`
 
 Dos reruns exactos muestran que las dos unidades reales siguen en inventario al

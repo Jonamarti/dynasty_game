@@ -5210,8 +5210,13 @@ El `salters` autónomo sigue en 0/3 comidas invernales conservadas. Dos probes
 exactos constataron que la primera tanda aparece en el inventario de Narak en
 tick 140 y sus dos unidades siguen allí en tick 480 (invierno), sin pudrirse;
 Ungok come una en tick 1604 y Narak la otra en tick 1947, ambas fuera de
-invierno. Un montaje con stock y hambre inyectados sí produce comidas
+invierno. En los ticks 480–959 Narak conserva ambas (hambre 11,3→37,7); la
+banda sí registra tres comidas invernales, pero Rhara elige manzana dos veces
+y Velur carne una vez. Ungok llega a hambre 52,7 y forrajea. Ninguno selecciona
+la conserva en ese invierno, aunque está disponible. Un montaje con stock y
+hambre inyectados sí produce comidas
 conservadas y su negativo sin recetas elimina la atribución, pero la causa de
-no usar el stock durante invierno sigue abierta. No se cambió producción,
+no seleccionar el stock real durante invierno sigue abierta (valoración,
+acceso o puerta de decisión no aislados). No se cambió producción,
 scorer ni balance; hace falta observar disponibilidad, selección y presión de
 comida durante el invierno antes de proponer un mecanismo de reserva.

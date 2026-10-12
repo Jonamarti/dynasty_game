@@ -70,6 +70,14 @@ path, but it injects both timing and need: it does not show that autonomous
 NPCs save the batch, or establish an economic benefit. No production, AI,
 activation or balance rules were changed.
 
+A second exact trace of the first winter (ticks 480–959) narrows the mismatch:
+Narak keeps both units, with hunger 11.3→37.7; neither Narak nor Ungok eats
+`dried_meat`. The band's three counted winter meals instead come from apples
+(Rhara, ticks 760–761) and meat (Velur, tick 821). Ungok's hunger reaches
+52.7 before other foraged food appears. The inventory is available but not
+selected in this window. The reason (appeal, access/ownership, or another
+decision gate) remains unisolated.
+
 15d is partially delivered: scenario, meal monitor, focused recipe negative
 control and attributed losses exist. The autonomous winter food outcome
 remains open.15c default activation remains deferred until economy evidence

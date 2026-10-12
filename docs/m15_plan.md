@@ -4360,6 +4360,10 @@ estropearse; se consume fuera de invierno en los ticks 1604 y 1947. Los montajes
 que fuerzan stock y hambre sí producen comidas atribuibles, pero no explican por
 qué la IA no las come durante invierno. No se modificaron reglas ni se concluye
 beneficio económico.
+Un trace de ticks 480–959 muestra a Narak conservando ambas unidades (hambre
+11,3→37,7), mientras el bando sí come tres veces; elige manzana/carne. La
+presión y el stock están presentes, pero el motivo por el que el selector no
+elige `dried_meat` sigue sin diagnóstico.
 Faltan resolver persistencia/recuperación y
 `answered`, resolver o aceptar los fallos heredados sin rebajar checks, revisar
 `architecture.md` y reescribir `next-steps.md` para cerrar M15. Evidencia y
