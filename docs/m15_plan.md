@@ -125,16 +125,18 @@ tiradas; no se afirma calibración. [Contrato](m15_phase16d_bedding.md).
 
 # M15 — El plan maestro: de las manos vacías al Estado
 
-**Avance del 2026-10-12 — 16d, mantenimiento autónomo de lámparas:** adultos reponen lámparas vacías no colocadas por el jugador dentro de su propia casa terminada. Si ya llevan dos grasas, el scorer dirige al `refuel_lamp`; si no, toma exactamente dos del estante del mismo hogar y vuelve a evaluar. No modifica lámparas del jugador, cargas parciales ni hogares ajenos. Siguen abiertos el acopio de grasa, la construcción autónoma del fireplace, otros muebles y la calibración diferida. Pruebas focales; sin cohortes. [Contrato](m15_phase16d_bedding.md).
+**Avance del 2026-10-12 — 16d, mantenimiento autónomo de lámparas:** adultos reponen lámparas vacías no colocadas por el jugador dentro de su propia casa terminada. Si ya llevan dos grasas, el scorer dirige al `refuel_lamp`; si no, toma exactamente dos del estante del mismo hogar y vuelve a evaluar. No modifica lámparas del jugador, cargas parciales ni hogares ajenos. La construcción autónoma del fireplace se entregó después; siguen otros muebles, acopio dedicado de grasa y calibración por cohortes. Pruebas focales; sin cohortes. [Contrato](m15_phase16d_bedding.md).
 
 **Avance del 2026-10-10 — 14c, expectativas de abrigo:** `warm:<prenda>`
 se aprende por protección propia atribuible a la capa, y la ropa visible
 ofrece una hipótesis de baja confianza en invierno. Vestir y confeccionar
 comparan expectativas; la curiosidad permite una prueba de ropa desconocida,
 con memoria reciente para no alternar prendas si el techo impide aprender.
-[Contrato y verificación](m15_phase14c_warm_beliefs.md). La retirada por calor,
-bolsillos, propiedad de condición, desgaste/remiendo y curtido siguen abiertos.
-No se declara 14c/14e ni M15 completos; cohortes y matriz pesada diferidas.
+[Contrato y verificación](m15_phase14c_warm_beliefs.md). En el corte del 10 de
+octubre, la retirada por calor, los bolsillos, la propiedad de condición, el
+desgaste/remiendo y el curtido seguían abiertos; los cortes del día 12
+completaron esos mecanismos. La calibración por cohortes continúa pendiente;
+no se declara 14c/14e ni M15 completos.
 
 **Revisión del 2026-10-10, actualizada 2026-10-12 — condición física de ropa:**
 propiedad y equipo, montones, almacenes, regalos, robo, compensación, tributo,
