@@ -1,3 +1,14 @@
+**Medición del 2026-10-13 — fase 16, cohorte doméstica:** después del cierre de
+12f, tres brazos pareados de 20 semillas century (HEAD idéntico, 40.000 pasos):
+baseline, comfortDriveEnabled=false y sleepQualityEffectsEnabled=false.
+Supervivencia agregada 45,6% / 45,4% / 45,7%; extinciones 1/20 en cada brazo.
+Las direcciones pareadas fueron mixtas y los hogares/muebles completados
+siguieron siendo raros; la calidad efectiva del control se neutralizó según
+contrato y la calidad física quedó observable. No se ajustaron coeficientes ni
+se demuestra beneficio poblacional; faltaban umbrales registrados antes de
+medir. [Protocolo, límites y tabla pareada](m15_homes_cohort_protocol.md);
+[valores por semilla](m15_homes_cohort_per_seed_2026-10-13.csv).
+
 **Avance del 2026-10-12 — fase 16, controles y observación por semilla:**
 `sim:seeds` registra hogares completos, superficies en muestras nocturnas,
 calidad y deltas de ánimo, y muebles NPC fabricados/colocados. Los controles

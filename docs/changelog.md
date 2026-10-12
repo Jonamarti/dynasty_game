@@ -1,3 +1,18 @@
+## 2026-10-13 — M15 fase 16: medición pareada de hogares
+
+Tras cerrar 12f, se ejecutaron en serie baseline y dos ablations de 20 semillas
+century, 40.000 pasos, todos en HEAD
+266130439448e05b563bcf68e8e8c1a14fae7a8e / 0.15.122-alpha. Supervivencia
+agregada 45,6% / 45,4% / 45,7%; extinciones 1/20 en cada brazo. Las diferencias
+pareadas fueron mixtas, así que no se ajustaron coeficientes ni se atribuye
+mejora demográfica. Se preservaron logs completos y un CSV con valores/deltas
+de cada semilla. El control de calidad mostró el valor efectivo esperado
+(0,70 ánimo; 1,00 recuperación) mientras registró calidad física. Furniture
+NPC observado: 2 fabricados/colocados en baseline, 1 con comfort off, 0 con
+quality off; ninguna superficie de cama apareció. Límites y protocolo en
+m15_homes_cohort_protocol.md; datos pareados en
+m15_homes_cohort_per_seed_2026-10-13.csv. Cambio docs-only, sin bump de versión.
+
 ## 2026-10-12 — M15 fase 17: cortar hierba también se ve
 
 `cut_grass` usa cuatro poses generadas de barrido bajo, seleccionadas solo
