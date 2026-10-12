@@ -15691,6 +15691,17 @@ completadas, y se aclaró que `lean`/`generations` no siguen en curso. Se
 mantienen pendientes el diagnóstico de recuperación y `answered`; no se
 calibraron parámetros.
 
+## 2026-10-12 — M15 fase 17: descanso animal real
+
+Los herbívoros tranquilos y alimentados duermen en noches templadas; el hambre,
+la presión invernal, una persona cercana, la huida y seguir a quien los domesticó
+los mantienen despiertos. Los depredadores continúan activos de noche. El estado
+`Animal.sleeping` habilita las poses preparadas `s0`–`s3`, animadas por el reloj;
+la presentación no decide sueño y la regla no consume RNG. Pruebas cubren el
+estado, interrupciones, casos de presión y la selección visual. Capturas del
+gesto en `artifacts/screenshots/m15-animal-sleep-2026-10-12/`. El efecto
+ecológico a largo plazo sigue sin calibrar; no se presenta como mejora de
+supervivencia ni como horario por especie.
 
 ## 2026-10-12 — m15: alfombra de piel para dormir
 

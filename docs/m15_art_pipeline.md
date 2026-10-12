@@ -224,8 +224,14 @@ flight above eating and the killer's meal after its strike. Phases follow the
 simulation clock and pauses; distance includes vertical movement. Drawing
 uses the species' idle width so a reaching head does not resize the animal.
 The atlas shares frames across all animals, without per-animal composed canvases.
-The sleep art is previewed separately and is not selected until a real sleep
-behaviour exists. `contact-animal-e/r/a/s.png` reviews every species and phase.
+`Animal.sleeping` now marks the wildlife routine's actual state: calm, fed
+herbivores sleep on mild nights; hunger, severe seasonal pressure, nearby people,
+flight, and following a tamer keep them active. Predators remain nocturnal.
+`AnimalAnimation` reads this state for the prepared `s0`–`s3` breathing poses;
+the global simulation clock drives the loop, and renderers add no simulation
+inputs. The routine is deterministic and does not draw RNG. Long-run effects on
+grazing and predator/prey survival are not calibrated yet.
+`contact-animal-e/r/a/s.png` reviews every species and phase.
 
 The six-species atlas with all four new families is 275,332 PNG bytes
 (268.9 KiB), versus 44,466 before. Its 2048×241 decoded RGBA sheet is 1.88 MiB,
@@ -233,4 +239,4 @@ up 1.31 MiB from 2048×73; **this is shared across all animals**, not per animal
 There are 126 keys and 112 unique drawings. A browser regression draws 300
 presentation animals across the 12 active frames (3,600 draws) without changing
 figure/tint cache statistics. This is a rendering/cache check, not a benchmark
-of 300 animal AIs. Actual animal sleep and its ecological effects remain pending.
+of 300 animal AIs.

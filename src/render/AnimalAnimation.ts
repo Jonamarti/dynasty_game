@@ -2,7 +2,7 @@
 import type { Animal } from '../sim/entities/Animal.ts';
 import type { Placed } from './Interpolator.ts';
 
-export type AnimalPose = 'idle' | `w${0 | 1 | 2 | 3}` | `r${0 | 1 | 2 | 3}` | `e${0 | 1 | 2 | 3}` | `a${0 | 1 | 2 | 3}`;
+export type AnimalPose = 'idle' | `w${0 | 1 | 2 | 3}` | `r${0 | 1 | 2 | 3}` | `e${0 | 1 | 2 | 3}` | `a${0 | 1 | 2 | 3}` | `s${0 | 1 | 2 | 3}`;
 export interface AnimalTrack { x: number; y: number; distance: number; east: boolean; movedAt: number; }
 
 export function trackAnimal(track: AnimalTrack, at: Placed, time: number): boolean {
@@ -16,7 +16,7 @@ export function trackAnimal(track: AnimalTrack, at: Placed, time: number): boole
   return time - track.movedAt < 1;
 }
 
-export function animalPose(animal: Pick<Animal, 'alive' | 'lastMealAt' | 'lastAttackAt' | 'lastRunAt'>,
+export function animalPose(animal: Pick<Animal, 'alive' | 'sleeping' | 'lastMealAt' | 'lastAttackAt' | 'lastRunAt'>,
   tick: number, alpha: number, moving: boolean, distance: number): AnimalPose {
   if (!animal.alive) return 'idle';
   const time = tick + Math.max(0, Math.min(1, alpha));
@@ -32,5 +32,6 @@ export function animalPose(animal: Pick<Animal, 'alive' | 'lastMealAt' | 'lastAt
   const mealStart = animal.lastMealAt + (animal.lastAttackAt === animal.lastMealAt ? 5 : 0);
   const meal = time - mealStart;
   if (meal >= 0 && meal < 5) return `e${Math.min(3, Math.floor(meal / 1.25)) as 0 | 1 | 2 | 3}`;
+  if (animal.sleeping) return `s${Math.floor(time / 4) % 4 as 0 | 1 | 2 | 3}`;
   return moving ? `w${phase}` : 'idle';
 }

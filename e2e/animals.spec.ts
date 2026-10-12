@@ -1,5 +1,6 @@
 /** Renderer integration; real AI event generation is tested headlessly. */
 import { test, expect } from '@playwright/test';
+import { mkdirSync } from 'node:fs';
 
 test('animal events draw four distinct shared frames and freeze while paused', async ({ page }) => {
   const errors: string[] = [];
@@ -42,19 +43,21 @@ test('animal events draw four distinct shared frames and freeze while paused', a
     };
     return animal.id;
   });
-  const shots = 'artifacts/screenshots/m15-animals-' + new Date().toISOString().replace(/[:.]/g, '-');
+  const shots = 'artifacts/screenshots/m15-animal-sleep-2026-10-12';
+  mkdirSync(shots, { recursive: true });
   const scales = new Set<number>();
-  for (const family of ['e', 'r', 'a']) {
+  for (const family of ['e', 'r', 'a', 's']) {
     const pixels = new Set<string>();
     for (let phase = 0; phase < 4; phase++) {
       await page.evaluate(({ id, family, phase }) => {
         const d = (window as any).__dynasty;
         const animal = d.sim.animals.find((a: any) => a.id === id);
         const base = (window as any).__animalBaseTick;
-        d.sim.time.tick = base + [0, 2, 3, 4][phase];
+        d.sim.time.tick = family === 's' ? phase * 4 : base + [0, 2, 3, 4][phase];
         animal.lastMealAt = family === 'e' ? base : -Infinity;
         animal.lastAttackAt = family === 'a' ? base : -Infinity;
         animal.lastRunAt = family === 'r' ? base : -Infinity;
+        animal.sleeping = family === 's';
         d.renderer.animalTrack.set(id, { x: animal.x, y: animal.y, east: true,
           distance: phase * .22, movedAt: family === 'r' ? d.sim.time.tick : -Infinity });
       }, { id, family, phase });
@@ -73,6 +76,7 @@ test('animal events draw four distinct shared frames and freeze while paused', a
     const d = (window as any).__dynasty;
     d.sim.time.tick += 30;
     const a = d.sim.animals.find((a: any) => a.id === id);
+    a.sleeping = false;
     d.renderer.animalTrack.set(id, { x: a.x, y: a.y, east: true, distance: 0, movedAt: -Infinity });
   }, id);
   await expect.poll(() => page.evaluate(() => (window as any).__animalDraw?.key)).toBe('a/deer/E/idle');

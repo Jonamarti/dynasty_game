@@ -76,6 +76,10 @@ const FORAGE_RADIUS = 7;
  * dead is a certain extinction every year, which is not what a deer does.
  */
 const COLD_METABOLISM = 0.3;
+/** In poor winter growth, herbivores stay active to keep searching for forage. */
+const SLEEP_MIN_DAILY_GROWTH = 0.2;
+/** A hungry animal wakes to keep foraging instead of sleeping through the night. */
+const SLEEP_MIN_FED = 0.3;
 
 /**
  * Hunters, M15 phase 23e. A hunter below `HUNT_BELOW` goes after the nearest
@@ -239,6 +243,11 @@ export class WildlifeSystem {
       if (!animal.alive) continue;
       if ((ctx.tick + animal.id) % MOVE_INTERVAL !== 0) continue;
 
+      // Sleep is an explicit, reversible state, not an inference from standing
+      // still. Predators keep their nocturnal routine; herbivores rest only in
+      // mild nights, while fed, and only after threat and owner-follow checks.
+      animal.sleeping = false;
+
       if (animal.def.predator) {
         this.prowl(animal, centroids.get(animal.herdId), ctx, animals);
         continue;
@@ -249,6 +258,8 @@ export class WildlifeSystem {
 
       if (animal.alarmedUntil > ctx.tick) this.bolt(animal, ctx);
       else if (animal.tamedBy !== null && this.heel(animal, ctx)) continue;
+      else if (ctx.isNight && animal.fed >= SLEEP_MIN_FED &&
+        (ctx.dailyGrowth ?? 1) >= SLEEP_MIN_DAILY_GROWTH) animal.sleeping = true;
       else this.graze(animal, centroids.get(animal.herdId), ctx);
     }
   }
@@ -290,6 +301,7 @@ export class WildlifeSystem {
     ctx: WildlifeContext,
     animals: Animal[]
   ): void {
+    animal.sleeping = false;
     const wasCalm = animal.alarmedUntil <= ctx.tick;
     this.setFlight(animal, threat.x, threat.y, ctx);
 
@@ -302,6 +314,7 @@ export class WildlifeSystem {
       if (other.herdId !== animal.herdId || other.id === animal.id) continue;
       if (!other.alive) continue;
       if (Math.hypot(other.x - animal.x, other.y - animal.y) > 9) continue;
+      other.sleeping = false;
       this.setFlight(other, threat.x, threat.y, ctx);
     }
   }

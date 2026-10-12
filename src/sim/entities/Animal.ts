@@ -141,6 +141,9 @@ export class Animal {
   health: number;
   alive = true;
 
+  /** True only while the wildlife routine has deliberately put this animal to sleep. */
+  sleeping = false;
+
   /**
    * How well fed it is, 0-1 — M15 phase 23c. Falls a little every move and is
    * refilled by what it takes off the grass under it (`World.graze`); at zero

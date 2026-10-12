@@ -3304,6 +3304,7 @@ export class ActionSystem {
       telemetry.count('hunt_missed');
       // A miss costs the stalk: the herd is gone and the hunter is winded.
       person.needs.fatigue = Math.min(100, person.needs.fatigue + 4);
+      animal.sleeping = false;
       animal.alarmedUntil = ctx.tick + 90;
       // M15 phase 23f: the stag and the boar turn on a hunter who has missed
       // and is still within reach, instead of running. Rarely: a cornered
@@ -3312,6 +3313,7 @@ export class ActionSystem {
       if (animal.def.defends && ctx.healthRng && ctx.rng.chance(0.25 * (1.3 - animal.def.evasion))) {
         // Only a successful defence roll means the quarry counterattacks. The
         // preceding human hunt attempt must not animate the animal as a striker.
+        animal.sleeping = false;
         animal.lastAttackAt = ctx.tick;
         animal.alarmedUntil = 0;
         rememberHurt(animal, person, ctx.tick);
@@ -3334,6 +3336,7 @@ export class ActionSystem {
     // The animal bolts on the wildlife pass, and the committed hunter can
     // pursue it; the next landed shot finishes a wounded quarry.
     if (animal.health >= animal.def.health) {
+      animal.sleeping = false;
       animal.health = Math.max(0, animal.health - 1);
       animal.alarmedUntil = ctx.tick + 90;
       rememberHurt(animal, person, ctx.tick);
@@ -3341,6 +3344,7 @@ export class ActionSystem {
       return;
     }
 
+    animal.sleeping = false;
     animal.health = 0;
     animal.alive = false;
     ctx.onAnimalKilled(animal, person);
@@ -3900,6 +3904,7 @@ export class ActionSystem {
     animal.fedBy.add(person.id);
     animal.meals++;
     animal.lastMealAt = ctx.tick;
+    animal.sleeping = false;
     person.practice('track', 0.8);
     telemetry.count('animal_fed');
 
@@ -3915,6 +3920,7 @@ export class ActionSystem {
       (4 + animal.temperament * 6) / techPower(person, 'taming')));
     if (animal.meals >= needed) {
       animal.tamedBy = person.id;
+      animal.sleeping = false;
       animal.alarmedUntil = 0;
       if (person.transportAnimalId === null && animal.species === 'donkey' && techPower(person, 'pack_animals') > 0) {
         claimTransportAnimal(person, animal, 'pack', ctx.animalsById);

@@ -2250,13 +2250,17 @@ otras familias siguen pendientes. La fase 17 continúa abierta.
 
 **Avance del 2026-10-03 (animales):** cuatro poses de comer, correr y atacar
 en ciervo, jabalí, liebre, lobo, oso y lince, compartidas por especie. El renderer
-lee marcas de eventos reales, sin cambiar decisiones, metabolismo o RNG.
-Cuenta también desplazamientos norte/sur y conserva escala y pausa. Dormir
-dispone de arte de referencia; **la rutina de sueño animal sigue pendiente**,
-porque no existe tal estado en la AI y la inactividad no demuestra sueño.
-Antes de integrar esa rutina habrá que decidir ciclos por especie, hambre,
-interrupciones por amenazas y medir su efecto sobre presas/depredadores.
-Capturas y GIF en `artifacts/screenshots/m15-animals-2026-10-03T07-33-35-954Z/`;
+lee marcas de eventos reales. Cuenta también desplazamientos norte/sur y conserva
+escala y pausa. La primera rutina explícita de sueño para herbívoros descansa de
+noche solo si tienen alimento y el crecimiento diario no indica presión invernal;
+una amenaza, la huida o seguir a quien los domesticó los mantiene despiertos.
+Lobos, osos y linces conservan su actividad nocturna. `Animal.sleeping` es estado
+de simulación y el renderer usa las poses `s0`–`s3` solo cuando está activo. La
+regla no hace tiradas ni lee marcas de animación. Es un primer ciclo común, no
+una calibración por especie: falta medir el efecto ecológico prolongado sobre
+forraje, presas y depredadores antes de ampliar o retocar horarios.
+Capturas de las poses y de sueño en `artifacts/screenshots/m15-animals-2026-10-03T07-33-35-954Z/`
+y `artifacts/screenshots/m15-animal-sleep-2026-10-12/`;
 el atlas completo ocupa 268,9 KiB de PNG y 1,88 MiB RGBA compartidos.
 
 **Avance del 2026-10-03 (300 humanos reales):** instrumento del juego completo,

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { animalPose, trackAnimal, type AnimalTrack } from '../AnimalAnimation.ts';
 
-const fresh = () => ({ alive: true, lastMealAt: -Infinity, lastAttackAt: -Infinity, lastRunAt: -Infinity });
+const fresh = () => ({ alive: true, sleeping: false, lastMealAt: -Infinity, lastAttackAt: -Infinity, lastRunAt: -Infinity });
 describe('animal animation selection', () => {
   it('shows actual meals, even with a full stomach, but never infers sleeping from inactivity', () => {
     const animal = fresh();
@@ -36,6 +36,12 @@ describe('animal animation selection', () => {
     expect(animalPose(animal, 101, 0, false, .22)).toBe('idle');
     expect(animalPose(animal, 101, 0, true, .66)).toBe('r3');
     expect(animalPose(fresh(), 101, 0, true, .66)).toBe('w3');
+  });
+  it('shows sleep only from the wildlife state, with a clock-based breathing loop', () => {
+    const animal = { ...fresh(), sleeping: true };
+    expect([0, 4, 8, 12].map(t => animalPose(animal, t, 0, false, 0))).toEqual(['s0', 's1', 's2', 's3']);
+    expect(animalPose({ ...animal, lastAttackAt: 10 }, 12, 0, false, 0)).toBe('a1');
+    expect(animalPose({ ...animal, sleeping: false }, 12, 0, false, 0)).toBe('idle');
   });
   it('counts north/south movement and preserves facing without advancing a paused walk', () => {
     const track: AnimalTrack = { x: 3, y: 3, east: false, distance: 0, movedAt: -Infinity };
