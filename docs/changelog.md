@@ -1,3 +1,9 @@
+## 2026-10-12 — docs: reflejar estado de fase 15d en próximos pasos
+
+`next-steps.md` ya distingue el control focal de conserva que pasa del
+healthcheck autónomo de `salters`, que sigue fallando 0/3. La activación 15c
+continúa diferida hasta obtener evidencia económica válida.
+
 ## 2026-10-12 — docs: precisar límite del proxy `answered`
 
 Un diagnóstico temporal de `generations` vio una sola repetición de golpe y

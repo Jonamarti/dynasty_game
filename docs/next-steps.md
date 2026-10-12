@@ -9,7 +9,9 @@ y redujo hambre de 489 a 408 muertes, pero siguió con 18/20 colapsos y 3
 extinciones; no se cambió la configuración global. Quitar el coste metabólico
 de lactancia no rescató `lean` (5,3%, 486 muertes por hambre, 4 extinciones).
 Faltan resolver persistencia/recuperación y `answered`, y revisar arquitectura
-antes del cierre. [Resultados](m15_calibration.md).
+antes del cierre. En 15d, el control focal de conserva invernal discrimina
+recetas presentes/ausentes, aunque el escenario autónomo sigue en 0/3; 15c no
+se activa hasta tener evidencia económica válida. [Resultados](m15_calibration.md).
 
 **Avance del 2026-10-12 — 14c, remiendo autónomo:** adultos NPC pueden remendar
 una prenda propia dañada que no llevan puesta si no les frena una necesidad.
