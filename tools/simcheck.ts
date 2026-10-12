@@ -1641,9 +1641,19 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
   if (base.scenario === 'salters') {
     const meals = tel.salters_winter_meals_knowing ?? 0, kept = tel.salters_winter_preserved_knowing ?? 0;
     const losses = saltersLosses(sim);
+    const carrierTicks = tel.salters_winter_preserved_carrier_ticks_knowing ?? 0;
+    const carrierHunger = carrierTicks > 0
+      ? (tel.salters_winter_preserved_carrier_hunger_sum_knowing ?? 0) / carrierTicks : 0;
     add('preserved-food-lasts', meals > 0 && kept > 0,
       kept + '/' + meals + ' winter meals preserved; spoiled nutrition knowing=' + (losses?.knowing ?? 0) +
-      ', other=' + (losses?.other ?? 0) + '; loss comparison failed negative verification, no check or survival claim');
+      ', other=' + (losses?.other ?? 0) + '; preserved food carried=' + carrierTicks +
+      ' person-ticks (' + (tel.salters_winter_preserved_carried_units_knowing ?? 0) + ' unit-ticks), mean carrier hunger=' +
+      carrierHunger.toFixed(1) + ', hunger≥40=' + (tel.salters_winter_preserved_carrier_hunger40_ticks_knowing ?? 0) +
+      ', hunger≥60=' + (tel.salters_winter_preserved_carrier_hunger60_ticks_knowing ?? 0) +
+      ', selector chose preserved=' + (tel.salters_winter_preserved_best_food_ticks_knowing ?? 0) +
+      ', chose other food=' + (tel.salters_winter_other_food_best_ticks_with_preserved_knowing ?? 0) +
+      ', eat-action ticks=' + (tel.salters_winter_eat_action_ticks_with_preserved_knowing ?? 0) +
+      '; loss comparison failed negative verification, no check or survival claim');
   }
 
   if (base.scenario === 'tailors') {

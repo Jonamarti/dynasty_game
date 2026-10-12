@@ -4,6 +4,7 @@ import { TECH, type Tech } from '../src/sim/knowledge/Tech.ts';
 import { RECIPES } from '../src/sim/entities/Recipe.ts';
 import { ITEMS } from '../src/sim/entities/Item.ts';
 import { equipContainer } from '../src/sim/core/Carry.ts';
+import { bestFoodFor } from '../src/sim/core/Macros.ts';
 
 /** Resolve this from the live catalog so a missing recipe cannot pass by using a stale cache. */
 export function isPreservedFood(itemId: string): boolean {
@@ -58,6 +59,26 @@ export function setupSalters(sim: Simulation): void {
 /** Real meals, including picked food; account for the daily ledger reset once. */
 export function observeSalters(sim: Simulation): void {
   const watch = watches.get(sim); if (!watch) return;
+  if (sim.time.season === 'winter') for (const person of sim.livingPeople()) {
+    if (person.bandId !== watch.knowing) continue;
+    const preservedUnits = person.inventory.entries()
+      .filter(([item, count]) => count > 0 && isPreservedFood(item))
+      .reduce((sum, [, count]) => sum + count, 0);
+    if (preservedUnits === 0) continue;
+    // Keep the reason for an unused winter batch observable: distinguish stock
+    // physically carried by a hungry person from a selector that never ranks
+    // it first. This is fixture-only telemetry, not an AI input.
+    telemetry.count('salters_winter_preserved_carrier_ticks_knowing');
+    telemetry.count('salters_winter_preserved_carried_units_knowing', preservedUnits);
+    telemetry.count('salters_winter_preserved_carrier_hunger_sum_knowing', person.needs.hunger);
+    if (person.needs.hunger >= 40) telemetry.count('salters_winter_preserved_carrier_hunger40_ticks_knowing');
+    if (person.needs.hunger >= 60) telemetry.count('salters_winter_preserved_carrier_hunger60_ticks_knowing');
+    const selected = bestFoodFor(person, undefined, sim.config.motivation.cravings,
+      sim.config.motivation.beliefChoice);
+    if (selected && isPreservedFood(selected)) telemetry.count('salters_winter_preserved_best_food_ticks_knowing');
+    else if (selected) telemetry.count('salters_winter_other_food_best_ticks_with_preserved_knowing');
+    if (person.action === 'eat') telemetry.count('salters_winter_eat_action_ticks_with_preserved_knowing');
+  }
   const newDay = watch.day !== sim.time.day;
   for (const person of sim.people) {
     const previous = newDay ? undefined : watch.eaten.get(person.id);

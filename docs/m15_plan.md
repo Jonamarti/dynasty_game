@@ -2047,6 +2047,13 @@ está.
   retira temporalmente todas las recetas y comprueba que la comida real siga
   contándose pero deje de atribuirse a conservación. Esto valida el instrumento,
   no el comportamiento autónomo del escenario.
+- El observador también separa stock accesible, hambre del portador y elección:
+  en el rerun del 2026-10-12 hubo 480 person-ticks con conserva (960
+  unidad-ticks), hambre media 24,5 y ningún tick con hambre ≥40; el selector
+  prefirió otra comida en los 480 ticks. No es una barrera de acceso. No se
+  modifica la urgencia global ni el ranking nutricional con esta evidencia.
+  **Diagnóstico entregado; consumo autónomo de invierno sigue pendiente** y el
+  check explícito continúa fallando (0/3).
 - `spoilage-is-answered` se retiró: la pérdida nutritiva por banda no discrimina
   preservación y también pasa al retirar las recetas.
 - **Coste declarado:** ≤ 4 puntos, todavía sin medir. La activación por defecto

@@ -74,11 +74,33 @@ A second exact trace of the first winter (ticks 480–959) narrows the mismatch:
 Narak keeps both units, with hunger 11.3→37.7; neither Narak nor Ungok eats
 `dried_meat`. The band's three counted winter meals instead come from apples
 (Rhara, ticks 760–761) and meat (Velur, tick 821). Ungok's hunger reaches
-52.7 before other foraged food appears. The inventory is available but not
-selected in this window. The reason (appeal, access/ownership, or another
-decision gate) remains unisolated.
+52.7 before other foraged food appears. The later observer aggregates stock
+availability, hunger and selector results across every carrier, and finds the
+stocked carrier itself remains below hunger 40 while another food outranks the
+preserve. The trigger is therefore low need plus the current food ranking in
+this fixture, not inaccessible stock; this still does not justify a global
+urgency or food-value change.
 
 15d is partially delivered: scenario, meal monitor, focused recipe negative
-control and attributed losses exist. The autonomous winter food outcome
-remains open.15c default activation remains deferred until economy evidence
-supports it.
+control, attributed losses and a winter chooser/need diagnostic now exist. The
+autonomous winter food outcome remains open. 15c default activation remains
+deferred until economy evidence supports it.
+
+## 2026-10-12 selector and need diagnosis
+
+The winter observer now records person-ticks with preserved food physically in
+the knowledgeable band's inventory, the units carried, hunger bands, the
+selector's top food, and whether the carrier is executing `eat`. This is
+fixture-only telemetry; it does not affect scoring or RNG. In the current
+single-seed run the batch is accessible for 480 person-ticks (960 unit-ticks),
+the carrier's mean hunger is 24.5 and hunger never reaches 40, while the
+selector chooses another food on all 480 ticks. No preserved food is ranked
+first and the carrier does not execute `eat` during this window. The 3 winter
+meals belong to other band members without preserved stock.
+
+This narrows the current result to low need on the carrier plus higher-appeal
+alternatives, rather than inaccessible stock. It does not establish which
+systemic policy should change: neither weakening the nutrition chooser nor
+raising global eat urgency is justified by this fixture. The existing
+`preserved-food-lasts` check still fails visibly; this diagnostic makes its
+failure mode actionable without claiming the autonomous behavior is fixed.

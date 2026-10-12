@@ -1,3 +1,13 @@
+## 2026-10-12 — m15: diagnosticar elección de conservas en `salters`
+
+El escenario registra stock conservado en los inventarios, hambre de sus
+portadores, alimento mejor clasificado y ticks en los que intentan comer. El
+rerun encuentra stock accesible todo el invierno, hambre media 24,5 y otra
+comida por delante en el selector; no justifica ajustar la política global.
+El check autónomo sigue fallando 0/3, por lo que 15d funcional y la activación
+15c permanecen pendientes. Prueba focal 2/2 y typecheck pasan; el simcheck
+`salters` conserva su fallo esperado 1/1.
+
 ## 2026-10-12 — docs: registrar cohorte apareada de bayas en `generations`
 
 20 semillas × 144.000 pasos con `world.bushSeasons=false`: supervivencia 16,8%
