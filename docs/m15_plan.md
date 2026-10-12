@@ -26,8 +26,9 @@ requiere leatherwork; la receta hide_dressing consume una grasa y trabaja sobre
 una unidad concreta de piel, fuera del cuerpo. El progreso interrumpible y el
 tratamiento quedan guardados en GarmentUnit; esa pieza pierde condición a la
 mitad, sin cambiar la definición compartida ni el ritmo de otras copias. Las
-rutas de propiedad y persistencia preservan ambos campos. NPC no eligen la
-acción autónomamente; calibración de desgaste y cohortes siguen diferidas.
+rutas de propiedad y persistencia preservan ambos campos. La elección
+autónoma de NPC se añadió después; calibración de prioridades y cohortes sigue
+diferida.
 
 **Avance del 2026-10-12 — 16d, grasa de caza para lámparas:** la caza real de
 ciervo/jabalí ya da grasa física (1/2 unidades) al cazador o la deja como
@@ -101,9 +102,9 @@ tiradas; no se afirma calibración. [Contrato](m15_phase16d_bedding.md).
 **Avance del 2026-10-12 — propiedad y consumo físico de prendas:** viajes, exigencias, regalos, robo, compensación, tributo, tiendas, escrow y transferencias locales conservan filas físicas; los manifiestos count-only de caravana rechazan prendas. `doPrototype` y la receta `toggled_coat` consumen `fur_coat` mediante transacción con rollback y reconcilian la unidad vestida. La auditoría no encontró otro consumidor count-only que pueda elegir prendas. [Contrato fase 35](m15_phase35_journeys.md) y [diseño de condición](m15_garment_condition_design.md).
 **Avance del 2026-10-11 — 16d, lámpara de grasa:** mueble `fat_lamp` de fuego, con arte generado, colocación solo en la casa del hogar, carga de 1200 ticks por dos grasas y recarga contextual. El lector existente `lightAt` y la escena nocturna del renderer usan la luz local; no aporta calor ni sustituye al hogar. Combustible/host persisten en checkpoints y sus negativas tienen razón. [Contrato y captura](m15_phase16d_bedding.md). Quedan hogar interior, más muebles de confort, autonomía completa del mobiliario y 16e/16f; no se afirma mejora medida ni se ejecutaron cohortes.
 
-**Avance del 2026-10-11 — 14c, fusión de almacenes:** al fusionar hogares, el almacén de origen se combina atómicamente con el del hogar destino mediante una transferencia de inventario validada. Se conserva el estado de cada prenda y se reemiten IDs locales en caso de colisión. Una incoherencia de identidad o cantidad rechaza la fusión antes de cambiar hogares/riqueza; un fallo de inserción revierte ambos inventarios. El [contrato de condición](m15_garment_condition_design.md) recoge también los regalos, robo, amends, tributo, escrow y tráfico de personas ya cubiertos; los manifiestos de caravana siguen sin admitir prendas. Desgaste/remiendo continúa apagado.
+**Avance del 2026-10-11 — 14c, fusión de almacenes:** al fusionar hogares, el almacén de origen se combina atómicamente con el del hogar destino mediante una transferencia de inventario validada. Se conserva el estado de cada prenda y se reemiten IDs locales en caso de colisión. Una incoherencia de identidad o cantidad rechaza la fusión antes de cambiar hogares/riqueza; un fallo de inserción revierte ambos inventarios. El [contrato de condición](m15_garment_condition_design.md) recoge también los regalos, robo, amends, tributo, escrow y tráfico de personas ya cubiertos; los manifiestos de caravana siguen sin admitir prendas. Desgaste/remiendo se activó en cortes posteriores del 2026-10-12.
 
-**Avance del 2026-10-11 — 14c, almacén de prendas:** el depósito y la retirada directa y automática transfieren filas físicas por `Inventory.transferTo`; la aceptación del edificio y el inventario persistido conservan unidad, condición y progreso parcial. Prueba el ciclo persona→almacén→persona y rechaza el guardado cuya cantidad no concuerda con sus prendas físicas. La fusión de hogares es el único movimiento directo local entre almacenes y está cubierta por transferencia completa atómica; escrow ahora conserva filas en su JSON validado. Sólo el tráfico de mundo sigue fuera de esta base de propiedad; desgaste/remiendo permanece apagado. No se cierra 14c/14e ni M15.
+**Avance del 2026-10-11 — 14c, almacén de prendas:** el depósito y la retirada directa y automática transfieren filas físicas por `Inventory.transferTo`; la aceptación del edificio y el inventario persistido conservan unidad, condición y progreso parcial. Prueba el ciclo persona→almacén→persona y rechaza el guardado cuya cantidad no concuerda con sus prendas físicas. La fusión de hogares es el único movimiento directo local entre almacenes y está cubierta por transferencia completa atómica; escrow ahora conserva filas en su JSON validado. Sólo el tráfico de mundo sigue fuera de esta base de propiedad; desgaste/remiendo aún no estaba activo en ese corte; ambos se activaron en entregas posteriores del 2026-10-12. No se cierra 14c/14e ni M15.
 
 **Avance del 2026-10-11 — 14c, bolsillos:** túnica cosida y de lino y abrigo con alamares aportan cuatro unidades; parka, dos. Sólo cuenta la prenda propia en su hueco vestido. El lector compartido aumenta capacidad agregada y límites por objeto pequeño, sin aumentar los límites de comida o cargas grandes. Cambiarse o perder la última prenda reconcilia el exceso en montones físicos; el guardado deriva la capacidad del equipo canónico. [Contrato](m15_phase14c_pockets.md). Siguen la integración completa de propiedad de condición, desgaste/remiendo, curtido y estatus opcional; no se cierra 14c/14e ni M15, ni se afirma mejora económica.
 
@@ -1798,7 +1799,7 @@ muertes por frío**; coste declarado: ≤ 5 puntos.
 
 ### 14c. Las prendas (sub-red Ropa; medido)
 
-**Avance del 2026-10-11:** retirada autónoma por calor y bolsillos entregados en commits separados, con pruebas y capturas de hito. [Calor](m15_phase14c_heat_removal.md) y [bolsillos](m15_phase14c_pockets.md) detallan la política y los resultados. La base de condición por unidad ya existe; quedan integrar todas las transferencias, activar desgaste/remiendo, curtido, estatus opcional y las mediciones diferidas. No se declara cerrada 14c/14e ni M15.
+**Estado actualizado el 2026-10-12:** retirada autónoma por calor y bolsillos se entregaron en commits separados, con pruebas y capturas de hito. [Calor](m15_phase14c_heat_removal.md) y [bolsillos](m15_phase14c_pockets.md) detallan la política y los resultados. Las transferencias físicas, el desgaste diario, el remiendo manual y autónomo, y el curtido manual y autónomo por unidad ya están implementados. La auditoría de rutas no encontró pérdidas de condición; los manifiestos count-only rechazan prendas. Quedan calibración por cohortes y la decisión sobre estatus opcional. No se declara cerrada 14c/14e ni M15.
 
 **Avance del 2026-10-11 — herencia física:** `settleEstate` mueve el inventario
 completo con transferencia atómica al heredero o al almacén de hogar. Si no hay
@@ -1806,29 +1807,29 @@ destino, las prendas se sueltan como filas físicas con su identidad, condición
 y progreso de remiendo intactos. Las pruebas cubren ambos destinos, la caída y
 el rechazo de cuentas incoherentes antes de mutar. Quedan trueque/robo/tributo,
 otros movimientos entre edificios, escrow y tráfico fuera del mapa; por eso
-desgaste/remiendo sigue apagado.
+desgaste/remiendo aún no estaba activo en ese corte; ambos se activaron en entregas posteriores del 2026-10-12.
 
 **Avance del 2026-10-12 — regalos físicos:** `Simulation.handOver` y el regalo
 autónomo cronometrado usan `Inventory.transferTo`, así que una prenda conserva
 identidad, desgaste y progreso de remiendo. Si falla la inserción de una pila
 de prendas, el helper revierte ambas mochilas. `doTrade` sólo elige alimentos y
 no puede seleccionar prendas; tributo, otros movimientos entre edificios,
-escrow y tráfico fuera del mapa siguen pendientes. Desgaste/remiendo
-permanece apagado.
+escrow y tráfico fuera del mapa se cubrieron en cortes posteriores del
+2026-10-12. Desgaste/remiendo se activó después.
 
 **Avance del 2026-10-12 — robo físico:** `doSteal` transfiere las unidades
 concretas del montón de mayor valor con su desgaste y progreso de remiendo. La
 transferencia rechaza filas huérfanas antes de mutar, revierte una inserción
 fallida y reconcilia las capas/bolsillos de ambos participantes. Siguen
 pendientes tributo, transferencias entre edificios, escrow y tráfico;
-desgaste/remiendo permanece apagado.
+desgaste/remiendo aún no estaba activo en ese corte; ambos se activaron en entregas posteriores del 2026-10-12.
 
 **Avance del 2026-10-12 — compensación física:** `doMakeAmends` usa una
 transferencia transaccional para todas las pilas de la oferta. Una prenda que
 compensa una deuda conserva desgaste, progreso e identidad; cualquier fallo en
 una pila posterior revierte todo lo entregado. El pagador reconcilia sus capas
 vestidas al completar el pago. Siguen pendientes tributo, otros movimientos
-entre edificios, escrow y tráfico; desgaste/remiendo permanece apagado.
+entre edificios, escrow y tráfico; desgaste/remiendo aún no estaba activo en ese corte; ambos se activaron en entregas posteriores del 2026-10-12.
 
 **Avance del 2026-10-12 — tributo físico:** el retiro desde el almacén del
 hogar al portador usa transferencia explícita; la entrega al almacén del
@@ -1839,7 +1840,7 @@ una prenda. La auditoría local no encontró otra transferencia directa entre
 almacenes: la fusión de hogares es la única y ya usa `transferAllTo`. Pruebas
 de esa ruta cubren choque de IDs, condición y progreso, rechazo de filas
 inconsistentes y rollback si falla una inserción. Siguen pendientes escrow y
-tráfico fuera del mapa; desgaste/remiendo permanece apagado.
+tráfico fuera del mapa; desgaste/remiendo aún no estaba activo en ese corte; ambos se activaron en entregas posteriores del 2026-10-12.
 
 **Avance del 2026-10-11 — base de condición física:** `Inventory` crea una
 unidad íntegra por prenda, permite extraerla/devolverla con condición y trabajo
@@ -1847,16 +1848,18 @@ de remiendo, y conserva/valida las unidades en su registro explícito de
 transferencia. Los snapshots antiguos de conteo reciben unidades íntegras;
 filas presentes pero malformadas/incompletas se rechazan. El escrow de comarca
 las conserva a través de consumo de alimentos y JSON validado, con rollback si
-falla una extracción o restauración parcial. No se activa desgaste ni remiendo
-hasta integrar el tráfico fuera del mapa. [Diseño de condición](m15_garment_condition_design.md)
+falla una extracción o restauración parcial. Nota histórica: desgaste y
+remiendo se activaron después de integrar las rutas de propiedad, incluido el
+tráfico fuera del mapa. [Diseño de condición](m15_garment_condition_design.md)
 y [contrato de escrow de fase 34](m15_phase34_inventory.md).
 
 **Avance del 2026-10-11 — prendas en montones:** Equipo ahora referencia la
 copia vestida concreta. Soltar, recoger y expulsar exceso de carga mueve la
 unidad de condición/progreso junto a la prenda; los choques de IDs locales al
-fusionar inventarios se resuelven sin alterar esos valores. Aún falta migrar
-almacenes, comercio/robo, herencia, escrow y tráfico fuera del mapa antes de
-activar desgaste o remiendo. La apariencia cambia al perderse exactamente la
+fusionar inventarios se resuelven sin alterar esos valores. En ese corte aún
+faltaba migrar almacenes, comercio/robo, herencia, escrow y tráfico fuera del
+mapa; esas rutas se cubrieron después, antes de activar desgaste y remiendo.
+La apariencia cambia al perderse exactamente la
 copia vestida; queda pendiente capturarla cuando haya Playwright disponible en
 el worktree.
 

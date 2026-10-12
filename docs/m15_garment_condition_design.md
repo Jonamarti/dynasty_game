@@ -227,8 +227,10 @@ an outfit as evidence. Wear, repair progress, private cold exposure, and
 another person's `warm:<item>` belief are not public outfit descriptions.
 Any future condition display must preserve the existing knowledge boundary.
 
-## Separate future behavior
+## Remaining separate behavior
 
-Mending and hide dressing are explicit actions on owned garments off the body.
-Autonomous garment work, additional repair materials, wear-rate calibration,
-and any public condition display remain separate design work.
+NPC can autonomously mend and dress eligible owned garments when they already
+carry the required materials; they do not fetch garments or materials. The
+current priorities and initial wear rate have not been calibrated by cohorts.
+Additional repair materials and any public condition display remain separate
+design work.

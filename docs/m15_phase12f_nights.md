@@ -30,11 +30,10 @@ disabled-reader mutant because additional people walked into range by noon;
 it was corrected before shipping, without changing a check threshold.
 
 The focused unit run passes 3/3; the single-seed scenario passes 3/3, none n/a.
-Typecheck is currently blocked by concurrent garment-condition edits in
-`Brain.ts` (`FoundTargets` lacks `garmentMendingItem` and related fields at
-4289/5146–48); this is outside this change. The earlier full single-seed
-baseline had inherited failures in `cravings-steer-the-diet`, `perf-budget` and
-`hills-see-farther`.
+The typecheck blocker recorded during the original concurrent implementation
+was resolved; the current checkout passes `npm.cmd run typecheck`. The earlier
+single-seed baseline had inherited failures in `cravings-steer-the-diet`,
+`perf-budget` and `hills-see-farther`.
 
 ## Remaining evidence
 

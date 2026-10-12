@@ -1,3 +1,11 @@
+## 2026-10-12 — docs: reconcile M15 garment and nights status
+
+Updated the historical 14c notes to point to later delivery of physical
+transfers, daily wear, manual/autonomous mending, and autonomous hide dressing.
+The garment design note now lists cohort calibration and optional public status
+as remaining work. Corrected the nights report's stale typecheck blocker using
+the current successful typecheck. No gameplay behavior changed.
+
 ## 2026-10-12 — m15: remiendo autónomo de prendas (0.15.110-alpha)
 
 Adultos NPC pueden elegir el remiendo de una unidad propia, dañada y no vestida
