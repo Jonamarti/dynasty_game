@@ -2,7 +2,7 @@
 import type { Simulation } from '../sim/core/Simulation.ts';
 import type { Person } from '../sim/entities/Person.ts';
 import { ARRIVAL_RADIUS } from '../sim/systems/MovementSystem.ts';
-import { CHOP_POSES, DIG_POSES, EXTRACT_POSES, FARM_POSES, FISH_POSES, GATHER_POSES, MAKE_POSES, type ArtPose } from './ArtManifest.ts';
+import { BUILD_POSES, CHOP_POSES, DIG_POSES, EXTRACT_POSES, FARM_POSES, FISH_POSES, GATHER_POSES, MAKE_POSES, type ArtPose } from './ArtManifest.ts';
 import { RECIPES } from '../sim/entities/Recipe.ts';
 import { isStationFor } from '../sim/entities/Building.ts';
 
@@ -122,4 +122,23 @@ export function farmingPose(
   // Show the hand motion only while the crop's actual state supports this order.
   if (person.action === 'sow' ? !field.crop.isFallow : !field.crop.isRipe) return null;
   return workFrame(FARM_POSES, person.workedTicks, alpha);
+}
+
+/** Hammering is shown only on a reachable construction or repair with progress. */
+export function buildingPose(
+  person: Person, sim: Pick<Simulation, 'buildingsById'>,
+  moving: boolean, alpha = 1,
+): ArtPose | null {
+  if (moving || !person.alive || person.action !== 'build' || person.workedTicks <= 0 || person.targetBuildingId === null) return null;
+  const site = sim.buildingsById.get(person.targetBuildingId);
+  if (!site || (site.contains(person.x, person.y) !== true &&
+      !(site.def.station && person.distanceTo({ x: site.centerX, y: site.centerY }) <= ARRIVAL_RADIUS))) return null;
+  // Earthworks are handed to dig/pile, and an unfinished site with missing
+  // materials is a haul target rather than a builder's work surface.
+  if (site.earth && (site.def.earthwork || !site.earthDone)) return null;
+  const repairing = site.complete;
+  if (repairing) {
+    if (site.durability === null || site.durability >= site.def.workTicks) return null;
+  } else if (!site.materialsReady || site.progress <= 0) return null;
+  return workFrame(BUILD_POSES, person.workedTicks, alpha);
 }

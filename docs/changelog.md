@@ -1,3 +1,11 @@
+## 2026-10-12 — M15 fase 17: gesto de construcción
+
+La construcción y reparación de obras usa cuatro poses de martillo generadas,
+activadas solo por trabajo y progreso reales dentro del alcance del objetivo.
+El selector no altera la simulación. La captura está en
+`artifacts/screenshots/m15-building-animation-2026-10-12/`. Versión
+`0.15.117-alpha`.
+
 ## 2026-10-12 — M15 15d: respetar el selector de comida perecedera
 
 La planificación autónoma ya usa el mismo selector de atractivo y perecibilidad

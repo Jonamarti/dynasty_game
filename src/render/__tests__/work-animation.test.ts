@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Person } from '../../sim/entities/Person.ts';
 import { RNG } from '../../sim/core/RNG.ts';
-import { diggingPose, extractionPose, farmingPose, fishingPose, gatheringPose } from '../WorkAnimation.ts';
+import { buildingPose, diggingPose, extractionPose, farmingPose, fishingPose, gatheringPose } from '../WorkAnimation.ts';
 import type { Simulation } from '../../sim/core/Simulation.ts';
 
 function fixture() {
@@ -174,6 +174,47 @@ describe('farming animation', () => {
     expect(farmingPose(person, sim, false)).toBeNull();
     crop.isFallow = true; field.complete = false;
     expect(farmingPose(person, sim, false)).toBeNull();
+  });
+});
+
+describe('building animation', () => {
+  function buildFixture() {
+    const person = new Person('Builder', 4, 4, 0, new RNG('build-animation'));
+    person.action = 'build'; person.targetBuildingId = 3; person.workedTicks = 1;
+    const site: any = { x: 3, y: 3, centerX: 4, centerY: 4, complete: false, progress: 1,
+      materialsReady: true, earth: null, earthDone: true, durability: null,
+      def: { id: 'hut', workTicks: 100, earthwork: undefined, station: undefined },
+      contains: (x: number, y: number) => x >= 3 && x <= 5 && y >= 3 && y <= 5 };
+    const sim = { buildingsById: new Map([[3, site]]) } as unknown as Pick<Simulation, 'buildingsById'>;
+    return { person, site, sim };
+  }
+
+  it('cycles four hammer strokes while a reachable site is actively progressing', () => {
+    const { person, sim } = buildFixture();
+    expect([1, 3, 5, 7, 9].map(ticks => { person.workedTicks = ticks; return buildingPose(person, sim, false, 0); }))
+      .toEqual(['b0', 'b1', 'b2', 'b3', 'b0']);
+  });
+
+  it('also covers damaged structures, but not travel, haul handoffs, interruptions, or completed work', () => {
+    const { person, site, sim } = buildFixture();
+    expect(buildingPose(person, sim, true)).toBeNull();
+    person.action = 'haul';
+    expect(buildingPose(person, sim, false)).toBeNull();
+    person.action = 'build'; person.x = 8;
+    expect(buildingPose(person, sim, false)).toBeNull();
+    person.x = 4; site.materialsReady = false;
+    expect(buildingPose(person, sim, false)).toBeNull();
+    site.materialsReady = true; site.complete = true; site.durability = 100;
+    expect(buildingPose(person, sim, false)).toBeNull();
+    site.durability = 50;
+    expect(buildingPose(person, sim, false)).toBe('b0');
+  });
+
+  it('does not show a hammer for an unfinished earthwork', () => {
+    const { person, site, sim } = buildFixture();
+    site.earth = [];
+    site.def.earthwork = { kind: 'dig' };
+    expect(buildingPose(person, sim, false)).toBeNull();
   });
 });
 

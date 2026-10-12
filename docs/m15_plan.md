@@ -1,3 +1,9 @@
+**Avance del 2026-10-12 — 17, gesto de construcción:** el trabajador que
+construye o repara una obra terminada usa cuatro poses generadas `b0`–`b3`.
+El selector exige alcance, trabajo activo y progreso/materiales reales; no
+anima el movimiento de tierra ni la espera de materiales. Captura en
+`artifacts/screenshots/m15-building-animation-2026-10-12/`.
+
 **Corrección del 2026-10-12 — 15d, selector autónomo de comida:** Brain usa
 `bestFoodFor()` para escoger el objetivo que después ejecuta `doEat`, así la
 planificación conserva la regla compartida de gastar primero el alimento más
