@@ -301,6 +301,72 @@ describe('bedding and beds', () => {
     expect(shelf.store.count('fat')).toBe(FAT_LAMP_REFILL_FAT);
   });
 
+  it('brings a partial physical-fat stack to its own lamp shelf without storing the rest of its pack', () => {
+    const { sim, person, house } = fixture();
+    person.isPlayer = true;
+    sim.autonomy = 'manual';
+    const lamp = new Building(BUILDINGS.fat_lamp!, house.centerX, house.centerY, person.bandId, sim.ids);
+    lamp.hostId = house.id; lamp.complete = true; lamp.fuelRemaining = 0;
+    sim.buildings.push(lamp); sim.buildingsById.set(lamp.id, lamp); sim.buildingHash.insert(lamp);
+    const shelf = new Building(BUILDINGS.shelf!, house.centerX + 1, house.centerY, person.bandId, sim.ids);
+    shelf.hostId = house.id; shelf.complete = true;
+    sim.buildings.push(shelf); sim.buildingsById.set(shelf.id, shelf); sim.buildingHash.insert(shelf);
+
+    // Deer and boar hunting adds actual fat to this inventory; this route
+    // carries that one-unit yield into the existing household storage system.
+    person.inventory.add('fat', 1);
+    person.inventory.add('berries', 2);
+    const scored = scoreOneBrainTick(sim, person);
+    expect(scored.found.lampToRefuel).toBe(lamp);
+    expect(scored.found.storeTarget).toBe(shelf);
+    expect(scored.found.storeItemId).toBe('fat');
+    expect(scored.found.storeItemCount).toBe(1);
+
+    const brain = (sim as unknown as { brain: Brain }).brain;
+    expect(brain.think(person, scored.context, new Set(['store']))).toBe('store');
+    expect(person.targetBuildingId).toBe(shelf.id);
+    expect(person.targetItemId).toBe('fat');
+    expect(person.targetItemCount).toBe(1);
+    expect(sim.order(person, 'store', { buildingId: shelf.id, itemId: 'fat', count: 1 })).toBe(true);
+    for (let tick = 0; tick < 12 && shelf.store.count('fat') === 0; tick++) sim.step();
+    expect(shelf.store.count('fat')).toBe(1);
+    expect(person.inventory.count('fat')).toBe(0);
+    expect(person.inventory.count('berries')).toBe(2);
+    const loaded = Simulation.fromCheckpointRecord(JSON.parse(JSON.stringify(toCheckpointRecord(sim))));
+    expect(loaded.buildingsById.get(shelf.id)?.store.count('fat')).toBe(1);
+  });
+
+  it('does not route partial fat to a player lamp, charged lamp or full home shelf', () => {
+    const { sim, person, house } = fixture();
+    person.isPlayer = true;
+    sim.autonomy = 'manual';
+    person.needs.hunger = 90;
+    person.inventory.add('fat', 1);
+    const lamp = new Building(BUILDINGS.fat_lamp!, house.centerX, house.centerY, person.bandId, sim.ids);
+    lamp.hostId = house.id; lamp.complete = true; lamp.fuelRemaining = 0;
+    const shelf = new Building(BUILDINGS.shelf!, house.centerX + 1, house.centerY, person.bandId, sim.ids);
+    shelf.hostId = house.id; shelf.complete = true;
+    sim.buildings.push(lamp, shelf);
+    for (const building of [lamp, shelf]) {
+      sim.buildingsById.set(building.id, building);
+      sim.buildingHash.insert(building);
+    }
+
+    lamp.playerPlaced = true;
+    expect(scoreOneBrainTick(sim, person).found.storeItemId).not.toBe('fat');
+    lamp.playerPlaced = false;
+    // The helper advances one world tick before sampling; keep one charge
+    // beyond that decrement so this remains a non-empty-lamp control.
+    lamp.fuelRemaining = 2;
+    expect(scoreOneBrainTick(sim, person).found.storeItemId).not.toBe('fat');
+    lamp.fuelRemaining = 0;
+    shelf.hostId = house.id + 1000;
+    expect(scoreOneBrainTick(sim, person).found.storeItemId).not.toBe('fat');
+    shelf.hostId = house.id;
+    shelf.store.add('flint', shelf.def.storage);
+    expect(scoreOneBrainTick(sim, person).found.storeItemId).not.toBe('fat');
+  });
+
   it('does not autonomously refill player-placed, foreign-home, ruined-host or non-empty lamps', () => {
     const { sim, person, house } = fixture();
     person.isPlayer = true;

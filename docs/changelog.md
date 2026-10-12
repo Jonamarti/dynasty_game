@@ -15351,3 +15351,10 @@ Los NPC reponen una lámpara instalada en su propio hogar con dos grasas de su
 estante y la acción existente de recarga. Se conservan propiedad y procedencia
 del jugador al colocarla. Pruebas focales; sin RNG, UI, ni calibración.
 
+## 2026-10-12 — M15 16d: llevar grasa de caza al estante de la lámpara (0.15.96-alpha)
+
+La grasa real de caza se almacena como carga parcial solo si la lámpara vacía
+pertenece a la casa del cazador y el estante tiene hueco. Se guarda mediante la
+acción ordinaria item-scoped; no desaloja comida ni ropa del inventario. Pruebas
+focales de éxito y controles negativos. Sin RNG, UI, ni calibración.
+

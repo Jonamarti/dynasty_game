@@ -3201,6 +3201,15 @@ export class Brain {
       : [];
     lampToRefuel = householdHomePieces.find(piece => piece.def.id === 'fat_lamp' &&
       !piece.playerPlaced && piece.fuelRemaining === 0) ?? null;
+    // A hunt's fixed deer/boar yield is already real, edible fat. When that
+    // small yield cannot refill an empty lamp yet, bring it to this household's
+    // own shelf through the ordinary `store` transfer; do not pull from a
+    // public pile or turn another family's hunt into our lamp supply.
+    const lampFatDeliveryStore = lampToRefuel && person.inventory.count('fat') > 0 &&
+      person.inventory.count('fat') < FAT_LAMP_REFILL_FAT
+      ? householdHomePieces.find(piece => piece.def.storage > 0 && piece.storageFree > 0 &&
+        this.canUse(person, piece, ctx)) ?? null
+      : null;
     if (stores.length > 0) {
       const carried = this.carriedNutrition(person);
       // A handload of sticks and flint used to make `store` impossible: the
@@ -3229,7 +3238,15 @@ export class Brain {
           .filter(row => row.count > 0)
           .sort((a, b) => b.count - a.count)[0] ?? null
         : null;
-      if (unloadItem !== null || foodToStore !== null) {
+      if (lampFatDeliveryStore) {
+        // Keep this as an item-scoped store order: doStore otherwise empties
+        // the whole pack, which could consume clothes or food needed en route.
+        add('store', 0.8 * this.proximityBonus(person,
+          { x: lampFatDeliveryStore.centerX, y: lampFatDeliveryStore.centerY }, ctx.sightRadius));
+        storeTarget = lampFatDeliveryStore;
+        storeItemId = 'fat';
+        storeItemCount = person.inventory.count('fat');
+      } else if (unloadItem !== null || foodToStore !== null) {
         // Which building this person's own household calls home, so a greedy
         // person can be pulled toward it below. Null for anyone whose
         // household has never slept under a roof yet.

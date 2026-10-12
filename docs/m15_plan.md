@@ -6,6 +6,24 @@ mitad, sin cambiar la definición compartida ni el ritmo de otras copias. Las
 rutas de propiedad y persistencia preservan ambos campos. NPC no eligen la
 acción autónomamente; calibración de desgaste y cohortes siguen diferidas.
 
+**Avance del 2026-10-12 — 16d, grasa de caza para lámparas:** la caza real de
+ciervo/jabalí ya da grasa física (1/2 unidades) al cazador o la deja como
+montón si no cabe. Si el adulto carga una cantidad parcial, su propia casa
+tiene una lámpara NPC vacía y un almacén con espacio, lleva solo esa grasa al
+estante mediante el traslado ordinario. Allí el lector de reposición ya puede
+retirarla al completar las dos unidades. No genera grasa ni crea una caza de
+mantenimiento; no se implementa acopio/craft dedicado. [Contrato](m15_phase16d_bedding.md).
+Sin RNG ni cohortes/calibración.
+
+**Avance del 2026-10-12 — 16d, autonomía del hogar interior:** ante una deuda
+de frío, un adulto con el diseño elige la receta permanente del fireplace antes
+que muebles de confort, busca barro/sílex de nodos cercanos para completar el
+faltante exacto, y dirige fabricación/colocación a su casa terminada propia.
+La warmth drive reconoce cada tramo y el límite de trabajo por frío no bloquea
+esta respuesta; los límites de hambre/sed siguen vigentes. Prueba focal del
+target/receta/placement, sin RNG nuevo ni amplitudes calibradas. Cohortes
+diferidas. [Contrato](m15_phase16d_bedding.md).
+
 **Avance del 2026-10-12 — 16e, lector del motivo de comodidad:** la presión
 lee directamente `mood.comfort` con la curva de urgencia ya existente: sólo un
 débito produce presión, sin nuevo coeficiente. El cansancio de comodidad ayuda

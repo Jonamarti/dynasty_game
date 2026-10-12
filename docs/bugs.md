@@ -1,3 +1,14 @@
+### 2026-10-12 — partial hunt fat can reach a lamp shelf; upkeep does not source it
+
+**Mechanism shipped in 0.15.74-alpha:** an adult carrying partial fat routes it
+to storage in their own home only while a non-player-placed empty lamp needs
+refilling. Ordinary deer/boar hunting is the source (one/two fat); item-scoped
+store preserves the rest of the pack. This closes the carry-to-storage gap,
+not active sourcing: NPCs do not hunt for lamp upkeep or collect dropped fat
+from piles, and no rendering recipe exists. Those paths need real quarry/carcass
+and pile ownership/proximity behavior before they can provide the lamp's supply.
+Focused mechanism tests pass; no calibration/cohorts were run.
+
 ## 2026-10-12 — Lector de comodidad aún sin calibrar
 
 El déficit nocturno de `mood.comfort` ahora mueve las elecciones de regreso,
