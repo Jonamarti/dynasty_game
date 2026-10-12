@@ -15487,3 +15487,9 @@ terminada contiene una lámpara NPC vacía. La acción usa el pickup y los permi
 de propiedad existentes, recoge una unidad y reevalúa la necesidad. No crea
 grasa, inicia una cacería ni cambia la UI o el estado guardado.
 
+## 2026-10-12 — m15: limita el remiendo autónomo a adultos (0.15.111-alpha)
+
+La selección autónoma comprueba `Person.isChild`, que usa el umbral adulto del
+modelo de vida en años. La prueba negativa protege a menores aunque tengan ropa
+y materiales disponibles; las órdenes explícitas conservan su puerta existente.
+

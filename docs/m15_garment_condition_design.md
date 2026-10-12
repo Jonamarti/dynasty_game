@@ -87,8 +87,8 @@ chronicle records the break. Unworn spares do not age. This is a deliberate
 initial rate, not a cohort-calibrated balance claim. Condition remains private
 to its owner; observers receive no wear value through `Knowledge`.
 
-The `mend_garment` action is offered only for the actor's own garment stack. It
-selects one damaged, unworn physical unit and carries its unit ID and method on
+The `mend_garment` action is autonomously offered only to adults for their own
+garment stack. It selects one damaged, unworn physical unit and carries its unit ID and method on
 `Person`, including through checkpoints and need-interrupted order resume. Its
 first bounded contract is 100 build-work points: known tailoring with one
 needle and one thread restores full condition; rope without the complete

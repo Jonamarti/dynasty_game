@@ -1150,7 +1150,7 @@ export class Brain {
     // bank, so interruption or later transfer does not lose progress. Avoid
     // starting a rope repair on a nearly pristine unit when its 0.25 cap
     // would waste most of the only condition it can restore.
-    if (!person.isPlayer && person.age >= 1 && !pressedByNeed(person, ctx.needs.workLimits)) {
+    if (!person.isPlayer && !person.isChild && !pressedByNeed(person, ctx.needs.workLimits)) {
       let bestRepair = 0;
       for (const unit of person.inventory.garmentUnitsOf()) {
         const plan = planGarmentMending(person, unit.itemId, unit.unitId);

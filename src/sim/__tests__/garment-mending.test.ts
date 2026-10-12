@@ -73,6 +73,30 @@ describe('garment mending', () => {
     expect(lastScores.get(person.id)?.some(row => row.id === 'mend_garment') ?? false).toBe(false);
   });
 
+  it('does not offer autonomous repairs to a child', () => {
+    const { sim, person } = fixture();
+    person.isPlayer = false;
+    person.age = 13 * person.daysPerYear;
+    expect(person.isChild).toBe(true);
+    person.inventory.add('fur_coat', 1);
+    person.inventory.add('rope', 1);
+    const unit = person.inventory.garmentUnitsOf('fur_coat')[0]!;
+    person.inventory.setGarmentUnitCondition(unit.unitId, 0.4, 0);
+    const brain = (sim as unknown as { brain: Brain }).brain;
+    const score = brain.score.bind(brain);
+    let childScores: string[] | null = null;
+    vi.spyOn(brain, 'score').mockImplementation((actor, context) => {
+      const result = score(actor, context);
+      if (actor === person) childScores = result.scores.map(row => row.id);
+      return result;
+    });
+
+    for (let i = 0; i < 40 && childScores === null; i++) sim.step();
+
+    expect(childScores).not.toBeNull();
+    expect(childScores).not.toContain('mend_garment');
+  });
+
   it('uses a fixed 100-work tailored repair to restore the exact unit fully', () => {
     const { sim, person } = fixture();
     person.knownTech.add('tailoring');
