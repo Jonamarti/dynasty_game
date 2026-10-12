@@ -5,7 +5,8 @@ trabajo real ya validado. El selector sigue la acción y sus marcadores público
 de trabajo sin inspeccionar el inventario, la unidad tratada ni su progreso;
 viaje y espera no muestran el gesto. Se añaden pruebas de selector y E2E con
 captura estable. Contrato: [m15_hide_dressing_animation.md](m15_hide_dressing_animation.md).
-La versión funcional pasa a `0.15.124-alpha`.
+La prueba se incluye en `npm run e2e`. La versión funcional pasa a
+`0.15.124-alpha`.
 
 ## 2026-10-13 — M15 fase 16: medición pareada de hogares
 
