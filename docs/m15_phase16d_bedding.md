@@ -57,8 +57,21 @@ icon are generated from `art/src`; no panel or overlay changed.
 
 This is a single shelf per home with the existing 20-unit generic capacity.
 It does not provide category sorting, dedicated stock requests, or shelf
-upgrades. The fireplace and other planned furniture remain open, as do the
+upgrades. Other planned furniture remains open, as do the
 remaining phase 16e/16f measures and comfort work.
+
+## 2026-10-12: autonomous household fat lamp
+
+Once a completed home already has a sleep surface, bench and shelf, an adult
+with `fat_lamp` and the recipe materials can craft and place one fat lamp in
+the home. It uses the existing furniture placement checks and receives the
+ordinary full fuel charge on placement, so the night-light reader and renderer
+show a real light source. A home with any hosted lamp does not produce another
+one. No new UI, art, saved field, or RNG draw is involved.
+
+This is one initial charge only. NPC refuelling, lamp upkeep during a long
+campaign, other listed furniture, and the phase 16e/16f
+measurements remain open. No cohort or lighting calibration is claimed.
 
 ## 2026-10-10: household autonomy, first surface
 
@@ -130,7 +143,7 @@ gates. There is no new action label or UI, so no screenshot was needed.
 
 ## 2026-10-11: fat lamp, persistent fuel and room light
 
-`fat_lamp` is a firemaking furniture recipe using one flint and two fat. Placing
+`fat_lamp` is a Fire-web furniture recipe using one flint and two fat. Placing
 it in the finished household home starts a 1200-tick charge. Its fuel is a
 `Building` field, restored from older graphs as empty; each simulation tick
 burns one unit, and two carried fat refill an empty or partly used lamp to full.
@@ -148,3 +161,133 @@ option at `artifacts/screenshots/m15-phase16d-fat-lamp-2026-10-11/`.
 
 When a furniture tile overlaps its host footprint, `buildingAt` resolves the
 small furniture object first so its own contextual actions remain reachable.
+
+## 2026-10-12: indoor household fireplace
+
+`fireplace` is a Fire-web design downstream of `firemaking`; the furniture
+recipe uses four mud and two flint. A household member can place a carried
+fireplace only while inside their own completed, unruined home, on a free
+walkable interior tile. Its hosted `Building` persists through checkpoints.
+Like the planned table, it is a permanent hearth with no `fuelRemaining`
+requirement: a zero fuel value does not disable the fire.
+
+This is a real heat and local-light source through the shared hearth readers.
+The existing recipes that name `station: 'hearth'` can now use the indoor
+fireplace, while smoking recipes keep their `drying_rack` station and accept a
+nearby fireplace through the shared `hearthNear` fire check. Tests exercise
+warmth, bounded local light, cooking at the fireplace, smoke-drying at a rack,
+ownership/interior/design refusals, and checkpoint persistence. The world
+sprite and carried item icon are generated from `art/src`; the capture is
+`artifacts/screenshots/m15-phase16d-fireplace-2026-10-12/01-fireplace-in-house.png`.
+
+### Fireplace construction autonomy — 2026-10-12
+
+When an adult has fireplace design, cold debt, a completed own home and a free
+tile, the recipe takes priority over comfort furnishings. The NPC targets the
+first missing ingredient (four mud from clay nodes, then two flint from flint
+nodes), bounds the harvest to that shortage, then crafts and places the hearth
+through existing actions. Only fireplace work is exempted from the cold work
+threshold because it answers that need; hunger and thirst still interrupt it.
+No resource source, fuel rule, RNG stream or player authority was added.
+
+Tests cover missing-tech, no-cold and incomplete-home controls plus gather,
+craft and place targets. The fixture isolates the scored chain; it does not
+measure natural adoption, comfort balance or population effects. Autonomous
+sources and other planned comfort furniture remain open. Lamp upkeep is below.
+
+## 2026-10-12: phase 16e, one midnight sleep and safety sample
+
+Sleep recovery and the mood writer use the same surface-quality ladder: open
+ground is 0.7, open ground near a physical hearth is 0.8, a bare interior is
+0.9, bedding is 1.0 and a bed is 1.1. The existing interior recovery reader
+remains authoritative; the outdoor action now also reads its nearby hearth.
+
+`shareTheHearth` already runs once per day and records the roof used by
+conception. It now uses that same pass to write comfort from sleep quality,
+the sleeper's cold need and exposed snow, and security from four observable
+terms: proximity to the band's camp, band members nearby, a nearby band guard,
+and sleeping on a cell claimed by the band. Non-sleepers receive no nightly
+nudge. These are direct, deterministic samples with no added state or RNG.
+Focused tests cover surface/cold/snow direction, each safety term, the sleeping
+gate and outdoor hearth quality. The coefficients are mechanisms only; no
+cohort or calibration is claimed.
+
+## 2026-10-12: phase 16f, the `homes` mechanism scenario
+
+The fast `homes` scenario stages one completed family home per band and gives
+one adult a bed, so it can isolate indoor sleep and mood readers from the
+longer material-gathering and house-construction economy. The NPC still routes
+and places the furniture through the regular action. Its checks require that
+at least 60% of midnight samples under an interior roof reach bedding-or-bed
+quality, observe quality and nonzero cold debt in the same mood sample, observe
+each of camp/huddle/guard/claimed-cell security inputs, see NPC-placed furniture,
+and retain pathfinding and wall-safety checks. The 2026-10-12 single-seed run
+passed all seven applicable checks in 2400 steps. This validates the readers
+and fixture, not comfort amplitudes or population outcomes; calibration and
+cohort runs remain deferred.
+
+## 2026-10-12: NPC upkeep for an empty household fat lamp
+
+An adult scores a refill only for a complete, non-ruined, empty fat lamp hosted
+by their own completed, usable household home, and only when the lamp was not
+placed by the player. With two fat already carried, the existing `refuel_lamp`
+action routes to the room and uses the ordinary refill validation/consumption.
+Otherwise, if the home hosts a completed storage piece with at least two fat,
+the scorer sends the adult to take exactly two from that piece; the next think
+can then select the lamp. Both paths use existing inventory and building state,
+add no fuel rule or RNG draw, and leave other households' goods and player-
+placed lamps alone. A partial carried hunt yield can now take the ordinary
+item-scoped `store` route into this same household shelf when the empty lamp
+needs it; no fuel source is scripted into storage.
+
+Focused tests inspect the live brain score/target, exercise carried-fat refill,
+and reject player-placed, non-empty, foreign-home and ruined-host candidates.
+Existing explicit-order tests retain the visible refusal for missing fat and
+foreign ownership. NPCs do not gather/craft fat for lamp upkeep, refill lamps
+outside their own home, replace lamps, or refill a player-placed lamp; partial
+charges are left alone until empty. Other planned comfort furniture remains
+open. No calibration or cohort result is claimed. NPCs do not seek or kill
+quarry just to maintain the lamp, and no
+renderer/crafting recipe produces fat; ordinary deer/boar hunts remain the
+physical source.
+
+Still open after 16e/16f: other planned comfort furniture and deferred
+calibration.
+
+## 2026-10-12: phase 16e, the comfort drive reads sleep mood
+
+The new `comfort` drive is `urgencyCurve(max(0, -mood.comfort))`: a neutral or
+positive mood creates no new pressure, while an accumulated comfort deficit
+uses the same 0–100 need curve already used elsewhere. The existing score rows
+consume it directly: it raises the dusk return-home score, increases the
+existing room-quality weight when choosing a sleep shelter, lets that shelter
+justify sleep before fatigue is high, and scales the existing scores for
+crafting or placing an already-eligible household furnishing. The pressure
+uses no added sensitivity/weight, draws no RNG, and is excluded from
+long-action commitment/interruption policy; it cannot create a destination or
+missing furniture/materials.
+
+The focused mechanism test compares equal-seed simulations with neutral versus
+positive comfort as a control, then verifies a negative comfort sample raises
+the real `go_home` score. It also checks the pressure endpoints and declared
+readers. Typecheck and the drive/commitment tests pass. No UI surface changed;
+no coefficient calibration or cohort result is claimed.
+
+## 2026-10-12: carried hunting fat reaches its household lamp shelf
+
+`doHunt` is the physical source: deer yield one fat and wild boar two, stored
+in the hunter's ordinary inventory up to capacity and dropped as an ordinary
+item pile only for the overflow. No renderer or scripted stock path exists.
+When an adult carries a partial amount, has an empty NPC-owned lamp in their
+completed home, and that home has a usable storage piece with room, the scorer
+targets that home piece and names only the carried fat count. The ordinary
+`store` action moves it through inventory transfer; after enough real fat has
+accumulated, the existing lamp upkeep route can withdraw two and refill.
+
+The focused tests prove the selected target and item-scoped deposit, preserve
+other carried food, and reject player-placed/charged lamps and a full shelf.
+NPCs still do not start hunts because a lamp is low, retrieve fat from a ground
+pile for lamp upkeep, butcher a carcass specifically for fat, or render fat.
+These would need separate mechanisms and should use real hunting/carcass state
+if added; no stock is generated by this feature. No UI changed, and no
+calibration or cohort result is claimed.

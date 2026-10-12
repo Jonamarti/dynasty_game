@@ -156,9 +156,9 @@ export class Animal {
   lastRunAt = -Infinity;
 
   /**
-   * Who last put it through a hunt that turned on them, and when — M15 phase
-   * 23g reads both (`WildlifeSystem.grudgeOf`). A grudge is a few days long,
-   * not a life sentence: `hurtAt` is what lets an animal forget.
+   * Who last wounded it, and when — M15 phase 23g reads both
+   * (`WildlifeSystem.grudgeOf`). A grudge is a few days long, not a life
+   * sentence: `hurtAt` is what lets an animal forget.
    */
   hurtBy: number | null = null;
   hurtAt = 0;

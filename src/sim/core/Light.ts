@@ -14,9 +14,10 @@ export function lightFactor(light: number, floor: number): number {
   return floor + (1 - floor) * Math.max(0, Math.min(1, light));
 }
 
-/** A completed hearth is the existing tended-fire model; roofs are not fires. */
+/** A completed camp hearth or built indoor fireplace is a physical fire. */
 export function hearthLight(building: Building): LightSource | null {
-  return building.complete && !building.ruined && building.def.id === 'hearth'
+  return building.complete && !building.ruined &&
+    (building.def.id === 'hearth' || building.def.id === 'fireplace')
     ? { x: building.centerX, y: building.centerY, radius: HEARTH_LIGHT_RADIUS, strength: 1 }
     : null;
 }

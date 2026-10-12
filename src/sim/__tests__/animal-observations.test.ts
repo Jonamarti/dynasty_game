@@ -102,10 +102,10 @@ describe('animal event timestamps', () => {
       person.y = deer.y;
       expect(sim.order(person, 'hunt', { animalId: deer.id })).toBe(true);
       sim.step();
-      // The grudge is set by the real defence branch, independently of the
-      // presentation hook. This catches stamping a human's ordinary hunt as
-      // an animal attack, including a human miss with no counterattack.
-      expect(deer.lastAttackAt >= 0).toBe(deer.hurtBy === person.id);
+      // A landed human shot can now stamp the quarry's grudge without making
+      // it an animal attack. The reverse implication remains exact: every
+      // attack timestamp must belong to the defender whose blow landed.
+      if (deer.lastAttackAt >= 0) expect(deer.hurtBy).toBe(person.id);
       if (deer.lastAttackAt === -Infinity) didNotCounterattack = true;
       if (deer.alive && deer.lastAttackAt >= 0) counterattacked = deer;
     }

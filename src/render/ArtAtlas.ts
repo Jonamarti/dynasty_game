@@ -30,7 +30,7 @@ export interface WornGarments {
   legs?: 'trousers';
   feet?: 'boots' | 'wraps';
   hands?: 'gloves';
-  head?: 'cap' | 'hood';
+  head?: 'cap' | 'hood' | 'beads';
   cloak?: 'cloak' | 'wool_cloak';
 }
 

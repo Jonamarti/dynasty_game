@@ -27,7 +27,7 @@ test('shows and captures the refuel option for a lit indoor fat lamp in Spanish'
     if (!house) throw new Error('could not site house near player');
     house.complete = true; house.durability = house.def.workTicks;
     sim.householdsById.get(person.householdId).homeBuildingId = house.id;
-    person.knownTech.add('firemaking'); person.inventory.add('fat_lamp', 1); person.inventory.add('fat', 2);
+    person.knownTech.add('fat_lamp'); person.inventory.add('fat_lamp', 1); person.inventory.add('fat', 2);
     sim.peopleHash.remove(person);
     person.x = house.centerX; person.y = house.centerY;
     person.targetX = person.x; person.targetY = person.y;

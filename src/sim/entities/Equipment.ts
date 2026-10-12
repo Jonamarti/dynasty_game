@@ -22,7 +22,7 @@ export interface EquippedItem {
   count: number;
   /** Phase 14c: exact physical garment copy referenced in the owner's Inventory. */
   unitId?: string;
-  /** Garment condition; read only once phase 14c wear is activated. */
+  /** Optional legacy equipment metadata; garment condition lives on its Inventory unit. */
   wear?: number;
   /** Phase 12d: ticks of fuel left on a lit torch; reaches zero before the stack is consumed. */
   lit?: number;

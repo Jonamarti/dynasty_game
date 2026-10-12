@@ -29,6 +29,59 @@ describe('compact food rate observation', () => {
     expect(JSON.stringify(telemetry)).toBe(before);
   });
 
+  it('reports farm and food-processing output against observed work and consumed materials', () => {
+    const record = recordCompactFoodRates({ ...base, telemetry: {
+      compact_production_work_ticks_farm: 20,
+      compact_production_input_farm_grain: 2,
+      compact_production_output_farm_grain: 8,
+      compact_production_work_ticks_processing: 10,
+      compact_production_input_processing_fish: 2,
+      compact_production_input_processing_salt: 1,
+      compact_production_output_processing_roast_fish: 2,
+      compact_production_work_ticks_recipe_roast_fish: 10,
+      compact_production_input_recipe_roast_fish_fish: 1,
+      compact_production_output_recipe_roast_fish_roast_fish: 1,
+    } });
+    expect(record.version).toBe(3);
+    expect(record.production.actions.farm.inputItems).toEqual({ grain: 2 });
+    expect(record.production.actions.farm.outputItems).toEqual({ grain: 8 });
+    expect(record.production.actions.farm.outputUnitsPerWorkTick).toBe(0.4);
+    expect(record.production.actions.farm.netNutritionPerWorkTick).toBe(0);
+    expect(record.production.actions.processing.inputItems).toEqual({ fish: 2, salt: 1 });
+    expect(record.production.actions.processing.outputItems).toEqual({ roast_fish: 2 });
+    expect(record.production.actions.processing.netNutrition).toBe(12);
+    expect(record.production.actions.processing.netNutritionPerWorkTick).toBe(1.2);
+    expect(record.production.actions.processing.materialWithoutWork).toBe(false);
+    expect(record.production.version).toBe(2);
+    expect(record.production.recipes.roast_fish).toMatchObject({
+      workTicks: 10,
+      inputItems: { fish: 1 },
+      outputItems: { roast_fish: 1 },
+      coverage: 'measured',
+    });
+    expect(record.production.recipes.roast_fish.netNutritionPerWorkTick).toBe(0.6);
+  });
+
+  it('flags material output with no observed work as a measurement negative control', () => {
+    const record = recordCompactFoodRates({ ...base, telemetry: {
+      compact_production_output_processing_roast_meat: 1,
+    } });
+    expect(record.production.actions.processing.coverage).toBe('n/a');
+    expect(record.production.actions.processing.netNutritionPerWorkTick).toBeNull();
+    expect(record.production.actions.processing.materialWithoutWork).toBe(true);
+  });
+
+  it('keeps recipe material without recipe work at n/a and rejects unknown recipe ids', () => {
+    const record = recordCompactFoodRates({ ...base, telemetry: {
+      compact_production_output_recipe_roast_fish_roast_fish: 1,
+    } });
+    expect(record.production.recipes.roast_fish.coverage).toBe('n/a');
+    expect(record.production.recipes.roast_fish.materialWithoutWork).toBe(true);
+    expect(() => recordCompactFoodRates({ ...base, telemetry: {
+      compact_production_work_ticks_recipe_not_a_recipe: 1,
+    } })).toThrow(/unknown production recipe/);
+  });
+
   it('rejects malformed counts and non-finite nutrition observations', () => {
     expect(() => recordCompactFoodRates({ ...base, elapsedDays: -1 })).toThrow(/elapsedDays/);
     expect(() => recordCompactFoodRates({ ...base, telemetry: { compact_food_nutrition_fish: Infinity } })).toThrow(/finite/);

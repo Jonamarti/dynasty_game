@@ -23,6 +23,22 @@ describe('food cravings', () => {
     expect(bestFoodFor(person)).toBe('meat');
   });
 
+  it('spends an equally appealing perishable ration before preserved food regardless of pack order', () => {
+    const person = new Person('Test', 0, 0, 0, new RNG('preservation-food-choice'), 40);
+    person.macroTarget = { fat: 1 / 3, protein: 1 / 3, carb: 1 / 3 };
+    person.macroBalance = { ...person.macroTarget };
+    person.inventory.add('dried_meat', 1);
+    person.inventory.add('meat', 1);
+    expect(appealOf(person, 'meat')).toBe(appealOf(person, 'dried_meat'));
+    expect(bestFoodFor(person)).toBe('meat');
+
+    person.inventory.remove('meat', 1);
+    person.inventory.remove('dried_meat', 1);
+    person.inventory.add('meat', 1);
+    person.inventory.add('dried_meat', 1);
+    expect(bestFoodFor(person)).toBe('meat');
+  });
+
   it('gets a little water from juicy fruit without relieving more thirst than remains', () => {
     const person = new Person('Test', 0, 0, 0, new RNG('fruit-water'), 40);
     person.inventory.add('apple', 1);

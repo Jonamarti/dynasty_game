@@ -9,6 +9,7 @@ import { WorldNews } from '../social/WorldNews.ts';
 import { WorldTrafficCoordinator } from '../world/WorldTrafficCoordinator.ts';
 import { comarcaIdentityAt } from '../persistence/TileLedger.ts';
 import { toCheckpointRecord } from '../persistence/CheckpointRecords.ts';
+import { fromWorldStateRecord, toWorldStateRecord } from '../persistence/WorldStateRecords.ts';
 import { fromPersonRecord } from '../persistence/EntityRecords.ts';
 function fixture(){
  const seed='traffic-phase36',geography=randomWorldGeography(seed,{regionsWide:24,regionsHigh:12});
@@ -18,6 +19,13 @@ function fixture(){
  const from=state.frontier.active!,width=geography.map.width;
  const destination=[[from.cx+1,from.cy],[from.cx-1,from.cy],[from.cx,from.cy+1],[from.cx,from.cy-1]].map(([cx,cy])=>({cx:(cx!+width)%width,cy:cy!})).find(p=>p.cy>=0&&p.cy<geography.map.height&&geography.profileAt(p.cx,p.cy).biome!=='ocean')!;
  return {state,destination};
+}
+function mutatePartyGarmentRows(record: any, personId: number, mutate: (rows: any[]) => void): void {
+ const person=record.parties[0].party.roster.people.find((entry:any)=>entry.graph.nodes.some((node:any)=>node.kind==='object'&&node.prototype==='Person'&&node.fields.some((field:any)=>field[0]==='id'&&field[1]===personId)));
+ const nodes=person.graph.nodes as any[],personNode=nodes.find(node=>node.kind==='object'&&node.prototype==='Person'&&node.fields.some((field:any)=>field[0]==='id'&&field[1]===personId));
+ const inventoryRef=personNode.fields.find((field:any)=>field[0]==='inventory')[1].ref,inventoryNode=nodes[inventoryRef];
+ const unitsRef=inventoryNode.fields.find((field:any)=>field[0]==='garmentUnits')[1].ref;
+ mutate(nodes[unitsRef].values);
 }
 describe('WorldTrafficCoordinator root transactions',()=>{
  it('moves an NPC merchant and selected cargo to one transit owner, then materializes at arrival after save restore',()=>{
@@ -41,6 +49,51 @@ describe('WorldTrafficCoordinator root transactions',()=>{
   expect(state.current.peopleById.has(merchant.id)).toBe(true);
   expect(loaded.caravans.get(id)?.phase).toBe('returned');
   loaded.validateOwners(state);
+ });
+ it('keeps a physical garment through traveller staging, JSON save/load, arrival and return',()=>{
+  const {state,destination}=fixture(),merchant=state.current.people.find(p=>p.alive&&!p.isPlayer)!;
+  merchant.knownTech.add('marking');merchant.knownTech.add('trade');merchant.inventory.add('hide_armour',1);
+  const unit=merchant.inventory.garmentUnitsOf('hide_armour')[0]!;
+  merchant.inventory.setGarmentUnitCondition(unit.unitId,.63,.37);
+  merchant.worldKnowledge=new WorldKnowledge();merchant.worldKnowledge.see(destination.cx,destination.cy,0);merchant.worldKnowledge.see(state.frontier.active!.cx,state.frontier.active!.cy,0);
+  const id=state.traffic.dispatchCaravan(state,{merchantId:merchant.id,destination,destinationBandId:merchant.bandId+1});
+  const expected={...merchant.inventory.garmentUnitsOf('hide_armour')[0]!};
+  const loaded=fromWorldStateRecord(JSON.parse(JSON.stringify(toWorldStateRecord(state))));
+  const travel=loaded.traffic;
+  for(let i=0;i<8;i++){loaded.current.step();travel.advance(loaded,loaded.current.time.tick);}
+  let parked=loaded.frontier.parkedAt(comarcaIdentityAt(loaded.geography,destination.cx,destination.cy))!;
+  let arrived=Simulation.fromCheckpointRecordWithSharedIds(parked,IdSpace.fromSnapshot(loaded.ids.snapshot()));
+  expect(arrived.peopleById.get(merchant.id)!.inventory.garmentUnitsOf('hide_armour')).toEqual([expected]);
+  const beforeInvalidReturn=JSON.stringify(toWorldStateRecord(loaded));
+  expect(()=>travel.beginReturn(loaded,id,[{itemId:'hide_armour',count:1}])).toThrow(/garments must remain attached/i);
+  expect(JSON.stringify(toWorldStateRecord(loaded))).toBe(beforeInvalidReturn);
+  const campDue=travel.caravans.get(id)!.arrivalTick+loaded.current.config.time.ticksPerDay;
+  while(loaded.current.time.tick<campDue){loaded.current.step();travel.processCamps(loaded,loaded.current.time.tick);travel.advance(loaded,loaded.current.time.tick);}
+  expect(travel.caravans.get(id)?.phase).toBe('returning');
+  for(let tick=loaded.current.time.tick+1;tick<=travel.caravans.get(id)!.returnArrivalTick!;tick++){loaded.current.step();travel.advance(loaded,loaded.current.time.tick);}
+  const returned=loaded.current.peopleById.get(merchant.id)!;
+  expect(returned.inventory.garmentUnitsOf('hide_armour')).toEqual([expected]);
+  expect(travel.validateOwners(loaded)).toBeUndefined();
+ });
+ it('rejects malformed traveller garment rows on save load and garment manifests without mutating owners',()=>{
+  const create=()=>{
+   const {state,destination}=fixture(),merchant=state.current.people.find(p=>p.alive&&!p.isPlayer)!;
+   merchant.knownTech.add('marking');merchant.knownTech.add('trade');merchant.inventory.add('hide_armour',1);
+   merchant.worldKnowledge=new WorldKnowledge();merchant.worldKnowledge.see(destination.cx,destination.cy,0);merchant.worldKnowledge.see(state.frontier.active!.cx,state.frontier.active!.cy,0);
+   state.traffic.dispatchCaravan(state,{merchantId:merchant.id,destination,destinationBandId:merchant.bandId+1});
+   return {state,merchant,record:JSON.parse(JSON.stringify(toWorldStateRecord(state)))};
+  };
+  for(const mutate of [(rows:any[])=>rows.pop(),(rows:any[])=>rows.push(rows[0])]){
+   const {record}=create();mutatePartyGarmentRows(record.traffic,record.traffic.parties[0].actorId,mutate);
+   expect(()=>fromWorldStateRecord(record)).toThrow(/inventory is malformed|garment unit|garment counts/i);
+  }
+  const {state,destination}=fixture(),merchant=state.current.people.find(p=>p.alive&&!p.isPlayer)!;
+  merchant.knownTech.add('marking');merchant.knownTech.add('trade');merchant.inventory.add('hide_armour',1);
+  merchant.worldKnowledge=new WorldKnowledge();merchant.worldKnowledge.see(destination.cx,destination.cy,0);merchant.worldKnowledge.see(state.frontier.active!.cx,state.frontier.active!.cy,0);
+  const before=JSON.stringify(toCheckpointRecord(state.current)),trafficBefore=JSON.stringify(state.traffic.toRecord());
+  expect(()=>state.traffic.dispatchParty(state,{kind:'caravan',actorId:merchant.id,travellerIds:[merchant.id],destination:comarcaIdentityAt(state.geography,destination.cx,destination.cy),destinationBandId:merchant.bandId+1,cargo:[{itemId:'hide_armour',count:1}],durationTicks:8})).toThrow(/garments must remain attached/i);
+  expect(JSON.stringify(toCheckpointRecord(state.current))).toBe(before);
+  expect(JSON.stringify(state.traffic.toRecord())).toBe(trafficBefore);
  });
  it('materializes an in-transit death as a canonical dead person at destination',()=>{
   const {state,destination}=fixture(),merchant=state.current.people.find(p=>p.alive&&!p.isPlayer)!,escort=state.current.people.find(p=>p.alive&&!p.isPlayer&&p.id!==merchant.id)!;

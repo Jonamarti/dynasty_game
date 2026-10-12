@@ -8,7 +8,7 @@ import { perceivedFatigue } from '../core/Circadian.ts';
 import { cravings } from '../core/Macros.ts';
 import { fearOf } from '../social/Fear.ts';
 
-export type DriveId = 'hunger' | 'thirst' | 'rest' | 'warmth' | 'company' | 'home' | 'variety' | 'safety';
+export type DriveId = 'hunger' | 'thirst' | 'rest' | 'warmth' | 'company' | 'home' | 'comfort' | 'variety' | 'safety';
 export interface DriveDef {
   id: DriveId;
   /** English label for the inspector; translated at the UI boundary. */
@@ -20,9 +20,10 @@ export const DRIVES: Record<DriveId, DriveDef> = {
   hunger: { id: 'hunger', label: t('Hunger drive'), readers: ['eat', 'forage', 'pick', 'explore', 'steal', 'threaten', 'reap', 'take', 'hunt'] },
   thirst: { id: 'thirst', label: t('Thirst drive'), readers: ['drink', 'eat', 'ask_water', 'explore'] },
   rest: { id: 'rest', label: t('Rest drive'), readers: ['sleep', 'rest'] },
-  warmth: { id: 'warmth', label: t('Warmth drive'), readers: ['shelter'] },
+  warmth: { id: 'warmth', label: t('Warmth drive'), readers: ['shelter', 'gather_for_site', 'craft', 'place_furniture'] },
   company: { id: 'company', label: t('Company drive'), readers: ['talk'] },
   home: { id: 'home', label: t('Home drive'), readers: ['go_home', 'wander', 'forage', 'hunt'] },
+  comfort: { id: 'comfort', label: t('Comfort drive'), readers: ['go_home', 'sleep', 'place_furniture', 'craft'] },
   variety: { id: 'variety', label: t('Variety drive'), readers: ['eat', 'hunt', 'forage', 'pick'] },
   safety: { id: 'safety', label: t('Safety drive'), readers: ['flee', 'go_home'] },
 };
@@ -79,6 +80,11 @@ export function drivePressures(person: Person, ctx?: AnchorContext & {
     warmth: urgencyCurve(person.needs.cold),
     company: urgencyCurve(person.needs.company),
     home,
+    // Mood is a signed deficit/surplus around the person's resting point.
+    // Reuse the existing need curve directly: positive comfort cannot create
+    // a competing want, and the full 0–100 deficit maps to the established
+    // 0–1 pressure range without a second coefficient to calibrate.
+    comfort: urgencyCurve(Math.max(0, -person.mood.comfort)),
     variety,
     safety,
   };

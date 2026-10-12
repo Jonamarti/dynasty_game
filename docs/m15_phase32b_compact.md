@@ -296,6 +296,34 @@ despensas que el detallado no publica. El compacto sigue sin avanzar órdenes ni
 activarse el LOD). No se calienta ni se duerme. La correlación entre personas de una misma banda
 (una semana mala para todos) no está: cada persona sortea sus días por separado.
 
+## 7. Instrumento de producción observado (sin calibración)
+
+2026-10-12. `ActionSystem` emite contadores opcionales, únicamente cuando la telemetría ya está
+activada, para las jornadas de trabajo reales de sembrar/cosechar y de recetas alimentarias. En
+los puntos de consumo y entrega anota los artículos y cantidades que realmente salieron o
+entraron del inventario. `CompactProductionWatch` junta esos contadores con los existentes de
+recolección, pesca y caza; informa artículos, nutrición entrante/saliente, cambio neto por tick
+activo y cobertura `n/a` cuando no observó trabajo. No lee potenciales, tiempos teóricos ni RNG.
+`tools/compact-food-rates.ts` incorpora el bloque `production` al JSON de su informe. La
+versión 3 añade filas por ID de receta para trabajo, ingredientes y salidas observados; el
+resumen anterior por acción sigue disponible. El lector valida los IDs contra `RECIPES`,
+ordena las filas y conserva `n/a` si falta trabajo o cobertura.
+
+El control negativo deja un producto registrado sin ningún tick de trabajo: el informe conserva
+la cobertura `n/a`, no inventa una tasa y marca `materialWithoutWork`. Así una observación que
+pierda el contador de trabajo no puede presentarse como medición válida. Los contadores son
+solo lecturas; la prueba de determinismo compara el mundo con telemetría desactivada y activada.
+
+Esto **no mide por persona, terreno o estación**, ni mide cargas/herramientas/conservación o
+reparto desde almacenes. La asociación receta↔ingredientes ya está disponible, pero no se ejecutó
+una ventana para obtener siquiera esas observaciones. El grano de semilla tiene nutrición cero
+hasta procesarse; sus unidades se informan como artículos y no como alimento.
+`CompactBandFarming` y `CompactBandProcessing` ya ejecutan parcelas `Crop`/`Soil` y la receta real
+de groats, con semillas, trabajo limitado y progreso JSON; esto no aporta tasas agregadas medidas
+ni justifica extender la producción a otras recetas o condiciones. No hay coeficiente elegido ni
+mejora económica afirmada. Siguen pendientes tasas por contexto, cargas/herramientas/conservación,
+conexión de inventarios de almacén y correspondencia compacta.
+
 ## 6. Envejecer, concebir y morir de vejez (commit «demografía»)
 
 `CompactBody` acepta `env.life`. En cada tick que cruza un día de calendario (`tick % ticksPerDay

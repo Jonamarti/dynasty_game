@@ -28,7 +28,7 @@ function scriptedThink(sim: Simulation, person: ReturnType<Simulation['people'][
 }
 
 const pressures = (overrides: Partial<DrivePressures> = {}): DrivePressures => ({
-  hunger: 0, thirst: 0, rest: 0, warmth: 0, company: 0, home: 0, variety: 1, safety: 0,
+  hunger: 0, thirst: 0, rest: 0, warmth: 0, company: 0, home: 0, comfort: 0, variety: 1, safety: 0,
   ...overrides,
 });
 

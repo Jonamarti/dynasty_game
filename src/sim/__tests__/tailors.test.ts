@@ -74,6 +74,15 @@ describe('M15 phase 14e tailors instrument', () => {
     expect(checks.find(check => check.id === 'the-clothed-are-warmer')?.ok).toBe(false);
   });
 
+  it('requires both garment breakage and a completed repair for the third gate', () => {
+    expect(tailorsChecks({ garment_worn_out: 1, garment_mended_tailoring: 1 })
+      .find(check => check.id === 'garments-wear-and-mend')?.ok).toBe(true);
+    expect(tailorsChecks({ garment_worn_out: 0, garment_mended_tailoring: 1 })
+      .find(check => check.id === 'garments-wear-and-mend')?.ok).toBe(false);
+    expect(tailorsChecks({ garment_worn_out: 1, garment_mended_tailoring: 0 })
+      .find(check => check.id === 'garments-wear-and-mend')?.ok).toBe(false);
+  });
+
   it('leaves the live checkpoint unchanged and keeps probe telemetry out of world counters', () => {
     const sim = fixture();
     expect(sim.time.season).toBe('winter');

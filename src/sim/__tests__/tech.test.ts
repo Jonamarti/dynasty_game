@@ -18,7 +18,7 @@ import {
   axeFactor, buildFactor, reapFactor, calendarFactor, answerPressure, workableIdea,
   WEBS, SUB_WEBS, webOf, techsOfWeb, type Tech,
 } from '../knowledge/Tech.ts';
-import { BUILDINGS, isStation } from '../entities/Building.ts';
+import { BUILDINGS, isStation, isStationFor } from '../entities/Building.ts';
 import { ITEMS } from '../entities/Item.ts';
 import { RESOURCE_DEFS } from '../entities/ResourceNode.ts';
 import { TREES } from '../entities/Tree.ts';
@@ -178,7 +178,7 @@ describe('the tech table', () => {
     for (const def of Object.values(BUILDINGS)) {
       if (!isStation(def)) continue;
       expect(
-        Object.values(RECIPES).some(recipe => recipe.station === def.id),
+        Object.values(RECIPES).some(recipe => recipe.station !== undefined && isStationFor(def, recipe.station)),
         def.id + ' is a station with no recipe'
       ).toBe(true);
     }
@@ -486,7 +486,10 @@ describe('recipes', () => {
         expect(count).toBeGreaterThan(0);
       }
       const out = Object.entries(recipe.output);
-      expect(out.length, recipe.id + ' produces nothing').toBe(1);
+      if (recipe.operation === 'hide_dressing') {
+        expect(recipe.output).toEqual({});
+        expect(recipe.ingredients).toEqual({ fat: 1 });
+      } else expect(out.length, recipe.id + ' produces nothing').toBe(1);
       for (const [itemId, count] of out) {
         expect(ITEMS[itemId], recipe.id + ' produces unknown item ' + itemId).toBeDefined();
         expect(count).toBeGreaterThan(0);
@@ -522,7 +525,7 @@ describe('recipes', () => {
     for (const recipe of Object.values(RECIPES)) {
       const output = Object.keys(recipe.output)[0]!;
       expect(
-        recipe.keep > 0 || wantedByBuildings.has(output) ||
+        recipe.operation !== undefined || recipe.keep > 0 || wantedByBuildings.has(output) ||
           (ITEMS[output]?.furniture === true && BUILDINGS[output]?.furniture === true) ||
           ['raft', 'logboat', 'sail'].includes(output),
         recipe.id + ' makes ' + output + ', which nothing wants'
@@ -597,7 +600,7 @@ describe('the sub-webs (M15 phase 13a)', () => {
   });
 
   it('marks the existing garment variants as craft nodes in Clothes', () => {
-    for (const tech of ['foot_wraps', 'leggings', 'moccasins', 'fur_hat'] as const) {
+    for (const tech of ['foot_wraps', 'leggings', 'moccasins', 'fur_hat', 'beads'] as const) {
       expect(TECH[tech].tier, tech).toBe('craft');
       expect(webOf(tech), tech).toBe('clothing');
     }
@@ -633,6 +636,7 @@ describe('the sub-webs (M15 phase 13a)', () => {
       expect(web.label.length).toBeGreaterThan(0);
       expect(web.color).toMatch(/^#[0-9a-f]{6}$/i);
     }
-    expect(SUB_WEBS.map(web => web.id)).toEqual(['arms', 'field', 'domestication', 'kitchen', 'metal', 'preservation', 'clothing']);
+    expect(SUB_WEBS.map(web => web.id)).toEqual(['arms', 'field', 'domestication', 'kitchen', 'metal', 'preservation', 'clothing', 'fire']);
+    expect(techsOfWeb('fire')).toEqual(['fireplace', 'fat_lamp']);
   });
 });

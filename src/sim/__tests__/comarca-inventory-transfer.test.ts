@@ -1,12 +1,115 @@
-import { describe, expect, it } from 'vitest';
-import { Inventory } from '../entities/Item.ts';
+import { describe, expect, it, vi } from 'vitest';
+import { Inventory, ITEMS } from '../entities/Item.ts';
 import { RATION_NUTRITION } from '../world/ResourceProfile.ts';
-import { ComarcaInventoryTransfer, COMARCA_INVENTORY_TRANSFER_VERSION } from '../world/ComarcaInventoryTransfer.ts';
-import { toObjectGraph } from '../persistence/GraphRecords.ts';
+import {
+  ComarcaInventoryTransfer,
+  COMARCA_INVENTORY_TRANSFER_VERSION,
+  type ComarcaInventoryTransferRecord,
+} from '../world/ComarcaInventoryTransfer.ts';
+import { toObjectGraph, type ObjectGraph } from '../persistence/GraphRecords.ts';
 
 const wire = <T>(value: T): T => JSON.parse(JSON.stringify(value));
 
+function garmentRows(record: ComarcaInventoryTransferRecord): { values: unknown[] } {
+  const graph = record.sources[0]!.graph as ObjectGraph;
+  const root = graph.nodes[(graph.root as { ref: number }).ref];
+  if (!root || root.kind !== 'object') throw new Error('Inventory graph root must be an object');
+  const field = root.fields.find(([name]) => name === 'garmentUnits')?.[1];
+  if (!field || typeof field !== 'object' || !('ref' in field)) throw new Error('Inventory graph has no garment rows');
+  const node = graph.nodes[field.ref];
+  if (!node || node.kind !== 'array') throw new Error('Inventory garment rows must be an array');
+  return node as { values: unknown[] };
+}
+
+function garmentRow(record: ComarcaInventoryTransferRecord, index: number): { fields: [string, unknown][] } {
+  const graph = record.sources[0]!.graph as ObjectGraph;
+  const ref = garmentRows(record).values[index];
+  if (!ref || typeof ref !== 'object' || !('ref' in ref)) throw new Error('Garment row must be an object reference');
+  if (typeof ref.ref !== 'number' || !Number.isSafeInteger(ref.ref)) throw new Error('Garment row reference must be an integer');
+  const node = graph.nodes[ref.ref];
+  if (!node || node.kind !== 'object') throw new Error('Garment row must be an object');
+  return node as { fields: [string, unknown][] };
+}
+
 describe('ComarcaInventoryTransfer', () => {
+  it('round-trips a physical garment through take, food consumption, JSON, and restore', () => {
+    const pack = new Inventory();
+    pack.add('fur_hat', 1);
+    pack.add('berries', 3);
+    const original = pack.garmentUnitsOf('fur_hat')[0]!;
+    pack.setGarmentUnitCondition(original.unitId, 0.31, 73);
+    const transfer = ComarcaInventoryTransfer.take([{ sourceId: 'person:garment-pack', inventory: pack }]);
+    expect(pack.garmentUnitsOf()).toEqual([]);
+
+    const checkpoint = wire(transfer.toRecord());
+    const decoded = ComarcaInventoryTransfer.fromRecord(checkpoint, id => id === 'person:garment-pack' ? pack : undefined);
+    expect(decoded.consume('person:garment-pack', 'berries', 1)).toBe(1);
+    const afterFood = wire(decoded.toRecord());
+    const restored = ComarcaInventoryTransfer.fromRecord(afterFood, id => id === 'person:garment-pack' ? pack : undefined);
+    restored.restore();
+
+    expect(pack.count('berries')).toBe(2);
+    expect(pack.garmentUnitsOf('fur_hat')).toEqual([
+      { unitId: original.unitId, itemId: 'fur_hat', wear: 0.31, repairProgress: 73 },
+    ]);
+  });
+
+  it('rolls back all source inventories if a later take throws after extraction', () => {
+    const first = new Inventory();
+    first.add('fur_hat', 1);
+    first.setGarmentUnitCondition(first.garmentUnitsOf('fur_hat')[0]!.unitId, 0.28, 41);
+    const second = new Inventory(); second.add('berries', 2);
+    const firstUnit = first.garmentUnitsOf('fur_hat')[0]!;
+    const originalTake = Inventory.prototype.takeTransferState;
+    let calls = 0;
+    const takeSpy = vi.spyOn(Inventory.prototype, 'takeTransferState').mockImplementation(function(
+      this: Inventory, state,
+    ) {
+      originalTake.call(this, state);
+      if (++calls === 2) throw new Error('simulated escrow extraction failure');
+    });
+    try {
+      expect(() => ComarcaInventoryTransfer.take([
+        { sourceId: 'first', inventory: first }, { sourceId: 'second', inventory: second },
+      ])).toThrow('simulated escrow extraction failure');
+    } finally {
+      takeSpy.mockRestore();
+    }
+    expect(first.garmentUnitsOf('fur_hat')).toEqual([firstUnit]);
+    expect(second.count('berries')).toBe(2);
+  });
+
+  it('rolls back partially restored destinations and leaves the escrow retryable', () => {
+    const pack = new Inventory(); pack.add('fur_hat', 1);
+    const initial = pack.garmentUnitsOf('fur_hat')[0]!;
+    pack.setGarmentUnitCondition(initial.unitId, 0.42, 109);
+    const original = pack.garmentUnitsOf('fur_hat')[0]!;
+    const food = new Inventory(); food.add('meal', 1);
+    const transfer = ComarcaInventoryTransfer.take([
+      { sourceId: 'garments', inventory: pack }, { sourceId: 'food', inventory: food },
+    ]);
+    const originalRestore = Inventory.prototype.restoreTransferState;
+    let calls = 0;
+    const restoreSpy = vi.spyOn(Inventory.prototype, 'restoreTransferState').mockImplementation(function(
+      this: Inventory, state,
+    ) {
+      originalRestore.call(this, state);
+      if (++calls === 2) throw new Error('simulated escrow restoration failure');
+    });
+    try {
+      expect(() => transfer.restore()).toThrow('simulated escrow restoration failure');
+    } finally {
+      restoreSpy.mockRestore();
+    }
+    expect(pack.entries()).toEqual([]);
+    expect(food.entries()).toEqual([]);
+    expect(pack.garmentUnitsOf()).toEqual([]);
+    expect(transfer.nutrition()).toBe(RATION_NUTRITION + ITEMS.meal!.nutrition);
+    transfer.restore();
+    expect(pack.garmentUnitsOf('fur_hat')).toEqual([original]);
+    expect(food.count('meal')).toBe(1);
+  });
+
   it('escrows selected typed stocks, carries spoilage through JSON, and restores once', () => {
     const pack = new Inventory();
     pack.add('berries', 3);
@@ -108,6 +211,32 @@ describe('ComarcaInventoryTransfer', () => {
     expect(() => ComarcaInventoryTransfer.fromRecord(corrupt, id => id === 'first' ? first : second)).toThrow(/prototype|graph/);
     expect(first.entries()).toEqual([]);
     expect(second.entries()).toEqual([]);
+  });
+
+  it('rejects malformed, missing, and duplicate garment condition rows in JSON escrow', () => {
+    const source = new Inventory();
+    source.add('fur_hat', 2);
+    const [first, second] = source.garmentUnitsOf('fur_hat');
+    source.setGarmentUnitCondition(first!.unitId, 0.25, 19);
+    source.setGarmentUnitCondition(second!.unitId, 0.75, 91);
+    const transfer = ComarcaInventoryTransfer.take([{ sourceId: 'garments', inventory: source }]);
+    const resolve = (id: string) => id === 'garments' ? source : undefined;
+
+    const malformed = wire(transfer.toRecord());
+    const wear = garmentRow(malformed, 0).fields.find(([name]) => name === 'wear')!;
+    wear[1] = 1.5;
+    expect(() => ComarcaInventoryTransfer.fromRecord(malformed, resolve)).toThrow(/invalid identity, condition, or repair progress/);
+
+    const missing = wire(transfer.toRecord());
+    garmentRows(missing).values.pop();
+    expect(() => ComarcaInventoryTransfer.fromRecord(missing, resolve)).toThrow(/do not match garment counts/);
+
+    const duplicate = wire(transfer.toRecord());
+    const firstId = garmentRow(duplicate, 0).fields.find(([name]) => name === 'unitId')![1];
+    garmentRow(duplicate, 1).fields.find(([name]) => name === 'unitId')![1] = firstId;
+    expect(() => ComarcaInventoryTransfer.fromRecord(duplicate, resolve)).toThrow(/duplicate garment unit identity/);
+    expect(source.entries()).toEqual([]);
+    expect(source.garmentUnitsOf()).toEqual([]);
   });
 
   it('detects stale stack or carry snapshots before extraction', () => {

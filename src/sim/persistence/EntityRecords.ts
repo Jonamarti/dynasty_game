@@ -70,6 +70,11 @@ function decodeGraph(record: unknown, expectedType: string, expectedRoot: string
         !(person.placeMemory instanceof PlaceMemory) || !(person.needs && typeof person.needs === 'object') ||
         !(person.skills && typeof person.skills === 'object') || !(person.traits && typeof person.traits === 'object') ||
         !(person.alongside instanceof Float32Array)) fail('Person is missing required state or has an invalid id');
+    // Traveller checkpoints move this same Inventory graph through departure,
+    // transit and return. Validate its physical garment rows when hydrating a
+    // Person so a count-only or duplicate-row save cannot launder condition.
+    try { (person.inventory as Inventory).transferSnapshot(); }
+    catch (error) { fail(`Person inventory is malformed: ${error instanceof Error ? error.message : String(error)}`); }
   } else if (expectedRoot === 'Household') {
     const household = result as Record<string, unknown>;
     if (!Number.isSafeInteger(household.id) || typeof household.name !== 'string' ||

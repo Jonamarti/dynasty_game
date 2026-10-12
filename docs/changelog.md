@@ -1,3 +1,206 @@
+## 2026-10-12 — m15: city_walls convierte earthworks en perímetro de Estado (0.15.92-alpha)
+
+Portada de forma acotada desde `fcb642d` al checkout wave3: `city_walls`
+requiere `chiefdom`, `masonry` y `earthworks`, y desbloquea una zanja seca
+profunda de 7×7 que reutiliza las obras de tierra existentes y deja una puerta.
+`EarthworkSpec.gate` omite la casilla de paso y ajusta el total del trabajo; la
+profundidad usa el bloqueo ya existente. Pruebas comprueban el requisito,
+desbloqueo y conectividad, con control negativo que muestra que el anillo sin
+puerta aísla el interior. Sin cohortes ni calibración. `typecheck`, Vitest y
+captura de menú no se pudieron ejecutar en este worktree: faltan dependencias
+locales; la captura queda pendiente de integración visual.
+
+## 2026-10-12 — m15: nombres reproducibles para residentes regionales (0.15.91-alpha)
+
+Al materializar población distante, se asignan nombres desde fonologías
+ficticias derivadas por geografía y comarca; el nombre deriva además del ID
+persistente de la persona. Se mantiene la secuencia de inicialización de
+residentes y no se agregan forks de `Simulation`. Atlas actuales no respaldan
+familias lingüísticas históricas: esa limitación y el diseño están en
+`docs/m15_phase33_regional_names.md`. Tests cubren repetibilidad, inventarios
+regionales y continuidad de nombres/IDs tras viajes y guardado. Sin UI ni
+cohortes. Verificación pendiente: este worktree no incluye `node_modules` ni
+`tsc`/`vitest`; no se ejecutaron typecheck ni pruebas.
+
+
+## 2026-10-12 — m15: engrasado físico de prendas (0.15.93-alpha)
+
+Se añade el nodo de ropa hide_dressing, detrás de leatherwork, y una receta
+que aplica una grasa a una unidad concreta de prenda de piel. La prenda debe
+estar fuera del cuerpo; el trabajo interrumpible se guarda en ella y sólo al
+terminar se consume la grasa y queda marcado el tratamiento. El lector de
+desgaste aplica 0,0025 por día a esa unidad, frente a 0,005 sin tratar; no se
+modifican los ItemDef compartidos. Los enlaces entre mochila, almacén, regalo,
+escolta, escrow, viajero y checkpoint trasladan los campos del estado físico.
+Las prendas de lana y tejido quedan excluidas. NPC no eligen la acción por sí
+solos y no se calibraron los valores por cohortes.
+
+Vitest focalizado: 49/49 pasan (prueba nueva y tech.test), más i18n.test: 6/6.
+El typecheck normal
+no puede resolver dependencias ausentes en este worktree; el typecheck selectivo
+con runtimes locales no marcó errores en archivos cambiados, pero conserva dos
+errores de base en tech.test.ts (tipos de vitest) y Simulation.ts:7086.
+La prueba e2e preparada es `e2e/hide-dressing.spec.ts`; la comprobación de UI en
+Chromium confirmó que el botón aparece habilitado y envía `dress_hide`. Captura:
+`artifacts/screenshots/2026-10-12-hide-dressing/01-hide-dressing-option.png`.
+La especificación no pudo ejecutarse con Playwright Test porque faltan sus
+dependencias en este worktree. No se ejecutaron matrices de mundo ni cohortes.
+
+## 2026-10-12 — m15: remiendo físico de prendas (0.15.88-alpha)
+
+Se añade `mend_garment` al catálogo del inventario del dueño. La reparación
+selecciona una unidad dañada fuera del cuerpo, llama a `interruption()` cada
+tick y conserva progreso hasta 100 build-work points en la propia unidad para
+reanudar tras necesidades, checkpoint o transferencia a otro trabajador.
+Sastrería conocida con aguja e hilo restaura condición completa; cuerda repara
+hasta 0,25. Los materiales se consumen junto a la actualización exacta en una
+transacción con rollback. Los rechazos por unidad, condición, método o
+materiales se muestran con textos localizados. Umbrales fijos iniciales, sin
+calibración por cohorte ni cambios RNG. Pruebas cubren reparación completa y
+parcial, progreso guardado, continuación con otro dueño, negativas y rollback;
+Vitest focal (4/4) y typecheck pasan mediante configuración temporal usando las
+dependencias locales del checkout principal; se retiró la configuración. La
+captura del menú sigue pendiente porque no hay Playwright en este worktree.
+
+## 2026-10-12 — m15: desgaste diario de prendas vestidas (0.15.83-alpha)
+
+Cada prenda declara una pérdida inicial de 0,005 de condición por día completo
+vestido: 200 días de uso continuo llevan una unidad íntegra a cero. Los huecos
+vestidos se procesan una vez por día en simulación local y viaje; unidades de
+reserva no envejecen. Abrigo y armadura escalan con la condición, y al llegar a
+cero se destruye exactamente esa unidad, se limpia la referencia y queda una
+línea localizada en la crónica del dueño. Sin RNG ni calibración de cohortes.
+Pruebas cubren reservas, unidad vestida, pérdida de calor/protección, rotura,
+checkpoint y tick de viajero. Remiendo continúa apagado. Typecheck y Vitest no
+arrancan en este worktree porque faltan `tsc`/`vitest`; no se instalaron deps.
+
+## 2026-10-12 — m15: consumo de prendas con reconciliación y rollback (0.15.82-alpha)
+
+El cierre de la auditoría encontró dos consumidores reales: `doPrototype`
+consume la muestra `fur_coat` de `toggles` y `doCraft` consume el mismo tipo en
+la receta `toggled_coat`. Ambos usan `Inventory.consumeItems`, una transacción
+que valida todos los materiales, revierte la mochila si una retirada falla y
+reconcilia el slot vestido dentro de la operación. Pruebas cubren muestra
+gastada/vestida exitosa y rollback tras fallo de un material posterior; la
+receta confirma que no queda una referencia a la prenda destruida. Reauditoría
+de `inventory.remove` no encontró otro consumidor count-only que pueda
+seleccionar prendas: los demás caminos son nutrición, materiales no garment,
+herramientas/recipientes o destrucción explícita. Desgaste/remiendo siguen
+apagados mientras esperan su implementación y verificación propias.
+
+## 2026-10-12 — m15: amenazas y rescates transfieren prendas físicas (0.15.79-alpha)
+
+`doThreaten` y `ransomCaptive` mueven prendas por `Inventory.transferTo` /
+`transferItemsTo`, conservan wear y progreso, y reconcilian equipo/capacidad.
+El rescate sólo libera al cautivo después de mover toda la oferta; inserción
+rechazada o propiedad malformada deja dueño, prenda y cautiverio intactos.
+`doHaul` también usa la transferencia compartida para sus materiales. Tests
+focales cubren amenaza con éxito y rollback, rescate con éxito, inserción
+fallida y filas inválidas. Auditoría de consumidores: comida y recetas actuales
+no usan prendas; `doPrototype` sí consume `fur_coat` al prototipar `toggles` y
+falta reconciliar la capa si estaba vestida. Por eso desgaste/remiendo siguen
+apagados. Typecheck/Vitest no disponibles en este worktree (faltan dependencias).
+
+## 2026-10-12 — m15: prendas físicas en el tráfico de mundo (0.15.74-alpha)
+
+Los inventarios de las personas viajan dentro del checkpoint del grupo y ahora
+validan filas de prendas al hidratar. Una unidad desgastada con progreso de
+remiendo sobrevive staging, JSON save/load, llegada, campamento y regreso;
+filas perdidas o duplicadas rechazan la carga antes de instalar propietarios.
+Los manifiestos de mercancías aún usan cantidades, así que rechazan prendas y
+el trueque/retorno del campamento las deja en el inventario del viajero. Pruebas
+focales añadidas a `world-traffic.test.ts`; no se activan desgaste ni remiendo
+hasta completar la auditoría de consumo. [Contrato de prendas](m15_garment_condition_design.md),
+[contrato de fase 35](m15_phase35_journeys.md). Dependencias no instaladas en
+este worktree; verificación local limitada a checks disponibles. La auditoría
+también identificó demanda por amenaza (`doThreaten`) y rescate (`ransomCaptive`)
+como transferencias count-only pendientes.
+## 2026-10-12 — M15 fase 26e: rutas por aberturas en zanjas
+
+Se añade una regresión de Pathfinder para la topología física de una zanja que
+rebasa `pitDepth`: una abertura conserva el paso y la ruta la usa; al cerrar
+esa abertura, la consulta no encuentra ruta. La medición solo cubre paso
+alcanzable frente a barrera cerrada, no una ventaja defensiva de las zanjas
+someras ni el coste táctico para una incursión. Typecheck y prueba focal no
+pudieron ejecutarse porque este worktree no tiene dependencias locales
+(`vite-node` no está disponible); `npm run sim:check` tampoco pudo iniciar.
+## 2026-10-12 — m15: no confundir arbustos recogidos con estación estéril
+
+`SeasonLore` solo toma la ausencia de un arbusto como evidencia durante su fase
+botánica `bare`. Un arbusto agotado en su estación de fruto ya no enseña una
+lección falsa. Prueba con especie de verano agotada dos años consecutivos;
+`npm test` focal pendiente al integrar porque este worktree no lleva
+dependencias instaladas.
+## 2026-10-12 — m15: la caza puede herir y hacer huir a la presa (0.15.84-alpha)
+## 2026-10-12 — m15: la patrulla mantiene a los depredadores a distancia (0.15.85-alpha)
+## 2026-10-12 — m15: restos físicos de depredadores (0.15.87-alpha)
+
+La retirada de un depredador por hambre o depredación deja en el suelo su yield
+existente de carne y una piel, disponibles para que una persona los recoja. Son
+bienes en piles, no un modelo de cadáver o carroñeo; los animales no comen estos
+restos. La salida por el borde y la retirada después de una caza humana no
+duplican recursos. Se añadieron pruebas focales de ambas muertes y exclusiones;
+no hubo cohortes ni calibración. No cambia la UI visible ni requiere captura.
+Queda abierto el modelo de cadáveres, descomposición y carroñeros animales para
+M16.
+
+
+Un adulto de la banda que esté patrullando protege a quienes se encuentren a
+siete tiles. Los depredadores ya no seleccionan a esas personas, incluido el
+oso que irrumpe y el animal que sigue un rencor. El filtro usa el hash espacial
+de personas y exige una guardia realmente activa; un guardia inactivo no
+protege. No añade tiradas ni cambia pesos. Dos pruebas focales cubren defensa y
+control inactivo; no cambia la interfaz ni requiere captura. No se ejecutó
+calibración, cohorte ni matriz.
+
+
+Antes un impacto humano mataba al animal de inmediato, lo que impedía que una
+presa herida escapara y recordara a su cazador. El primer impacto acertado ahora
+retira un punto de salud, marca `hurtBy` y la alarma para que huya; el siguiente
+impacto acertado la abate. Los fallos conservan el estado de salud y el rencor,
+y no gastan proyectil. Se reutiliza el dado de acierto actual y no se ajustan
+pesos. Pruebas focales positivas y negativas; typecheck y suite unitaria
+focales. `sim:check` mantiene los dos fallos conocidos del escenario base:
+`cravings-steer-the-diet` y `perf-budget` (569 pasos/s frente al suelo de
+1.678). No hubo calibración ni cohortes. No cambia texto ni controles visibles;
+no se necesitó captura.
+
+## 2026-10-12 — M15 16f: escenario focal de hogares
+
+`homes` ahora mide la calidad real de las muestras nocturnas bajo techo,
+frío, seguridad, mobiliario NPC y navegación dentro de casas. Se agrega una
+prueba focal del escenario. Los siete checks pasan en 2400 pasos de una
+semilla. Es instrumentación de mecanismos con casas preparadas: no mide la
+economía de construir hogares, no calibra los coeficientes y no ejecuta cohortes.
+Sin cambio de versión porque no cambia comportamiento del juego.
+## 2026-10-12 — M15 29c: auditoría bibliográfica de cinco semillas
+
+Se contrastaron las fuentes para sorgo, caballo, sílex levantino, oro del Sinaí
+y sal del Mar Muerto. La bibliografía confirma disponibilidad regional de sílex
+y existencia geológica de halita, con los límites de escala y acceso terrestre
+declarados; no demuestra canteras puntuales ni explotación prehistórica. Las
+discrepancias del centroide de sorgo, caballo y oro, además del acceso a sal en
+la celda, se dejaron abiertas en esa primera pasada con el dato necesario para
+resolverlas; la reconciliación regional posterior distingue los casos con
+respaldo amplio de los centroides que siguen sin validar. Contrato
+y enlaces en `docs/m15_phase29_sources.md` y `public/world/SOURCES.md`; plan y
+bugs actualizados. Documentación solamente: sin cambios de coordenadas,
+semillas, mapas, versión ni capturas. `sim:check` no pudo iniciar porque
+`vite-node` no está instalado en este worktree.
+
+## 2026-10-12 — M15 29c: reconciliación regional de sorgo, caballo y oro
+
+La revisión separa el rango silvestre del lugar de domesticación. Kew registra
+el progenitor silvestre del sorgo como nativo en Níger y Burkina Faso, lo que
+respalda la región amplia de la semilla, no su celda o fecha. El registro
+fósil/modelado euroasiático respalda al caballo silvestre en una región póntica
+oriental, mientras los estudios DOM2 describen caballos domésticos. Surour et
+al. documentan oro aluvial de wadis de Dahab, sudeste del Sinaí; el punto
+25°N, 33°E sigue sin respaldo. Sin cambios de datos, coordenadas, semillas,
+atlas o versión; incertidumbre de celda, tiempo y recurso accesible queda
+declarada en `public/world/SOURCES.md`, el contrato y la lista de bugs.
+Documentación solamente, sin captura ni pruebas de comportamiento.
+
 ## 2026-10-11 — M15 herencia física de prendas
 
 La muerte ya transfiere los bienes al heredero o almacén con `transferAllTo`,
@@ -14971,3 +15174,256 @@ La prueba de visibilidad del montículo ahora refresca la prominencia derivada
 después de aplanar el heightfield en su fixture. Antes comparaba contra
 prominencia residual de la geografía generada y fallaba aunque `pile` actualizase
 correctamente el relieve. Sin cambio de comportamiento del juego.
+
+## 2026-10-12 — m15: regalos conservan la prenda física
+
+`Simulation.handOver` y el regalo autónomo no alimentario pasan por la
+transferencia explícita de unidades; conservan identidad, desgaste y progreso
+de remiendo, y reconciliamos inmediatamente la capa que el donante ya no posee.
+Las transferencias de prendas revierten ambas mochilas si una inserción falla.
+Pruebas añadidas para regalo directo, regalo NPC y rollback. `doTrade` sigue
+intercambiando únicamente comida; robo, amends y tributo permanecen pendientes.
+No se instaló dependencias. `npm run sim:check`, `npm run typecheck` y la prueba
+focal no pudieron arrancar (`vite-node`, `tsc` y `vitest` no encontrados); quedan
+por ejecutar cuando el runtime local esté disponible. Desgaste/remiendo no se
+activa.
+
+## 2026-10-12 — m15: robo conserva la prenda física
+
+`doSteal` traslada la unidad física del montón seleccionado mediante la
+transferencia validada de `Inventory`, conserva desgaste/progreso y actualiza
+la ropa y capacidad derivada de ambos participantes. Filas huérfanas se
+rechazan antes de cambiar dueño; inserciones parciales revierten ambas
+mochilas. Se añaden pruebas de robo, rollback y propiedad inválida. Typecheck y
+Vitest siguen bloqueados porque este worktree no tiene dependencias instaladas;
+no se hizo instalación ni calibración. Desgaste/remiendo sigue apagado.
+
+## 2026-10-12 — m15: amends transfiere prendas como bienes físicos
+
+`doMakeAmends` puede ofrecer cualquier bien transportado, incluidas prendas.
+Ahora mueve toda la oferta en una transacción de varias pilas, conserva la
+condición por unidad y revierte todos los bienes si una inserción falla. La capa
+vestida del pagador se reconcilia al pagar. Se añaden cobertura de compensación
+de prenda, fila inválida y rollback de oferta mixta. Sin instalación ni
+calibración. Typecheck y pruebas focales no pudieron arrancar porque faltan
+`tsc` y `vitest` en el worktree; desgaste/remiendo sigue apagado.
+
+## 2026-10-12 — m15: tributo conserva la prenda transportada
+
+La retirada del almacén al portador dentro de `doRender` usa la transferencia
+explícita de `Inventory`, y el depósito al almacén del overlord conserva la
+misma unidad. Las pruebas cubren condición en los dos tramos y rollback si el
+portador rechaza la inserción. Los selectores autónomos de tributo siguen
+limitados a comida segura. Typecheck y pruebas focales no pudieron arrancar por
+falta de `tsc`/`vitest`; sin instalación ni calibración. Desgaste/remiendo sigue
+apagado.
+
+## 2026-10-12 — m15: cierre de transferencias locales entre almacenes
+
+La auditoría confirma que la fusión de hogares es la única ruta que mueve un
+inventario de edificio directamente a otro; usa `Inventory.transferAllTo`.
+Las pruebas de integración verifican IDs locales en colisión, desgaste y
+progreso conservados, rechazo de inventarios incoherentes y rollback de ambas
+casas si falla una inserción. Los demás viajes locales entre almacenes llevan
+la prenda en una persona y ya usan las transferencias explícitas. Typecheck y
+pruebas focales no pudieron arrancar por falta de `tsc`/`vitest`; sin
+instalación ni pruebas largas. Escrow y tráfico fuera del mapa siguen
+pendientes; desgaste/remiendo permanece apagado.
+
+## 2026-10-12 — m15: escrow de comarca conserva condición de prendas
+
+El grafo de `ComarcaInventoryTransfer` conserva IDs, desgaste y progreso de
+remiendo al retirar inventarios, consumir alimentos y cruzar JSON validado.
+Filas malformadas, parciales o duplicadas fallan antes de restaurar; una
+extracción o restauración parcial se revierte y puede reintentarse. Se enlazan
+los contratos de fase 34 y ropa 14c. Typecheck y pruebas focales no pudieron
+arrancar por falta de `tsc`/`vitest`; sin instalación ni pruebas largas. No se
+activa desgaste/remiendo mientras el tráfico fuera del mapa siga sin migrar.
+## 2026-10-12 — M15 viajes avanzan el ciclo vital del grupo
+
+Cada medianoche se usa `LifeSystem` sobre viajeros canónicos; nacimiento, edad,
+embarazo y mortalidad siguen sus reglas y los recién nacidos quedan en el
+checkpoint y el grupo persistido. Los residentes de destino quedan fuera de esa
+pasada. Contrato y cobertura de checkpoint/restore/negativa en
+`docs/m15_phase35_journeys.md`.
+## 2026-10-12 — Fase 32b, instrumento de producción observable
+
+La telemetría opcional cuenta ticks de trabajo efectivos, materiales sembrados/cosechados y
+entradas/salidas de recetas alimentarias; `CompactProductionWatch` los presenta junto con las
+fuentes silvestres ya medidas. El control negativo detecta materiales sin trabajo y mantiene la
+cobertura en `n/a`. Sin cambios de estado o RNG previstos por el instrumento. Se documenta el
+alcance y lo que aún falta en `docs/m15_phase32b_compact.md` y `docs/bugs.md`. La ventana no se
+ejecutó: no hay tasas ni afirmación de calibración o mejora económica.
+## 2026-10-12 — m15: sílex como munición de honda
+
+La honda solo sirve para liebres y consume una unidad de sílex del inventario
+del cazador cuando acierta. Sin piedra, la orden se abandona antes de iniciar
+la persecución y el motivo es visible y traducido. Arco y átlatl mantienen el
+comportamiento existente; siguen pendientes sus modelos de munición y topes de
+presa. Se añadieron pruebas de impacto, falta de munición y presa no elegible;
+no hubo calibración ni cohortes. Sin cambio de UI visible, no requiere captura.
+Contrato y límites: `docs/m15_phase13_subwebs.md` y `docs/bugs.md`.
+## 2026-10-12 — M15 fase 16d, lámpara de grasa autónoma
+
+Los adultos con `firemaking` fabrican y colocan una lámpara de grasa en su
+hogar después de cama/lecho, banco y estante, si llevan los materiales. La
+colocación existente entrega la carga normal y conserva un solo aparato por
+hogar; no se afirma mantenimiento autónomo tras agotarse. Prueba focal cubre
+receta, materiales, propiedad, carga y colocación. Sin UI ni arte nuevos.
+Verificación `sim:check` no disponible en el worktree: falta `vite-node` local;
+pruebas/typecheck no se ejecutaron: `vitest`/`tsc` tampoco están instalados en
+este worktree. [Contrato](m15_phase16d_bedding.md).
+
+## 2026-10-12 — m15: flechas y dardos como munición
+
+El arco lleva flechas y el átlatl dardos fabricables con palos, sílex y paja.
+Los tres proyectiles usan la misma comprobación previa y consumen una unidad
+del inventario propio solo en un impacto exitoso; fallar o estar fuera de
+alcance no gasta munición. La honda conserva su límite de liebres. Se añadieron
+generadores de iconos para ambos objetos, traducciones y pruebas de receta, acierto,
+falta de munición y alcance. No hubo calibración ni cohortes. Se regeneró el
+atlas y se capturó la barra visible de recetas en
+`artifacts/screenshots/m15-projectile-ammo-2026-10-12/01-ammunition-recipes.png`.
+Ver `docs/m15_phase13_subwebs.md`.
+## 2026-10-12 — M15 fase 16d, hogar interior
+
+El hogar de barro y sílex se coloca como mueble solo en el interior acabado de
+la vivienda propia, persiste con su host y funciona de forma permanente con
+`fuelRemaining` a cero, según la tabla de la fase. Los lectores compartidos lo
+reconocen para calor y luz local, como estación de cocina `hearth`, y como fuego
+cercano al ahumar carne/pescado en un secadero. Se añade la estación alias sin
+cambiar el contrato de las recetas, pruebas negativas de hogar/propiedad/técnica,
+prueba de cocción y ahumado, arte generado y captura
+`artifacts/screenshots/m15-phase16d-fireplace-2026-10-12/01-fireplace-in-house.png`.
+La luz y el calor todavía cruzan paredes por el lector radial; queda anotado en
+`docs/bugs.md`. La autonomía de materiales/colocación, más muebles, recarga de
+lámpara y 16e/16f siguen abiertas. No se ejecutaron cohortes ni se afirma
+calibración económica. Typecheck y los cuatro archivos focales (94 pruebas de
+furniture/sleep, tech, arte e i18n) pasan; la captura Playwright fechada pasa.
+## 2026-10-12 — m15: muestra nocturna de sueño y seguridad
+
+`0.15.70-alpha`: la recuperación del sueño lee la calidad de su superficie,
+incluida la mejora de hoguera al raso. La muestra de medianoche que ya usa
+concepción escribe `mood.comfort` por superficie, frío y nieve y
+`mood.security` por campamento, compañía, guardia y territorio. No añade
+estado ni tiradas. Tests focales cubren casos favorables y negativos; se
+difieren calibración y escenario `homes`. No hubo cambio visual ni captura.
+El motivo `comfort` aún no está conectado a `Drives.ts`.
+## 2026-10-12 — m15: coste táctico de zanjas para incursiones (0.15.89-alpha)
+
+Las rutas de una persona durante su ventana activa de incursión cargan un tile
+adicional por cada casilla de zanja terminada. A* elige el rodeo si cuesta
+menos y mantiene el paso si la zanja es el camino más barato; los viajes
+ordinarios no cambian. La zanja se resuelve mediante el hash espacial de
+edificios. La regresión del pathfinder compara contra el comportamiento recto
+anterior en un mapa plano. No se midió disminución de saqueos/daño, ni se
+corrieron cohortes. `sim:check` no arrancó: `vite-node` no está disponible en el
+worktree. No hay cambio de UI ni captura necesaria.
+## 2026-10-12 — m15: consumir primero la comida perecedera en empates (0.15.90-alpha)
+
+El selector común de comida resuelve los empates exactos de atractivo gastando
+primero el alimento que se estropea antes. Esto evita que una ración conservada
+quede protegida solo porque se añadió después al inventario. Prueba focal en
+ambos órdenes de inserción; `sim:check -- --scenario salters` sigue fallando
+0/8 comidas de invierno conservadas, por lo que no se reclama una mejora
+estacional ni económica. No se cambia `needs.spoilRate` ni se ejecutan cohortes.
+## 2026-10-12 — m15: atribución de producción por receta
+
+El reporte de producción ahora separa contadores observados de trabajo y
+entradas/salidas por ID de receta, además del resumen agregado por acción.
+Esto permite investigar una posible tasa sin mezclar recetas con rendimientos
+distintos. El registro del instrumento pasa a versión 3; la observación
+compacta interna pasa a versión 2. No se ejecutó la ventana de medición y no se
+añadió otro productor ni se escogieron coeficientes. Ver
+`m15_phase32b_compact.md`, sección 7.
+## 2026-10-12 — m15: el motivo de comodidad lee el ánimo (0.15.94-alpha)
+
+La presión de comodidad usa el débito de `mood.comfort` con la curva de urgencia
+existente, sin sensibilidad ni coeficiente nuevos. Modula el regreso al
+anochecer, el uso de un refugio para dormir y la fabricación o colocación del
+mobiliario doméstico disponible. Neutro/positivo no cambia el regreso; negativo
+eleva el score. Pruebas focales; sin RNG, UI, calibración ni cohortes.
+
+## 2026-10-12 — M15 16d: recarga doméstica autónoma de lámparas (0.15.95-alpha)
+
+Los NPC reponen una lámpara instalada en su propio hogar con dos grasas de su
+estante y la acción existente de recarga. Se conservan propiedad y procedencia
+del jugador al colocarla. Pruebas focales; sin RNG, UI, ni calibración.
+
+## 2026-10-12 — M15 16d: llevar grasa de caza al estante de la lámpara (0.15.96-alpha)
+
+La grasa real de caza se almacena como carga parcial solo si la lámpara vacía
+pertenece a la casa del cazador y el estante tiene hueco. Se guarda mediante la
+acción ordinaria item-scoped; no desaloja comida ni ropa del inventario. Pruebas
+focales de éxito y controles negativos. Sin RNG, UI, ni calibración.
+
+## 2026-10-12 — M15 14d, cuentas de estatus físicas (0.15.97-alpha)
+
+`beads` abre con trabajo de hueso y la receta consume dos huesos y una cuerda
+para producir `bone_beads`, un adorno de cabeza sin calor. Su estatus
+viaja en la unidad física y sólo cuenta mientras esa unidad exacta está puesta;
+reduce la presión de estatus y mejora la primera impresión. El generador de
+arte añade su icono y su capa visible. La prueba focal mide ambos lectores y
+la conservación de la unidad. Captura: `artifacts/screenshots/m15-phase14d-2026-10-12/01-bone-beads.png`.
+El teñido sigue apartado porque el sistema aún no persiste ni representa color
+por unidad; véase bugs.
+## 2026-10-12 — M15 16d: autonomía del fireplace doméstico (0.15.98-alpha)
+
+Ante una deuda de frío, adultos con la técnica buscan cantidades exactas de
+barro y sílex para una receta de fireplace; luego fabrican y colocan el hogar
+en su casa propia. La presión de warmth reconoce recolección, craft y colocación;
+solo fireplace queda exento del umbral de frío, no de hambre ni sed. Tests
+focales de controles negativos y cadena de acciones; sin RNG, UI ni calibración.
+## 2026-10-12 — m15: completa la puerta de desgaste y remiendo de tailors (0.15.99-alpha)
+
+El escenario `tailors` ofrece una oportunidad reproducible para observar el
+desgaste real de una prenda vestida y completar un remiendo con la acción
+normal de sastrería. El tercer check exige que ocurran ambos; controles
+negativos prueban que cualquiera de las dos ausencias lo hace fallar. El
+contrato aclara que el remiendo es una orden controlada del instrumento y no
+una afirmación de autonomía o supervivencia. Sin cambio de UI ni cohortes.
+
+## 2026-10-12 — m15: permite elegir comarca inicial (0.15.100-alpha)
+
+El selector de mundo muestra las 100 comarcas de la región elegida y conserva
+la coordenada exacta al medir el terreno local. El juego inicia ahí si hay
+suelo suficiente y agua dulce; si no hay agua, el jugador decide iniciar en
+seco o trasladarse al agua más cercana. Cambiar atlas borra ambas selecciones.
+La interfaz conserva el mapa y expone las comarcas por botones accesibles. E2E
+verifica inicio, región reservada y selección persistente; captura nueva en
+`artifacts/screenshots/m15-comarca-choice-2026-10-12/04-comarca-choice-es.png`.
+
+## 2026-10-12 — m15: propone zanjas tras ataques presenciados (0.15.101-alpha)
+
+Una persona adulta que puede cavar y presencia hostilidad entre bandas puede
+patrocinar una zanja defensiva cerca de su hogar. La propuesta pasa por las
+prioridades de supervivencia y agricultura antes de trampas de excedente, y
+usa el sistema de propuestas y apoyos existente. Pruebas negativas cubren falta
+de testigo, adulto o capacidad de cavar. Sin cambio de UI ni calibración del
+efecto defensivo.
+
+## 2026-10-12 — m15: propone canales para campos secos (0.15.102-alpha)
+
+El sponsor adulto de un campo en crecimiento puede proponer un canal cuando
+el campo pertenece a la clase ambiental más árida y un trazado determinista
+desde agua dulce alcanza su radio de riego. La propuesta usa la obra, apoyo y
+trabajo existentes. No modela estrés hídrico estacional ni calibra el factor de
+producción; sin UI ni cohortes.
+
+## 2026-10-12 — m15: completa el coste táctico de zanjas y city_walls (0.15.103-alpha)
+
+El hash espacial de rutas incluye las casillas excavadas de una muralla de
+Estado terminada, además de las zanjas. A* cobra el mismo coste acotado que
+usa para desviar una ruta de un obstáculo: la unidad anterior no hacía rodear
+un corte de una casilla, pues cruzarlo costaba menos que ir por un extremo.
+Las pruebas cubren el rodeo, la excepción de obra inacabada y la conectividad
+de la puerta. Sin cambio UI; la disuasión en una cohorte queda para calibración.
+
+## 2026-10-12 — corrige la aserción del nacimiento durante un viaje
+
+El test de ciclo vital buscaba al recién nacido solo en el checkpoint activo,
+aunque el viaje sin jugador deja su destino aparcado. Ahora consulta el registro
+canónico del mundo y compara la representación JSON tras guardar y cargar;
+Vitest consideraba desiguales objetos rehidratados con la misma estructura
+serializada. Sin cambio de comportamiento ni de versión.
+

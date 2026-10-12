@@ -200,7 +200,7 @@ export const FEELING_WORDS: Record<string, string> = {
 const WANTING_WORDS: Record<DriveId, string> = {
   hunger: 'food', thirst: 'water', rest: 'rest', warmth: 'warmth',
   company: 'company', home: 'home', variety: 'variety',
-  safety: 'safety',
+  comfort: 'comfort', safety: 'safety',
 };
 
 export const PLACE_WORDS: Record<string, string> = {
@@ -225,6 +225,7 @@ export const SAW_WORDS: Record<string, string> = {
   feast: 'sat at a feast', body_found: 'seen one of their own found dead',
   // Reasons their own work stopped, from `ActionSystem`.
   hands_full: 'run out of hands', quarry_escaped: 'lost an animal in the chase',
+  projectile_ammo_missing: 'found no ammunition for their weapon',
   node_empty: 'worked a place until nothing was left',
   long_enough: 'worked a whole day at one thing',
   cold: 'given up on a day of work for the cold',

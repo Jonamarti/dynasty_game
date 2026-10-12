@@ -4,6 +4,7 @@ import type { Person } from '../sim/entities/Person.ts';
 import { ARRIVAL_RADIUS } from '../sim/systems/MovementSystem.ts';
 import { CHOP_POSES, DIG_POSES, EXTRACT_POSES, FISH_POSES, GATHER_POSES, MAKE_POSES, type ArtPose } from './ArtManifest.ts';
 import { RECIPES } from '../sim/entities/Recipe.ts';
+import { isStationFor } from '../sim/entities/Building.ts';
 
 /** Shared clock contract: two work ticks per frame, with a bounded accumulator. */
 function workFrame(poses: readonly ArtPose[], workedTicks: number, alpha: number): ArtPose {
@@ -105,7 +106,7 @@ export function craftingPose(
   if (!recipe) return null;
   if (recipe.station !== undefined) {
     const station = person.targetBuildingId === null ? null : sim.buildingsById.get(person.targetBuildingId);
-    if (!station?.complete || station.def.id !== recipe.station || !station.contains(person.x, person.y)) return null;
+    if (!station?.complete || !isStationFor(station.def, recipe.station) || !station.contains(person.x, person.y)) return null;
   }
   return workFrame(MAKE_POSES, person.workedTicks, alpha);
 }

@@ -20,7 +20,7 @@ describe('fibre skirt', () => {
   it('is the cordage and clothing craft node for a three-thatch hip garment', () => {
     expect(TECH.fibre_skirt).toMatchObject({ tier: 'craft', web: 'clothing', requires: ['clothing', 'cordage'] });
     expect(RECIPES.fibre_skirt).toMatchObject({ tech: 'fibre_skirt', ingredients: { thatch: 3 }, output: { fibre_skirt: 1 } });
-    expect(ITEMS.fibre_skirt.garment).toEqual({ slot: 'hips', warmth: 0.03 });
+    expect(ITEMS.fibre_skirt.garment).toEqual({ slot: 'hips', warmth: 0.03, wearPerDay: 0.005 });
   });
 
   it('is gated by its own clothing-web node and crafts three thatch without consuming a tool', () => {

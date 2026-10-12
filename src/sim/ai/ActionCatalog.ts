@@ -23,7 +23,7 @@ import { canDigBankMud, DIG_TO, PILE_TO, digTool, digToolFailure, earthworkWorkR
 import type { ResourceNode } from '../entities/ResourceNode.ts';
 import type { World } from '../core/World.ts';
 import type { Building } from '../entities/Building.ts';
-import { BUILDINGS, isStation, isStructure } from '../entities/Building.ts';
+import { BUILDINGS, isStation, isStationFor, isStructure } from '../entities/Building.ts';
 import { canWork } from '../knowledge/Ore.ts';
 import { SOW_SEED } from '../entities/Field.ts';
 import type { Tree } from '../entities/Tree.ts';
@@ -48,7 +48,10 @@ import { tooHeavyForHer } from '../entities/Pregnancy.ts';
 import { mayNurse } from './Nursing.ts';
 import { swimRefusal, swimRouteRefusal, swimRefusalText } from '../core/Swimming.ts';
 import { houseInteriorContains, houseInteriorTiles } from '../world/HouseInterior.ts';
-import { manualGarmentReasonText, manualGarmentRefusal } from '../core/ToolEquipment.ts';
+import {
+  manualGarmentReasonText, manualGarmentRefusal, planGarmentMending, garmentMendingReasonText,
+  planHideDressing, hideDressingReasonText,
+} from '../core/ToolEquipment.ts';
 import { torchIgnitionRefusal, torchRefusalText, transferableUnits, burningTorchRefusalText } from '../core/Torch.ts';
 import { fatLampRefusal, fatLampRefusalText } from '../core/FatLamp.ts';
 
@@ -349,6 +352,22 @@ export function itemActions(
     enabled: garmentRefusal === null,
     reason: garmentRefusal ? manualGarmentReasonText(garmentRefusal) : undefined,
   });
+  if (def?.garment) {
+    const mending = planGarmentMending(actor, itemId);
+    options.push({
+      id: 'mend_garment', label: t('Mend'), icon: '\u{1FA79}',
+      enabled: typeof mending !== 'string',
+      reason: typeof mending === 'string' ? garmentMendingReasonText(mending) : undefined,
+    });
+    if (def.garment.material === 'hide') {
+      const dressing = planHideDressing(actor, itemId);
+      options.push({
+        id: 'dress_hide', label: t('Dress hide'), icon: '\u{1F9F4}',
+        enabled: typeof dressing !== 'string',
+        reason: typeof dressing === 'string' ? hideDressingReasonText(dressing) : undefined,
+      });
+    }
+  }
   if (itemId === 'torch' || itemId === 'fat_torch') {
     const refusal = torchIgnitionRefusal(actor, itemId, torchNearFire);
     options.push({
@@ -1210,7 +1229,7 @@ function buildingActions(
     if (isStation(building.def)) {
       const crafts: ActionOption[] = [];
       for (const recipe of Object.values(RECIPES)) {
-        if (recipe.station !== building.def.id) continue;
+        if (recipe.station === undefined || !isStationFor(building.def, recipe.station)) continue;
         if (recipeTechPower(actor, recipe) <= 0) continue;
         const option = craftOption(actor, recipe, ctx, building);
         // Still a refusal, unlike every other verb on this building, and on

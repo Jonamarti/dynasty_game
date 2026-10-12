@@ -282,12 +282,15 @@ fabricar y barata de llevar, de alcance mayor que la lanza.
 que descifrar, a diferencia del arco, que es una técnica (un resorte que hay
 que entender); y la honda del pastor es el arma a distancia más antigua que hay.
 
-**Munición: lo que no se hizo.** No hay modelo de munición: el arco no lo tiene
-(la caza no gasta nada), así que se hizo lo mínimo honesto. El sílex es el coste
-de la receta (dos por honda) y no se gasta al cazar. **Tampoco se limita a la
-caza menor**: `weaponOf` no sabe qué animal se persigue, y el término vale lo
-mismo contra una liebre que contra un jabalí. Ambos huecos están en `bugs.md` y
-en `next-steps.md`; arco y átlatl tienen el mismo.
+**Munición física (2026-10-12).** La honda lleva sílex del inventario del
+cazador; el arco usa flechas y el átlatl dardos, cada uno fabricable con palos,
+sílex y paja. Cada arma declara su munición en el dato del arma y la caza pasa
+por un único coste de disparo: hace falta llevar la unidad antes de iniciar la
+persecución, y se consume solo al acertar. Un fallo o una presa fuera de alcance
+no la consume. La razón por falta de munición se muestra y traduce. La honda
+solo aporta su término de arma contra liebres; contra ciervos y jabalíes el
+selector la descarta. Pruebas focales cubren recetas, impactos, fallos, falta de
+munición, alcance y selección de presa. No hubo calibración ni cohortes.
 
 **Arte.** Icono `item/sling` (la bolsa de cuero con una piedra y dos cuerdas) y
 mano `held/sling/{S,E}`, en `art/src/props/items.ts` y `held.ts`; el atlas
@@ -298,6 +301,12 @@ nativo de rolldown que carga Vite), así que se revisó recortando el atlas
 regenerado: `artifacts/screenshots/m15-phase13d-sling-2026-10-06/`. Se añadió
 `sling` a `HeldItemKind`, `HELD_PRIORITY`, `EquipmentAnimation` y `sheet-page.ts`,
 y `art.test.ts` exige ahora su mano y su icono.
+
+**Munición visible (2026-10-12).** Los generadores de `arrow` y `atlatl_dart`
+se añadieron a `art/src/props/items.ts`, y `art.test.ts` exige ambas claves del
+atlas. `npm run art:build -- props` regeneró `public/art/props.*`; la barra de
+fabricación con flechas y dardos está capturada en
+`artifacts/screenshots/m15-projectile-ammo-2026-10-12/01-ammunition-recipes.png`.
 
 **Tests.** 8 más en `craft-nodes.test.ts` y 2 en `art.test.ts`: declaración,
 valores del arma frente a la lanza y el arco, receta, el arma para quien lo
@@ -313,8 +322,9 @@ siembra se enseña (14 y 13 lecciones, 21 portadores), se fabrican hondas (4 en 
 semilla b) y la población no se hunde (25 a 30 y 32).
 
 **No se corrió** la cohorte de 20 semillas; queda para la máquina del
-propietario. **Verificación:** sustituto esbuild/shim de vitest y página servida
-por esbuild en un contenedor Linux en la nube.
+propietario. **Verificación del cambio:** typecheck y 37 tests focales pasan;
+el test nuevo de captura pasa. El tour completo generó capturas, con un fallo
+ajeno a munición en la aserción antigua de cinco huecos del equipo (observó 11).
 
 ## 13d — el check `sub-webs-are-climbed` (2026-10-06)
 
@@ -397,9 +407,11 @@ headless en un contenedor Linux en la nube.
 13. **Edad de `fire_hardened_spear`, decidida.** Queda en `middle_palaeolithic`
     (ver la sección de arriba); si se quiere la edad del plan hay que mover
     `spear` y `firemaking` o aflojar el test de edades.
-14. **Honda sin munición ni tope de presa.** Ver arriba y `bugs.md`. ¿Se
-    quiere un modelo de munición para los tres proyectiles (arco, átlatl,
-    honda) en una fase propia?
+14. **Límite de presa por arma.** La honda usa sílex y queda limitada a liebres;
+    arco y átlatl consumen flechas y dardos, respectivamente (actualización
+    2026-10-12). Conservan su selección de presa anterior. No se ha decidido si
+    deben limitarse también por tamaño; su cadencia de fabricación/consumo no se
+    ha calibrado.
 15. **Honda por encima de la lanza en caza.** Con 1,7 frente a 1,6 la honda
     desplaza a la lanza en una cacería (no a la lanza endurecida, 2,0). Es una
     elección de diseño para que el nodo no sea inerte; el propietario puede

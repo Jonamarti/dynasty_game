@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 const SHOTS = process.env.DYNASTY_CAPTURE_DIR ??
-  `artifacts/screenshots/m15-map-choice-${new Date().toISOString().replace(/[:.]/g, '-')}`;
+  `artifacts/screenshots/m15-comarca-choice-${new Date().toISOString().replace(/[:.]/g, '-')}`;
 
 test('changing the atlas clears the old start and installs the selected map', async ({ page }) => {
   const errors: string[] = [];
@@ -77,4 +77,50 @@ test('a generated globe can be chosen in the start screen without URL flags', as
   expect(result.seed).toBe('e2e-generated-choice');
   expect(result.peoples).toBeGreaterThan(0);
   expect(errors).toEqual([]);
+});
+
+test('choosing a comarca starts the local world there and reserves its region from world peoples', async ({ page }) => {
+  await page.goto('/?seed=e2e-explicit-comarca&lang=es');
+  const picker = page.locator('.worldpicker');
+  await expect(picker.locator('.worldpicker-map')).toBeEnabled({ timeout: 20_000 });
+  const canvas = picker.locator('.worldpicker-canvas');
+  const box = (await canvas.boundingBox())!;
+  await page.mouse.click(box.x + 30.5 / 96 * box.width, box.y + 24.5 / 48 * box.height);
+  await expect(picker.locator('.worldpicker-comarcas')).toBeVisible();
+  await expect(picker.locator('.worldpicker-comarcas button')).toHaveCount(100);
+  await expect(picker.locator('.worldpicker-comarca-label')).toContainText('Elige una comarca');
+  const settings = page.locator('.settings');
+  await picker.locator('.worldpicker-comarcas button').first().click();
+  await page.screenshot({ path: `${SHOTS}/04-comarca-choice-es.png` });
+  // Try cells in deterministic row order until one has enough dry land. If
+  // its exact location lacks water, the existing explicit confirmation owns
+  // that decision and must still keep the selected coordinate.
+  let chosen = -1;
+  for (let index = 0; index < 100; index++) {
+    await picker.locator('.worldpicker-comarcas button').nth(index).click();
+    await picker.locator('.worldpicker-begin').click();
+    await page.waitForTimeout(120);
+    if (await picker.locator('.worldpicker-note.is-bad').isVisible()) continue;
+    if (await picker.locator('.worldpicker-confirm').isVisible() || await settings.isVisible()) { chosen = index; break; }
+  }
+  expect(chosen).toBeGreaterThanOrEqual(0);
+  if (!(await settings.isVisible())) {
+    await expect(picker.locator('.worldpicker-confirm')).toBeVisible({ timeout: 10_000 });
+    await picker.locator('.worldpicker-confirm-anyway').click();
+  }
+  await expect(settings).toBeVisible({ timeout: 30_000 });
+  const result = await page.evaluate(() => {
+    const state = (window as any).__dynasty.worldState;
+    const regionId = 24 * 96 + 30;
+    return {
+      start: state.initialGeographicStart.start,
+      localSize: [state.initialGeographicStart.comarcasWide, state.initialGeographicStart.comarcasHigh],
+      regionExists: state.peoples.regions.has(regionId),
+      occupiedPeopleRegions: [...state.peoples.regionOfPeople.values()].includes(regionId),
+    };
+  });
+  expect(result.start).toEqual({ x: 300.5 + chosen % 10, y: 240.5 + Math.floor(chosen / 10) });
+  expect(result.localSize).toEqual([1, 1]);
+  expect(result.regionExists).toBe(true);
+  expect(result.occupiedPeopleRegions).toBe(false);
 });

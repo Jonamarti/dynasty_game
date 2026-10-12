@@ -6,6 +6,11 @@ export type ItemArt = [id: string, label: string, tech: string, draw: () => stri
 export const WOOD = '#86633c', WOOD_D = '#3a2716', STONE = '#a9adb0', STONE_D = '#3d4244', BONE = '#e6dcc0', BONE_D = '#7a6d4e', CORD = '#c9b27f';
 const rot = (inner: string, deg: number, cx = 32, cy = 32): string => `<g transform="rotate(${deg} ${cx} ${cy})">${inner}</g>`;
 export const ITEMS: ItemArt[] = [
+  ['bone_beads', 'Cuentas de hueso', 'beads', () => {
+    let s = stroke('M8,22Q32,5 56,22M8,22Q32,43 56,22', '#72563a', 2.5);
+    for (let i = 0; i < 9; i++) s += ell(9 + i * 5.7, 22 + Math.sin(i / 8 * Math.PI) * 10, 3.1, 3.8, i % 2 ? '#d7c79e' : '#e8eee2', '#514633');
+    return s;
+  }],
   ['fibre_skirt', 'Falda de fibra', 'fibre_skirt', () =>
     shape(smooth([[9, 19], [21, 14], [43, 14], [55, 19], [59, 49], [45, 55], [32, 51], [19, 55], [5, 49]]), '#a89558', '#594728')
       + stroke('M10,20Q32,27 54,20M18,26L13,47M31,27L31,49M45,26L51,47', '#796640', 1.8)
@@ -95,6 +100,13 @@ export const ITEMS: ItemArt[] = [
     + ell(32, 40, 12, 4, '#55483a', WOOD_D)
     + shape(poly([[29, 36], [32, 18], [38, 37], [34, 42]]), '#f0a443', '#9a431b')
     + shape(poly([[32, 35], [33, 24], [35, 36], [33, 39]]), '#ffe5a0')],
+  ['fireplace', 'Hogar interior', 'fireplace', () =>
+    ell(32, 54, 22, 5, 'rgba(0,0,0,0.2)')
+    + shape(poly([[8, 32], [17, 25], [47, 25], [56, 32], [52, 52], [12, 52]]), '#a77b55', WOOD_D)
+    + shape(poly([[12, 34], [19, 29], [45, 29], [52, 34], [48, 47], [16, 47]]), '#c19362', WOOD_D)
+    + shape(poly([[20, 36], [31, 31], [42, 36], [32, 43]]), '#453328', WOOD_D)
+    + shape(poly([[29, 34], [32, 17], [38, 35], [33, 39]]), '#e67c32', '#99451f')
+    + shape(poly([[32, 32], [33, 23], [35, 33], [33, 36]]), '#ffe5a0')],
   ['shelf', 'Estante', 'carpentry', () =>
     ell(32, 54, 20, 4, 'rgba(0,0,0,0.18)')
     + shape(poly([[12, 19], [32, 10], [52, 19], [32, 28]]), '#bd925d', WOOD_D)
@@ -146,11 +158,19 @@ export const ITEMS: ItemArt[] = [
     + limb([[12, 32], [56, 32]], 1.5, '#a9835a', WOOD_D)
     + shape(poly([[60, 32], [54, 29.5], [54, 34.5]]), STONE, STONE_D)
     + shape(poly([[12, 32], [8, 28.5], [17, 30]]), '#d9d4c6', '#6a6558') + shape(poly([[12, 32], [8, 35.5], [17, 34]]), '#d9d4c6', '#6a6558')],
+  ['arrow', 'Flecha', 'bow', () =>
+    limb([[8, 54], [54, 8]], 2.2, WOOD, WOOD_D)
+    + shape(poly([[59, 3], [54, 18], [48, 12]]), STONE, STONE_D)
+    + stroke('M13,49L8,45M18,44L13,40M23,39L18,35', '#d9d4c6', 2.2)],
   ['atlatl', 'Lanzadardos', 'atlatl', () => rot(
     limb([[32, 58], [32, 14]], 3.2, WOOD, WOOD_D)
     + shape('M28,14Q28,8 33,8L36,8L36,12L33,12L32,16Z', WOOD, WOOD_D)
     + ell(28, 46, 3, 2, 'none', WOOD_D) + stroke('M25,44L25,52', CORD, 1.6), 32)
     + limb([[10, 18], [54, 10]], 1.4, '#a9835a', WOOD_D)],
+  ['atlatl_dart', 'Dardo de lanzadardos', 'atlatl', () => rot(
+    limb([[32, 62], [32, 10]], 2.8, WOOD, WOOD_D)
+    + shape(poly([[32, 2], [37, 13], [32, 17], [27, 13]]), STONE, STONE_D)
+    + stroke('M27,45L37,45M27,49L37,49', CORD, 1.8), 5)],
   ['copper_nugget', 'Pepita de cobre', 'native_copper', () =>
     shape(smooth([[12, 40], [20, 26], [34, 24], [44, 34], [40, 48], [22, 50]]), '#c9803c', '#6b3a14')
     + shape(smooth([[34, 20], [44, 12], [54, 18], [52, 30], [42, 30]]), '#d99454', '#6b3a14')

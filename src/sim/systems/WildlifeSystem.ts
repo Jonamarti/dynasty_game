@@ -459,6 +459,7 @@ export class WildlifeSystem {
       const foe = ctx.peopleById?.get(grudge);
       if (foe && foe.alive && Math.hypot(animal.x - foe.x, animal.y - foe.y) <= PERSON_RANGE_DAY &&
           !lit?.(foe.x, foe.y, FIRE_AVOID) && !guardedByDog(foe, ctx.animalHash) &&
+          !guardedByPatrol(foe, ctx.peopleHash) &&
           ctx.world.sameRegion(animal.x, animal.y, foe.x, foe.y)) {
         telemetry.count('animal_grudge_pursuit');
         this.pounce(animal, foe, ctx, dice);
@@ -468,7 +469,12 @@ export class WildlifeSystem {
 
     if (animal.species === 'bear') {
       const walkedIn = ctx.peopleHash.findNearest(animal.x, animal.y, BEAR_SURPRISE,
-        person => person.alive && !(lit?.(person.x, person.y, FIRE_AVOID)));
+        person => {
+          if (!person.alive || lit?.(person.x, person.y, FIRE_AVOID)) return false;
+          if (!guardedByPatrol(person, ctx.peopleHash)) return true;
+          telemetry.count('predator_kept_off_by_guard');
+          return false;
+        });
       if (walkedIn) {
         this.pounce(animal, walkedIn, ctx, dice);
         return;
@@ -545,6 +551,10 @@ export class WildlifeSystem {
     const bold = animal.species === 'bear' || packMates(animal, animals) >= 2;
     return ctx.peopleHash.findNearest(animal.x, animal.y, range, person => {
       if (!person.alive || ctx.litNear?.(person.x, person.y, FIRE_AVOID)) return false;
+      if (guardedByPatrol(person, ctx.peopleHash)) {
+        telemetry.count('predator_kept_off_by_guard');
+        return false;
+      }
       // The dog barks first: a hunter does not close on somebody whose wolf
       // is at their side, and keeps off.
       if (guardedByDog(person, ctx.animalHash)) return false;
@@ -699,7 +709,7 @@ export function grudgeOf(animal: Animal, tick: number, anyTime = false): number 
   return animal.hurtBy;
 }
 
-/** Records that `person` put this animal in a corner, so it remembers. */
+/** Records that `person` wounded this animal, so a predator can remember its hunter. */
 export function rememberHurt(animal: Animal, person: Person, tick: number): void {
   animal.hurtBy = person.id;
   animal.hurtAt = tick;
@@ -710,6 +720,19 @@ export function guardedByDog(person: Person, hash: SpatialHash<Animal> | undefin
   if (!hash || techPower(person, 'dog') <= 0) return false;
   return hash.findNearest(person.x, person.y, DOG_HEARING,
     a => a.alive && a.tamedBy === person.id && a.species === 'wolf') !== null;
+}
+
+/**
+ * A person on patrol keeps hunters outside the same seven-tile perimeter as
+ * a hearth. A guard farther out can see a threat but is not close enough to
+ * protect somebody already being rushed; using the perimeter here makes the
+ * defense local and keeps ordinary company's four-tile rule independent.
+ */
+export function guardedByPatrol(person: Person, hash: SpatialHash<Person>): boolean {
+  return hash.findNearest(person.x, person.y, FIRE_AVOID, guard =>
+    guard.alive && !guard.isChild && guard.job === 'guard' && guard.action === 'patrol' &&
+    guard.bandId === person.bandId
+  ) !== null;
 }
 
 /**

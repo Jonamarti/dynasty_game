@@ -22,7 +22,7 @@ const CELL = 12;
 
 export interface WorldPickerCallbacks {
   /** The player chose a region to begin in. */
-  onBegin: (region: { x: number; y: number }) => void;
+  onBegin: (region: { x: number; y: number }, comarca?: { x: number; y: number }) => void;
   /** The player chose the random island instead. */
   onIsland: () => void;
   onMap?: (id: string) => void;
@@ -32,6 +32,8 @@ export class WorldPicker {
   private readonly root: HTMLElement;
   private readonly canvas: HTMLCanvasElement;
   private readonly info: HTMLElement;
+  private readonly comarcaLabel: HTMLElement;
+  private readonly comarcas: HTMLElement;
   private readonly note: HTMLElement;
   private readonly beginButton: HTMLButtonElement;
   private readonly islandButton: HTMLButtonElement;
@@ -48,6 +50,7 @@ export class WorldPicker {
   private geography: WorldGeography | null = null;
   private grid: GlobeGrid | null = null;
   private picked: { x: number; y: number } | null = null;
+  private pickedComarca: { x: number; y: number } | null = null;
   private hovered: { x: number; y: number } | null = null;
   private busy: string | null = null;
   private message: { text: string; bad: boolean } | null = null;
@@ -74,6 +77,8 @@ export class WorldPicker {
             '<select id="worldpicker-map" class="hud-button worldpicker-map"></select>' +
             '<div class="worldpicker-map-caveat"></div>' +
             '<div class="worldpicker-info"></div>' +
+            '<div class="worldpicker-comarca-label" hidden></div>' +
+            '<div class="worldpicker-comarcas" role="group" hidden></div>' +
             '<div class="worldpicker-note" role="status" aria-live="polite"></div>' +
             '<div class="worldpicker-confirm" role="alert" hidden>' +
               '<div class="worldpicker-confirm-text"></div>' +
@@ -89,6 +94,8 @@ export class WorldPicker {
     const q = <T extends HTMLElement>(sel: string) => this.root.querySelector(sel) as T;
     this.canvas = q<HTMLCanvasElement>('.worldpicker-canvas');
     this.info = q('.worldpicker-info');
+    this.comarcaLabel = q('.worldpicker-comarca-label');
+    this.comarcas = q('.worldpicker-comarcas');
     this.note = q('.worldpicker-note');
     this.beginButton = q<HTMLButtonElement>('.worldpicker-begin');
     this.islandButton = q<HTMLButtonElement>('.worldpicker-island');
@@ -106,7 +113,17 @@ export class WorldPicker {
       if (!this.busy) this.callbacks.onMap?.(this.mapSelect.value);
     });
 
-    this.beginButton.addEventListener('click', () => { if (this.picked && !this.busy && !this.confirm) this.callbacks.onBegin({ ...this.picked }); });
+    this.beginButton.addEventListener('click', () => {
+      if (this.picked && !this.busy && !this.confirm) this.callbacks.onBegin({ ...this.picked }, this.pickedComarca ? { ...this.pickedComarca } : undefined);
+    });
+    this.comarcas.addEventListener('click', event => {
+      const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-comarca-x]');
+      if (!button || !this.picked || this.busy) return;
+      this.pickedComarca = { x: Number(button.dataset.comarcaX), y: Number(button.dataset.comarcaY) };
+      this.message = null;
+      this.confirm = null;
+      this.render();
+    });
     this.islandButton.addEventListener('click', () => { if (!this.busy && !this.confirm) this.callbacks.onIsland(); });
     this.confirmAnyway.addEventListener('click', () => {
       const chosen = this.confirm;
@@ -137,9 +154,10 @@ export class WorldPicker {
       // Tapping the region already picked begins there: a double-tap with no timing in it. Not while a confirm panel is up,
       // though — a second tap on the same cell then should not silently re-run `onBegin` behind the choice being offered.
       if (!this.confirm && this.picked && this.picked.x === cell.x && this.picked.y === cell.y && this.canBegin(cell)) {
-        this.callbacks.onBegin({ ...cell }); return;
+        this.callbacks.onBegin({ ...cell }, this.pickedComarca ? { ...this.pickedComarca } : undefined); return;
       }
       this.picked = cell;
+      this.pickedComarca = null;
       this.message = null;
       this.confirm = null;
       this.render();
@@ -182,7 +200,7 @@ export class WorldPicker {
   setGeography(geography: WorldGeography | null): void {
     this.geography = geography;
     this.grid = geography ? globeGridOf(geography) : null;
-    this.picked = null; this.hovered = null; this.confirm = null;
+    this.picked = null; this.pickedComarca = null; this.hovered = null; this.confirm = null;
     this.render();
   }
 
@@ -206,6 +224,11 @@ export class WorldPicker {
     const grid = this.grid;
     if (!this.geography || !grid) return null;
     return worldTerrainOf(this.geography.profileAt(rx * grid.perRegion + grid.perRegion / 2, ry * grid.perRegion + grid.perRegion / 2));
+  }
+
+  private comarcaTerrainOf(cx: number, cy: number): WorldTerrain | null {
+    if (!this.geography) return null;
+    return worldTerrainOf(this.geography.profileAt(cx + 0.5, cy + 0.5));
   }
 
   private canBegin(cell: { x: number; y: number }): boolean {
@@ -266,7 +289,14 @@ export class WorldPicker {
     this.note.classList.toggle('is-bad', this.message?.bad ?? false);
     this.renderConfirm();
     this.canvas.hidden = !grid;
-    if (!grid || !this.geography) { this.info.textContent = this.busy ?? ''; return; }
+    if (!grid || !this.geography) {
+      this.info.textContent = this.busy ?? '';
+      this.comarcaLabel.hidden = true;
+      this.comarcas.hidden = true;
+      this.comarcas.replaceChildren();
+      return;
+    }
+    this.renderComarcas(grid);
 
     const w = grid.regionsWide, h = grid.regionsHigh;
     if (this.canvas.width !== w * CELL || this.canvas.height !== h * CELL) {
@@ -295,6 +325,33 @@ export class WorldPicker {
     this.fillInfo(this.hovered ?? this.picked);
   }
 
+  private renderComarcas(grid: GlobeGrid): void {
+    const region = this.picked;
+    this.comarcaLabel.hidden = !region;
+    this.comarcas.hidden = !region;
+    if (!region) { this.comarcas.replaceChildren(); return; }
+    this.comarcaLabel.textContent = t('Choose a comarca in this region, or keep the recommended start.');
+    this.comarcas.setAttribute('aria-label', t('Comarcas in the selected region'));
+    this.comarcas.style.gridTemplateColumns = `repeat(${grid.perRegion}, minmax(0, 1fr))`;
+    const buttons: HTMLButtonElement[] = [];
+    for (let localY = 0; localY < grid.perRegion; localY++) for (let localX = 0; localX < grid.perRegion; localX++) {
+      const x = region.x * grid.perRegion + localX, y = region.y * grid.perRegion + localY;
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'worldpicker-comarca';
+      button.disabled = this.busy !== null;
+      button.dataset.comarcaX = String(x); button.dataset.comarcaY = String(y);
+      const label = t('Comarca {x}, {y}', { x: localX + 1, y: localY + 1 });
+      button.setAttribute('aria-label', label);
+      button.title = label;
+      const terrain = this.comarcaTerrainOf(x, y);
+      button.style.backgroundColor = terrain ? TERRAIN_COLOR[terrain] : '#0b0e14';
+      button.setAttribute('aria-pressed', String(this.pickedComarca?.x === x && this.pickedComarca?.y === y));
+      buttons.push(button);
+    }
+    this.comarcas.replaceChildren(...buttons);
+  }
+
   private fillInfo(cell: { x: number; y: number } | null): void {
     this.info.textContent = '';
     const line = (text: string, cls = '') => {
@@ -319,5 +376,9 @@ export class WorldPicker {
     }
     line(this.picked && this.picked.x === cell.x && this.picked.y === cell.y
       ? t('Press Begin here, or click it again.') : t('Click to choose this place.'), 'is-dim');
+    if (this.pickedComarca && this.grid && this.pickedComarca.x >= cell.x * this.grid.perRegion && this.pickedComarca.x < (cell.x + 1) * this.grid.perRegion &&
+        this.pickedComarca.y >= cell.y * this.grid.perRegion && this.pickedComarca.y < (cell.y + 1) * this.grid.perRegion) {
+      line(t('Chosen comarca {x}, {y}', { x: this.pickedComarca.x - cell.x * this.grid.perRegion + 1, y: this.pickedComarca.y - cell.y * this.grid.perRegion + 1 }), 'is-here');
+    }
   }
 }

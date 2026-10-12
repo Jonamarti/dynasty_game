@@ -15,7 +15,7 @@ import { earthWorldGeography, randomWorldGeography, type EarthWorldGeography, ty
 import { RNG } from './sim/core/RNG.ts';
 import { saltSourceNear } from './sim/core/Preservation.ts';
 import { loadWorldAtlas, type LoadedWorldMap } from './sim/world/WorldAtlas.ts';
-import { findNearestStart, findStartInRegion, findWateredGlobeStart, localWorldConfig, type StartPlace } from './sim/world/StartPlace.ts';
+import { findNearestStart, findStartInRegion, findWateredGlobeStart, localWorldConfig, startInComarca, type StartPlace } from './sim/world/StartPlace.ts';
 import { WorldPicker } from './ui/WorldPicker.ts';
 import { GAME_VERSION_LABEL } from './ui/GameVersion.ts';
 import { Camera } from './render/Camera.ts';
@@ -49,7 +49,7 @@ import {
 } from './sim/ai/ActionCatalog.ts';
 import { TECH, techPower, type Tech } from './sim/knowledge/Tech.ts';
 import type { Person } from './sim/entities/Person.ts';
-import { BUILDINGS, type Building, type BuildingDef } from './sim/entities/Building.ts';
+import { BUILDINGS, isStationFor, type Building, type BuildingDef } from './sim/entities/Building.ts';
 import { earthworkTiles } from './sim/entities/Earthwork.ts';
 import { ITEMS } from './sim/entities/Item.ts';
 import { JOBS } from './sim/entities/Job.ts';
@@ -717,7 +717,7 @@ const worldPicker = new WorldPicker(document.body, {
     worldPicker.setNote(null);
     worldPicker.setGeography(earthMap);
   },
-  onBegin: region => { void beginOnEarth(region); },
+  onBegin: (region, comarca) => { void beginOnEarth(region, comarca); },
   onIsland: () => {
     // The island is the draft already built, unless an earlier choice replaced it.
     if (earthChoice) { earthChoice = null; rebuildBeforeStart(); }
@@ -772,13 +772,32 @@ function settleOnEarth(found: StartPlace, region: { x: number; y: number }, warn
  * as it did before this feature existed. This one only decides whether a button nobody has clicked yet gets to exist. */
 const FAR_WATER_RADIUS = 8;
 
-async function beginOnEarth(region: { x: number; y: number }): Promise<void> {
+async function beginOnEarth(region: { x: number; y: number }, comarca?: { x: number; y: number }): Promise<void> {
   if (!earthMap) return;
   worldPicker.setBusy(t('Looking for fresh water near there…'));
   worldPicker.setNote(null);
   // Let the label paint before the search holds the thread (it takes a second or so).
   await new Promise(resolve => setTimeout(resolve, 30));
   const config = localWorldConfig((configFrom(settings) as { world?: object }).world);
+  if (comarca) {
+    worldPicker.setBusy(t('Measuring the chosen comarca…'));
+    worldPicker.setNote(null);
+    await new Promise(resolve => setTimeout(resolve, 30));
+    const found = startInComarca(earthMap, comarca.x, comarca.y, config);
+    worldPicker.setBusy(null);
+    if (found) { settleOnEarth(found, region); return; }
+    const dry = startInComarca(earthMap, comarca.x, comarca.y, config, { requireWater: false });
+    if (!dry) {
+      worldPicker.setNote(t('That comarca does not have enough dry land for a start. Choose another.'), true);
+      return;
+    }
+    const far = findNearestStart(earthMap, region.x, region.y, GLOBE_SPAN, config, FAR_WATER_RADIUS);
+    worldPicker.confirmNoWater(
+      () => settleOnEarth(dry, region, true),
+      far ? { regions: Math.max(Math.abs(far.region.x - region.x), Math.abs(far.region.y - region.y)), onGo: () => settleOnEarth(far, region) } : null,
+    );
+    return;
+  }
   const found = findNearestStart(earthMap, region.x, region.y, GLOBE_SPAN, config);
   worldPicker.setBusy(null);
   if (found) { settleOnEarth(found, region); return; }
@@ -915,6 +934,13 @@ function handleItemAction(
       if (!ordered) sim.lastRefusal = null;
       say(ordered ? (verb === 'wear_garment' ? t('changing clothes') : t('taking off clothes'))
         : reason ?? t('could not change clothes'), ordered);
+      break;
+    }
+    case 'dress_hide': {
+      const ordered = sim.order(person, verb, { itemId });
+      const reason = ordered ? null : sim.lastRefusal;
+      if (!ordered) sim.lastRefusal = null;
+      say(ordered ? t('dressing hide') : reason ?? t('could not dress that hide garment'), ordered);
       break;
     }
     case 'light_torch': {
@@ -1842,7 +1868,7 @@ function nearestStation(who: Person, stationId: string, requiresFire = false, re
   let best: Building | null = null;
   let bestDistance = Infinity;
   for (const building of sim.buildings) {
-    if (!building.complete || building.ruined || building.def.id !== stationId) continue;
+    if (!building.complete || building.ruined || !isStationFor(building.def, stationId)) continue;
     if (requiresFire && !sim.hearthNear(building.centerX, building.centerY, 3)) continue;
     if (requiresSaltWater && !saltSourceNear(sim.world, building.x, building.y, building.def.width, building.def.height)) continue;
     if (sim.mayUseBuilding(who, building).watched) continue;

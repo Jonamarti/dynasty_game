@@ -89,6 +89,20 @@ describe('Pathfinder', () => {
     expect(pf.routeLength).toBe(0);
   });
 
+  it('raiding parties route around a finished shallow ditch when that costs less than crossing', () => {
+    const world = gridWorld(Array.from({ length: 22 }, () => '.'.repeat(22)));
+    const isDitch = (x: number, y: number): boolean => x === 10 && y >= 6 && y <= 15;
+    const ordinary = new Pathfinder(world, isDitch);
+    const raider = new Pathfinder(world, isDitch);
+
+    expect(ordinary.find(4, 10, 16, 10)).toBe(PathStatus.Found);
+    expect(ordinary.routeLength).toBe(0); // straight through, as on the broken build
+    expect(raider.find(4, 10, 16, 10, undefined, -1, 'walk', true)).toBe(PathStatus.Found);
+    // The alternative around either end introduces turns; the one-tile cost
+    // per dug tile makes that route cheaper than crossing all ten cut tiles.
+    expect(raider.routeLength).toBeGreaterThan(0);
+  });
+
   it('compresses a diagonal-then-straight route to exactly one waypoint, at the turn', () => {
     const world = gridWorld(Array.from({ length: 10 }, () => '.'.repeat(10)));
     const pf = new Pathfinder(world);

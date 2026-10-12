@@ -27,17 +27,20 @@ import type { Person } from '../entities/Person.ts';
 import { averageRenown, type Household } from '../entities/Household.ts';
 import type { Band } from '../core/Simulation.ts';
 import {
-  BUILDINGS, isTrap, isStation, isField, isEarthwork, isHeap, isHerd, isWell, isStructure,
+  BUILDINGS, isTrap, isStation, isStationFor, isField, isEarthwork, isHeap, isHerd, isWell, isStructure,
   type Building, type BuildingDef,
 } from '../entities/Building.ts';
 import { SOW_SEED } from '../entities/Field.ts';
-import { earthworkWorkRefusal } from '../core/Earth.ts';
+import { EARTH_UNIT, digTool, earthworkWorkRefusal } from '../core/Earth.ts';
+import type { World } from '../core/World.ts';
+import { CANAL_IRRIGATION_RADIUS, isFieldIrrigated } from '../entities/Irrigation.ts';
 import { RECIPES, recipeTechPower } from '../entities/Recipe.ts';
 import { techPower, type Tech } from '../knowledge/Tech.ts';
 import { JOB_IDS, type JobId } from '../entities/Job.ts';
 import type { RelationshipGraph } from './../social/Relationships.ts';
 import type { RNG } from '../core/RNG.ts';
 import type { SpatialHash } from '../core/SpatialHash.ts';
+import { moistureClassOf } from '../world/ResourceProfile.ts';
 import { telemetry } from '../core/Telemetry.ts';
 import { chiefHoneymoon, chiefTermDays } from '../social/Leadership.ts';
 import { conspiracyAgainst, warParty } from '../social/Factions.ts';
@@ -174,6 +177,11 @@ const RAID_RANGE = 75;
  * stockpile, which is bare ground and costs nothing to place.
  */
 const RAID_GRANARY = 100;
+
+/** Hostile cross-band deeds that can give a witnessed band a security reason to dig. */
+const SECURITY_INCIDENTS = new Set(['theft', 'sabotage', 'assault', 'murder', 'abduction']);
+/** The same salience floor used by Memory's existing gossip readers. */
+const SECURITY_MEMORY_SALIENCE = 0.15;
 
 /**
  * How far past `RAID_HOSTILITY` a grudge has to run before a party goes to
@@ -361,6 +369,10 @@ export interface BandContext {
   buildings: Building[];
   /** Places a site; returns null if it will not fit. */
   place: (defId: string, x: number, y: number, bandId: number, sponsorId?: number | null) => Building | null;
+  /** Terrain readers used only by the canal proposal; headless policy fixtures may omit them. */
+  world?: World;
+  buildingHash?: SpatialHash<Building>;
+  freshShoreHash?: SpatialHash<{ x: number; y: number }>;
   /** Called when someone is cast out, so the world can resettle them. */
   onExile: (person: Person, band: Band, factionSize: number) => void;
   /** Called when a band takes in a wandering outcast. */
@@ -1573,14 +1585,15 @@ export class BandSystem {
     // inert-content rule failing in the one table it is hardest to see from.
     if (!wanted && underway === 0 && stores.length > 0) {
       const stations = live.filter(b => isStation(b.def));
-      const hasHearth = stations.some(b => b.def.id === 'hearth');
+      const hasHearth = stations.some(b => isStationFor(b.def, 'hearth'));
       const expectsHearth = members.some(m => m.beliefs.expect('warm:hearth').value >= 0.2);
       if (!hasHearth && expectsHearth && buildable.some(def => def.id === 'hearth')) {
         wanted = 'hearth';
       }
       const missing = buildable.filter(def => isStation(def) &&
-        !stations.some(existing => existing.def.id === def.id) &&
-        Object.values(RECIPES).some(recipe => recipe.station === def.id &&
+        !stations.some(existing => isStationFor(existing.def, def.id) ||
+          (def.stationKind !== undefined && isStationFor(existing.def, def.stationKind))) &&
+        Object.values(RECIPES).some(recipe => recipe.station !== undefined && isStationFor(def, recipe.station) &&
           members.some(m => recipeTechPower(m, recipe) > 0)));
       // Cheapest first: a band's first workshop should be the one it can finish.
       if (!wanted) wanted = this.cheapest(missing)?.id ?? null;
@@ -1631,6 +1644,23 @@ export class BandSystem {
         }
       }
     }
+
+    // A firsthand hostile deed gives a witnessed band a concrete reason to
+    // raise one defensive ditch. Use the retained memory's existing gossip
+    // floor and require a currently buildable design; no invented score or
+    // probability decides whether the reason exists.
+    const hasDitch = live.some(site => (site.def.earthwork?.turnOf ?? site.def.id) === 'ditch');
+    const securityWitness = !wanted && underway === 0 && stores.length > 0 && !hasDitch &&
+      buildable.some(def => def.id === 'ditch') && members.some(person => !person.isChild && digTool(person))
+      ? this.securityWitness(band, members, ctx)
+      : null;
+    if (securityWitness && this.placeSecurityDitch(band, securityWitness, ctx)) return;
+
+    const hasCanal = live.some(site => (site.def.earthwork?.turnOf ?? site.def.id) === 'canal');
+    const canProposeCanal = !wanted && underway === 0 && stores.length > 0 && !hasCanal &&
+      buildable.some(def => (def.earthwork?.turnOf ?? def.id) === 'canal') &&
+      members.some(person => !person.isChild && digTool(person));
+    if (canProposeCanal && this.placeCanalForDryField(band, members, live, ctx)) return;
 
     if (!wanted && underway === 0 && stores.length > 0) {
       const traps = live.filter(b => isTrap(b.def));
@@ -1715,6 +1745,177 @@ export class BandSystem {
     // trap it can never site is the only way this branch fails, and the counter
     // is the difference between finding that out and guessing at it.
     telemetry.count('band_could_not_site_' + wanted);
+  }
+
+  /** The lowest-id living adult who remembers a salient, firsthand attack on this band. */
+  private securityWitness(band: Band, members: Person[], ctx: BandContext): Person | null {
+    for (const person of [...members].sort((a, b) => a.id - b.id)) {
+      if (!person.alive || person.isChild) continue;
+      for (const memory of person.memory.all()) {
+        if (!memory.firsthand || memory.victimBandId !== band.id ||
+            memory.salience < SECURITY_MEMORY_SALIENCE || !SECURITY_INCIDENTS.has(memory.type)) continue;
+        const actor = ctx.personById(memory.actorId);
+        if (actor && actor.bandId !== band.id) return person;
+      }
+    }
+    return null;
+  }
+
+  /** Places one defensive ditch in a stable ring around camp without consuming the planner RNG. */
+  private placeSecurityDitch(band: Band, sponsor: Person, ctx: BandContext): boolean {
+    const homeX = Math.round(band.homeX);
+    const homeY = Math.round(band.homeY);
+    for (let radius = 5; radius <= 8; radius++) {
+      for (let y = homeY - radius; y <= homeY + radius; y++) {
+        for (let x = homeX - radius; x <= homeX + radius; x++) {
+          if (Math.max(Math.abs(x - homeX), Math.abs(y - homeY)) !== radius) continue;
+          const site = ctx.place('ditch', x, y, band.id, sponsor.id);
+          if (!site) continue;
+          telemetry.count('band_planned_defensive_ditch');
+          return true;
+        }
+      }
+    }
+    telemetry.count('band_could_not_site_defensive_ditch');
+    return false;
+  }
+
+  /**
+   * Finds a band's driest actively growing field in the existing barren
+   * moisture class, then marks a freshwater-fed canal if its fixed line can
+   * reach that field. The field's living sponsor is the person who noticed the
+   * need; normal proposal/backer and work gates handle the rest.
+   */
+  private placeCanalForDryField(band: Band, members: Person[], live: Building[], ctx: BandContext): boolean {
+    const world = ctx.world;
+    const buildingHash = ctx.buildingHash;
+    const shoreHash = ctx.freshShoreHash;
+    if (!world || !buildingHash || !shoreHash) return false;
+
+    let driest: { field: Building; moisture: number } | null = null;
+    for (const field of live) {
+      if (!field.complete || field.ruined || !isField(field.def) || field.crop?.stage !== 'growing' ||
+          isFieldIrrigated(field, world, buildingHash)) continue;
+      const fieldSponsor = ctx.personById(field.sponsorId ?? -1);
+      if (!fieldSponsor?.alive || fieldSponsor.isChild || fieldSponsor.bandId !== band.id ||
+          !members.includes(fieldSponsor)) continue;
+      let moisture = 0;
+      let tiles = 0;
+      for (let dy = 0; dy < field.def.height; dy++) {
+        for (let dx = 0; dx < field.def.width; dx++) {
+          const x = field.x + dx;
+          const y = field.y + dy;
+          if (!world.inBounds(x, y)) continue;
+          moisture += world.moisture[world.index(x, y)] ?? 0;
+          tiles++;
+        }
+      }
+      if (tiles === 0) continue;
+      const mean = moisture / tiles;
+      // Class zero is already the world generator's named barren/driest class;
+      // this reuses that boundary instead of inventing an irrigation threshold.
+      if (moistureClassOf(mean) !== 0) continue;
+      if (!driest || mean < driest.moisture || (mean === driest.moisture && field.id < driest.field.id)) {
+        driest = { field, moisture: mean };
+      }
+    }
+    if (!driest) return false;
+
+    const sponsor = ctx.personById(driest.field.sponsorId ?? -1)!;
+
+    // A 7-tile canal can bring water to an adjacent field within the reader's
+    // existing three-tile reach. Query the shore hash around the field rather
+    // than scanning the world's water or shore arrays.
+    const canalSpan = Math.max(BUILDINGS.canal!.width, BUILDINGS.canal!.height) - 1;
+    const radius = canalSpan + CANAL_IRRIGATION_RADIUS +
+      Math.hypot(driest.field.def.width, driest.field.def.height);
+    const shores = shoreHash.queryRadius(driest.field.centerX, driest.field.centerY, radius)
+      .filter(tile => world.isFreshShore(tile.x, tile.y) && world.isWalkable(tile.x, tile.y) &&
+        !world.isWater(tile.x, tile.y))
+      .sort((a, b) => {
+        const da = (a.x - driest!.field.centerX) ** 2 + (a.y - driest!.field.centerY) ** 2;
+        const db = (b.x - driest!.field.centerX) ** 2 + (b.y - driest!.field.centerY) ** 2;
+        return da - db || a.y - b.y || a.x - b.x;
+      });
+    const directions = [
+      { dx: 1, dy: 0, id: 'canal' }, { dx: -1, dy: 0, id: 'canal' },
+      { dx: 0, dy: 1, id: 'canal_ns' }, { dx: 0, dy: -1, id: 'canal_ns' },
+    ];
+    for (const shore of shores) {
+      const ordered = [...directions].sort((a, b) => {
+        const towardA = (driest!.field.centerX - shore.x) * a.dx + (driest!.field.centerY - shore.y) * a.dy;
+        const towardB = (driest!.field.centerX - shore.x) * b.dx + (driest!.field.centerY - shore.y) * b.dy;
+        return towardB - towardA;
+      });
+      for (const direction of ordered) {
+        const def = BUILDINGS[direction.id]!;
+        const span = Math.max(def.width, def.height) - 1;
+        const anchorX = shore.x + Math.min(0, direction.dx * span);
+        const anchorY = shore.y + Math.min(0, direction.dy * span);
+        let reachesField = false;
+        const tiles: { x: number; y: number }[] = [];
+        for (let i = 0; i <= span && !reachesField; i++) {
+          const x = shore.x + direction.dx * i;
+          const y = shore.y + direction.dy * i;
+          tiles.push({ x, y });
+          for (let dy = 0; dy < driest.field.def.height && !reachesField; dy++) {
+            for (let dx = 0; dx < driest.field.def.width; dx++) {
+              const fx = driest.field.x + dx;
+              const fy = driest.field.y + dy;
+              if ((x - fx) ** 2 + (y - fy) ** 2 <= CANAL_IRRIGATION_RADIUS ** 2) {
+                reachesField = true;
+                break;
+              }
+            }
+          }
+        }
+        if (!reachesField || !this.canalCarriesFreshwater(
+          shore, tiles, driest.field, ctx, def
+        )) continue;
+        const site = ctx.place(direction.id, anchorX, anchorY, band.id, sponsor.id);
+        if (!site) continue;
+        telemetry.count('band_planned_canal_for_dry_field');
+        return true;
+      }
+    }
+    telemetry.count('band_could_not_site_canal_for_dry_field');
+    return false;
+  }
+
+  /** Checks the actual cut depth against an adjacent freshwater surface through the field-facing run. */
+  private canalCarriesFreshwater(
+    shore: { x: number; y: number }, tiles: { x: number; y: number }[],
+    field: Building, ctx: BandContext, def: BuildingDef
+  ): boolean {
+    const world = ctx.world!;
+    const depth = (def.earthwork?.depth ?? 0) * EARTH_UNIT;
+    const neighbours = [[1, 0], [-1, 0], [0, 1], [0, -1]] as const;
+    let surface: number | null = null;
+    for (const [dx, dy] of neighbours) {
+      const waterX = shore.x + dx;
+      const waterY = shore.y + dy;
+      if (!world.isWater(waterX, waterY)) continue;
+      // Match floodFrom's fixed first-source rule. A mixed estuary bank whose
+      // first adjacent source is salt must not be promised as an irrigation canal.
+      if (!world.isFreshWater(waterX, waterY)) return false;
+      const index = world.index(waterX, waterY);
+      surface = world.waterKind?.[index] === 1 && world.waterSurface
+        ? world.waterSurface[index]!
+        : world.waterLevel;
+      break;
+    }
+    if (surface === null) return false;
+    for (const tile of tiles) {
+      if (world.heightAt(tile.x, tile.y) - depth >= surface - 1e-9) break;
+      for (let dy = 0; dy < field.def.height; dy++) {
+        for (let dx = 0; dx < field.def.width; dx++) {
+          const fx = field.x + dx;
+          const fy = field.y + dy;
+          if ((tile.x - fx) ** 2 + (tile.y - fy) ** 2 <= CANAL_IRRIGATION_RADIUS ** 2) return true;
+        }
+      }
+    }
+    return false;
   }
 
   /** The least work of a set of designs. Ties go to the first, which is stable. */

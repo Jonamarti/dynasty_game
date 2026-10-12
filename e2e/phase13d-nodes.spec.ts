@@ -127,3 +127,24 @@ test('flatbread: the hearth offers it to somebody who knows it and holds a meal'
   await entry.hover();
   await page.screenshot({ path: dir + '/01-flatbread-at-the-hearth.png' });
 });
+
+test('projectile ammo: the hand-craft bar shows arrows and atlatl darts', async ({ page }) => {
+  const dir = 'artifacts/screenshots/m15-projectile-ammo-2026-10-12';
+  mkdirSync(dir, { recursive: true });
+  await openGame(page);
+  await page.evaluate(() => {
+    const d = (window as never as Debug).__dynasty;
+    const self = d.sim.player!;
+    self.knownTech.add('bow');
+    self.knownTech.add('atlatl');
+    d.sim.knownTech.add('bow');
+    d.sim.knownTech.add('atlatl');
+    self.inventory.add('sticks', 4);
+    self.inventory.add('flint', 2);
+    self.inventory.add('thatch', 2);
+  });
+  await page.locator('.hud-button', { hasText: 'Make' }).click();
+  await expect(page.locator('.hud-design', { hasText: 'Arrows' })).toBeVisible();
+  await expect(page.locator('.hud-design', { hasText: 'Spear-thrower darts' })).toBeVisible();
+  await page.screenshot({ path: dir + '/01-ammunition-recipes.png' });
+});

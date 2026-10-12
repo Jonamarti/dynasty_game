@@ -19,4 +19,5 @@ Los primeros intentos fallaron durante recargas del árbol compartido; se repiti
 el caso tras estabilizar los cambios.
 
 Esta entrega cierra la opción de selección generada. No completa paleoclima,
-selección de comarcas dentro de regiones ni calibración final de M15.
+la selección de comarcas dentro de regiones —entregada el 2026-10-12
+([contrato](m15_phase33_comarca_choice.md))— ni la calibración final de M15.

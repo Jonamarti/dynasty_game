@@ -18,5 +18,7 @@ artifacts/screenshots/m15-map-choice-2026-10-10T-01/. La comprobación inicial
 de semilla única mantiene los fallos conocidos cravings-steer-the-diet y
 perf-budget (554 pasos/s frente a 1.724). Cohortes/matriz pesada diferidas.
 
-Quedan elección de comarca dentro de la región, repertorio de nombres al
-materializar pueblos y calibración final. Esta entrega no cierra 29 ni 33.
+En esta entrega quedaban elección de comarca dentro de la región, repertorio
+de nombres al materializar pueblos y calibración final; la primera se completó
+el 2026-10-12 ([contrato](m15_phase33_comarca_choice.md)). La selección de atlas
+por sí sola no cerraba 29 ni 33.

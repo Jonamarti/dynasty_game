@@ -33,7 +33,7 @@ import { companionBonus, rememberHurt } from './WildlifeSystem.ts';
 import type { SpatialHash } from '../core/SpatialHash.ts';
 import type { SocialSystem } from '../social/SocialSystem.ts';
 import {
-  isTrap, isHeap, isHerd, isWell, isStructure, type Building,
+  isTrap, isHeap, isHerd, isWell, isStructure, isStationFor, type Building,
 } from '../entities/Building.ts';
 import { SOW_SEED, SPREAD_LOAD, SOW_TICKS, REAP_TICKS, harvestYield } from '../entities/Field.ts';
 import { activeDraftLease, availableDraftHeads, claimDraftTeam, findDraftPen, hasBusyDraftPen, reservedDraftHeads, hasSeedContainer } from './Draft.ts';
@@ -57,10 +57,12 @@ import type { RNG } from '../core/RNG.ts';
 import { ITEMS } from '../entities/Item.ts';
 import { animalBlow } from '../entities/AnimalAttack.ts';
 import { claimTransportAnimal } from '../core/TransportAnimals.ts';
-import { canTake, equipContainer, itemCapacityFor, reconcileCarry, stow } from '../core/Carry.ts';
+import { canTake, equipContainer, itemCapacityFor, reconcileCarry, reconcileGarmentEquipment, stow } from '../core/Carry.ts';
 import {
   changeGarment, equipFor as fitToolForAction, equipItemInSlot, manualEquipRefusal,
-  manualEquipSlot, manualGarmentRefusal, type ToolAction, type ManualGarmentVerb,
+  manualEquipSlot, manualGarmentRefusal, planGarmentMending,
+  planHideDressing, hideDressingReasonText,
+  type ToolAction, type ManualGarmentVerb,
 } from '../core/ToolEquipment.ts';
 import { RECIPES, hasIngredients, ingredientsFor, recipeTechPower } from '../entities/Recipe.ts';
 import {
@@ -73,7 +75,7 @@ import { expectedFood } from '../ai/Beliefs.ts';
 import {
   TECH, awlFactor, axeFactor, buildFactor, calendarFactor, forageYieldFactor,
   orchardFactor, prerequisitesMet, reapFactor, tallyFactor, techPower,
-  workableIdea as chooseWorkableIdea, weaponOf, armourOf, protectionOf, type Tech,
+  workableIdea as chooseWorkableIdea, weaponOf, weaponItemOf, weaponAmmoItem, armourOf, protectionOf, type Tech,
 } from '../knowledge/Tech.ts';
 import { MAX_IDEAS, PROTOTYPE_AT, type Idea } from '../knowledge/Synthesis.ts';
 import { mayUse, type PropertyUse } from '../social/Property.ts';
@@ -486,7 +488,7 @@ function answersColdTech(tech: Tech): boolean {
 function answersColdBuilding(building: Building): boolean {
   // A completed fire warms nearby people just as a roof shelters the people
   // inside it; `shelter` alone cannot identify the hearth.
-  return building.def.shelter > 0 || building.def.id === 'hearth';
+  return building.def.shelter > 0 || building.def.id === 'hearth' || building.def.id === 'fireplace';
 }
 
 function answersColdProject(person: Person, ctx: ActionContext): boolean {
@@ -496,7 +498,8 @@ function answersColdProject(person: Person, ctx: ActionContext): boolean {
 }
 
 function answersColdRecipe(recipe: (typeof RECIPES)[string]): boolean {
-  return (recipe.tech !== null && answersColdTech(recipe.tech)) ||
+  return recipe.id === 'fireplace' ||
+    (recipe.tech !== null && answersColdTech(recipe.tech)) ||
     Object.keys(recipe.output).some(item =>
       item === 'fur_coat' || item === 'cloth' || item === 'wool_cloth');
 }
@@ -806,6 +809,8 @@ export class ActionSystem {
       case 'equip_back': this.doManualEquip(person, ctx); break;
       case 'wear_garment':
       case 'take_off_garment': this.doChangeGarment(person, ctx); break;
+      case 'mend_garment': this.doMendGarment(person, ctx); break;
+      case 'dress_hide': this.doDressHide(person, ctx); break;
       case 'light_torch': this.doLightTorch(person, ctx); break;
       case 'shelter': this.doShelter(person, ctx); break;
       case 'sleep': this.doSleep(person, ctx); break;
@@ -1631,6 +1636,115 @@ export class ActionSystem {
     this.finish(person);
   }
 
+  /** Long repair work lives on the physical garment, so another worker can resume it. */
+  private doMendGarment(person: Person, ctx: ActionContext): void {
+    const itemId = person.targetItemId;
+    const unitId = person.targetGarmentUnitId;
+    const method = person.targetGarmentMendingMethod;
+    if (!itemId || !unitId || !method) {
+      this.abandon(person, 'garment_order_lost', ctx);
+      return;
+    }
+    const plan = planGarmentMending(person, itemId, unitId, method);
+    if (typeof plan === 'string') {
+      this.abandon(person, plan, ctx);
+      return;
+    }
+    const unit = person.inventory.garmentUnitsOf(itemId).find(candidate => candidate.unitId === unitId);
+    if (!unit) {
+      this.abandon(person, 'garment_not_owned', ctx);
+      return;
+    }
+    const interrupted = this.interruption(person, ctx, { ignoreLaden: true });
+    if (interrupted) {
+      this.stop(person, interrupted, ctx);
+      return;
+    }
+
+    // The schema allows 140 points for forward compatibility; this action's
+    // deliberately bounded job threshold is 100 work points.
+    const threshold = 100;
+    const pace = ctx.fineWorkPace?.(person) ?? 1;
+    const progress = Math.min(threshold,
+      unit.repairProgress + person.skillFactor('build') * pace);
+    person.actionTimer = 1;
+    person.actionTotal = threshold;
+    person.workedTicks++;
+    person.practice('build', 0.2);
+    if (progress < threshold) {
+      person.inventory.setGarmentUnitCondition(unitId, unit.wear, progress);
+      return;
+    }
+
+    const materials: readonly (readonly [string, number])[] = method === 'tailoring'
+      ? [['needle', 1], ['thread', 1]] : [['rope', 1]];
+    try {
+      person.inventory.consumeItems(materials, () => {
+        const restored = method === 'tailoring' ? 1 : Math.min(1, unit.wear + 0.25);
+        if (!person.inventory.setGarmentUnitCondition(unitId, restored, 0)) {
+          throw new Error('garment changed during mending');
+        }
+      });
+    } catch {
+      this.abandon(person, 'mending_materials_missing', ctx);
+      return;
+    }
+    telemetry.count('garment_mended_' + method);
+    this.finish(person);
+  }
+
+  /** Apply the target-based dressing recipe to the selected physical hide garment. */
+  private doDressHide(person: Person, ctx: ActionContext): void {
+    const itemId = person.targetItemId;
+    const unitId = person.targetGarmentUnitId;
+    if (!itemId || !unitId) {
+      this.abandon(person, 'garment_order_lost', ctx);
+      return;
+    }
+    const plan = planHideDressing(person, itemId, unitId);
+    if (typeof plan === 'string') {
+      this.abandon(person, hideDressingReasonText(plan), ctx);
+      return;
+    }
+    const unit = person.inventory.garmentUnitsOf(itemId).find(candidate => candidate.unitId === unitId);
+    if (!unit) {
+      this.abandon(person, 'garment_not_owned', ctx);
+      return;
+    }
+    const interrupted = this.interruption(person, ctx, { ignoreLaden: true });
+    if (interrupted) {
+      this.stop(person, interrupted, ctx);
+      return;
+    }
+
+    const recipe = RECIPES.hide_dressing!;
+    const threshold = recipe.workTicks;
+    const pace = ctx.fineWorkPace?.(person) ?? 1;
+    const progress = Math.min(threshold,
+      (unit.dressingProgress ?? 0) + person.skillFactor(recipe.skill) * pace);
+    person.actionTimer = 1;
+    person.actionTotal = threshold;
+    person.workedTicks++;
+    person.practice(recipe.skill, 0.2);
+    if (progress < threshold) {
+      person.inventory.setGarmentDressing(unitId, false, progress);
+      return;
+    }
+
+    try {
+      person.inventory.consumeItems(Object.entries(recipe.ingredients), () => {
+        if (!person.inventory.setGarmentDressing(unitId, true, 0)) {
+          throw new Error('garment changed during dressing');
+        }
+      });
+    } catch {
+      this.abandon(person, hideDressingReasonText('dressing_fat_missing'), ctx);
+      return;
+    }
+    telemetry.count('garment_hide_dressed');
+    this.finish(person);
+  }
+
   /** Three interruptible work ticks to light a torch at a real hearth. */
   private doLightTorch(person: Person, ctx: ActionContext): void {
     const itemId = person.targetItemId;
@@ -1758,10 +1872,22 @@ export class ActionSystem {
       (1 + person.skillFactor(node.def.skill)) * forageYieldFactor(person, node.kind) *
         (harpoon ? 1.5 : 1)
     ));
+    // Some errands name a physical quantity (`targetItemCount`) on the person.
+    // Respect it for harvesting too: otherwise a clay bank's repeated pulls
+    // can fill a carrier before they return for the other fireplace material.
+    const requestedCount = person.targetItemId === node.itemId && person.targetItemCount !== null
+      ? person.targetItemCount : null;
+    const requestedRemaining = requestedCount === null ? null
+      : Math.max(0, requestedCount - person.inventory.count(node.itemId));
+    if (requestedRemaining === 0) {
+      this.stop(person, 'gathered_enough', ctx);
+      return;
+    }
+    const pullUnits = requestedRemaining === null ? yieldUnits : Math.min(yieldUnits, requestedRemaining);
     const feeds = (ITEMS[node.itemId]?.nutrition ?? 0) > 0;
     let eatenAtSource = 0;
     if (feeds && person.needs.hunger >= ctx.carry.eatAtSourceAt) {
-      while (eatenAtSource < yieldUnits && person.needs.hunger >= ctx.carry.eatAtSourceAt &&
+      while (eatenAtSource < pullUnits && person.needs.hunger >= ctx.carry.eatAtSourceAt &&
         node.amount > 0 && node.take(1) > 0) {
         consumeFoodAtSource(person, node.itemId, ctx.tick, ctx.motivation.cravings, ctx.healthRng,
           ctx.world.waterKind !== undefined);
@@ -1774,7 +1900,7 @@ export class ActionSystem {
       person.carryCapacity - person.carrying,
       itemCapacityFor(person, ctx.carry, node.itemId) - person.inventory.count(node.itemId),
     ));
-    const taken = node.take(Math.min(yieldUnits - eatenAtSource, room));
+    const taken = node.take(Math.min(pullUnits - eatenAtSource, room));
     if (room === 0 && !node.depleted) telemetry.count('hand_capacity_blocked');
     if (taken > 0 || eatenAtSource > 0) {
       telemetry.count('compact_food_nutrition_' + (node.kind === 'fish' ? 'fish' : 'gather'), (ITEMS[node.itemId]?.nutrition ?? 0) * (taken + eatenAtSource));
@@ -1807,7 +1933,9 @@ export class ActionSystem {
     // one bush and flint at the next, and only one of those is a reason to keep
     // going while hungry.
     const nextPull = Math.ceil(node.def.harvestTicks / person.skillFactor(node.def.skill));
-    const stop = node.depleted
+    const stop = requestedCount !== null && person.inventory.count(node.itemId) >= requestedCount
+      ? 'gathered_enough'
+      : node.depleted
       ? 'node_empty'
       : room === 0
         ? 'hands_full'
@@ -2617,12 +2745,13 @@ export class ActionSystem {
     for (const [itemId] of person.inventory.entries()) {
       const needed = site.stillNeeds(itemId);
       if (needed <= 0) continue;
-      const given = person.inventory.remove(itemId, Math.min(needed, person.inventory.count(itemId)));
-      site.delivered.add(itemId, given);
+      const given = person.inventory.transferTo(site.delivered, itemId, Math.min(needed, person.inventory.count(itemId)));
       // M15 phase 11b: hauled to a site is handled, even once it leaves the pack.
       person.handled.set(itemId, ctx.tick);
       delivered += given;
     }
+
+    if (delivered > 0) reconcileCarry(person, ctx.carry, ctx.dropAt);
 
     if (delivered === 0) {
       this.abandon(person, 'nothing_to_haul', ctx);
@@ -3083,6 +3212,19 @@ export class ActionSystem {
       return;
     }
 
+    // Projectiles are physically carried: a sling stone, arrow or atlatl dart
+    // comes from this hunter's own inventory. Reject before equipping, walking
+    // or rolling the hunt when the chosen weapon cannot be fired.
+    // Select from the pack before `prepareTool` changes equipment. Restricting
+    // this to currently equipped items would let an empty quiver start the
+    // multi-tick setup before the bow is fitted.
+    const carriedWeapon = weaponItemOf(person, true, false, 2, animal.species);
+    const carriedAmmo = weaponAmmoItem(carriedWeapon);
+    if (carriedAmmo !== null && !person.inventory.has(carriedAmmo)) {
+      this.abandon(person, 'projectile_ammo_missing', ctx);
+      return;
+    }
+
     if (this.prepareTool(person, 'hunt', ctx, 'hunger')) return;
 
     const distance = person.distanceTo(animal);
@@ -3123,7 +3265,8 @@ export class ActionSystem {
     // to win brawls. The atlatl arriving in this pass is a weapon whose *whole
     // point* is the throw, so leaving it would have shipped a third node with a
     // decorative stat.
-    const weapon = weaponOf(person, true, ctx.carry.autoEquipTools);
+    const weapon = weaponOf(person, true, ctx.carry.autoEquipTools, animal.species);
+    const weaponItem = weaponItemOf(person, true, ctx.carry.autoEquipTools, 2, animal.species);
     if (distance > REACH + (weapon?.reach ?? 0)) {
       person.targetX = animal.x;
       person.targetY = animal.y;
@@ -3176,6 +3319,25 @@ export class ActionSystem {
         telemetry.count('hunter_turned_on_by_' + animal.species);
         ctx.onStopped(person, person.action, hit.killed ? 'gored' : 'gored_by_quarry');
       }
+      return;
+    }
+
+    // A miss or an out-of-range chase leaves the carrier's projectile alone;
+    // a landed shot consumes exactly the ammo declared on its weapon. The
+    // preflight above makes this removal safe after the hit roll succeeds.
+    const ammoItem = weaponAmmoItem(weaponItem);
+    if (ammoItem !== null) person.inventory.remove(ammoItem, 1);
+
+    // A landed shot does not always bring an animal down. Keep this first
+    // wound deliberately small: it records the missing state in the old
+    // kill-or-miss model without changing any hit odds or adding RNG draws.
+    // The animal bolts on the wildlife pass, and the committed hunter can
+    // pursue it; the next landed shot finishes a wounded quarry.
+    if (animal.health >= animal.def.health) {
+      animal.health = Math.max(0, animal.health - 1);
+      animal.alarmedUntil = ctx.tick + 90;
+      rememberHurt(animal, person, ctx.tick);
+      telemetry.count('hunt_wounded');
       return;
     }
 
@@ -3504,20 +3666,30 @@ export class ActionSystem {
       const itemId = person.targetItemId;
       const wanted = person.targetItemCount ?? 1;
       let taken = 0;
+      let garmentUnitIds: string[] | undefined;
       if (itemId !== null && person.targetBuildingId === null) {
         taken = Math.min(wanted, person.inventory.count(itemId));
+        if (ITEMS[itemId]?.garment) {
+          garmentUnitIds = person.inventory.garmentUnitsOf(itemId).slice(0, taken).map(unit => unit.unitId);
+        }
       } else if (itemId !== null) {
         const home = this.reachBuilding(person, ctx, { ok: isLarder, reason: 'nothing_to_render' });
         if (!home) return;
         const room = Math.max(0, itemCapacityFor(person, ctx.carry, itemId) - person.inventory.count(itemId));
-        taken = home.store.remove(itemId, Math.min(wanted, room));
-        stow(person, ctx.carry, itemId, taken);
+        const before = ITEMS[itemId]?.garment
+          ? new Set(person.inventory.garmentUnitsOf(itemId).map(unit => unit.unitId))
+          : null;
+        taken = home.store.transferTo(person.inventory, itemId, Math.min(wanted, room));
+        if (before) {
+          garmentUnitIds = person.inventory.garmentUnitsOf(itemId)
+            .filter(unit => !before.has(unit.unitId)).slice(0, taken).map(unit => unit.unitId);
+        }
       }
       if (taken <= 0 || itemId === null) {
         this.abandon(person, 'nothing_to_render', ctx);
         return;
       }
-      person.renderGoods = { itemId, count: taken };
+      person.renderGoods = { itemId, count: taken, ...(garmentUnitIds ? { garmentUnitIds } : {}) };
       person.renderTo = temple.id;
       person.targetBuildingId = temple.id;
       return;
@@ -3525,11 +3697,14 @@ export class ActionSystem {
     const temple = this.reachBuilding(person, ctx, { ok: isLarder, reason: 'no_temple' });
     if (!temple) return;
     const goods = person.renderGoods;
-    const paid = goods ? temple.accept(person.inventory, goods.itemId, goods.count) : 0;
+    const paid = goods
+      ? temple.accept(person.inventory, goods.itemId, goods.count, goods.garmentUnitIds)
+      : 0;
     if (paid <= 0) {
       this.abandon(person, 'store_full', ctx);
       return;
     }
+    reconcileCarry(person, ctx.carry, ctx.dropAt);
     telemetry.count(person.renderInto !== null ? 'tribute_delivered' : 'tax_collected', paid);
     this.finish(person);
   }
@@ -3835,10 +4010,12 @@ export class ActionSystem {
     }
 
     person.workedTicks++;
+    telemetry.count('compact_production_work_ticks_farm');
     person.practice('farm', 0.5);
     if (person.workedTicks < SOW_TICKS) return;
 
     person.inventory.remove('grain', SOW_SEED);
+    telemetry.count('compact_production_input_farm_grain', SOW_SEED);
     field.crop.sow(ctx.day, ploughing ? 1.2 : 1);
     if (ploughing) telemetry.count('field_ploughed');
     // The tilling, paid here rather than in a verb of its own - see the header
@@ -3883,6 +4060,7 @@ export class ActionSystem {
     }
 
     person.workedTicks++;
+    telemetry.count('compact_production_work_ticks_farm');
     person.practice('farm', 0.6);
     // `sickle`: a blade in hand shortens the countdown itself rather than the
     // yield at the end of it, which is the honest version of "a field
@@ -3905,6 +4083,7 @@ export class ActionSystem {
     );
     const ploughFactor = field.crop.ploughYieldFactor ?? 1;
     const yielded = Math.round(baseYield * ploughFactor);
+    telemetry.count('compact_production_output_farm_grain', yielded);
     if (ploughFactor > 1) telemetry.count('plough_grain_harvested', yielded);
     field.crop.reaped(yielded);
     this.reapPlot(field, ctx);
@@ -4204,7 +4383,8 @@ export class ActionSystem {
 
     telemetry.count(building ? 'sleeping' : 'sleeping_open');
     person.needs.fatigue = Math.max(0, person.needs.fatigue -
-      SLEEP_RECOVERY * (building ? 1 : 0.7));
+      SLEEP_RECOVERY * (building ? 1 : sleepQualityAt(null, person.x, person.y, [],
+        ctx.hearthNear?.(person.x, person.y, 3) ?? false)));
 
     // Note what is *not* here: `person.workedTicks++`. Sleeping is not work, and
     // counting it toward `MAX_WORK_STRETCH` would eventually report that
@@ -4774,6 +4954,10 @@ export class ActionSystem {
       this.abandon(person, 'no_recipe', ctx);
       return;
     }
+    if (recipe.operation !== undefined) {
+      this.abandon(person, 'Choose a hide garment to dress', ctx);
+      return;
+    }
     if (recipeTechPower(person, recipe) <= 0) {
       this.abandon(person, 'dont_know_how', ctx);
       return;
@@ -4795,7 +4979,7 @@ export class ActionSystem {
     if (recipe.station !== undefined) {
       const stationId = recipe.station;
       const station = this.reachBuilding(person, ctx, {
-        ok: building => building.complete && !building.ruined && building.def.id === stationId,
+        ok: building => building.complete && !building.ruined && isStationFor(building.def, stationId),
         reason: 'no_station_' + stationId,
       }, 'trespass');
       if (!station) return;
@@ -4828,6 +5012,15 @@ export class ActionSystem {
     const pace = ctx.fineWorkPace?.(person) ?? 1;
     person.actionTimer -= pace;
     person.workedTicks++;
+    // The optional measurement stays out of ordinary craft ticks: resolving
+    // ingredient alternatives on every tick would add work even with counters off.
+    const foodRecipe = telemetry.isEnabled() && (Object.keys(recipe.output).some(itemId => (ITEMS[itemId]?.nutrition ?? 0) > 0) ||
+      [recipe.ingredients, ...(recipe.ingredientOptions ?? [])].some(ingredients =>
+        Object.keys(ingredients).some(itemId => (ITEMS[itemId]?.nutrition ?? 0) > 0)));
+    if (foodRecipe) {
+      telemetry.count('compact_production_work_ticks_processing');
+      telemetry.count('compact_production_work_ticks_recipe_' + recipe.id);
+    }
     person.bankWork(bankKey, pace);
     if (person.actionTimer > 0) {
       // `ignoreLaden`, for the same reason felling passes it: nothing is taken
@@ -4850,13 +5043,32 @@ export class ActionSystem {
     }
 
     // M15 phase 11b: worked into a craft, whether it survives the recipe
-    // (an ingredient) or is what came out of it (the product).
-    for (const [itemId, count] of Object.entries(ingredientsFor(recipe, person.inventory) ?? recipe.ingredients)) {
-      person.inventory.remove(itemId, count);
+    // (an ingredient) or is what came out of it (the product). `toggled_coat`
+    // consumes a garment, so reconcile its worn unit inside the same rollback
+    // boundary as the other ingredients.
+    const ingredients = Object.entries(ingredientsFor(recipe, person.inventory) ?? recipe.ingredients);
+    const equipmentBefore = Object.fromEntries(Object.entries(person.equipment)
+      .map(([slot, item]) => [slot, item ? { ...item } : item])) as typeof person.equipment;
+    try {
+      person.inventory.consumeItems(ingredients, () => reconcileGarmentEquipment(person));
+    } catch {
+      person.equipment = equipmentBefore;
+      this.abandon(person, 'lack_materials', ctx);
+      return;
+    }
+    for (const [itemId, count] of ingredients) {
       person.handled.set(itemId, ctx.tick);
+      if (foodRecipe) {
+        telemetry.count('compact_production_input_processing_' + itemId, count);
+        telemetry.count('compact_production_input_recipe_' + recipe.id + '_' + itemId, count);
+      }
     }
     for (const [itemId, count] of Object.entries(recipe.output)) {
       person.inventory.add(itemId, count);
+      if (foodRecipe) {
+        telemetry.count('compact_production_output_processing_' + itemId, count);
+        telemetry.count('compact_production_output_recipe_' + recipe.id + '_' + itemId, count);
+      }
       equipContainer(person, itemId);
       person.handled.set(itemId, ctx.tick);
     }
@@ -5457,8 +5669,17 @@ export class ActionSystem {
       return;
     }
 
-    for (const [itemId, count] of Object.entries(def.prototype)) {
-      person.inventory.remove(itemId, count);
+    const equipmentBefore = Object.fromEntries(Object.entries(person.equipment)
+      .map(([slot, item]) => [slot, item ? { ...item } : item])) as typeof person.equipment;
+    try {
+      // Prototype inputs are consumed, not transferred. Keep this as one
+      // inventory transaction so a later bad input cannot destroy a worn
+      // coat while leaving the idea and its other materials untouched.
+      person.inventory.consumeItems(Object.entries(def.prototype), () => reconcileGarmentEquipment(person));
+    } catch {
+      person.equipment = equipmentBefore;
+      this.abandon(person, 'lack_materials', ctx);
+      return;
     }
     idea.stage = 'prototyped';
     person.clearWorkBank();
@@ -5705,12 +5926,12 @@ export class ActionSystem {
     // phase 5b and never emitted; this is its first writer outside the Kit.
     const chosen = person.targetItemId;
     if (chosen !== null && (ITEMS[chosen]?.nutrition ?? 0) === 0) {
-      const handed = person.inventory.remove(chosen, 1);
+      const handed = person.inventory.transferTo(other.inventory, chosen, 1);
       if (handed === 0) {
         this.abandon(person, 'nothing_to_give', ctx);
         return;
       }
-      other.inventory.add(chosen, handed);
+      reconcileCarry(person, ctx.carry, ctx.dropAt);
       ctx.social.emit('gift', person, other, giftWorth(chosen, handed),
         ctx.tick, ctx.peopleHash, ctx.sightRadius);
       telemetry.count('gift_of_goods');
@@ -5868,12 +6089,13 @@ export class ActionSystem {
     }
 
     const units = Math.max(1, Math.ceil(other.inventory.count(bestId) / 2));
-    const taken = other.inventory.remove(bestId, units);
+    const taken = other.inventory.transferTo(person.inventory, bestId, units);
     if (taken === 0) {
       this.abandon(person, 'nothing_to_steal', ctx);
       return;
     }
-    person.inventory.add(bestId, taken);
+    reconcileCarry(other, ctx.carry, ctx.dropAt);
+    reconcileCarry(person, ctx.carry, ctx.dropAt);
 
     const worth = (ITEMS[bestId]?.baseValue ?? 1) * taken;
     ctx.social.emit(
@@ -6022,10 +6244,8 @@ export class ActionSystem {
       return;
     }
 
-    for (const [itemId, count] of offer.items) {
-      const handed = person.inventory.remove(itemId, count);
-      if (handed > 0) owed.inventory.add(itemId, handed);
-    }
+    person.inventory.transferItemsTo(owed.inventory, offer.items);
+    reconcileCarry(person, ctx.carry, ctx.dropAt);
     settleDebt(person, owed);
     ctx.social.emit('amends', person, owed, Math.min(1, offer.value / Math.max(1, debt.worth)),
       ctx.tick, ctx.peopleHash, ctx.sightRadius);
@@ -6701,12 +6921,15 @@ export class ActionSystem {
       return;
     }
 
-    const taken = other.inventory.remove(itemId, want);
+    const taken = other.inventory.transferItemsTo(person.inventory, [[itemId, want]]);
     if (taken === 0) {
       this.abandon(person, 'nothing_to_demand', ctx);
       return;
     }
-    person.inventory.add(itemId, taken);
+    // A demanded garment is the target's physical unit, and removing its last
+    // owned copy also invalidates any worn layer and pocket capacity.
+    reconcileCarry(other, ctx.carry, ctx.dropAt);
+    reconcileCarry(person, ctx.carry, ctx.dropAt);
     this.owe(person, other, 'threaten',
       THREAT_WORTH + (ITEMS[itemId]?.baseValue ?? 1) * taken, ctx, { itemId, count: taken });
     telemetry.count('threaten_succeeded');

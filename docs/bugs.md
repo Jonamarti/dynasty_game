@@ -1,16 +1,111 @@
-## 2026-10-11 — M15 14c, propiedad de condición aún no conectada al juego
+### 2026-10-12 — partial hunt fat can reach a lamp shelf; upkeep does not source it
+
+**Mechanism shipped in 0.15.74-alpha:** an adult carrying partial fat routes it
+to storage in their own home only while a non-player-placed empty lamp needs
+refilling. Ordinary deer/boar hunting is the source (one/two fat); item-scoped
+store preserves the rest of the pack. This closes the carry-to-storage gap,
+not active sourcing: NPCs do not hunt for lamp upkeep or collect dropped fat
+from piles, and no rendering recipe exists. Those paths need real quarry/carcass
+and pile ownership/proximity behavior before they can provide the lamp's supply.
+Focused mechanism tests pass; no calibration/cohorts were run.
+
+## 2026-10-12 — Lector de comodidad aún sin calibrar
+
+El déficit nocturno de `mood.comfort` ahora mueve las elecciones de regreso,
+sueño y muebles mediante la curva de necesidad existente. Los tests contrastan
+neutral/positivo con negativo y el check `homes` confirma las entradas del
+muestreo, pero no se midió el efecto acumulado en supervivencia, uso de muebles
+ni distribución de actividades. No se ejecutaron cohortes; el balance del
+motivo sigue abierto para una medición solicitada, y los NPC no obtienen
+destinos/materiales ni abandonan compromisos por esta presión.
+
+## 2026-10-12 — Escenario `homes` no mide construcción espontánea ni equilibrio
+
+El escenario 16f prepara una vivienda terminada por banda y una cama para
+medir los lectores de sueño, frío y seguridad sin esperar la construcción
+orgánica. Sus siete checks pasan en la muestra de 2400 pasos, pero eso no
+demuestra que una población reúna materiales y construya casas en una partida
+natural ni calibra cuánto ánimo conviene conceder por cada término. Esa
+construcción autónoma y la calibración demográfica siguen abiertas; no se
+registró una regresión funcional en esta verificación.
+
+## 2026-10-12 — 16d, la lámpara autónoma no se repone sola
+
+**Resuelto en 0.15.72-alpha:** el scorer NPC repone lámparas vacías no
+colocadas por el jugador en su casa propia y puede retirar dos grasas de un
+estante alojado allí. Las negativas por casa ajena, lámpara del jugador,
+anfitrión arruinado y carga parcial siguen cerradas. Continúa pendiente que los
+NPC reúnan o fabriquen grasa; la autonomía del fireplace se resuelve en la
+entrada posterior de esta fecha.
+
+La observación inicial describía una lámpara que sólo el jugador podía reponer;
+el ciclo de refill NPC ahora existe. El límite deliberado del mecanismo es que
+usa grasa que la persona lleva o que ya está almacenada en su hogar: no crea
+grasa, busca reservas de hogares ajenos ni construye/reemplaza mobiliario.
+Véase [contrato 16d](m15_phase16d_bedding.md).
+
+## 2026-10-12 — 16d, el fireplace doméstico no se construía por autonomía
+
+**Resuelto en 0.15.98-alpha:** ante deuda de frío, un adulto con el diseño y
+casa terminada propia ya puede buscar cantidades exactas de barro/sílex,
+fabricar el fireplace y colocarlo dentro del hogar. La comprobación focal
+controla técnica, frío, hogar incompleto y destino de cada acción. Esto valida
+la ruta aislada, no cuántos hogares se construyen de forma natural ni su efecto
+demográfico; la autonomía de fuentes y de otros muebles sigue abierta.
+Véase [contrato 16d](m15_phase16d_bedding.md).
+
+## 2026-10-12 — M15 14c, remiendo inicial: límites y verificación
+
+`mend_garment` ya cubre la acción manual y las unidades propias fuera del
+cuerpo, con progreso en la prenda, corte por necesidades y rollback al fallar
+el consumo. No añade elección autónoma de remendar para NPC: sólo se ofrece en
+el catálogo de objetos y se inicia por orden explícita. No es una brecha de
+propiedad, pero deja pendiente decidir si el scorer NPC debe remendar antes de
+calibrar/desgastar más prendas. El `npm` normal no encuentra `tsc`/`vitest` en
+este worktree; ambos checks rápidos sí pasan al reutilizar las dependencias ya
+instaladas en el checkout principal, sin instalación ni cambios allí. La
+interacción de menú no tiene captura fechada en esta entrega porque falta
+Playwright local; queda pendiente de verificación visual con runtime disponible.
+
+## 2026-10-12 — M15 14c, propiedad de condición: auditoría de consumidores
 
 La base por unidad ya conserva condición/progreso en las API de `Inventory` y
 en el registro explícito de transferencia. Equipo, soltar/recoger montones,
-desbordamiento de carga, depósitos/retiradas persona↔almacén, fusión de hogares
-y herencia a heredero/almacén/suelo preservan la unidad. Siguen sin migrar
-intercambio/robo/tributo, otros movimientos entre edificios y tráfico fuera del
-mapa; algunas de esas rutas aún usan recuentos genéricos y pueden destruir o
-recrear la unidad. `unitId` sigue
-siendo local al inventario y se reemite al colisionar durante una fusión; una
-identidad global antes de referenciar copias entre inventarios sigue pendiente.
-Por eso no se habilita desgaste ni remiendo. Véase el
+desbordamiento de carga, depósitos/retiradas persona↔almacén, fusión de hogares,
+herencia, handover directo, regalos NPC no alimentarios, robo y compensación
+por amends preservan la unidad. `doTrade` sólo mueve comida, así que no
+transfiere prendas. La entrega de tributo a un almacén conserva unidades; sus
+selectores autónomos sólo eligen comida segura. La fusión de hogares es la
+única transferencia directa local entre almacenes y revierte ambos inventarios
+si una inserción falla. Otros recorridos entre almacenes llevan la carga por
+una persona. `ComarcaInventoryTransfer` conserva filas en el escrow JSON y
+restaura de forma transaccional. El tráfico de personas conserva ya las filas
+durante staging, checkpoint, llegada y regreso, y la hidratación rechaza estados
+con unidades ausentes o duplicadas. Los manifiestos de mercancía de caravana
+siguen siendo count-only: rechazan prendas y el trueque/retorno las deja con el
+viajero hasta que el manifiesto tenga soporte para unidades físicas. Las rutas
+de amenaza y rescate ya transfieren prendas atómicamente; `doHaul` también usa
+transferencia física si una obra solicita ropa. La auditoría encontró dos
+consumidores legítimos de prendas: `doPrototype` gasta el `fur_coat` de la
+muestra `toggles` y `doCraft` gasta el de la receta `toggled_coat`. Ambos ahora
+usan consumo transaccional, limpian la referencia vestida y restauran inventario
+y equipo si falla otro material. Los demás `remove` count-only son para comida,
+materiales no garment, herramientas/recipientes, o destrucción explícita.
+No queda una ruta count-only de consumidor de prendas identificada. El `unitId`
+sigue siendo local al inventario y se reemite ante colisión durante fusiones;
+las referencias vestidas se reconcilian con ese ID dentro de cada propietario.
+No hay una brecha conocida de transferencia que impida la propiedad por unidad.
+El desgaste diario ya actúa sobre la unidad vestida y reduce abrigo/protección;
+la tasa 0,005/día es provisional y no está calibrada por cohortes. No se conoce
+un fallo de propiedad que impida el remiendo, pero su acción, materiales, refusal
+localizado y trabajo persistente siguen pendientes. Véase el
 [contrato](m15_garment_condition_design.md).
+ 
+
+Las transferencias de prendas ahora revierten ambas mochilas si falla una
+inserción intermedia. La prueba nueva de regalos NPC requiere typecheck y Vitest;
+en el worktree las dependencias no están presentes (`vite-node` no encontrado)
+y no se instalaron.
 
 La transferencia de herencia fue comprobada con pruebas focales. El `sim:check`
 de orientación no pudo iniciar en este worktree porque faltan las dependencias
@@ -310,9 +405,11 @@ Decisión del propietario: ahora se terminan las funcionalidades de M15; los bug
   días no se pudo medir si afecta a las colas.
 - **La sed en `lean` invierno aprobó por 0,4 puntos** (Δ 14,6 de 15) tras añadir `thirstyZero`
   después de verla fallar; margen de ruido, no un resultado.
-- **No hay producción compacta**: ni rendimiento por tick de trabajo ni avance de órdenes; la
-  tabla mide lo absorbido, no lo producido. La capacidad resume carga, herramientas y
-  conservación sin distinguirlas; cuál pesa más no se ha medido.
+- **No hay producción compacta**: ni avance de órdenes ni rendimiento calibrado. Desde 2026-10-12
+  `CompactProductionWatch` puede observar trabajo/entradas/salidas reales de agricultura y recetas
+  alimentarias, además de la cosecha silvestre ya instrumentada; su ventana no se ha ejecutado y
+  no entrega tasas. La capacidad resume carga, herramientas y conservación sin distinguirlas;
+  cuál pesa más no se ha medido. Por ahora tampoco se conserva avance compacto de las órdenes.
 - **Instrumento**: `RateWatch` contó a las personas pegadas a 100 como aliviadas hasta la
   corrección de esta pasada (ver changelog); las cifras de §4 anteriores a esa corrección (filas de
   hambre ≥ 75) se sustituyeron. No se ha buscado si otras cifras de `lean` (mortalidad, agenda)
@@ -355,7 +452,7 @@ ejercita el reparto entre bandas. Ver [m15_profile_systems.md](m15_profile_syste
 - **`World.index` envuelve las coordenadas fuera del mapa (2026-10-07).** `index(x, y) = y * width + x` sin comprobar límites: una x negativa cae en la fila de arriba y una x >= ancho en la de abajo. `Simulation.hasWaterNear` lo usaba a un radio de 20 y un campamento del borde oeste «veía» el agua del borde este de la fila anterior (se colocó una banda a 117 casillas del único río). Corregido **solo** en inicios con mapa; en la isla clásica no se toca porque movería los campamentos de toda semilla guardada. Cualquier otro llamador de `isFreshWater`/`isWater` con coordenadas fuera de rango tiene el mismo riesgo; no se ha buscado.
 - **Una banda con camino largo al agua aún puede morir de sed.** La colocación ya exige agua a 10 casillas en un inicio con mapa, pero la IA sigue sin medir la distancia al agua conocida antes de alejarse; no se ha medido fuera de la colocación de partida.
 - **Los mapas generados dan casi siempre bosque boreal.** Entre los países con río marcado dominan los boreales (4 de las 6 semillas de prueba). El mapa de la Tierra es la vía para la variedad; la distribución de ríos del mapa aleatorio no se ha revisado.
-- **Los pueblos no tienen repertorio de nombres.** El plan lo pide, pero declararlo sin lector es contenido inerte: un pueblo solo tiene nombres cuando se materializa en personas (fases 34-36). Cuando se materialice, el repertorio debe salir de una función del pueblo y la semilla del mundo, no de un campo guardado.
+- **La Tierra no tiene una base lingüística para nombrar residentes con familias históricas.** Resuelto el hueco funcional de nombres en fase 33 (2026-10-12): la materialización deriva una fonología ficticia regional y nombres por semilla/ID persistente; viajes y guardado conservan el nombre en `PersonRecord`. Los datos de atlas disponibles son geográficos, no lingüísticos, así que no se atribuye una familia real ni se ponen pueblos históricos por guion. Ver `docs/m15_phase33_regional_names.md`. Asociar familias históricas sigue pendiente hasta que haya fuentes lingüísticas documentadas.
 - **Densidad y productividad de pueblos son suposiciones.** `densityOf` y `BIOME_PRODUCTIVITY` (mapa generado) no están medidos; la tabla de Köppen es la de 32c. Hasta medir una cohorte, no se afirma nada de la población del mundo.
 - **Las puertas de 32c siguen sin pasar.** `farming-spreads` y `states-arise` fallan en la cohorte de la Tierra (diagnóstico en `m15_phase32c_peoples.md`); el mundo que la fase 33 siembra es el mismo modelo, así que **el mundo de pueblos del juego tampoco produce agricultura que se extienda ni Estados**. La fase 33 los siembra y los guarda; no los arregla.
 
@@ -390,15 +487,14 @@ verde. Falta decidir si se alarga el escenario, si los fundadores de `craft`
 empiezan con una receta, o si hace falta una fuente de hueso.
 [Fase 13d](m15_phase13_subwebs.md).
 
-## M15 fase 13d: la honda no gasta munición ni se limita a la caza menor (2026-10-06)
+## M15 fase 13d: munición física para las tres armas de proyectiles (2026-10-12)
 
-`sling` es un arma como el arco: se elige por `hunt * poder` y no consume nada
-al cazar. El plan pedía «piedra de munición (sílex): caza menor a distancia».
-Hoy el sílex es solo el coste de la receta (dos por honda) y el término de caza
-(1,7) vale igual contra una liebre que contra un jabalí; `weaponOf` no sabe qué
-animal se persigue. Falta un modelo de munición (ítem gastado por golpe, o
-`ammo` en `weapon`) y un tope de presa en `weapon`. Arco y átlatl tienen el
-mismo hueco. [Fase 13d](m15_phase13_subwebs.md).
+Resuelto: `sling` consume `flint`, `bow` consume `arrow` y `atlatl` consume
+`atlatl_dart`, siempre de la propia mochila. Flechas y dardos tienen recetas
+con palos, sílex y paja. El coste compartido se cobra en el impacto exitoso;
+sin munición, la caza abandona antes de perseguir o tirar RNG, y con alcance
+insuficiente no gasta el proyectil. La honda sigue limitada a liebres. No se ha
+medido ni calibrado la cadencia de fabricación/consumo. [Fase 13d](m15_phase13_subwebs.md).
 
 ## M15 fase 30: límites conservados tras el cierre (2026-10-06)
 
@@ -444,17 +540,42 @@ La matriz de esta pasada conserva los 116 fallos del checkout inicial en
 procedencia y banco no resuelven esas deudas de simulación.
 [Verificación y límites](m15_phase29_verification_20261005.md).
 
-La bibliografía por fila permite ver deudas antes ocultas:
+Auditoría de fuentes académicas del 2026-10-12 (detalle y enlaces en
+[`m15_phase29_sources.md`](m15_phase29_sources.md) y
+[`public/world/SOURCES.md`](../public/world/SOURCES.md)):
 
-- Sorgo (13°N, 1°E): la semilla está en Sahel occidental, pero la evidencia
-  citada procede del Sudán oriental, unos 35° más al este.
-- Caballo (48°N, 35°E): está al oeste del foco Volga–Don citado; el estudio
-  trata el linaje doméstico moderno, no la distribución completa del caballo silvestre.
-- Oro (25°N, 33°E): el nombre Sinaí no concuerda con el punto, situado al sur;
-  la referencia al desierto oriental/Nubia no valida ese centroide.
-- Sílex levantino: falta evidencia geológica local para el punto guardado.
-- Sal del mar Muerto: la evidencia de precipitación moderna de halita no
-  demuestra acceso/explotación prehistórica en la celda.
+- **Sorgo silvestre (13°N, 1°E):** Kassala es un foco arqueobotánico de cultivo
+  y domesticación, no la localidad de esta semilla. [Kew POWO](https://powo.science.kew.org/taxon/77083517-1)
+  registra el progenitor silvestre como nativo de Níger y Burkina Faso, respaldando la
+  aproximación regional del Sahel occidental para `wildSorghum`. El registro
+  por países no confirma la celda, abundancia ni presencia en 12.000 a. C.
+- **Caballo silvestre (48°N, 35°E):** el significado `wildHorse` queda aclarado.
+  [Leonardi et al. (2018)](https://doi.org/10.1126/sciadv.aar5589) dan base a
+  una aproximación amplia de la estepa póntica oriental mediante hallazgos y
+  reconstrucción del rango euroasiático. El centroide no es una localidad
+  fósil comprobada ni el paper demuestra presencia puntual en 12.000 a. C.;
+  los estudios de linaje doméstico DOM2 no deben sustituir esa evidencia.
+- **Oro del Sinaí (25°N, 33°E):** [Surour et al. (2003)](https://doi.org/10.1016/S0375-6742(02)00268-6)
+  respalda oro detrítico en Dahab, sudeste del Sinaí. Esto confirma una región
+  aurífera amplia, pero no el centroide guardado, que queda fuera de la
+  península. Falta seleccionar un distrito y ubicarlo con cartografía o una
+  fuente de campo compatible con la rejilla.
+- **Sílex levantino (35°N, 35°E):** [Hovers y Belfer-Cohen (2013)](https://doi.org/10.1086/673880)
+  respalda disponibilidad ampliamente extendida en el sustrato geológico del
+  Levante, suficiente para una semilla regional aproximada pero no para afirmar
+  una cantera/afloramiento en el centroide. Esa afirmación requeriría cartografía
+  geológica local o caracterización arqueométrica.
+- **Sal del Mar Muerto (31,5°N, 35,5°E):** fuentes GSI/USGS confirman halita en
+  el sistema lacustre (referencias en `SOURCES.md`), pero no extracción
+  prehistórica ni una fuente terrestre recolectable en el punto. Falta decidir
+  si la semilla representa salmuera/evaporación costera o un depósito emergido,
+  y ubicar ese recurso. No inferir explotación a partir de geología.
+
+La precisión local, cronológica y de accesibilidad sigue abierta para estas
+filas: las fuentes regionales no justifican por sí solas mover coordenadas,
+semillas o activos. Para sorgo y caballo se acepta únicamente la interpretación
+de semilla regional aproximada; para oro, sílex y sal continúan pendientes
+los datos indicados arriba.
 
 Los centros se conservan para no cambiar los binarios en una entrega de
 procedencia. Corregirlos exige nuevas fuentes, mover semillas y regenerar
@@ -470,6 +591,16 @@ dentro del ruido de 20 semillas. No investigado: probar un umbral de confort má
 alto o plantar solo con despensa llena, y repetir a 40 semillas antes de decidir.
 
 # Known bugs and rough edges
+
+## M15 29c/33: la malla de comarcas no anticipa hidrología local (2026-10-12)
+
+La malla inicial colorea cada comarca por el muestreo de terreno del atlas,
+pero los ríos y el agua dulce se miden al pulsar Begin, construyendo la
+geografía local completa. Una celda puede ser tierra en el atlas y aun así
+rechazarse por no reunir tierra suficiente; una celda terrestre sin agua abre
+la confirmación seca. No se muestra un pronóstico hidrológico por celda antes
+de elegir. La comarca elegida no se sustituye sin permiso. Pendiente decidir
+si una futura vista previa compensa su coste adicional.
 
 ## M15 fase 27: puerta de coste abierta (2026-10-05)
 
@@ -511,28 +642,49 @@ arranque vengan ya cavados, o `git revert` del commit del silo.
 
 ## M15 fase 26c: lo que las obras de tierra no hacen todavía (2026-10-04)
 
-- **La banda no las propone.** El jugador las coloca y su banda las trabaja
-  (apoyo y órdenes del jefe), pero ningún proponente NPC decide una zanja
-  defensiva tras una incursión ni un canal por el campo seco. La persuasión de la
-  fase 6 existe para `Building.sponsorId`, y encajaría; lo que falta es la
-  *razón* medible de proponer (presión de seguridad, sequía del campo), y
-  `BandSystem.planBuildings` no tiene ni un registro de incursiones por banda que
-  la alimente, ni un lector de sequía por campo. Se deja sin hacer antes que
-  inventar una regla «cava cuando…». Se retoma con 26e.
+- **Las obras aún no tienen una política general de propuestas.** Avance
+  2026-10-12: `BandSystem.planBuildings` propone una zanja defensiva si un adulto
+  recuerda de primera mano un acto hostil interbanda suficientemente saliente
+  contra su banda, esta puede construir `ditch` y un adulto lleva herramienta de
+  cavar. El testigo queda como sponsor;
+  la búsqueda del sitio recorre un anillo fijo y no consume RNG. También puede
+  proponer canal el sponsor vivo de un campo que está creciendo en la clase
+  ambiental de humedad más árida si el hash de orillas encuentra agua dulce y
+  un trazado fijo lo acerca al radio de riego. El cultivo no tiene estrés
+  hídrico estacional; se reutiliza la clase 0 ya existente, por lo que esta
+  propuesta no afirma ni mide una sequía del año. Ambas propuestas se enlazan al
+  sponsor, apoyo y trabajo ordinario. Tampoco se mide si la zanja reduce
+  incursiones/daño ni el efecto económico del canal.
 - **Foso, canal, bancal y terraplén tienen lectores parciales.** Todos cambian
   el relieve, y lo leen la pendiente (25b), la vista (25c) y el llenado (26d);
   el foso solo se llena donde el terreno es bajo, y una playa natural sube unos
   4 m por casilla. El movimiento común encarece la subida desde una zanja poco
-  honda (25b); el foso supera `pitDepth` y no se cruza a pie. Sigue pendiente
-  que las incursiones rodeen las obras y su medición táctica, además del riego
-  del canal (`irrigation`) y la fertilidad del bancal.
+  honda (25b); el foso supera `pitDepth` y no se cruza a pie. Las incursiones
+  ya rodean la zanja cuando sale más barato, pero sigue sin medirse el efecto
+  táctico real. El canal ya riega campos cercanos con agua dulce, aunque el
+  crecimiento es provisional y no depende de estrés hídrico estacional; sigue
+  pendiente la fertilidad del bancal.
   Avance 2026-10-11: `earthworks` abre `ditch` y `moat`; el escalón de salida de
   la zanja ya usa el coste de pendiente 25b y el foso rebasa `pitDepth`, por lo
-  que no se puede cruzar, y se llena desde la orilla (26d). Faltan el desvío de
-  las incursiones y una medición de coste defensivo. Avance 2026-10-11: la
+  que no se puede cruzar, y se llena desde la orilla (26d). Avance 2026-10-12:
+  el pathfinder de incursiones cobra coste por cada casilla de zanja terminada
+  y elige un rodeo cuando sale más barato. Una prueba sintética confirma la
+  elección de ruta, pero no mide menos saqueos/daño ni coste defensivo real.
+  Avance 2026-10-11: la
   puerta también abre montones y terraplenes; los lectores físicos de altura,
   pendiente y visión se cubren en sus controles focales. Canales/bancales usan
   sus puertas propias y los agujeros simples siguen abiertos a todos.
+- **La muralla del Estado no es una defensa autónoma ni da seguridad directa.**
+  `city_walls` abre un anillo profundo con una casilla transitable y bloquea
+  paso físico en las otras una vez cavadas; no hay scorer que proponga
+  construirlo ni bono propio en `mood.security`. No se midió reducción de daño
+  de incursiones. La empalizada, la autonomía y el lector de perímetro siguen
+  en la propuesta de fase 16, no en este primer uso de earthworks.
+- **La ruta por una zanja se verifica como topología, no como táctica.** El test
+  `earthwork-routing.test.ts` confirma que Pathfinder usa una abertura y que
+  `pitDepth` cierra la ruta al cerrar la última abertura. Sigue sin medirse si
+  el coste de salir de una zanja somera cambia una ruta alternativa o si las
+  incursiones prefieren rodear terraplenes/fosos con paso disponible.
 - **Una casilla de plan que se hace honda bajo los pies de otro peón.** El que
   cava no está nunca en la casilla que se hará pozo (trabaja desde el borde),
   pero otro compañero de la cuadrilla sí puede estar en ella cuando alguien
@@ -963,16 +1115,25 @@ investigó el selector en este cambio.
 - **Quien es mordido huye a un fuego, pero nadie lo defiende.** No hay
   respuesta de la banda (las `kin_defence` miran a personas). Un lobo que
   persigue a un niño solo no tiene contraparte.
-- **Los depredadores no tienen carroña ni cadáver**: al morir (cazados,
-  hambre) simplemente salen del mundo, como los demás animales.
-- **La guardia no ve a los depredadores.** `dog` (23g) amplía la vista del
-  dueño para extraños (`sightIntruders`) y aparta a los depredadores de quien
-  lo lleva al lado, pero sin `Light.sightOf` la guardia de la banda no tiene un
-  término de depredador propio.
-- **Solo un caso pone `hurtBy`** (el animal acorralado que se vuelve contra el
-  cazador). Un animal herido que huye sin matar a nadie no deja rencor porque
-  no hay herida sin matar: `doHunt` mata o falla. Y la caza a oscuras (12b)
-  que fallaba más aún no existe.
+- **Resuelto el 2026-10-12 — recursos de depredadores muertos por causas
+  naturales.** Hambre o depredación deja una pile recogible por personas con la
+  carne de `SpeciesDef.meat` y una piel. Las bajas por borde y la caza humana
+  quedan fuera para no crear drops falsos o duplicados. Esto no es un cadáver
+  ni carroña: no hay entidad, deterioro especial, ni animales que consuman los
+  restos. Sigue abierto para M16 el modelo de cadáveres, descomposición y
+  carroñeros; hoy ningún depredador caza a otro según `SpeciesDef.prey`, así
+  que ese tipo concreto de muerte solo está cubierto en el callback.
+- **Resuelto el 2026-10-12 — defensa local de patrulla.** Depredadores no eligen
+  a una persona dentro de siete tiles de un adulto de su banda que tenga el
+  trabajo de guardia y esté patrullando; también bloquea la irrupción cercana
+  del oso y la persecución por rencor. El radio coincide con el de exclusión de
+  hoguera. Una guardia inactiva no protege. No hay aviso de banda ni defensa
+  fuera de ese radio; no se añadieron pesos ni tiradas.
+- **Resuelto el 2026-10-12:** antes, `doHunt` solo mataba o fallaba, así que una
+  presa nunca podía huir herida ni recordar a su cazador. El primer impacto
+  acertado ahora deja una herida mínima, alarma de huida y `hurtBy`; otro acierto
+  la mata. Un fallo no estampa rencor ni consume munición. La probabilidad y el
+  orden de RNG no cambian; la cantidad de daño no se calibró.
 - **`moods-move-choices` pasa a rojo en la pasada por defecto de `sim:check`**
   (2,2% de charlas en el tercil de poca pertenencia contra 2,5% en el alto,
   con 865 muestras cada uno) tras 23e: antes de esta fase era uno de los 6
@@ -985,18 +1146,18 @@ investigó el selector en este cambio.
   `SpeciesDef.fecundity` y `FED_PER_MEAT`, no el ataque a personas.
 
 
-## SeasonLore aprende «estéril» de un arbusto recogido (2026-10-02)
+## SeasonLore aprende «estéril» de un arbusto recogido (resuelto 2026-10-12)
 
 `Simulation.observePlaces` anota `node.amount >= 1` como «da fruto» o «no» cada
 vez que alguien ve un arbusto, y `SeasonLore.barrenIn` da por estéril una
 estación en la que se vio vacío dos años distintos y nunca con fruto. Un arbusto
-**recogido hasta el suelo en su propia estación de fruto** cuenta como vacío:
-el pueblo puede aprender que una especie «no da en verano» solo porque ellos
-mismos la dejaron pelada. Depende del mundo (`season-lore.test.ts`, «are learned
-species by species», falla en 2 de 4 semillas tras 23c, y pasaba la semilla 3 sin
-ese cambio), así que se fijó la semilla del test en vez de afinarlo. Arreglo
-probable: anotar «vacío» solo si el arbusto está fuera de su fase de fruto
-(`bushPhase`), no si alguien lo ha vaciado. No hecho.
+**recogido hasta el suelo en su propia estación de fruto** podía contar como
+vacío, y enseñaba que la especie no daba esa temporada. `observePlaces` ahora
+registra ausencia para los arbustos solo durante su fase `bare`; un ejemplar
+vacío en fase `ripens`/`holds` no aporta evidencia. Prueba de regresión mantiene
+el avistamiento otoñal y recoge el arbusto en verano durante dos años, y asegura
+que verano no se aprende como estéril. La anterior prueba dependiente de mundo
+se mantiene como cobertura aparte.
 
 
 ## Timeout de Vitest en GitHub Actions (2026-09-30)
@@ -4831,6 +4992,13 @@ contadores físicos e informe de pérdidas; falta una comparación discriminante
 Contrato/logs docs/m15_phase15d_salters.md. Seguimiento M16: investigar destino
 real de esas primeras conservas y demanda posterior antes de medir/activar15c.
 
+2026-10-12: `bestFoodFor` ahora gasta primero la comida menos durable cuando dos
+opciones tienen atractivo exactamente igual, sin depender del orden del pack.
+La prueba focal demuestra ese desempate, pero no resuelve el resultado de salters:
+`preserved-food-lasts` sigue en 0/8 y no se atribuye mejora de invierno. La
+selección por mayor atractivo y la economía permanecen sin calibrar; no se
+activó spoilRate fuera del escenario.
+
 ### 2026-10-10 — suite completa de la copia fija38
 272 archivos:267 pasan,5 fallan;1992 pruebas pasan,6 fallan,1 omitida. Log artifacts/m15-full-unit-38.log (598.58s), commit ee9506c. Persisten tributo, conspiración, sed, contador de comida, correspondencia compacta y excavación. Difusión pasa en esta copia sin arreglo dirigido; no se declara resuelta ni suite verde. Excluye las prendas posteriores .39–.41, verificadas focalmente.
 
@@ -4871,3 +5039,49 @@ supervivencia. Los nodos `irrigation`/`terracing`, el gate `earthworks` y los
 diseños `ditch`/`moat` están conectados con sus lectores. Siguen pendientes
 otros gates de obras, persuasión, desvío/coste defensivo y calibración agrícola.
 El factor 1,25 y la economía siguen sin calibrar para el cierre de 26e/M15.
+
+### 2026-10-12 — viaje de grupo no simula la comarca de destino
+El viaje fechado aplica ahora `LifeSystem.daily` a los propietarios viajeros en
+cada medianoche y persiste nacimientos en el grupo. Los residentes y la ecología
+del checkpoint de destino siguen sin ejecutar sus pases locales mientras ese
+checkpoint pertenece al ticket; se resolverán al reanudar allí la simulación.
+Además, el coordinador exige un `step()` por tick hasta la llegada: saltar varios
+ticks a través de la llegada puede dejar el origen con el reloj por delante y
+sigue siendo una limitación registrada para M16.
+### 2026-10-12 — radio del hogar interior sin oclusión por paredes
+
+El nuevo `fireplace` usa el lector compartido `hearthNear`/`lightAt`, cuya
+distancia es radial y no consulta el límite de `houseInteriorContains`. En una
+casa pequeña, la luz y el calor pueden alcanzar el exterior a través de una
+pared; también es posible ahumar si el secadero está a tres casillas, incluso
+si queda al otro lado de un muro. El fuego funciona correctamente dentro de la
+habitación y el plan no prescribe propagación de humo a través de paredes. Se
+deja registrado para una futura lectura de luz/temperatura con oclusión; no se
+afirma que la casa bloquee esos radios.
+
+## 2026-10-12 — M15 fase 16e, amplitudes de ánimo aún sin calibrar
+
+El muestreo determinista de sueño escribe `comfort` y `security`, pero las
+amplitudes de calidad, frío/nieve y seguridad todavía no se han contrastado
+con cohortes. No es un fallo funcional observado: calibración y escenario
+`homes` quedan diferidos a 16f, y no se deben presentar los valores actuales
+como una mejora demográfica medida.
+## 2026-10-12 — Producción compacta: cobertura por receta aún sin muestra
+
+El lector ahora puede atribuir trabajo y cambios físicos de inventario a una
+receta concreta, pero la ventana de `tools/compact-food-rates.ts` no se ha
+ejecutado con ese esquema. No hay datos por trabajador, estación, carga, terreno
+ni estación del año que sustenten otro productor compacto. Los únicos pasos
+activos del runtime son cultivo con `Crop`/`Soil` detallados y groats con su
+receta/coste/estación detallados; no equivalen a una calibración de producción.
+La próxima expansión queda bloqueada por esa falta de muestra y de contabilidad
+física de almacenes, no por un rendimiento nulo observado.
+
+## 2026-10-12 — 14d opcional: teñido por unidad sigue abierto
+
+Las cuentas ya llevan estatus persistente por `GarmentUnit`, pero el teñido
+necesita guardar y transferir además un color por unidad y que el arte
+compuesto lo dibuje sin convertir el color en estado global del tipo de
+objeto. Varias copias de una misma prenda pueden divergir. Hasta que exista
+esa propiedad y su representación visual, no se ofrece `dyeing`; de otro modo
+el ocre se consumiría sin producir una prenda teñida.

@@ -88,6 +88,8 @@ export interface RecipeDef {
    * on `handaxe` in `Brain` is what stops the next recipe from needing a fourth
    * special case in the scorer.
    */
+  /** Target-based work performed on one physical garment, with no item output. */
+  operation?: 'hide_dressing';
   keep: number;
 }
 
@@ -99,10 +101,12 @@ export const RECIPES: Record<string, RecipeDef> = {
     workTicks: 140, ingredients: { wood: 3, bedding: 1 }, output: { bed: 1 }, keep: 0 },
   bench: { id: 'bench', label: 'Bench', icon: '\u{1FA91}', tech: 'carpentry', skill: 'build',
     workTicks: 100, ingredients: { wood: 2 }, output: { bench: 1 }, keep: 0 },
-  fat_lamp: { id: 'fat_lamp', label: 'Fat lamp', icon: '\u{1F56F}', tech: 'firemaking', skill: 'build',
+  fat_lamp: { id: 'fat_lamp', label: 'Fat lamp', icon: '\u{1F56F}', tech: 'fat_lamp', skill: 'build',
     workTicks: 100, ingredients: { flint: 1, fat: 2 }, output: { fat_lamp: 1 }, keep: 1 },
   shelf: { id: 'shelf', label: 'Shelf', icon: '\u{1F4DA}', tech: 'carpentry', skill: 'build',
     workTicks: 100, ingredients: { wood: 2 }, output: { shelf: 1 }, keep: 0 },
+  fireplace: { id: 'fireplace', label: 'Fireplace', icon: '\u{1F525}', tech: 'fireplace', skill: 'build',
+    workTicks: 140, ingredients: { mud: 4, flint: 2 }, output: { fireplace: 1 }, keep: 0 },
   // Kept at zero: a raft is made for a journey, not a new universal AI tax.
   raft: { id: 'raft', label: 'Reed raft', icon: '🛶', tech: 'cordage', skill: 'build',
     workTicks: 120, ingredients: { thatch: 6, sticks: 2, rope: 1 }, output: { raft: 1 }, keep: 0 },
@@ -147,6 +151,13 @@ export const RECIPES: Record<string, RecipeDef> = {
     ingredients: { sticks: 3, thatch: 2 },
     output: { bow: 1 },
     keep: 1,
+  },
+  // M15 phase 13d. A small batch keeps a bow useful for more than one hunt:
+  // the shafts are sticks, the flint makes the point and thatch binds it on.
+  arrows: {
+    id: 'arrows', label: 'Arrows', icon: '➶', tech: 'bow', skill: 'hunt',
+    workTicks: 90, ingredients: { sticks: 2, flint: 1, thatch: 1 },
+    output: { arrow: 4 }, keep: 8,
   },
   hide_armour: {
     id: 'hide_armour',
@@ -291,6 +302,13 @@ export const RECIPES: Record<string, RecipeDef> = {
     ingredients: { sticks: 3, thatch: 1 },
     output: { atlatl: 1 },
     keep: 1,
+  },
+  // A heavier dart uses the same shaft/point/binding materials in a smaller
+  // batch. It is loose ammunition in inventory, not another weapon selection.
+  atlatl_darts: {
+    id: 'atlatl_darts', label: 'Spear-thrower darts', icon: '➶', tech: 'atlatl', skill: 'hunt',
+    workTicks: 90, ingredients: { sticks: 2, flint: 1, thatch: 1 },
+    output: { atlatl_dart: 2 }, keep: 4,
   },
 
   // M8.1, mechanism 4: the first recipe in the game that is about a place.
@@ -614,9 +632,7 @@ export const RECIPES: Record<string, RecipeDef> = {
     workTicks: 90, ingredients: { meal: 1 }, output: { flatbread: 1 },
     station: 'hearth', keep: 2,
   },
-  // `sling`: a cord and the flint it throws. There is no ammunition model (the
-  // bow has none either: a hunt spends nothing), so the two flints are the
-  // pebbles it is made with, spent once, here.
+  // `sling`: the weapon is retained; additional flint is its stone ammunition.
   sling: {
     id: 'sling', label: 'Sling', icon: '\u{1FA83}', tech: 'sling', skill: 'hunt',
     workTicks: 80, ingredients: { rope: 1, flint: 2 }, output: { sling: 1 }, keep: 1,
@@ -826,12 +842,17 @@ export const RECIPES: Record<string, RecipeDef> = {
     workTicks: 90, ingredients: { hide: 1, sinew: 1 }, toolOptions: ['needle'], output: { moccasins: 1 }, keep: 1 },
   fur_hat: { id: 'fur_hat', label: 'Fur hat', icon: '🪡', tech: 'fur_hat', skill: 'build',
     workTicks: 80, ingredients: { hide: 1 }, toolOptions: ['needle'], output: { fur_hat: 1 }, keep: 1 },
+  bone_beads: { id: 'bone_beads', label: 'Bone beads', icon: '📿', tech: 'beads', skill: 'build',
+    workTicks: 90, ingredients: { bone: 2, rope: 1 }, output: { bone_beads: 1 }, keep: 1 },
   toggled_coat: { id: 'toggled_coat', label: 'Toggled coat', icon: '🧥', tech: 'toggles', skill: 'build',
     workTicks: 110, ingredients: { fur_coat: 1, bone: 2 }, output: { toggled_coat: 1 }, keep: 1 },
   linen_tunic: { id: 'linen_tunic', label: 'Linen tunic', icon: '👕', tech: 'linen_tunic', skill: 'build',
     workTicks: 120, ingredients: { cloth: 2, thread: 1 }, toolOptions: ['needle'], output: { linen_tunic: 1 }, keep: 1 },
   wool_cloak: { id: 'wool_cloak', label: 'Wool cloak', icon: '🧶', tech: 'wool_cloak', skill: 'build',
     workTicks: 120, ingredients: { wool_cloth: 2 }, output: { wool_cloak: 1 }, keep: 1 },
+  // Operates on one owned unit. This recipe has no item output; see the dedicated action.
+  hide_dressing: { id: 'hide_dressing', label: 'Dress hide', icon: '🧴', tech: 'hide_dressing', skill: 'build',
+    workTicks: 100, ingredients: { fat: 1 }, output: {}, operation: 'hide_dressing', keep: 0 },
 };
 
 /** Every item any recipe can produce. Used by the "is this reachable?" tests. */

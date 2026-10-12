@@ -1,13 +1,84 @@
+**Avance del 2026-10-12 — 14c, engrasado por unidad:** el nodo hide_dressing
+requiere leatherwork; la receta hide_dressing consume una grasa y trabaja sobre
+una unidad concreta de piel, fuera del cuerpo. El progreso interrumpible y el
+tratamiento quedan guardados en GarmentUnit; esa pieza pierde condición a la
+mitad, sin cambiar la definición compartida ni el ritmo de otras copias. Las
+rutas de propiedad y persistencia preservan ambos campos. NPC no eligen la
+acción autónomamente; calibración de desgaste y cohortes siguen diferidas.
+
+**Avance del 2026-10-12 — 16d, grasa de caza para lámparas:** la caza real de
+ciervo/jabalí ya da grasa física (1/2 unidades) al cazador o la deja como
+montón si no cabe. Si el adulto carga una cantidad parcial, su propia casa
+tiene una lámpara NPC vacía y un almacén con espacio, lleva solo esa grasa al
+estante mediante el traslado ordinario. Allí el lector de reposición ya puede
+retirarla al completar las dos unidades. No genera grasa ni crea una caza de
+mantenimiento; no se implementa acopio/craft dedicado. [Contrato](m15_phase16d_bedding.md).
+Sin RNG ni cohortes/calibración.
+
+**Avance del 2026-10-12 — 16d, autonomía del hogar interior:** ante una deuda
+de frío, un adulto con el diseño elige la receta permanente del fireplace antes
+que muebles de confort, busca barro/sílex de nodos cercanos para completar el
+faltante exacto, y dirige fabricación/colocación a su casa terminada propia.
+La warmth drive reconoce cada tramo y el límite de trabajo por frío no bloquea
+esta respuesta; los límites de hambre/sed siguen vigentes. Prueba focal del
+target/receta/placement, sin RNG nuevo ni amplitudes calibradas. Cohortes
+diferidas. [Contrato](m15_phase16d_bedding.md).
+
+**Avance del 2026-10-12 — 16e, lector del motivo de comodidad:** la presión
+lee directamente `mood.comfort` con la curva de urgencia ya existente: sólo un
+débito produce presión, sin nuevo coeficiente. El cansancio de comodidad ayuda
+a volver al anochecer, usar refugio para dormir y fabricar/colocar el mobiliario
+doméstico que ya está disponible. Control focal: comodidad neutra/positiva no
+cambia el regreso; comodidad negativa sí. Sin calibración ni cohortes; el motivo
+no crea destinos ni interrumpe trabajos comprometidos. [Contrato](m15_phase16d_bedding.md).
+
+**Avance del 2026-10-12 — 16f, escenario `homes`:** un fixture determinista
+construye una casa completa por banda y permite medir el uso de camas por la
+muestra real de medianoche, el frío y los cuatro términos de seguridad; los NPC
+colocan el mobiliario y los checks también vigilan paredes y rutas. Los siete
+checks pasan en 2400 pasos de una sola semilla. Es verificación del mecanismo,
+no calibración de amplitudes ni resultado poblacional. [Contrato](m15_phase16d_bedding.md).
+Siguen abiertos más autonomía y muebles domésticos, y las cohortes diferidas.
+
+**Avance del 2026-10-12 — 16e, muestra de sueño:** la recuperación lee la
+calidad de la superficie también al raso (0,7; 0,8 junto a una hoguera).
+La muestra única de medianoche escribe `mood.comfort` según superficie, frío
+y nieve, y `mood.security` según campamento propio, compañía cercana, guardia
+y territorio reclamado. El mapa de techo que usa concepción sigue saliendo de
+esa misma pasada; no se añadió otro muestreo. Tests cubren cambios y negativas.
+No se ajustaron amplitudes con cohortes. El escenario de mecanismo `homes`
+ya está entregado en 16f; su calibración demográfica sigue diferida.
+
+**Avance del 2026-10-12 — 16d, hogar interior:** `fireplace` usa barro 4 y
+sílex 2 y solo se coloca dentro de la casa terminada del hogar propio. Como
+hogar permanente sin `fuelRemaining`, da calor y luz local, sirve a las recetas
+de estación `hearth` y enciende el lector de humo junto a un secadero. Host y
+arte generado; pruebas cubren negativas, cocina, ahumado y checkpoint. NPC
+pueden usar sus lectores y buscar materiales, fabricar y colocar este hogar
+cuando el frío lo pide. Otros muebles y la calibración siguen abiertos; sin
+cohortes. [Contrato y captura](m15_phase16d_bedding.md).
+
+**Avance del 2026-10-12 — 16d, lámpara autónoma:** tras completar cama/lecho,
+banco y estante, un adulto con fuego y materiales puede fabricar y colocar
+una lámpara de grasa con su carga inicial normal. La luz nocturna existente
+la lee y dibuja; cada hogar obtiene como máximo una. La recarga autónoma y otros
+muebles siguen abiertos. Sin nueva interfaz, arte, estado guardado ni
+tiradas; no se afirma calibración. [Contrato](m15_phase16d_bedding.md).
+**Avance del 2026-10-12 — fase 20, conocimiento estacional:** las observaciones ya no enseñan que una estación fructífera es estéril cuando el jugador agotó el arbusto. Solo se registra como ausencia estacional una especie en su fase realmente desnuda; una planta vacía durante su fase de fruto no aporta evidencia. Prueba focal por especie y temporada. No es un ajuste de supervivencia ni se ejecutaron cohortes.
+
 **Avance del 2026-10-12 — 16d, estante del hogar:** `shelf` de carpintería, con 20 unidades de almacenamiento y el ciclo normal de guardar/retirar del inventario. Se fabrica y coloca en la casa familiar mediante los lectores existentes; NPC con materiales y espacio pueden construirlo cuando su hogar aún no tiene uno. El host y el inventario se guardan en checkpoint. [Contrato](m15_phase16d_bedding.md). Siguen pendientes hogar interior, más muebles, la autonomía completa del mobiliario y 16e/16f; no se afirma mejora medida ni se ejecutaron cohortes.
+**Avance del 2026-10-12 — desgaste físico de prendas:** unidades exactas vestidas pierden condición una vez por día en simulación local y durante viajes; las prendas guardadas no envejecen. La tasa inicial es 0,005 por día, el abrigo y la protección escalan con la condición, y una unidad en cero se rompe y sale del equipo/inventario. Sin cambios RNG ni calibración por cohortes. El [diseño de condición](m15_garment_condition_design.md) registra desgaste y remiendo activos.
+**Avance del 2026-10-12 — 14c, remiendo de prendas:** `mend_garment` trabaja en un ID físico, banca 100 puntos de trabajo interrumpible en esa unidad y permite reanudarla con otro trabajador. Sastrería conocida más aguja e hilo restaura a condición completa; cuerda restaura hasta 0,25. Consumibles se retiran junto a la actualización de unidad en una transacción con rollback; kit/refusals y fallos son visibles y localizados. Contrato inicial fijo, sin calibración de cohortes; ver [condición de prendas](m15_garment_condition_design.md).
+**Avance del 2026-10-12 — propiedad y consumo físico de prendas:** viajes, exigencias, regalos, robo, compensación, tributo, tiendas, escrow y transferencias locales conservan filas físicas; los manifiestos count-only de caravana rechazan prendas. `doPrototype` y la receta `toggled_coat` consumen `fur_coat` mediante transacción con rollback y reconcilian la unidad vestida. La auditoría no encontró otro consumidor count-only que pueda elegir prendas. [Contrato fase 35](m15_phase35_journeys.md) y [diseño de condición](m15_garment_condition_design.md).
 **Avance del 2026-10-11 — 16d, lámpara de grasa:** mueble `fat_lamp` de fuego, con arte generado, colocación solo en la casa del hogar, carga de 1200 ticks por dos grasas y recarga contextual. El lector existente `lightAt` y la escena nocturna del renderer usan la luz local; no aporta calor ni sustituye al hogar. Combustible/host persisten en checkpoints y sus negativas tienen razón. [Contrato y captura](m15_phase16d_bedding.md). Quedan hogar interior, más muebles de confort, autonomía completa del mobiliario y 16e/16f; no se afirma mejora medida ni se ejecutaron cohortes.
 
-**Avance del 2026-10-11 — 14c, fusión de almacenes:** al fusionar hogares, el almacén de origen se combina atómicamente con el del hogar destino mediante una transferencia de inventario validada. Se conserva el estado de cada prenda y se reemiten IDs locales en caso de colisión. Una incoherencia de identidad o cantidad rechaza la fusión antes de cambiar hogares/riqueza; un fallo de inserción revierte ambos inventarios. Siguen pendientes herencia, intercambio/robo/tributo, escrow y tráfico de mundo; desgaste/remiendo continúan apagados.
+**Avance del 2026-10-11 — 14c, fusión de almacenes:** al fusionar hogares, el almacén de origen se combina atómicamente con el del hogar destino mediante una transferencia de inventario validada. Se conserva el estado de cada prenda y se reemiten IDs locales en caso de colisión. Una incoherencia de identidad o cantidad rechaza la fusión antes de cambiar hogares/riqueza; un fallo de inserción revierte ambos inventarios. El [contrato de condición](m15_garment_condition_design.md) recoge también los regalos, robo, amends, tributo, escrow y tráfico de personas ya cubiertos; los manifiestos de caravana siguen sin admitir prendas. Desgaste/remiendo continúa apagado.
 
-**Avance del 2026-10-11 — 14c, almacén de prendas:** el depósito y la retirada directa y automática transfieren filas físicas por `Inventory.transferTo`; la aceptación del edificio y el inventario persistido conservan unidad, condición y progreso parcial. Prueba el ciclo persona→almacén→persona y rechaza el guardado cuya cantidad no concuerda con sus prendas físicas. Quedan herencia, intercambio/robo/tributo, transferencias internas entre almacenes fuera de la fusión de hogares y tráfico de mundo; el desgaste/remiendo continúa apagado. No se cierra 14c/14e ni M15.
+**Avance del 2026-10-11 — 14c, almacén de prendas:** el depósito y la retirada directa y automática transfieren filas físicas por `Inventory.transferTo`; la aceptación del edificio y el inventario persistido conservan unidad, condición y progreso parcial. Prueba el ciclo persona→almacén→persona y rechaza el guardado cuya cantidad no concuerda con sus prendas físicas. La fusión de hogares es el único movimiento directo local entre almacenes y está cubierta por transferencia completa atómica; escrow ahora conserva filas en su JSON validado. Sólo el tráfico de mundo sigue fuera de esta base de propiedad; desgaste/remiendo permanece apagado. No se cierra 14c/14e ni M15.
 
 **Avance del 2026-10-11 — 14c, bolsillos:** túnica cosida y de lino y abrigo con alamares aportan cuatro unidades; parka, dos. Sólo cuenta la prenda propia en su hueco vestido. El lector compartido aumenta capacidad agregada y límites por objeto pequeño, sin aumentar los límites de comida o cargas grandes. Cambiarse o perder la última prenda reconcilia el exceso en montones físicos; el guardado deriva la capacidad del equipo canónico. [Contrato](m15_phase14c_pockets.md). Siguen la integración completa de propiedad de condición, desgaste/remiendo, curtido y estatus opcional; no se cierra 14c/14e ni M15, ni se afirma mejora económica.
 
-**Avance del 2026-10-11 — 14c, retirada por calor:** los NPC pueden quitarse una capa cuyo abrigo han probado cuando el ambiente es cálido y la deuda de frío ya es baja. Se conserva la prenda, las órdenes del jugador y las armaduras dedicadas; los umbrales están en configuración. [Contrato](m15_phase14c_heat_removal.md). No existe aún una necesidad de sobrecalentamiento ni se afirma mejora demográfica. Bolsillos y propiedad física para desgaste/remiendo siguen pendientes; 14c/14e y M15 continúan abiertos, con cohortes/matriz diferidas.
+**Avance del 2026-10-11 — 14c, retirada por calor:** los NPC pueden quitarse una capa cuyo abrigo han probado cuando el ambiente es cálido y la deuda de frío ya es baja. Se conserva la prenda, las órdenes del jugador y las armaduras dedicadas; los umbrales están en configuración. [Contrato](m15_phase14c_heat_removal.md). No existe aún una necesidad de sobrecalentamiento ni se afirma mejora demográfica. La propiedad física se documenta en [condición de prendas](m15_garment_condition_design.md); tráfico de personas cubierto y manifiestos count-only excluyen prendas. Los consumidores de `fur_coat` reconcilian la capa vestida; el desgaste diario ya está activo y el remiendo espera su fase propia.
 **2026-10-10: 14a–14b, ropa puesta entregada.** Abrigo/armadura en slots del cuerpo, calor y protección sólo vestidos, órdenes cortas, apariencia y limpieza al perder propiedad. [Contrato](m15_phase14_worn_clothing.md). Catálogo con capa, túnica, envolturas de pies, polainas, mocasines y gorro; quedan otras prendas, creencias, bolsillos, deterioro y reparación14c.
 
 **2026-10-10: 15a, instrumento por origen entregado.** Pérdidas secas/reales y nutrición en inventario personal, almacén, obra y montón. [Contrato](m15_phase15a_spoilage_sources.md). Cohortes de veinte semillas y activación15c siguen diferidas por AGENTS.md; tasa por defecto cero.
@@ -22,6 +93,8 @@
 
 # M15 — El plan maestro: de las manos vacías al Estado
 
+**Avance del 2026-10-12 — 16d, mantenimiento autónomo de lámparas:** adultos reponen lámparas vacías no colocadas por el jugador dentro de su propia casa terminada. Si ya llevan dos grasas, el scorer dirige al `refuel_lamp`; si no, toma exactamente dos del estante del mismo hogar y vuelve a evaluar. No modifica lámparas del jugador, cargas parciales ni hogares ajenos. Siguen abiertos el acopio de grasa, la construcción autónoma del fireplace, otros muebles y la calibración diferida. Pruebas focales; sin cohortes. [Contrato](m15_phase16d_bedding.md).
+
 **Avance del 2026-10-10 — 14c, expectativas de abrigo:** `warm:<prenda>`
 se aprende por protección propia atribuible a la capa, y la ropa visible
 ofrece una hipótesis de baja confianza en invierno. Vestir y confeccionar
@@ -31,13 +104,16 @@ con memoria reciente para no alternar prendas si el techo impide aprender.
 bolsillos, propiedad de condición, desgaste/remiendo y curtido siguen abiertos.
 No se declara 14c/14e ni M15 completos; cohortes y matriz pesada diferidas.
 
-**Revisión del 2026-10-10 — condición física de ropa:** las unidades tienen
-propiedad y equipo, montones y almacenes ya conservan su unidad al moverla.
-`Equipment.wear` y los stacks de cantidades no bastan por sí solos. Siguen
-pendientes intercambio/robo/tributo, herencia, staging/escrow y tráfico fuera
-del mapa. [Contrato](m15_garment_condition_design.md).
-No se activa desgaste/remiendo hasta cubrir esas rutas; curtido también sigue
-abierto.
+**Revisión del 2026-10-10, actualizada 2026-10-12 — condición física de ropa:**
+propiedad y equipo, montones, almacenes, regalos, robo, compensación, tributo,
+herencia, escrow y tráfico de personas conservan la unidad física. `Equipment.wear`
+y los stacks de cantidades no bastan por sí solos; el manifiesto de caravana
+count-only excluye prendas del trueque y las deja con el viajero. Amenazas y
+rescates son atómicos; prototipo y receta de abrigo consumen muestras de prenda
+con reconciliación de equipo y rollback. La auditoría count-only no halló más
+consumidores de prendas. El desgaste diario ya está activo; el remiendo espera
+su fase propia y el curtido sigue abierto.
+[Contrato](m15_garment_condition_design.md).
 
 **Avance del 2026-10-10 — 14c, falda de fibra:** `fibre_skirt` completa el
 catálogo inicial de prendas de la tabla de 14c: técnica de Ropa tras
@@ -1656,7 +1732,7 @@ honda`.
 
 **Avance del 2026-10-06 (3):** `fire_hardened_spear` hecho (`m15: lanza endurecida al fuego`): craft de Armas (práctica, se prueba cazando; `spear`, `firemaking`) que multiplica por `HARDENED_SPEAR` (1,25, escalado por `techPower`) el poder de la lanza en `weaponPower`, el único término que leen `weaponOf` y `weaponItemOf` y por tanto `doHunt` y `doAttack`. Edad `middle_palaeolithic`, no la del plan (ver dudas).
 
-**Avance del 2026-10-06 (4):** `sling` hecho (`m15: la honda`): craft de Armas (`spear`, `cordage`; Neolítico), ítem `sling` (una mano, alcance 1,4, caza 1,7, daño 0,2), receta `sling` (cuerda 1 y sílex 2, sin estación), icono y mano nuevos en `art/src/`. **No hay modelo de munición** (el arco tampoco lo tiene): el sílex es el coste de la receta y ni la caza gasta nada, y la honda no se limita a la caza menor; queda en `bugs.md` y `next-steps.md`.
+**Avance del 2026-10-06 (4), actualizado el 2026-10-12:** `sling` hecho (`m15: la honda`): craft de Armas (`spear`, `cordage`; Neolítico), ítem `sling` (una mano, alcance 1,4, caza 1,7, daño 0,2), receta `sling` (cuerda 1 y sílex 2, sin estación), icono y mano nuevos en `art/src/`. La munición física es inventario del cazador: sílex para la honda, flechas para el arco y dardos para el átlatl; flechas y dardos se fabrican con palos, sílex y paja. Una unidad se consume solo al acertar; antes de perseguir se comprueba que hay munición y un fallo o una presa fuera de alcance no la gasta. La honda solo aporta su término de arma contra liebres; ciervos y jabalíes la descartan. Arco y átlatl conservan su selección de presa anterior. Tests focales; no hubo calibración ni cohortes. Atlas regenerado y captura de la barra de fabricación: `artifacts/screenshots/m15-projectile-ammo-2026-10-12/01-ammunition-recipes.png`. Ver [contrato de fase 13d](m15_phase13_subwebs.md).
 
 **Avance del 2026-10-06 (5):** check `sub-webs-are-climbed` hecho (`m15: el check sub-webs-are-climbed`), en `hearths` y `craft`. **Mide las puertas, no los nodos:** ninguno de los dos escenarios dura un año y nada se prueba en menos de uno, así que los nodos de sub-red conocidos al final son 0 en cualquier build y un umbral sobre ellos solo podría fallar. Con la puerta (`cooking` en `hearths`, `spear` en `craft`) pasa; sin sub-redes (el árbol anterior a 13a) falla. 13d completa; queda la pantalla (13c, otro agente) y la cohorte de 20 semillas, que no se corrió.
 
@@ -1701,13 +1777,48 @@ el rechazo de cuentas incoherentes antes de mutar. Quedan trueque/robo/tributo,
 otros movimientos entre edificios, escrow y tráfico fuera del mapa; por eso
 desgaste/remiendo sigue apagado.
 
+**Avance del 2026-10-12 — regalos físicos:** `Simulation.handOver` y el regalo
+autónomo cronometrado usan `Inventory.transferTo`, así que una prenda conserva
+identidad, desgaste y progreso de remiendo. Si falla la inserción de una pila
+de prendas, el helper revierte ambas mochilas. `doTrade` sólo elige alimentos y
+no puede seleccionar prendas; tributo, otros movimientos entre edificios,
+escrow y tráfico fuera del mapa siguen pendientes. Desgaste/remiendo
+permanece apagado.
+
+**Avance del 2026-10-12 — robo físico:** `doSteal` transfiere las unidades
+concretas del montón de mayor valor con su desgaste y progreso de remiendo. La
+transferencia rechaza filas huérfanas antes de mutar, revierte una inserción
+fallida y reconcilia las capas/bolsillos de ambos participantes. Siguen
+pendientes tributo, transferencias entre edificios, escrow y tráfico;
+desgaste/remiendo permanece apagado.
+
+**Avance del 2026-10-12 — compensación física:** `doMakeAmends` usa una
+transferencia transaccional para todas las pilas de la oferta. Una prenda que
+compensa una deuda conserva desgaste, progreso e identidad; cualquier fallo en
+una pila posterior revierte todo lo entregado. El pagador reconcilia sus capas
+vestidas al completar el pago. Siguen pendientes tributo, otros movimientos
+entre edificios, escrow y tráfico; desgaste/remiendo permanece apagado.
+
+**Avance del 2026-10-12 — tributo físico:** el retiro desde el almacén del
+hogar al portador usa transferencia explícita; la entrega al almacén del
+overlord conserva la misma unidad. Pruebas cubren ambos tramos y el rechazo
+atómico del primero. La selección autónoma sigue restringida a comida segura
+(`mostOf`/`bestFood`); el executor genérico también conserva la unidad si recibe
+una prenda. La auditoría local no encontró otra transferencia directa entre
+almacenes: la fusión de hogares es la única y ya usa `transferAllTo`. Pruebas
+de esa ruta cubren choque de IDs, condición y progreso, rechazo de filas
+inconsistentes y rollback si falla una inserción. Siguen pendientes escrow y
+tráfico fuera del mapa; desgaste/remiendo permanece apagado.
+
 **Avance del 2026-10-11 — base de condición física:** `Inventory` crea una
 unidad íntegra por prenda, permite extraerla/devolverla con condición y trabajo
-de remiendo, y conserva/valida las unidades en el registro explícito de
-transferencia. Los registros antiguos reciben unidades íntegras. Todavía no se
-activa desgaste ni remiendo: faltan trueque/robo/tributo, escrow y tráfico
-fuera de mapa, además de cerrar la identidad entre inventarios.
-[Diseño y límites](m15_garment_condition_design.md).
+de remiendo, y conserva/valida las unidades en su registro explícito de
+transferencia. Los snapshots antiguos de conteo reciben unidades íntegras;
+filas presentes pero malformadas/incompletas se rechazan. El escrow de comarca
+las conserva a través de consumo de alimentos y JSON validado, con rollback si
+falla una extracción o restauración parcial. No se activa desgaste ni remiendo
+hasta integrar el tráfico fuera del mapa. [Diseño de condición](m15_garment_condition_design.md)
+y [contrato de escrow de fase 34](m15_phase34_inventory.md).
 
 **Avance del 2026-10-11 — prendas en montones:** Equipo ahora referencia la
 copia vestida concreta. Soltar, recoger y expulsar exceso de carga mueve la
@@ -1797,6 +1908,15 @@ primera impresión que causa (`firstImpression`, M11 fase 7). Nodos: `beads`
 `dyeing` (tinte de ocre, requiere `ochre`). Es la estratificación que se ve.
 Si cuesta, se aparta sin bloquear nada.
 
+**Avance del 2026-10-12 — cuentas físicas entregadas:** `beads` abre con
+`bone_working` y consume dos huesos y una cuerda en la receta normal. `bone_beads` ocupa
+la cabeza, no abriga, y su valor de estatus vive en cada `GarmentUnit`; tanto
+`statusPressure` como `firstImpression` leen sólo la unidad exacta equipada.
+Transferencia/checkpoint conservan el valor y el render dibuja las cuentas.
+Tinte sigue apartado: no hay todavía un campo persistente de color ni un
+renderizador que represente colores por unidad; aplicar un bono estático sin
+consumir pigmento por unidad no modelaría teñido real.
+
 ### 14e. Checks y escenario
 
 **Avance del 2026-10-10 — instrumento parcial:** `tailors` ofrece gorros
@@ -1806,12 +1926,13 @@ fracción de muestras. `the-clothed-are-warmer` compara dos copias del mismo
 cuerpo con el lector real de necesidades, con/sin ropa y sin refugio ni hogar.
 Las sondas no alteran el checkpoint ni los contadores del mundo. Contrato:
 [tailors](m15_phase14e_tailors.md). No mide confección autónoma ni mejora de
-supervivencia; desgaste/remiendo y cohortes siguen pendientes.
+supervivencia; el remiendo es una orden controlada del instrumento. Cohortes
+siguen pendientes.
 
 - Escenario **`tailors`**: invierno duro; fundadores con `clothing`, `cordage`,
   `bone_working` y `tailoring`.
 - `clothes-are-worn`: en invierno, la fracción de muestras frías con alguna
-  prenda puesta. Hoy no hay prendas puestas y falla.
+  prenda puesta.
 - `the-clothed-are-warmer`: el frío medio de quien lleva ropa es menor que el
   de quien no. Se verifica contra un build en el que `garment.warmth` no se lee.
 - `garments-wear-and-mend`: hay prendas gastadas y remendadas.
@@ -1856,6 +1977,10 @@ Todos los objetos, al final de `ITEMS`; los edificios, al final de `BUILDINGS`.
   tu almacén, aprendes `spoils:<item>` (creencia `own`); los que lo ven, `seen`.
   El puntuador de secar, ahumar y salar lee esa creencia: **conserva quien ha
   visto perderse la comida**. No hay un coeficiente de «conserva en otoño».
+- Al elegir qué comer, una igualdad exacta de atractivo prioriza el alimento
+  que se estropea antes. Así una ración fresca no queda detrás de una seca por
+  el orden en que se añadió al inventario; las preferencias nutritivas siguen
+  gobernando cuando los atractivos difieren.
 - La sal en la comarca clásica sale del mar: `legacyIsland` conserva el agua
   potable por una ficción que su cabecera explica, pero el mar sigue siendo
   sal para la salina. Los manantiales salados y la sal gema llegan con el mapa
@@ -1951,7 +2076,7 @@ es posible si nadie del hogar lo ve.
 | lecho (`bedding`) | ninguna | paja 4 o piel 2 | dormir a 1,0 (16e). El lecho de hierba de Sibudu tiene ~77.000 años |
 | cama (`bed`) | `carpentry` | madera 3, lecho 1 | dormir a 1,1 (16e) |
 | estante (`shelf`) | `carpentry` | madera 2 | **entregado:** 20 de almacenamiento en el mueble, incluido en el inventario normal de `Building.store` |
-| hogar interior (`fireplace`) | `fireplace` (sub-red Fuego) | barro 4, sílex 2 | calor y luz dentro de la casa (`Light`), estación `hearth` para cocinar, y ahumar con un secadero al lado |
+| hogar interior (`fireplace`) | `fireplace` (sub-red Fuego) | barro 4, sílex 2 | **entregado:** hogar permanente con calor/luz, estación `hearth` para cocinar y fuego cercano para ahumar con un secadero |
 | lámpara de grasa (`fat_lamp`) | `fat_lamp` (sub-red Fuego; Paleolítico superior, las lámparas de piedra de Lascaux) | sílex 1 y grasa 2 por carga | luz sin calor, de radio pequeño y larga duración: coser y tallar de noche en casa (el lector del trabajo fino de la fase 12b). Se recarga con grasa |
 | asiento y banco (`bench`) | `carpentry` | madera 2 | descansar sentado dentro recupera más; hablar sentados dentro suma pertenencia (fase 5b) |
 | secadero (`drying_rack`) | `preserving` | palos 4, cuerda 1 | fase 15; se puede poner dentro |
@@ -1978,26 +2103,38 @@ es posible si nadie del hogar lo ve.
 | lecho | 1,0 |
 | cama | 1,1 |
 
-- La recuperación del sueño se multiplica por la calidad.
-- **`mood.comfort` por fin se escribe** (`m9_6_plan.md` fase 4; M14 4b): al
-  despertar, según la calidad, el frío de la noche (`Snow.ts`) y la seguridad
-  (campamento propio, dormir apiñados, el guardia y la casilla reclamada, los
-  cuatro términos que M14 4b pedía).
-- **El motivo `comfort`** entra en `Drives.ts` con su lector: `go_home` al
-  atardecer pesa más si en casa hay cama, colocar y fabricar muebles (16d), y
-  elegir dónde dormir. Sensibilidad 1 (ningún rasgo lo modula todavía; si hace
-  falta, se añade con su fila).
+- **Entregado:** la recuperación del sueño se multiplica por la calidad,
+  incluida la mejora de 0,7 a 0,8 al raso cerca de una hoguera.
+- **Entregado:** la muestra única de medianoche escribe `mood.comfort` por
+  calidad, deuda de frío y nieve; y `mood.security` por campamento propio,
+  compañía cercana, guardia y casilla reclamada. Es la misma pasada que
+  construye el mapa de techo usado por concepción, no una segunda muestra.
+- **Entregado:** el motivo `comfort` lee el déficit de este canal con la misma
+  curva de urgencia que las necesidades físicas. La presión solo puede elevar
+  `go_home` al atardecer, `sleep` si hay refugio disponible, y las opciones de
+  fabricar/colocar mobiliario doméstico ya habilitadas por receta, materiales y
+  espacio. Valores neutros o positivos añaden presión cero. No se añadieron
+  sensibilidad ni peso calibrables.
+- **Pendiente:** calibrar sensibilidad y equilibrio de esas elecciones con
+  mediciones/cohortes. El motivo no crea una vivienda, muebles o ingredientes,
+  ni rompe una acción comprometida.
 - La concepción (fase 18) lee **la misma muestra de medianoche**.
 
 ### 16f. Checks y escenario
 
 - Escenario **`homes`**: fundadores con `carpentry`, `wattle_daub`,
   `firemaking` y `cordage`.
-- `beds-are-slept-in`: de las muestras de sueño nocturno de los hogares que
-  tienen lecho o cama, al menos el 60% están en él. Hoy no hay camas y falla.
+- `beds-are-slept-in`: de las muestras de medianoche bajo el techo interior,
+  al menos el 60% alcanza calidad de lecho o cama.
 - `walls-hold`: nadie acaba un paso en una casilla de muro;
   `nobody-walled-in` y `paths-are-found` siguen en verde.
 - `furniture-is-placed`: hay muebles colocados por NPC en `homes`.
+- `sleep-mood-uses-quality-and-cold` y `sleep-security-reads-all-terms`:
+  confirman que la muestra incorpora frío/calidad y campamento, compañía,
+  guardia y territorio reclamado.
+- **Entregado:** los siete checks pasan en una ejecución de 2400 pasos. El
+  escenario aísla los lectores con casas preparadas y no mide construcción
+  natural, supervivencia ni amplitudes; no se ejecutó calibración ni cohortes.
 - **Coste declarado:** ≤ 3 puntos.
 
 **Commits:** `m15: reparar regiones`; `m15: muros y puerta`; `m15: el tejado
@@ -2393,6 +2530,32 @@ existentes `Light.lightAt` y la antorcha (fase 12); no existen, y los
 depredadores evitan hoy un `hearth` o un techo. Coste medido de 23e: −11 puntos
 de supervivencia (20 semillas); ver `changelog.md` y `bugs.md`.
 
+**Avance del 2026-10-12 — herida y huida de la presa.** `doHunt` ya no es
+estrictamente «muere o falla»: el primer impacto acertado hiere a la presa, la
+alarma para que huya y registra al cazador en `hurtBy`; un impacto acertado
+posterior la abate. Se conserva el único dado de acierto, sin tocar sus pesos
+ni el orden de RNG. La herida usa un punto de salud como estado mínimo que
+distingue el impacto no letal; no se midió ni ajustó su balance. Un fallo sigue
+sin dejar rencor, daño ni consumo de proyectil. Pruebas focales positivas y
+negativas; no hubo cohortes ni calibración.
+
+**Avance del 2026-10-12 — defensa ante depredadores.** Un adulto de la banda
+que está patrullando protege a quienes estén a siete tiles; osos, lobos y linces
+no eligen a esas personas como presa y un oso que irrumpe tampoco las ataca.
+Solo cuenta `job: guard` con `action: patrol`; un guardia inactivo no protege.
+La consulta usa `peopleHash`, sin pesos ni RNG nuevos. Pruebas focales positivas
+y negativas; sin cohortes, calibración ni cambio de UI.
+
+**Avance del 2026-10-12 — restos físicos de depredadores.** Cuando un depredador
+muere por hambre o depredación, el suelo recibe la carne de `SpeciesDef.meat`
+y una piel, el rendimiento ya usado por la caza humana. Son bienes en una
+`ItemPile` que las personas pueden recoger; no se añade entidad de cadáver,
+descomposición nueva ni conducta de carroñero. Una salida por el borde y la
+retirada tras caza humana no generan copias. La muerte de un depredador por
+otro depredador aún no es alcanzable con las presas declaradas hoy; el callback
+de depredación queda cubierto sin ampliar esa red ni gastar RNG. Pruebas focales
+positivas y negativas; no hubo cohortes ni calibración ni cambio de UI.
+
 **Detalle en `m14_plan.md` fase 9.** La hierba como capa (`World.grass`), segar
 para paja y cuerda, herbívoros que pastan y se reproducen con un techo que sale
 del pasto, depredadores (lobo en jauría, oso, lince) en su propia pasada,
@@ -2590,7 +2753,11 @@ lleva agua a beber junto al campamento: un valor que la banda descubre sola.
 ### 26e. Qué hace cada obra (los lectores)
 
 - **Zanja:** cruzarla cuesta (la pendiente de 25b), y si es honda no se
-  cruza. Las incursiones la rodean o buscan el paso.
+  cruza. **Avance 2026-10-12:** durante una incursión activa, cada casilla de
+  zanja terminada añade un tile de coste de ruta; el pathfinder rodea cortes
+  largos cuando el rodeo es más barato y usa el paso si no lo es. Los viajes
+  ordinarios conservan su coste anterior. La prueba de mapa plano demuestra la
+  elección de ruta, no una reducción medida de saqueos o daño.
 - **Foso:** `moat` excava 16 unidades de tierra por casilla, más que el umbral
   `pitDepth`; queda intransitable y 26d deja entrar agua donde el ring toca la
   orilla. La puerta `earthworks` también lo habilita (avance 2026-10-11).
@@ -2605,7 +2772,16 @@ lleva agua a beber junto al campamento: un valor que la banda descubre sola.
   requiere `farming` y `earthworks`, y abre el canal; su factor no está calibrado. `terracing`
   requiere `irrigation` y abre el bancal: el corte y relleno existente lleva la
   capa fértil de la parte alta a la baja. No hay un modelo separado de erosión
-  de ladera. Sigue pendiente la persuasión de obras y la medición final de 26e.
+  de ladera.
+- **Rutas sobre obras cavadas (avance 2026-10-12):** regresión de Pathfinder
+  con una zanja que supera `pitDepth`: con una abertura, la ruta cruza por ella;
+  al cerrar la abertura, las regiones separan ambos lados y la misma consulta
+  da `NoRoute`. Esto verifica el comportamiento compartido por movimiento y
+  órdenes de incursión. A* usa el coste acotado de evitar un obstáculo para que
+  una zanja de una casilla sí invite al rodeo; las casillas de `city_wall`
+  terminada también entran en este lector espacial. Desde 2026-10-12, una persona
+  que presencia hostilidad interbanda puede patrocinar una zanja defensiva;
+  falta medir su efecto y completar la persuasión de obras (26e).
 - **Puerta Tierra (avance 2026-10-11):** `earthworks` requiere `ground_stone` y
   `basketry`; abre la zanja y el foso. La zanja de seis unidades queda bajo el
   umbral de `pitDepth` y sigue caminable; `World.stepFactor` encarece salir del
@@ -2616,7 +2792,14 @@ lleva agua a beber junto al campamento: un valor que la banda descubre sola.
   abre `mound` y `embankment` (incluida su orientación `_ns`). El relieve apilado
   sube `World.heightAt`, `World.sightBonusAt` y el coste de ascender según
   `World.stepFactor`; controles antes/después comprueban los tres lectores. El
-  rodeo de incursiones y su coste defensivo siguen pendientes.
+  pathfinding táctico de incursiones sobre zanjas está implementado (avance
+  2026-10-12); su efecto en defensa real, la persuasión de obras y la medición
+  económica siguen pendientes. Avance 2026-10-12: un sponsor adulto puede
+  proponer un canal desde un campo en crecimiento de la clase ambiental más
+  árida hacia agua dulce cercana. El trazado determinista sirve el radio de
+  riego existente; no se modela estrés estacional ni se calibra su factor de
+  producción. Defensa real, persuasión de obras y efecto económico medido
+  siguen pendientes.
 - **Bancal:** un campo en pendiente que conserva la capa fértil al nivelar la
   ladera con corte y relleno; no modela erosión adicional por lluvia.
 
@@ -3077,9 +3260,11 @@ Cada semilla regional lleva una clave bibliográfica; `SOURCES.md` documenta
 evidencia, licencia y límites. El manifiesto y el generador declaran que el
 mapa antiguo solo modifica el nivel del mar: no contiene paleoclima ni rangos
 históricos de recursos. La regresión de activos pasa 4/4. No se alteran los
-binarios ni las posiciones. Persisten discrepancias de sorgo/caballo/oro y
-evidencia insuficiente de sílex levantino/sal del mar Muerto, registradas en
-`bugs.md`; la puerta de fuentes completas sigue abierta.
+binarios ni las posiciones. La auditoría regional posterior respalda sorgo y
+caballo silvestres como aproximaciones amplias, no sus celdas o fechas; el oro
+del Sinaí conserva una discrepancia de centroide, y sílex/sal conservan límites
+de precisión o accesibilidad. Se registran en `bugs.md`; la puerta de fuentes
+completas sigue abierta.
 [Detalle](m15_phase29_sources.md). Captura geográfica nueva revisada:
 `artifacts/screenshots/m15-phase29-sources-2026-10-05/`.
 
@@ -3222,8 +3407,15 @@ historia tenga la misma forma sin ser la misma.
   - clima: la clasificación de Köppen-Geiger de Beck y otros (2018, CC BY 4.0,
     con su atribución en los créditos);
   - zonas iniciales aproximadas para recursos y antepasados silvestres, con
-    bibliografía por fila todavía pendiente: dónde
-    crecían los antepasados silvestres de las plantas domesticadas (trigo y
+    bibliografía por fila en `public/world/SOURCES.md`. La auditoría de
+    2026-10-12 respalda sorgo silvestre (Níger/Burkina) y caballo silvestre
+    (estepa póntica oriental) como aproximaciones regionales, pero no confirma
+    sus celdas ni una presencia fechada. El centroide del oro del Sinaí queda
+    sin resolver: hay oro documentado en Dahab/sudeste del Sinaí, no en
+    25°N, 33°E. Sílex tiene respaldo de disponibilidad regional, no de cantera
+    puntual; la sal, de existencia geológica, no de nodo terrestre/explotación
+    antigua. No se han movido centros ni regenerado mapas. Se mantienen las
+    preguntas de dónde crecían los antepasados silvestres de las plantas domesticadas (trigo y
     cebada en el Creciente Fértil, arroz en el Yangtsé, mijo en el río
     Amarillo, maíz en Mesoamérica, patata en los Andes, sorgo en el Sahel…),
     los de los animales (uro, oveja y cabra en los Zagros, caballo en la
@@ -3246,9 +3438,9 @@ historia tenga la misma forma sin ser la misma.
   aleatorio / la Tierra…» con la lista, y **elegir dónde empieza tu pueblo**
   (en la Tierra, por ejemplo, la península ibérica). Los demás pueblos se
   siembran en todo el mundo (fase 33).
-- **Nombres:** cada pueblo recibe nombre de un **repertorio por región** (en la
-  Tierra, por gran familia lingüística de la zona; en el aleatorio,
-  fonologías generadas). **No se colocan pueblos históricos por guion**: no
+- **Nombres:** al materializar residentes, sus nombres salen de una fonología
+  ficticia reproducible por región; los mapas terrestres disponibles no tienen
+  fuentes lingüísticas para defender familias reales. **No se colocan pueblos históricos por guion**: no
   aparecen «los lusitanos» porque sí. Lo que se simula es algo **como** ellos:
   pueblos distintos en zonas distintas de la península, con culturas que
   divergen (memoria del propietario: surgir, no programar). Ver
@@ -3469,7 +3661,8 @@ capacidad de banda; aprobada con la capacidad del periodo (`lean` otoño e invie
 `craft` 40 días al límite), suspende al cruzar de régimen con la capacidad pronosticada de la ventana
 previa (`lean` otoño→invierno 76 % frente a 41 %); sec. 5 del doc de 32b.
 **Demografía compacta (2026-10-06):** `CompactBody` con `env.life` (envejecer, concebir, parir, vejez por `LifeSystem.daily`, stream propio); 21 frente a 23 hijos en la cohorte `craft` de 40 días (sec. 6 del doc de 32b).
-**Pendiente de 32b-2:** producción compacta, capacidad de banda por estación (32c), frío; y, antes de esto, ingesta, producción y demografía compactas con tasas
+**Avance 2026-10-12 (instrumento de producción, sin calibración):** `CompactProductionWatch` añade al informe existente el rendimiento observado de agricultura y recetas alimentarias por tick de trabajo efectivo, con cantidades de entrada/salida de inventario; la recolección, pesca y caza conservan sus contadores previos. Versión 3 atribuye trabajo e inventario por receta conocida y mantiene `n/a` ante material sin trabajo. No se ejecutó la ventana para obtener tasas ni se eligieron coeficientes; por eso no se amplía el productor compacto más allá de las parcelas y groats que ya comparten mecánicas detalladas. Contrato y límites en sec. 7 de [m15_phase32b_compact.md](m15_phase32b_compact.md).
+**Pendiente de 32b-2:** medir producción por persona, terreno, estación del año, estación de trabajo y carga; transferencias físicas desde almacenes; capacidad de banda por estación (32c), frío y correspondencia de producción. La telemetría instrumentada no es calibración.
 medidas del modelo detallado (no inventadas) y, por tanto, el enchufe en
 `Simulation` y `lod-matches-detail`. Lista actualizada en
 [m15_phase32b_compact.md](m15_phase32b_compact.md).
@@ -3630,8 +3823,8 @@ cultura desde el principio, y el ajuste de partida del mundo (29c).
   las bandas de la comarca de partida, `PeopleSim` recibe **pueblos en todas
   las regiones habitables** (fase 32c), con una densidad que sale de la
   capacidad de carga de cada región para la técnica de partida. Cada uno
-  recibe sus normas, su `strangerRegard` y su repertorio de nombres del stream
-  del mundo, porque son culturas distintas desde el principio.
+  recibe sus normas y su `strangerRegard`; los residentes toman nombres de una
+  fonología ficticia de su región al materializarse (véase fase 33).
 - **33c. Guardado de partida** (decisión aprobada). Con los registros (28), los
   libros (32) y el estado de `PeopleSim` es poco más que serializar la comarca
   detallada al amanecer: el `WorldState`, los niveles 1 y 2, la `Simulation`
@@ -3641,7 +3834,7 @@ cultura desde el principio, y el ajuste de partida del mundo (29c).
   guardar, cargar, avanzar N pasos y comparar con no haber guardado (**tiene
   que ser bit-idéntico**).
 
-**Avance del 2026-10-07 (33a y 33c).** `PeopleWorld` pasa a `src/` y siembra el mundo en el juego (cultura propia por pueblo, densidad por productividad, región del jugador reservada); `WorldState.peoples` avanza con el reloj; la partida entera (comarca + pueblos) se guarda como un texto (`WorldStateRecord` v2, `SaveFile`) con ida y vuelta medida, en IndexedDB con exportar/importar y botones en el menú de pausa. El juego abre ahora sobre la Tierra para elegir dónde empezar (o una isla aleatoria), y todo inicio con mapa se mide para tener agua dulce (33d, 33e). **Falta:** elegir zona dentro de la región, elegir mapa, y el repertorio de nombres (cuando un pueblo se materialice). Las puertas 32c que fallan siguen fallando: el mundo sembrado es ese modelo. [Detalle](m15_phase33_world.md).
+**Avance del 2026-10-07 (33a y 33c).** `PeopleWorld` pasa a `src/` y siembra el mundo en el juego (cultura propia por pueblo, densidad por productividad, región del jugador reservada); `WorldState.peoples` avanza con el reloj; la partida entera (comarca + pueblos) se guarda como un texto (`WorldStateRecord` v2, `SaveFile`) con ida y vuelta medida, en IndexedDB con exportar/importar y botones en el menú de pausa. El juego abre ahora sobre la Tierra para elegir dónde empezar (o una isla aleatoria), y todo inicio con mapa se mide para tener agua dulce (33d, 33e). La zona dentro de la región ya se elige directamente en el mapa de comarcas ([contrato](m15_phase33_comarca_choice.md)); elegir mapa y repertorio de nombres también están entregados. El hueco de nombres al materializar residentes se cerró el 2026-10-12 con fonologías ficticias regionales; fuentes lingüísticas históricas no existen en los atlas actuales. Las puertas 32c que fallan siguen fallando: el mundo sembrado es ese modelo. [Detalle](m15_phase33_world.md) y [nombres](m15_phase33_regional_names.md).
 
 ## Fase 34 — Salir de la comarca (M14 fase 16)
 
@@ -3708,7 +3901,7 @@ envolver la latitud por error.
 
 ## Fase 35 — Llegar más lejos: transporte (M14 fase 17)
 
-**Implementación funcional cerrada el 2026-10-09.** Canoa local, viajes fechados con provisiones, rastra/carro, asnos/caballos vivos y vela tienen efectos físicos, guardado, pruebas negativas y capturas. [Contrato](m15_phase35_transport.md) y [verificación](m15_phase35_verification_20261009.md). La siguiente fase funcional es 36: noticias, caravanas e incursiones (trade ya existe).
+**Implementación funcional cerrada el 2026-10-09; ciclo vital de viajeros completado el 2026-10-12.** Canoa local, viajes fechados con provisiones, rastra/carro, asnos/caballos vivos y vela tienen efectos físicos, guardado, pruebas negativas y capturas. En tránsito, el `LifeSystem` diario avanza únicamente a los viajeros en cada medianoche; un nacimiento se incorpora a la lista persistida del grupo. Residentes/ecología del destino siguen aplazados. [Contrato](m15_phase35_transport.md) y [viajes](m15_phase35_journeys.md). La siguiente fase funcional es 36: noticias, caravanas e incursiones (trade ya existe).
 
 | Medio | Efecto y puerta física |
 |---|---|
@@ -3832,14 +4025,13 @@ metal.
 # Bloque IX — Civilización y hierro (M14 bloque VIII; M8.4)
 
 **Alcance acordado con el propietario (2026-10-03).** El bloque se empezó con
-los bloques VII y VIII a medias: no hay muros (16b), ni conservación (15), ni
-banco (16d), ni pueblos de nivel 2 (32), ni caravanas (36), ni Bronce (37). El
+los bloques VII y VIII a medias. En el checkout wave3, los interiores y muros
+de vivienda de 16b, la conservación (15), los bancos (16d), los pueblos de
+nivel 2 (32), las caravanas (36) y el Bronce (37) ya están integrados. El
 propietario eligió hacer **las fases 38 y 39 dentro de la comarca**, entre
-bandas, con el nivel 2 como enganche para después. Quedan fuera hasta que
-existan sus requisitos: `city_walls` (necesita los muros de 16b), toda la
-fase 40 (el hierro necesita `charcoal`, `mining`, `smelting` y `bellows` de la
-37) y la fase 41 (el cierre de M15). Se hace en la rama `m15/block9`, en un
-worktree propio, porque otro agente trabaja a la vez en `master`.
+bandas, con el nivel 2 como enganche para después. Quedan fuera toda la fase 40
+(el hierro necesita `charcoal`, `mining`, `smelting` y `bellows` de la 37) y la
+fase 41 (el cierre de M15).
 
 ## Fase 38 — De la jefatura al Estado (M14 fase 20)
 
@@ -3857,9 +4049,10 @@ derivado, que el juego nunca obliga a alcanzar.
   civilización **ya hay otras**, más adelantadas o más atrasadas, con las que
   comerciar, pactar o luchar. El globo (fase 31) las pinta cuando tu personaje
   sabe de ellas.
-- **`city_walls` ya tiene toda su maquinaria**: los muros de la fase 16 (el
-  perímetro que deja de ser caminable, con su puerta), la reparación de regiones
-  (16a) y los terraplenes (26). Una muralla es una línea de muro con puertas.
+- **`city_walls` construye sobre obras de tierra**: la puerta es parte del
+  anillo de `city_wall`, una obra profunda desbloqueada después de
+  `earthworks`; la regla existente de profundidad impide el paso y deja abierta
+  una casilla de acceso. Los muros de vivienda de 16b son otra mecánica.
 - El banquete usa la comida conservada (15) y el pan y la cerveza, y reúne a la
   banda **sentada** alrededor del hogar (el banco de 16d).
 - El impuesto lo recoge el estante y el granero del templo: el almacén del
@@ -3945,8 +4138,8 @@ rey no lo transmite. Sólo el desafío de `considerRebellion` lo depone (la
 conspiración contra el rey es la 39c). La autoridad sobre bandas tributarias
 llega con la 39d. Check `kings-reign-for-life`: en `polity`, 140 días-banda
 gobernados más allá del mandato normal; ninguna corona heredada (ningún rey
-murió en la partida; la herencia se prueba en los tests). Con esto quedan los
-seis nodos del Estado salvo `city_walls`.
+murió en la partida; la herencia se prueba en los tests). Con `city_walls` se
+completa también el primer nodo de los siete del Estado.
 
 **Avance del 2026-10-03 (38c, la civilización).** Campo derivado y nunca
 guardado (`Polity.civilisationLacks`, `Simulation.isCivilisation`): una
@@ -3955,8 +4148,21 @@ banda es una civilización el día que sus adultos vivos saben entre todos
 `kingship` y su jefe reina como rey, y deja de serlo cuando falta algo. La
 interfaz la nombra en la línea de estado y, en la sección de gobierno del
 jugador, dice qué le falta. «O varias bajo un rey» espera a los tributarios
-de la 39d. Check `civilisation-is-derived`. **La fase 38 queda hecha salvo
-`city_walls`**, que espera a los muros de la 16b.
+de la 39d. Check `civilisation-is-derived`.
+
+**Avance del 2026-10-12 (`city_walls`, fase 38).** El checkout wave3 ya incluye
+los muros interiores reales de 16b; no son la implementación de murallas del
+Estado. El nuevo dispositivo `city_walls` requiere `chiefdom`, `masonry` y
+`earthworks`, y habilita `BUILDINGS.city_wall`, que usa la excavación profunda
+de las obras existentes: un anillo seco de 7×7 con una puerta abierta. El
+`gate` de `EarthworkSpec` omite esa casilla al generar tiles y ajusta el total
+de obra; los cortes terminados bloquean por la regla existente de `pitDepth`.
+El test focal comprueba los requisitos, que el diseño se desbloquea y la
+conectividad del mundo; su control negativo cava el anillo sin puerta y aísla
+el interior. No se añade IA de construcción ni una métrica de seguridad: esa
+propuesta sigue en `m15_phase16_defense.md`. Sin calibración ni cohortes. La
+captura del menú queda pendiente por falta de navegador/dependencias en el
+worktree.
 
 ## Fase 39 — Lo que un Estado puede hacer (M14 fase 21)
 
@@ -4032,7 +4238,7 @@ peor se niega a la cara, sin tirada. Fuga: la de siempre. Rebelión: tres o
 más siervos de una banda que confían entre sí se alzan juntos y se liberan.
 La ficha dice «siervo de los X». Check `serfs-are-owned`, n/a en `polity`
 (no hay cautivos: la guerra no llega a las manos). **Con esto quedan hechas
-las fases 38 (salvo `city_walls`) y 39 dentro de la comarca.**
+las fases 38 y 39 dentro de la comarca.**
 
 **Avance del 2026-10-03 (escenario `conquest`).** Un Estado con rey (lo que
 saben los fundadores de `polity`) y un pueblo menor sin ley, acampados a un
@@ -4505,6 +4711,11 @@ JSON preserva inventarios, pero no otorga autoridad global a copias persistidas.
 `artifacts/screenshots/m15-frontier-inventory-2026-10-09T-01/`.
 [Contrato](m15_phase34_inventory.md). Queda conciliar stock tipado con raciones
 consumidas por runtime y activar autoridad/materialización/cruce.
+
+La actualización de condición de prendas en este contrato queda enlazada al
+[diseño de condición](m15_garment_condition_design.md) y a la base de ropa
+14c: escrow y coordinador de viajeros conservan filas físicas; el manifiesto
+comercial de caravana sigue count-only y rechaza prendas.
 
 ## Avance del 2026-10-09 — Fase 34, raciones retiradas del stock tipado
 

@@ -40,7 +40,7 @@ export interface ItemDef {
    * to a deer than to a neighbour. `tech` routes the whole thing through
    * `techPower`, so a refined design hits harder than a first attempt at one.
    */
-  weapon?: { damage: number; reach: number; hunt: number; tech: string };
+  weapon?: { damage: number; reach: number; hunt: number; tech: string; ammo?: string };
   /**
    * M15 phase 21f. How much of a blow on each part of the body this turns
    * aside, 0 to 1. Wearable armour applies only while the layer is worn.
@@ -70,8 +70,14 @@ export interface ItemDef {
   garment?: {
     slot: import('./Equipment.ts').GarmentSlot;
     warmth: number;
+    /** Fraction of condition lost per complete day while this unit is worn. */
+    wearPerDay: number;
     /** M15 phase 14c: extra room for `small` items, only while worn and owned. */
     pocket?: number;
+    /** Physical hide garments can be grease-dressed; fibres and wool cannot. */
+    material?: 'hide';
+    /** M15 phase 14d: social standing carried by this physical, worn garment. */
+    status?: number;
   };
   /**
    * M15 phase 11a. What kind of thing this is for a container's `accepts`
@@ -106,6 +112,8 @@ export const ITEMS: Record<string, ItemDef> = {
   fat_lamp: { id: 'fat_lamp', label: 'Fat lamp', nutrition: 0, spoilTicks: 0, baseValue: 10,
     class: 'bulky', hand: { perHand: 0, perArms: 1, hands: 2 }, furniture: true },
   shelf: { id: 'shelf', label: 'Shelf', nutrition: 0, spoilTicks: 0, baseValue: 8,
+    class: 'bulky', hand: { perHand: 0, perArms: 1, hands: 2 }, furniture: true },
+  fireplace: { id: 'fireplace', label: 'Fireplace', nutrition: 0, spoilTicks: 0, baseValue: 12,
     class: 'bulky', hand: { perHand: 0, perArms: 1, hands: 2 }, furniture: true },
   raft: { id: 'raft', label: 'Reed raft', nutrition: 0, spoilTicks: 0, baseValue: 12,
     class: 'bulky', hand: { perHand: 0, perArms: 2, hands: 2, shoulder: 0 } },
@@ -179,7 +187,7 @@ export const ITEMS: Record<string, ItemDef> = {
     // Poor in a brawl and decisive against an animal that outruns you, which is
     // the whole reason hunting has been a garnish: a fresh deer is faster than a
     // person and a hunt could only ever be won by exhausting one.
-    weapon: { damage: 0.3, reach: 1.6, hunt: 2.4, tech: 'bow' },
+    weapon: { damage: 0.3, reach: 1.6, hunt: 2.4, tech: 'bow', ammo: 'arrow' },
     // Two hands, always: there is no one-handed way to draw a bow, unlike the
     // spear's "needs both hands to throw far, works one-handed at a pinch".
     class: 'long', hand: { perHand: 1, perArms: 1, hands: 2 },
@@ -191,7 +199,7 @@ export const ITEMS: Record<string, ItemDef> = {
     // legs 0.2, head bare.
     protects: { torso: 0.5, left_arm: 0.25, right_arm: 0.25, left_leg: 0.2, right_leg: 0.2 },
     class: 'bulky', hand: { perHand: 1, perArms: 1, hands: 1 },
-    garment: { slot: 'torso', warmth: 0.1 },
+    garment: { slot: 'torso', warmth: 0.1, wearPerDay: 0.005, material: 'hide' },
   },
   // --- M8.1: what comes off a carcass once you know what to do with it -------
   //
@@ -221,16 +229,23 @@ export const ITEMS: Record<string, ItemDef> = {
     // It precedes the bow by twenty thousand years and sits just below it here,
     // which is the whole reason it requires only `spear`: a lever on the end of
     // your arm is a smaller idea than a bow, and it arrived first.
-    weapon: { damage: 0.5, reach: 1.35, hunt: 2.1, tech: 'atlatl' },
+    weapon: { damage: 0.5, reach: 1.35, hunt: 2.1, tech: 'atlatl', ammo: 'atlatl_dart' },
     class: 'long', hand: { perHand: 1, perArms: 1, hands: 1 },
   },
+  // M15 phase 13d. An arrow is a carried shaft with a flint point and thatch
+  // binding; the pack count is the archer's actual supply, not a global store.
+  arrow: { id: 'arrow', label: 'Arrow', nutrition: 0, spoilTicks: 0, baseValue: 2,
+    class: 'small', hand: { perHand: 8, perArms: 16, hands: 1 } },
+  // The atlatl throws a heavier, hafted dart rather than the reusable lever.
+  atlatl_dart: { id: 'atlatl_dart', label: 'Spear-thrower dart', nutrition: 0, spoilTicks: 0, baseValue: 3,
+    class: 'long', hand: { perHand: 3, perArms: 6, hands: 1 } },
   fur_coat: {
     id: 'fur_coat', label: 'Fur coat', nutrition: 0, spoilTicks: 0, baseValue: 15,
     // Thick pelts blunt a blow a little where they cover — the coat is for
     // warmth first, so it is a fifth of what a hide cuirass gives the torso.
     protects: { torso: 0.2, left_arm: 0.12, right_arm: 0.12, left_leg: 0.06, right_leg: 0.06 },
     class: 'bulky', hand: { perHand: 1, perArms: 1, hands: 1 },
-    garment: { slot: 'torso', warmth: 0.4, pocket: 2 },
+    garment: { slot: 'torso', warmth: 0.4, pocket: 2, wearPerDay: 0.005, material: 'hide' },
   },
   // The only object in the game that does nothing useful at all, and the most
   // valuable thing a Palaeolithic band owns for exactly that reason.
@@ -368,11 +383,11 @@ export const ITEMS: Record<string, ItemDef> = {
   },
   // `sling`. Reach past the spear and a better hunting term (small game that a
   // thrown spear cannot reach), poor in a brawl, one hand. Below the bow in
-  // every term that matters for a hunt. Its ammunition is not an item: see
-  // `RECIPES.sling` and the open doubts of phase 13d.
+  // every term that matters for a hunt. The carried flint it throws is its
+  // physical ammunition; the pouch still comes from `RECIPES.sling`.
   sling: {
     id: 'sling', label: 'Sling', nutrition: 0, spoilTicks: 0, baseValue: 5,
-    weapon: { damage: 0.2, reach: 1.4, hunt: 1.7, tech: 'sling' },
+    weapon: { damage: 0.2, reach: 1.4, hunt: 1.7, tech: 'sling', ammo: 'flint' },
     class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 },
   },
   // --- M15 phase 37 (M8.3): the metal tier ------------------------------------
@@ -467,9 +482,9 @@ export const ITEMS: Record<string, ItemDef> = {
   fat_torch: { id: 'fat_torch', label: 'Fat torch', nutrition: 0, spoilTicks: 0, baseValue: 8,
     class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 } },
   hide_cape: { id: 'hide_cape', label: 'Hide cape', nutrition: 0, spoilTicks: 0, baseValue: 6,
-    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'cloak', warmth: 0.25 } },
+    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'cloak', warmth: 0.25, wearPerDay: 0.005, material: 'hide' } },
   sewn_tunic: { id: 'sewn_tunic', label: 'Sewn tunic', nutrition: 0, spoilTicks: 0, baseValue: 9,
-    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'torso', warmth: 0.30, pocket: 4 } },
+    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'torso', warmth: 0.30, pocket: 4, wearPerDay: 0.005, material: 'hide' } },
   dried_meat: { id: 'dried_meat', label: 'Dried meat', nutrition: 30, spoilTicks: 12000,
     macros: { fat: 0.45, protein: 0.55, carb: 0 }, baseValue: 8,
     class: 'food', hand: { perHand: 3, perArms: 8, hands: 1 } },
@@ -494,27 +509,29 @@ export const ITEMS: Record<string, ItemDef> = {
     macros: { fat: 0.35, protein: 0.65, carb: 0 }, baseValue: 11,
     class: 'food', hand: { perHand: 3, perArms: 8, hands: 1 } },
   foot_wraps: { id: 'foot_wraps', label: 'Foot wraps', nutrition: 0, spoilTicks: 0, baseValue: 4,
-    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'feet', warmth: 0.08 } },
+    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'feet', warmth: 0.08, wearPerDay: 0.005, material: 'hide' } },
   hide_loincloth: { id: 'hide_loincloth', label: 'Hide loincloth', nutrition: 0, spoilTicks: 0, baseValue: 3,
-    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'hips', warmth: 0.02 } },
+    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'hips', warmth: 0.02, wearPerDay: 0.005, material: 'hide' } },
   fibre_skirt: { id: 'fibre_skirt', label: 'Fibre skirt', nutrition: 0, spoilTicks: 0, baseValue: 3,
-    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'hips', warmth: 0.03 } },
+    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'hips', warmth: 0.03, wearPerDay: 0.005 } },
   leggings: { id: 'leggings', label: 'Leggings', nutrition: 0, spoilTicks: 0, baseValue: 7,
-    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'legs', warmth: 0.15 } },
+    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'legs', warmth: 0.15, wearPerDay: 0.005, material: 'hide' } },
   moccasins: { id: 'moccasins', label: 'Moccasins', nutrition: 0, spoilTicks: 0, baseValue: 6,
-    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'feet', warmth: 0.12 } },
+    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'feet', warmth: 0.12, wearPerDay: 0.005, material: 'hide' } },
   fur_hat: { id: 'fur_hat', label: 'Fur hat', nutrition: 0, spoilTicks: 0, baseValue: 5,
-    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'head', warmth: 0.10 } },
+    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'head', warmth: 0.10, wearPerDay: 0.005, material: 'hide' } },
   wool_cloak: { id: 'wool_cloak', label: 'Wool cloak', nutrition: 0, spoilTicks: 0, baseValue: 15,
-    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'cloak', warmth: 0.35 } },
+    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'cloak', warmth: 0.35, wearPerDay: 0.005 } },
   // M15 phase 14c: bone toggles close a fur coat, adding torso warmth only
   // after the garment has been crafted and equipped.
   toggled_coat: { id: 'toggled_coat', label: 'Toggled coat', nutrition: 0, spoilTicks: 0, baseValue: 18,
-    class: 'bulky', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'torso', warmth: 0.48, pocket: 4 } },
+    class: 'bulky', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'torso', warmth: 0.48, pocket: 4, wearPerDay: 0.005, material: 'hide' } },
   // M15 phase 14c: the first woven garment is warmer and carries a few small
   // things only when worn; packed cloth does not grant extra carrying room.
   linen_tunic: { id: 'linen_tunic', label: 'Linen tunic', nutrition: 0, spoilTicks: 0, baseValue: 10,
-    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'torso', warmth: 0.20, pocket: 4 } },
+    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'torso', warmth: 0.20, pocket: 4, wearPerDay: 0.005 } },
+  bone_beads: { id: 'bone_beads', label: 'Bone beads', nutrition: 0, spoilTicks: 0, baseValue: 8,
+    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'head', warmth: 0, wearPerDay: 0.005, status: 4 } },
 };
 
 export class Inventory {
@@ -544,6 +561,7 @@ export class Inventory {
         itemId,
         wear: 1,
         repairProgress: 0,
+        ...(ITEMS[itemId]?.garment?.status !== undefined ? { status: ITEMS[itemId]!.garment!.status } : {}),
       });
     }
     this.stacks.set(itemId, (this.stacks.get(itemId) ?? 0) + count);
@@ -569,6 +587,39 @@ export class Inventory {
     else this.stacks.set(itemId, have - taken);
     this.version++;
     return taken;
+  }
+
+  /** Consume a selected set of materials as one transaction, including garments. */
+  consumeItems(items: readonly (readonly [string, number])[], afterConsume?: () => void): number {
+    if (items.length === 0) return 0;
+    const required = new Map<string, number>();
+    for (const entry of items) {
+      if (!Array.isArray(entry) || entry.length !== 2 || typeof entry[0] !== 'string' || !entry[0] ||
+          !Number.isSafeInteger(entry[1]) || entry[1] <= 0) {
+        throw new RangeError('inventory consumption request is invalid');
+      }
+      const total = (required.get(entry[0]) ?? 0) + entry[1];
+      if (!Number.isSafeInteger(total)) throw new RangeError('inventory consumption count is invalid');
+      required.set(entry[0], total);
+    }
+    for (const [itemId, count] of required) {
+      if (this.count(itemId) < count) throw new RangeError('inventory changed before consumption');
+    }
+
+    const before = this.transferSnapshot();
+    let consumed = 0;
+    try {
+      for (const [itemId, count] of required) {
+        const removed = this.remove(itemId, count);
+        if (removed !== count) throw new RangeError('inventory count changed during consumption');
+        consumed += removed;
+      }
+      afterConsume?.();
+      return consumed;
+    } catch (error) {
+      this.restoreStateUnchecked(before);
+      throw error;
+    }
   }
 
   count(itemId: string): number {
@@ -626,6 +677,40 @@ export class Inventory {
     return true;
   }
 
+  /** Store interruptible dressing work and its finished treatment on one unit. */
+  setGarmentDressing(unitId: string, hideDressed: boolean, dressingProgress: number): boolean {
+    this.ensureGarmentUnits();
+    const index = this.garmentUnits.findIndex(unit => unit.unitId === unitId);
+    if (index < 0) return false;
+    const current = this.garmentUnits[index]!;
+    this.garmentUnits[index] = validateGarmentUnit({ ...current, hideDressed, dressingProgress });
+    this.version++;
+    return true;
+  }
+
+  /** Apply daily wear to exactly one unit; a ruined unit is destroyed outright. */
+  applyGarmentWear(unitId: string, amount: number): 'missing' | 'worn' | 'broken' {
+    if (!Number.isFinite(amount) || amount < 0 || amount > 1) throw new RangeError('garment wear must be between 0 and 1');
+    this.ensureGarmentUnits();
+    const index = this.garmentUnits.findIndex(unit => unit.unitId === unitId);
+    if (index < 0) return 'missing';
+    if (amount === 0) return 'worn';
+    const current = this.garmentUnits[index]!;
+    const remaining = current.wear - amount;
+    if (remaining <= Number.EPSILON * 4) {
+      const have = this.count(current.itemId);
+      if (have <= 0) throw new RangeError('garment unit has no owning item count');
+      this.garmentUnits.splice(index, 1);
+      if (have === 1) this.stacks.delete(current.itemId);
+      else this.stacks.set(current.itemId, have - 1);
+      this.version++;
+      return 'broken';
+    }
+    this.garmentUnits[index] = validateGarmentUnit({ ...current, wear: remaining });
+    this.version++;
+    return 'worn';
+  }
+
   /** Add a transferred physical garment without resetting its condition. */
   putGarmentUnit(unit: GarmentUnit): string {
     this.ensureGarmentUnits();
@@ -659,14 +744,50 @@ export class Inventory {
       return moved;
     }
     if (!Number.isSafeInteger(count)) throw new RangeError('garment transfer count must be a safe integer');
+    // Gifts and direct handovers must not strand half a stack if a destination
+    // rejects one garment after earlier units have already arrived.
+    const sourceBefore = this.transferSnapshot();
+    const destinationBefore = destination.transferSnapshot();
     let moved = 0;
-    for (let i = 0; i < count; i++) {
-      const unit = this.takeGarmentUnit(itemId, excludedUnitIds);
-      if (!unit) break;
-      destination.putGarmentUnit(unit);
-      moved++;
+    try {
+      for (let i = 0; i < count; i++) {
+        const unit = this.takeGarmentUnit(itemId, excludedUnitIds);
+        if (!unit) break;
+        destination.putGarmentUnit(unit);
+        moved++;
+      }
+      return moved;
+    } catch (error) {
+      this.restoreStateUnchecked(sourceBefore);
+      destination.restoreStateUnchecked(destinationBefore);
+      throw error;
     }
-    return moved;
+  }
+
+  /** Move a selected multi-stack offer as one transaction (amends, barter, etc.). */
+  transferItemsTo(destination: Inventory, items: readonly (readonly [string, number])[]): number {
+    if (destination === this || items.length === 0) return 0;
+    for (const entry of items) {
+      if (!Array.isArray(entry) || entry.length !== 2 || typeof entry[0] !== 'string' || !entry[0] ||
+          !Number.isSafeInteger(entry[1]) || entry[1] <= 0) {
+        throw new RangeError('inventory transfer request is invalid');
+      }
+    }
+    const sourceBefore = this.transferSnapshot();
+    const destinationBefore = destination.transferSnapshot();
+    let movedTotal = 0;
+    try {
+      for (const [itemId, count] of items) {
+        const moved = this.transferTo(destination, itemId, count);
+        if (moved !== count) throw new RangeError('inventory transfer count changed during selected transfer');
+        movedTotal += moved;
+      }
+      return movedTotal;
+    } catch (error) {
+      this.restoreStateUnchecked(sourceBefore);
+      destination.restoreStateUnchecked(destinationBefore);
+      throw error;
+    }
   }
 
   /**
@@ -718,15 +839,19 @@ export class Inventory {
 
   /** Legacy checkpoints predate per-unit clothing; their garments start pristine. */
   private ensureGarmentUnits(): void {
-    if (!Array.isArray(this.garmentUnits)) this.garmentUnits = [];
+    // Only a truly legacy object with no garment row field may synthesize
+    // pristine units. Filling gaps in a present array would launder a damaged
+    // transfer/checkpoint record instead of rejecting its count mismatch.
+    if (Array.isArray(this.garmentUnits)) return;
+    this.garmentUnits = [];
     for (const [itemId, count] of this.stacks) {
       if (!ITEMS[itemId]?.garment) continue;
-      const present = this.garmentUnits.filter(unit => unit.itemId === itemId).length;
-      for (let i = present; i < count; i++) this.garmentUnits.push({
+      for (let i = 0; i < count; i++) this.garmentUnits.push({
         unitId: `g:legacy:${this.version}:${itemId}:${i}`,
         itemId,
         wear: 1,
         repairProgress: 0,
+        ...(ITEMS[itemId]?.garment?.status !== undefined ? { status: ITEMS[itemId]!.garment!.status } : {}),
       });
     }
   }
@@ -864,17 +989,38 @@ export interface GarmentUnit {
   readonly itemId: string;
   readonly wear: number;
   readonly repairProgress: number;
+  /** M15 phase 14c: grease treatment belongs to this physical hide garment. */
+  readonly hideDressed?: boolean;
+  /** Interruptible dressing work, independent of repair work. */
+  readonly dressingProgress?: number;
+  /** M15 phase 14d: visible status value stays with the physical garment. */
+  readonly status?: number;
 }
 
 function validateGarmentUnit(value: unknown): GarmentUnit {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new TypeError('garment unit must be an object');
   const unit = value as Partial<GarmentUnit>;
-  if (Object.keys(value).length !== 4 || typeof unit.unitId !== 'string' || !unit.unitId ||
-      typeof unit.itemId !== 'string' || !unit.itemId || !Number.isFinite(unit.wear) || unit.wear! < 0 || unit.wear! > 1 ||
+  const fields = Object.keys(value);
+  const legacy = fields.length === 4 && !Object.hasOwn(value, 'hideDressed') && !Object.hasOwn(value, 'dressingProgress');
+  const hasStatus = Object.hasOwn(value, 'status');
+  const statusOnly = fields.length === 5 && hasStatus && !Object.hasOwn(value, 'hideDressed') && !Object.hasOwn(value, 'dressingProgress');
+  if ((!legacy && !statusOnly && (fields.length !== (hasStatus ? 7 : 6) || typeof unit.hideDressed !== 'boolean' ||
+        !Number.isFinite(unit.dressingProgress) || unit.dressingProgress! < 0 || unit.dressingProgress! > 140)) ||
+      typeof unit.unitId !== 'string' || !unit.unitId || typeof unit.itemId !== 'string' || !unit.itemId ||
+      !Number.isFinite(unit.wear) || unit.wear! < 0 || unit.wear! > 1 ||
       !Number.isFinite(unit.repairProgress) || unit.repairProgress! < 0 || unit.repairProgress! > 140) {
-    throw new RangeError('garment unit has invalid identity, condition, or repair progress');
+    throw new RangeError('garment unit has invalid identity, condition, repair, or dressing progress');
   }
-  return { unitId: unit.unitId, itemId: unit.itemId, wear: unit.wear!, repairProgress: unit.repairProgress! };
+  const hideDressed = legacy || statusOnly ? false : unit.hideDressed!;
+  const dressingProgress = legacy || statusOnly ? 0 : unit.dressingProgress!;
+  if ((hideDressed || dressingProgress > 0) && ITEMS[unit.itemId]?.garment?.material !== 'hide') {
+    throw new RangeError('only hide garments can carry dressing state');
+  }
+  const status = unit.status ?? ITEMS[unit.itemId]?.garment?.status;
+  if (status !== undefined && (!Number.isFinite(status) || status < 0 || status > 10)) throw new RangeError('garment status must be between zero and ten');
+  return { unitId: unit.unitId, itemId: unit.itemId, wear: unit.wear!, repairProgress: unit.repairProgress!,
+    ...(hideDressed || dressingProgress > 0 || status !== undefined ? { hideDressed, dressingProgress } : {}),
+    ...(status !== undefined ? { status } : {}) };
 }
 
 export function validateInventoryTransferState(value: unknown): InventoryTransferState {
@@ -916,7 +1062,8 @@ export function validateInventoryTransferState(value: unknown): InventoryTransfe
   // Old transfer records had counts only. Give every represented garment a
   // pristine unit with a deterministic identity and no random draws.
   if (!hasGarmentUnits) for (const [itemId, count] of stacks) if (ITEMS[itemId]?.garment) {
-    for (let i = 0; i < count; i++) garmentUnits.push({ unitId: `g:legacy:${state.version}:${itemId}:${i}`, itemId, wear: 1, repairProgress: 0 });
+    for (let i = 0; i < count; i++) garmentUnits.push({ unitId: `g:legacy:${state.version}:${itemId}:${i}`, itemId, wear: 1, repairProgress: 0,
+      ...(ITEMS[itemId]?.garment?.status !== undefined ? { status: ITEMS[itemId]!.garment!.status } : {}) });
   }
   const garmentIds = new Set([...stacks.map(([itemId]) => itemId), ...garmentUnits.map(unit => unit.itemId)]);
   for (const itemId of garmentIds) {
@@ -936,7 +1083,8 @@ function sameInventoryTransferState(a: InventoryTransferState, b: InventoryTrans
     left.length === right.length && left.every((unit, i) => {
       const other = right[i]!;
       return unit.unitId === other.unitId && unit.itemId === other.itemId &&
-        unit.wear === other.wear && unit.repairProgress === other.repairProgress;
+        unit.wear === other.wear && unit.repairProgress === other.repairProgress &&
+        unit.hideDressed === other.hideDressed && unit.dressingProgress === other.dressingProgress;
     });
   return a.version === b.version && equalRows(a.stacks, b.stacks) && equalRows(a.spoilage, b.spoilage) &&
     equalUnits(a.garmentUnits, b.garmentUnits);

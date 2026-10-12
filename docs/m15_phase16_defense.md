@@ -64,11 +64,11 @@ Antes de diseñar nada nuevo, **léase esto**:
   comprobarlo en el código antes de asumirlo**, porque la fase 38 encontró
   que la 16b (los muros de verdad) no estaba hecha a pesar de que el plan la
   daba por buena. No repetir ese error aquí: verificar, no citar el plan.
-- **La muralla de mampostería (`city_walls`) ya existe** (fase 38, cerrada el
-  2026-10-09, worktree `m15/phase38-citywalls`): un tech que habilita el
-  edificio `city_wall`, un anillo de terraplén de 7×7 con una puerta
-  (`EarthworkSpec.gate`, nuevo campo) que `World.setWalkable` bloquea salvo
-  esa casilla. Esto es la pieza física que una empalizada de madera debe
+- **La muralla del Estado (`city_walls`) ya existe en wave3** (fase 38,
+  integrada el 2026-10-12): `chiefdom` + `masonry` + `earthworks` habilitan el
+  diseño `city_wall`, un anillo seco y profundo de 7×7 con una puerta
+  (`EarthworkSpec.gate`) que deja una casilla transitable. Esto es la pieza
+  física que una empalizada de madera debe
   **reutilizar**, no reinventar: mismo mecanismo de anillo y puerta, otro
   material y otro (menor) requisito tecnológico.
 - **Nadie construye un terraplén, un foso o una muralla sin que se le
@@ -78,17 +78,15 @@ Antes de diseñar nada nuevo, **léase esto**:
 
 ## Huecos reales (lo que falta de verdad)
 
-**A. Los muros de casa de la 16b no están implementados.** El agente que
-cerró la fase 38 comprobó el código y no existe `BuildingDef.interior`;
-`mud_hut` sigue en 3×3; el check `walls-hold` que el plan da por existente no
-está. Esto es un prerrequisito de **toda** la fase 16, no solo de esta
-propuesta: sin muros de casa de verdad, ni «dormir en el suelo de casa» ni la
-mitad de los términos de confort de 16e pueden estar leyendo lo que el plan
-dice que leen. **Antes de tocar nada de este documento, re-verificar 16b.**
+**A. Los muros de casa de la 16b ya están en el checkout wave3.** `BuildingDef`
+declara `interior`, los diseños residenciales tienen puerta y el check
+`walls-hold` existe. La muralla del Estado (`city_walls`) es una obra distinta
+que reutiliza el anillo profundo de `EarthworkSpec`; sus pruebas no sustituyen
+las de interior de vivienda.
 
-**B. Falta un nivel de defensa física barato y temprano.** Hoy solo existe
-`city_walls` (mampostería, Calcolítico). Falta una empalizada de madera
-(palos), con un requisito tecnológico mucho más bajo (quizá nada, o
+**B. Falta un nivel de defensa física barato y temprano.** Existe
+`city_walls` (mampostería, con requisito de `earthworks`). Falta una empalizada
+de madera (palos), con un requisito tecnológico mucho más bajo (quizá nada, o
 `woodworking`/lo que ya haga falta para el cercado de animales), que use el
 mismo patrón de anillo+puerta que `city_wall`.
 

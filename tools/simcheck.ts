@@ -48,6 +48,8 @@ import { setupSalters, observeSalters, saltersLosses } from './saltersFixture.ts
 import { setupTailors, observeTailors, tailorsChecks } from './tailorsFixture.ts';
 import { setupNights, observeNights, nightsMeasurements } from './nightsFixture.ts';
 import { createFrontier, setupFrontier, observeFrontier, createFrontierCohort, observeFrontierCohort } from './frontierFixture.ts';
+import { applyHouseWalls, houseInteriorTiles } from '../src/sim/world/HouseInterior.ts';
+import { MAP_CELL } from '../src/sim/social/BandMaps.ts';
 
 /**
  * The outer band of a fire's circle that `fire-keeps-wolves-off` does not count.
@@ -181,6 +183,60 @@ function setupShallows(sim: Simulation): void {
 }
 
 /**
+ * Stage one completed family home and one carried bed per band so this short
+ * scenario measures the indoor sleep/mood readers, not the months of material
+ * gathering and house construction that precede them. NPCs still route and
+ * place their own bed through the ordinary furniture action.
+ */
+function setupHomes(sim: Simulation): void {
+  for (const band of sim.bands.filter(candidate => !candidate.outcast)) {
+    const family = sim.livingPeople().filter(person => person.bandId === band.id)
+      .sort((a, b) => a.id - b.id);
+    const builder = family.find(person => !person.isChild);
+    if (!builder) continue;
+    let house: Building | null = null;
+    for (let radius = 3; radius < 22 && !house; radius++) {
+      for (let angle = 0; angle < 16 && !house; angle++) {
+        const x = Math.round(band.homeX + Math.cos(angle * Math.PI / 8) * radius);
+        const y = Math.round(band.homeY + Math.sin(angle * Math.PI / 8) * radius);
+        if (sim.canPlace(BUILDINGS.mud_hut!, x, y)) house = sim.place('mud_hut', x, y, band.id, builder.id, false);
+      }
+    }
+    if (!house) throw new Error('homes scenario could not stage a household house');
+    house.complete = true;
+    house.durability = house.def.workTicks;
+    applyHouseWalls(sim.world, house, { homeX: band.homeX, homeY: band.homeY }, sim.peopleHash, true);
+    const householdIds = new Set(family.map(person => person.householdId).filter((id): id is number => id !== null));
+    for (const id of householdIds) {
+      const household = sim.householdsById.get(id);
+      if (household) household.homeBuildingId = house.id;
+    }
+    const tiles = houseInteriorTiles(house);
+    for (const [i, person] of family.entries()) {
+      const tile = tiles[i % tiles.length]!;
+      sim.peopleHash.remove(person);
+      person.x = tile.x; person.y = tile.y;
+      person.targetX = tile.x; person.targetY = tile.y;
+      person.action = 'idle'; person.order = null;
+      person.needs.hunger = person.needs.thirst = person.needs.cold = person.needs.fatigue = 0;
+      sim.peopleHash.insert(person);
+    }
+    const sleeper = family.find(person => !person.isChild && person.householdId !== null && !person.isPlayer) ??
+      family.find(person => !person.isChild && person.householdId !== null) ?? builder;
+    sleeper.knownTech.add('carpentry');
+    sleeper.inventory.add('bed', 1);
+    const bedTile = tiles[0]!;
+    band.claimedCells ??= new Set<string>();
+    band.claimedCells.add(`${Math.floor(bedTile.x / MAP_CELL)},${Math.floor(bedTile.y / MAP_CELL)}`);
+    const guard = family.find(person => person.id !== sleeper.id && !person.isChild);
+    if (guard) guard.job = 'guard';
+    if (!sim.order(sleeper, 'place_furniture', { buildingId: house.id, itemId: 'bed' })) {
+      throw new Error('homes scenario could not issue its NPC bed-placement order');
+    }
+  }
+}
+
+/**
  * `orchard`: a band that knows how to plant, with fruit in every adult's pack.
  * See the scenario's own description for why the fruit is the harness's gift.
  */
@@ -274,7 +330,22 @@ export const SCENARIOS: Record<string, Scenario> = {
       time: { daysPerSeason: 6, startDay: 18 }, needs: { coldRate: 0.16 },
       population: { bands: 1, peoplePerBand: 8,
         startingTech: withPrerequisites(['clothing', 'cordage', 'bone_working', 'tailoring']) } },
-    steps: 2400, setup: setupTailors, checks: ['clothes-are-worn', 'the-clothed-are-warmer'],
+    steps: 2400, setup: setupTailors,
+    checks: ['clothes-are-worn', 'the-clothed-are-warmer', 'garments-wear-and-mend'],
+  },
+  homes: {
+    name: 'homes',
+    description: 'Two winter bands know house-building and household furniture technologies; a staged completed home and carried bed isolate indoor sleep, comfort and safety readers from construction-material economics.',
+    config: { seed: 'homes', world: { width: 48, height: 48 }, time: { daysPerSeason: 6, startDay: 18 },
+      needs: { coldRate: 0.16 }, ai: { choiceSpread: 0 },
+      population: { bands: 2, peoplePerBand: 8,
+        startingTech: withPrerequisites(['carpentry', 'wattle_daub', 'firemaking', 'cordage']) } },
+    steps: 2400,
+    setup: setupHomes,
+    checks: [
+      'beds-are-slept-in', 'furniture-is-placed', 'sleep-mood-uses-quality-and-cold',
+      'sleep-security-reads-all-terms', 'walls-hold', 'nobody-walled-in', 'paths-are-found',
+    ],
   },
   ironsmiths: {
     name: 'ironsmiths',
@@ -1536,6 +1607,34 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
     const dark = (night?.work[1] ?? 0) / Math.max(1, night?.samples[1] ?? 0);
     add('light-lets-work', !!night && night.samples.every(samples => samples > 0) && lit > dark,
       'actual night craft progress/tick: hearth=' + lit.toFixed(3) + ', dark=' + dark.toFixed(3));
+  }
+
+  if (base.scenario === 'homes') {
+    const furnished = sim.buildings.filter(building => building.complete && !building.ruined &&
+      !building.playerPlaced && building.hostId !== null && building.def.furniture).length;
+    const moodSamples = tel.sleep_mood_samples ?? 0;
+    const cold = tel.sleep_mood_cold_sum ?? 0;
+    const camp = tel.sleep_safety_camp ?? 0;
+    const huddle = tel.sleep_safety_huddle ?? 0;
+    const guard = tel.sleep_safety_guard ?? 0;
+    const claimed = tel.sleep_safety_claimed ?? 0;
+    const wallSteps = tel.homes_person_on_wall ?? 0;
+
+    const interiorSamples = tel.sleep_home_samples ?? 0;
+    const furnishedSamples = tel.sleep_home_furnished_samples ?? 0;
+    add('beds-are-slept-in', interiorSamples > 0 && furnishedSamples / interiorSamples >= 0.6,
+      furnishedSamples + '/' + interiorSamples + ' midnight samples inside a home at bedding-or-bed quality; need at least 60%');
+    add('furniture-is-placed', furnished > 0,
+      furnished + ' complete, hosted furniture pieces placed by NPCs');
+    add('sleep-mood-uses-quality-and-cold', moodSamples > 0 &&
+      (tel.sleep_mood_quality_sum ?? 0) >= moodSamples * 0.7 && cold > 0,
+      moodSamples + ' midnight samples; quality sum=' + (tel.sleep_mood_quality_sum ?? 0).toFixed(1) +
+      ', sampled cold sum=' + cold.toFixed(1));
+    const hasEverySecurityTerm = camp > 0 && huddle > 0 && guard > 0 && claimed > 0;
+    add('sleep-security-reads-all-terms', hasEverySecurityTerm,
+      'camp=' + camp + ', huddle=' + huddle + ', nearby guard=' + guard + ', claimed cell=' + claimed);
+    add('walls-hold', wallSteps === 0,
+      wallSteps + ' person-steps ended on a house wall');
   }
 
   if (base.scenario === 'salters') {
@@ -4468,6 +4567,11 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
       }
     }
     sim.step();
+    if (scenario.name === 'homes') for (const person of sim.people) {
+      if (person.alive && sim.world.isHouseWallBlocked(Math.floor(person.x), Math.floor(person.y))) {
+        telemetry.count('homes_person_on_wall');
+      }
+    }
     if (scenario.name === 'frontier') observeFrontier(sim);
     if (scenario.name === 'frontier-cohort') observeFrontierCohort(sim);
     if (scenario.name === 'salters') observeSalters(sim);

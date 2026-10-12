@@ -6,9 +6,10 @@ import { earthWorldGeography, randomWorldGeography, type EarthWorldGeography } f
 import { findGlobeStart, worldTerrainOf } from '../world/WorldTerrain.ts';
 import {
   MIN_FRESH_TILES, MIN_LAND_SHARE, findNearestStart, findStartInRegion, findWateredGlobeStart, isCoastalRegion, isStart, localWorldConfig,
-  measureWindow, regionWater,
+  measureWindow, regionWater, startInComarca,
 } from '../world/StartPlace.ts';
 import { WorldState } from '../world/WorldState.ts';
+import { gridFromGeography, regionOfStart } from '../world/PeopleWorld.ts';
 
 const SPAN = 4;
 const config = localWorldConfig();
@@ -120,6 +121,23 @@ describe('beginning on the Earth', () => {
       { geography, start: { x: start.x, y: start.y }, comarcasWide: SPAN, comarcasHigh: SPAN, peoples: false });
     expect(state.current.world.freshShore.length).toBeGreaterThan(40);
     expect(state.current.livingPeople().length).toBeGreaterThan(0);
+  });
+
+  it('an explicit comarca is measured and becomes the exact local start; an open-sea comarca is refused', () => {
+    const suggested = findStartInRegion(geography, 30, 24, 1, config)!;
+    const cx = Math.floor(suggested.x), cy = Math.floor(suggested.y);
+    const chosen = startInComarca(geography, cx, cy, config)!;
+    expect(chosen).toMatchObject({ x: cx + 0.5, y: cy + 0.5, region: { x: 30, y: 24 } });
+    expect(isStart(chosen.report)).toBe(true);
+    expect(startInComarca(geography, 55, 245, config)).toBeNull();
+
+    const state = new WorldState({ seed: 'wp-explicit-comarca', population: { bands: 1, peoplePerBand: 6 } },
+      { geography, start: { x: chosen.x, y: chosen.y }, comarcasWide: 1, comarcasHigh: 1 });
+    expect(state.initialGeographicStart?.start).toEqual({ x: cx + 0.5, y: cy + 0.5 });
+    const reserved = regionOfStart(gridFromGeography(geography)!, chosen);
+    expect(state.peoples!.regions.has(reserved)).toBe(true);
+    expect([...state.peoples!.regionOfPeople.values()]).not.toContain(reserved);
+    expect(state.current.world.freshShore.length).toBeGreaterThan(0);
   });
 });
 

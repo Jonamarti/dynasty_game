@@ -2255,6 +2255,25 @@ html, body, #app {
 }
 .worldpicker-side { flex: 0 0 260px; display: flex; flex-direction: column; gap: 8px; }
 .worldpicker-info { font-size: 12px; line-height: 1.5; }
+.worldpicker-comarca-label { font-size: 11px; line-height: 1.35; color: var(--text-dim); }
+.worldpicker-comarcas {
+  display: grid;
+  gap: 2px;
+  width: min(100%, 220px);
+  aspect-ratio: 1;
+  align-self: center;
+}
+.worldpicker-comarcas[hidden], .worldpicker-comarca-label[hidden] { display: none; }
+.worldpicker-comarca {
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 2px;
+  cursor: pointer;
+}
+.worldpicker-comarca[aria-pressed="true"] { outline: 2px solid #ffd35c; outline-offset: 1px; z-index: 1; }
+.worldpicker-comarca:focus-visible { outline: 2px solid #fff; outline-offset: 1px; z-index: 2; }
 .worldpicker-line.is-title { margin-top: 8px; font-weight: 600; }
 .worldpicker-line.is-title:first-child { margin-top: 0; }
 .worldpicker-line.is-dim { color: var(--text-dim); }

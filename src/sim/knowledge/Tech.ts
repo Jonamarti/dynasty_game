@@ -44,6 +44,7 @@ import type { Person, Skill } from '../entities/Person.ts';
 import type { KnowledgeConfig } from '../core/Config.ts';
 import type { Idea } from './Synthesis.ts';
 import type { Spark } from './Synthesis.ts';
+import type { Species } from '../entities/Animal.ts';
 import { PROTOTYPE_AT, PROTOTYPE_POWER, REFINEMENT_STEP } from './Synthesis.ts';
 import { ITEMS } from '../entities/Item.ts';
 import { GARMENT_SLOTS } from '../entities/Equipment.ts';
@@ -61,7 +62,7 @@ export const TECHS = [
   // Phase 5: the first things made to be *used on* something. Until these,
   // `doAttack` had no item term at all and a hunt could only be won by
   // outlasting an animal that runs faster than a person.
-  'spear', 'bow', 'leatherwork',
+  'spear', 'bow', 'leatherwork', 'hide_dressing',
   // M8.1: the food half of the tree, see m8_plan_the_ages.md. `fishing` came
   // first, with mechanism 2; these four are mechanism 3 and the two carried
   // tools that lead to it. The rest of the fourteen-node tier follows.
@@ -137,8 +138,10 @@ export const TECHS = [
   // and shipped with its three readers: `Fear.sightIntruders` (strangers),
   // `WildlifeSystem.victimFor` (predators) and `companionBonus` (the hunt).
   'dog',
-  // M15 phase 38b: the State, one node per commit with its reader — see
-  // `social/Polity.ts`. `redistribution` is the temple store.
+  // M15 phase 38: the State, one node per commit with its reader — see
+  // `social/Polity.ts`. Fortification comes first and builds on earthworks.
+  'city_walls',
+  // `redistribution` is the temple store.
   'redistribution',
   // The written ledger: contributions to the temple and debts before the chief.
   'accounting',
@@ -209,6 +212,8 @@ export const TECHS = [
   'leggings',
   'moccasins',
   'fur_hat',
+  // M15 phase 14d: bone-and-shell beads make a real, wearable status signal.
+  'beads',
   'toggles',
   'linen_tunic',
   'wool_cloak',
@@ -219,6 +224,8 @@ export const TECHS = [
   // M15 phase 26e: earthworks opens the first designed ditch; later designs
   // join only when their own readers are ready.
   'earthworks',
+  // M15 phase 16d: the household fire web has the hearth and lamp together.
+  'fireplace', 'fat_lamp',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -337,7 +344,7 @@ export type TechKind = 'practice' | 'device';
  * a node lives never changes what anyone can discover, which is why moving a
  * node between webs is bit-identical.
  */
-export type WebId = 'main' | 'arms' | 'field' | 'domestication' | 'kitchen' | 'metal' | 'preservation' | 'clothing';
+export type WebId = 'main' | 'arms' | 'field' | 'domestication' | 'kitchen' | 'metal' | 'preservation' | 'clothing' | 'fire';
 
 export interface WebDef {
   id: WebId;
@@ -361,6 +368,9 @@ export const WEBS: Record<WebId, WebDef> = {
   preservation: { id: 'preservation', label: 'Preservation', gate: 'preserving', color: '#a88a52' },
   // M15 phase 14c: the clothing recipes open from the existing clothing idea.
   clothing: { id: 'clothing', label: 'Clothes', gate: 'clothing', color: '#b88775' },
+  // M15 phase 16d: `firemaking` already teaches portable warmth; this branch
+  // contains the two built household fire fixtures and their distinct uses.
+  fire: { id: 'fire', label: 'Fire', gate: 'firemaking', color: '#e57c43' },
 };
 
 /** The webs that hang off a gate, in the order a screen should list them. */
@@ -511,6 +521,19 @@ export const TECH: Record<Tech, TechDef> = {
     ],
     description: 'A sewn hide cap warms the head independently of a coat or cloak.',
   },
+  beads: {
+    id: 'beads', label: 'Bone beads', domain: 'cloth', tier: 'craft', web: 'clothing',
+    age: 'upper_palaeolithic', firstKnown: 'Upper Palaeolithic ornaments; exact dates vary',
+    kind: 'device', requires: ['bone_working'], difficulty: 0.3, skill: 'build',
+    prototype: { bone: 2, rope: 1 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'bone_working' }, { kind: 'holding', item: 'bone' }, { kind: 'holding', item: 'rope' }, { kind: 'doing', action: 'craft' }],
+        weight: 0.8, story: 'strung shaped bone beads together to make a visible personal ornament' },
+      { needs: [{ kind: 'knows', tech: 'bone_working' }, { kind: 'feeling', need: 'company' }, { kind: 'season', season: 'winter' }],
+        weight: 0.4, story: 'made a bright ornament to be noticed among the band' },
+    ],
+    description: 'Shaped bone beads strung on cord and worn at the head; their visible ornament earns respect.',
+  },
   linen_tunic: {
     id: 'linen_tunic', label: 'Linen tunic', domain: 'cloth', tier: 'craft', web: 'clothing',
     age: 'neolithic', firstKnown: 'about 6,000 BC',
@@ -646,6 +669,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   firemaking: {
     id: 'firemaking', label: 'Firemaking', domain: 'fire',
+    opens: 'fire',
     age: 'middle_palaeolithic', firstKnown: 'about 400,000 years ago',
     kind: 'device',
     requires: [], difficulty: 0.35, skill: 'knap',
@@ -765,6 +789,20 @@ export const TECH: Record<Tech, TechDef> = {
     description:
       'Hide worked until it bends without cracking. Warm, and it turns a blow ' +
       'that bare skin does not.',
+  },
+  hide_dressing: {
+    id: 'hide_dressing', label: 'Hide dressing', domain: 'cloth', tier: 'craft', web: 'clothing',
+    age: 'middle_palaeolithic', firstKnown: 'Grease-dressed hides; the first date is uncertain',
+    kind: 'device', requires: ['leatherwork'], difficulty: 0.35, skill: 'build',
+    prototype: { fat: 1 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'leatherwork' }, { kind: 'holding', item: 'fat' }],
+        weight: 0.8, story: 'rubbed grease into a hide garment and saw it stay supple longer' },
+      { needs: [{ kind: 'knows', tech: 'leatherwork' }, { kind: 'feeling', need: 'cold' },
+                { kind: 'season', season: 'winter' }],
+        weight: 0.5, story: 'noticed that a greased hide kept its shape through winter wear' },
+    ],
+    description: 'Work animal fat into an unworn hide garment. The treated hide loses condition at half its usual rate.',
   },
   tracking: {
     id: 'tracking', label: 'Tracking', domain: 'beasts',
@@ -2170,12 +2208,29 @@ export const TECH: Record<Tech, TechDef> = {
       'heel of the one who feeds it.',
   },
 
-  // --- M15 phase 38b: the State, in historical order --------------------------
+  // --- M15 phase 38: the State, in historical order ---------------------------
   //
   // `m14_plan.md` phase 20b's table, one node per commit, each shipped with
   // its reader. All of them hang off the chief's own head — see
   // `social/Polity.ts` — so a State is a chief who knows how to run one, and
   // it lapses the day that chief is replaced by somebody who does not.
+  city_walls: {
+    id: 'city_walls', label: 'City walls', domain: 'people',
+    age: 'neolithic', firstKnown: 'about 6,000 BC',
+    kind: 'device', requires: ['chiefdom', 'masonry', 'earthworks'], difficulty: 0.55, skill: 'build',
+    prototype: { flint: 10, mud: 6 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'earthworks' }, { kind: 'saw', what: 'assault' }],
+        weight: 1.0, story: 'watched a raid reach the camp and thought of raising a wall around it' },
+      { needs: [{ kind: 'knows', tech: 'earthworks' }, { kind: 'doing', action: 'dig' },
+                { kind: 'knows', tech: 'chiefdom' }],
+        weight: 0.7, story: 'dug a boundary for the whole band and left one gate to pass through' },
+      { needs: [{ kind: 'knows', tech: 'masonry' }, { kind: 'knows', tech: 'earthworks' },
+                { kind: 'doing', action: 'build' }],
+        weight: 0.5, story: 'joined stonework to a deep earthwork and made a defended boundary' },
+    ],
+    description: 'Earthworks made into a defended perimeter, with a gate left open.',
+  },
   redistribution: {
     id: 'redistribution', label: 'Redistribution', domain: 'people',
     age: 'neolithic', firstKnown: 'about 5500 BC',
@@ -2740,6 +2795,39 @@ export const TECH: Record<Tech, TechDef> = {
       'Counting what a trade is worth on both sides, instead of by feel. A band ' +
       'that knows it strikes a fairer bargain, and is the one that can send out a caravan.',
   },
+  // M15 phase 16d: the indoor-fire web has two readers, so its gate opens only
+  // alongside this first real household fireplace.
+  fireplace: {
+    id: 'fireplace', label: 'Indoor fireplace', domain: 'fire', web: 'fire',
+    age: 'neolithic', firstKnown: 'about 12,000 years ago',
+    kind: 'device',
+    requires: ['firemaking'], difficulty: 0.45, skill: 'build',
+    prototype: { mud: 4, flint: 2 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'firemaking' }, { kind: 'holding', item: 'mud' },
+                { kind: 'holding', item: 'flint' }, { kind: 'doing', action: 'build' }],
+        weight: 1.0, story: 'lined the household hearth with mud and stone so its fire could burn inside' },
+      { needs: [{ kind: 'knows', tech: 'firemaking' }, { kind: 'holding', item: 'mud' },
+                { kind: 'feeling', need: 'cold' }, { kind: 'doing', action: 'build' }],
+        weight: 0.6, story: 'kept a tended fire in the room where the family slept through winter' },
+    ],
+    description: 'A clay-and-flint hearth built inside a household home for warmth, light and cooking.',
+  },
+  fat_lamp: {
+    id: 'fat_lamp', label: 'Fat lamp', domain: 'fire', web: 'fire', tier: 'craft',
+    age: 'upper_palaeolithic', firstKnown: 'about 17,000 years ago',
+    kind: 'device', requires: ['firemaking'], difficulty: 0.25, skill: 'build',
+    prototype: { flint: 1, fat: 2 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'firemaking' }, { kind: 'holding', item: 'fat' },
+                { kind: 'holding', item: 'flint' }, { kind: 'doing', action: 'craft' }],
+        weight: 1.0, story: 'scooped animal fat into a hollow stone and caught its wick with a spark' },
+      { needs: [{ kind: 'knows', tech: 'firemaking' }, { kind: 'holding', item: 'fat' },
+                { kind: 'feeling', need: 'company' }, { kind: 'season', season: 'winter' }],
+        weight: 0.5, story: 'wanted a steady light for the long nights spent with family indoors' },
+    ],
+    description: 'A stone lamp that burns animal fat for a small, long-lasting light.',
+  },
 };
 
 /** The web a technology lives in (`'main'` unless its entry says otherwise). */
@@ -2816,10 +2904,14 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
     site: 'RECIPES.wool_cloak; ITEMS.wool_cloak garment; warmthFrom and Renderer.wornGarmentsOf' },
   linen_tunic: { summary: 'A linen tunic warms the torso only while worn.',
     site: 'RECIPES.linen_tunic retained needle; ITEMS.linen_tunic garment; warmthFrom and Renderer.wornGarmentsOf' },
+  hide_dressing: { summary: 'A grease-dressed hide garment loses condition at half its usual rate.',
+    site: 'RECIPES.hide_dressing; GarmentUnit.hideDressed and GarmentSystem.wearWornGarments' },
   toggles: { summary: 'Bone toggles fasten a fur coat closed and warm the torso only while worn.',
     site: 'RECIPES.toggled_coat; ITEMS.toggled_coat garment; warmthFrom and Renderer.wornGarmentsOf' },
   fur_hat: { summary: 'A sewn fur hat warms the head only while worn.',
     site: 'RECIPES.fur_hat retained needle; ITEMS.fur_hat garment; warmthFrom and Renderer.wornGarmentsOf' },
+  beads: { summary: 'Worn bone beads ease status pressure and improve first impressions.',
+    site: 'RECIPES.bone_beads; GarmentUnit.status; statusPressure and firstImpression' },
   moccasins: { summary: 'Sewn moccasins warm the feet more than wraps while actually worn.',
     site: 'RECIPES.moccasins retained needle; ITEMS.moccasins garment; warmthFrom and Renderer.wornGarmentsOf' },
   leggings: { summary: 'Sewn leggings warm the legs only while worn.',
@@ -2851,9 +2943,13 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
     site: 'ActionSystem.doAttack, via protectionOf; RECIPES.hide_armour',
   },
   firemaking: {
-    summary: 'Warmth you carry with you, wherever you are standing.',
-    site: 'NeedsSystem.update, via warmthFrom',
+    summary: 'Fire carried as warmth, and the idea that opens built household fire.',
+    site: 'NeedsSystem.update via warmthFrom; TECH.firemaking opens the Fire web',
   },
+  fireplace: { summary: 'A household hearth warms and lights the room and serves cooking and smoking.',
+    site: 'BUILDINGS.fireplace; Light.hearthLight/hearthNear; NeedsSystem.update; stationKind hearth' },
+  fat_lamp: { summary: 'A small stone lamp burns fat to light the household at night.',
+    site: 'BUILDINGS.fat_lamp and RECIPES.fat_lamp; Light.fatLampLight' },
   cordage: {
     summary: 'A net and a carrying strap: more in one trip. And rope, to tie up somebody held down.',
     site: 'RECIPES.rope and rope_thatch; the equipped bundle in sim/core/Carry.ts; ActionSystem.doBind',
@@ -2944,7 +3040,7 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   },
   earthworks: {
     summary: 'A cut slows the crossing; a water moat is deep enough to stop walking through.',
-    site: 'BUILDINGS.ditch, BUILDINGS.moat, BUILDINGS.mound and BUILDINGS.embankment require earthworks; World.stepFactor reads raised and excavated height, World.sightBonusAt reads prominence, World.pitDepth and water fills read moat depth',
+    site: 'BUILDINGS.ditch, BUILDINGS.moat, BUILDINGS.mound and BUILDINGS.embankment require earthworks; city_walls also requires earthworks and opens BUILDINGS.city_wall; World.stepFactor reads raised and excavated height, World.sightBonusAt reads prominence, World.pitDepth and water fills read moat depth',
   },
   terracing: {
     summary: 'Level a hillside field with a cut and fill that carries topsoil downhill.',
@@ -3100,6 +3196,10 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
     summary: 'A tamed wolf that hears strangers and predators before you do, and hunts at your heel.',
     site: 'Fear.sightIntruders via Simulation.dogSight; WildlifeSystem.victimFor; WildlifeSystem.companionBonus',
   },
+  city_walls: {
+    summary: 'Earthworks made into a defended perimeter, with a gate left open.',
+    site: 'BUILDINGS.city_wall uses EarthworkSpec.ring and gate; finished deep cuts block through the existing World.pitDepth rule',
+  },
   redistribution: {
     summary: 'The chief\'s granary becomes the temple: the loyal store their surplus there, and the chief feasts the band from it.',
     site: 'social/Polity.ts templeOf and templePull; Brain store ranking; Feast.feastVenue and mayHostFeast',
@@ -3232,8 +3332,9 @@ export function weaponOf(
   person: Person,
   forHunt: boolean,
   equippedOnly = false,
+  quarry: Species | null = null,
 ): { damage: number; reach: number; hunt: number; power: number } | null {
-  const itemId = weaponItemOf(person, forHunt, equippedOnly);
+  const itemId = weaponItemOf(person, forHunt, equippedOnly, 2, quarry);
   const weapon = itemId ? ITEMS[itemId]?.weapon : null;
   if (!weapon) return null;
   return {
@@ -3242,6 +3343,11 @@ export function weaponOf(
     hunt: weapon.hunt,
     power: weaponPower(person, weapon.tech as Tech),
   };
+}
+
+/** Physical ammunition consumed by a successful hunting strike, if any. */
+export function weaponAmmoItem(itemId: string | null): string | null {
+  return itemId === null ? null : ITEMS[itemId]?.weapon?.ammo ?? null;
 }
 
 /**
@@ -3264,6 +3370,7 @@ export function weaponItemOf(
   forHunt: boolean,
   equippedOnly = false,
   maxHands: 1 | 2 = 2,
+  quarry: Species | null = null,
 ): string | null {
   let best: { item: string; worth: number } | null = null;
   const equipped = equippedOnly
@@ -3273,6 +3380,9 @@ export function weaponItemOf(
     if (count <= 0 || (equipped && !equipped.has(itemId))) continue;
     const weapon = ITEMS[itemId]?.weapon;
     if (!weapon || ITEMS[itemId]!.hand.hands > maxHands) continue;
+    // The sling's short stone is useful for hare-sized quarry only. Keep this
+    // filter at the choice point so it cannot win over a spear for a deer/boar.
+    if (forHunt && itemId === 'sling' && quarry !== null && quarry !== 'hare') continue;
     const power = weaponPower(person, weapon.tech as Tech);
     if (power <= 0) continue;
     const worth = (forHunt ? weapon.hunt : weapon.damage) * power;
@@ -3295,7 +3405,11 @@ export function protectionOf(person: Person, part: BodyPart): number {
     // Carrying a coat is not wearing it. Non-garment armour keeps its existing
     // inventory reader; wearable armour contributes only from its body slot.
     const worn = def?.garment ? person.equipment[def.garment.slot] : undefined;
-    if (def?.garment && (worn?.item !== itemId || !person.inventory.ownsGarmentUnit(itemId, worn.unitId))) continue;
+    const units = def?.garment ? person.inventory.garmentUnitsOf(itemId) : [];
+    const wornUnit = worn && def?.garment
+      ? units.find(unit => unit.unitId === worn.unitId) ?? (worn.unitId === undefined ? units[0] : undefined)
+      : undefined;
+    if (def?.garment && (worn?.item !== itemId || !wornUnit)) continue;
     const covers = def?.protects?.[part];
     if (covers === undefined) continue;
     // M15 phase 37: "`armourOf` finally goes through `techPower`". A garment that
@@ -3304,7 +3418,8 @@ export function protectionOf(person: Person, part: BodyPart): number {
     // turns aside most of its worth for anybody: a helm taken off a corpse is a
     // helm. Garments that name none keep their number exactly, so no existing
     // world moves.
-    const worth = def?.armourTech === undefined ? covers : covers * armourFit(person, def.armourTech as Tech);
+    const fit = def?.armourTech === undefined ? 1 : armourFit(person, def.armourTech as Tech);
+    const worth = covers * fit * (def?.garment ? wornUnit!.wear : 1);
     if (worth > best) best = worth;
   }
   return best;
@@ -3573,13 +3688,31 @@ export function warmthFrom(person: Person, omitGarmentId?: string): number {
   for (const slot of GARMENT_SLOTS) {
     const worn = person.equipment[slot];
     const garment = worn ? ITEMS[worn.item]?.garment : undefined;
+    const units = worn && garment ? person.inventory.garmentUnitsOf(worn.item) : [];
+    const unit = worn && garment
+      ? units.find(candidate => candidate.unitId === worn.unitId) ??
+        (worn.unitId === undefined ? units[0] : undefined)
+      : undefined;
     const warmth = worn && worn.item !== omitGarmentId && garment?.slot === slot &&
-      person.inventory.ownsGarmentUnit(worn.item, worn.unitId)
-      ? garment.warmth
+      unit
+      ? garment.warmth * unit.wear
       : 0;
     unwarmed *= 1 - Math.max(0, Math.min(1, warmth));
   }
   return 1 - unwarmed;
+}
+
+/** Visible standing from exact physical garment units currently worn. */
+export function wornGarmentStatus(person: Person): number {
+  let status = 0;
+  for (const slot of GARMENT_SLOTS) {
+    const worn = person.equipment[slot];
+    const def = worn ? ITEMS[worn.item]?.garment : undefined;
+    if (!worn || !def || def.slot !== slot) continue;
+    const unit = person.inventory.garmentUnitsOf(worn.item).find(candidate => candidate.unitId === worn.unitId);
+    if (unit) status += unit.status ?? def.status ?? 0;
+  }
+  return status;
 }
 
 // ---------------------------------------------------------------------------

@@ -8,8 +8,8 @@ export function carriesEdibleFood(person: Pick<Person, 'inventory'>): boolean {
   return person.inventory.entries().some(([itemId, count]) => count > 0 && (ITEMS[itemId]?.nutrition ?? 0) > 0);
 }
 
-/** Variety changes what food is appealing; it never owns a trip by itself. */
-export type CommitmentDrive = Exclude<DriveId, 'variety'>;
+/** Variety is taste and comfort is opportunistic; neither owns a long trip. */
+export type CommitmentDrive = Exclude<DriveId, 'comfort' | 'variety'>;
 
 export interface ActionCommitment {
   action: string;

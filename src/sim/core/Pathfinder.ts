@@ -175,7 +175,11 @@ export class Pathfinder {
   // it: sized to the one case that matters, a route touching every tile.
   private readonly rawPath: Int32Array;
 
-  constructor(private readonly world: World) {
+  constructor(
+    private readonly world: World,
+    /** Finished ditch tiles impose a tactical detour cost on incoming raiders. */
+    private readonly raidDitchAt: (x: number, y: number) => boolean = () => false
+  ) {
     this.width = world.width;
     this.n = world.width * world.height;
 
@@ -216,7 +220,8 @@ export class Pathfinder {
     fromX: number, fromY: number, toX: number, toY: number,
     maxExpansions = DEFAULT_MAX_EXPANSIONS,
     avoidIndex = -1,
-    mode: PassMode = 'walk'
+    mode: PassMode = 'walk',
+    raider = false
   ): PathStatus {
     const fx = fromX | 0;
     const fy = fromY | 0;
@@ -311,6 +316,11 @@ export class Pathfinder {
           (rise[neighbor]! + dug[neighbor]! - rise[current]! - dug[current]!) * climb);
         const stepCost = NEIGHBOR_COST[i]! * (mode === 'swim' && this.world.isSwimTile(nx, ny) ? SWIM_COST : 1);
         const tentativeG = this.gScore[current]! + stepCost + up +
+          // A shallow ditch remains ordinary walkable ground, but raiders use
+          // the same bounded detour cost as a blocked target. One tile of cost
+          // was too small: it made a one-tile-wide trench strictly cheaper to
+          // cross than to go around, so the intended defensive route never ran.
+          (raider && this.raidDitchAt(nx, ny) ? AVOID_PENALTY : 0) +
           (neighbor === avoidIndex ? AVOID_PENALTY : 0);
         if (this.seen[neighbor] === this.gen && tentativeG >= this.gScore[neighbor]!) continue;
 

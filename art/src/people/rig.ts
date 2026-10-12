@@ -31,7 +31,7 @@ export interface Wear {
   legs?: 'trousers';
   feet?: 'boots' | 'wraps';
   hands?: 'gloves';
-  head?: 'cap' | 'hood';
+  head?: 'cap' | 'hood' | 'beads';
   cloak?: 'cloak' | 'wool_cloak';
 }
 
@@ -362,6 +362,11 @@ function hoodBackFront(g: Geo, cx: number, hy: number, sY: number): string {
 }
 function headWearFront(kind: Wear['head'], g: Geo, cx: number, hy: number, back: boolean): string {
   const R = g.hrx, H = g.hry;
+  if (kind === 'beads') {
+    let s = stroke(`M${cx - R - 1},${hy + 0.2}Q${cx},${hy + H * 0.8} ${cx + R + 1},${hy + 0.2}`, '#714f32', 1.5);
+    for (let i = -3; i <= 3; i++) s += ell(cx + i * R / 3.2, hy + H * 0.42 - Math.abs(i) * 0.18, 1.35, 1.45, i % 2 ? '#d9c79a' : '#e8eee2', '#62523d');
+    return s;
+  }
   if (kind === 'cap') {
     let s = shape(`M${cx - R - 1},${hy + 0.4}A${R + 1},${H + 2.2} 0 0 1 ${cx + R + 1},${hy + 0.4}L${cx + R - 0.4},${hy - H * 0.2}Q${cx},${hy - H * 0.06 - (back ? 0 : 1.8)} ${cx - R + 0.4},${hy - H * 0.2}Z`, W.fur, W.furLine);
     for (let i = -3; i <= 3; i++) s += ell(cx + i * R / 3.1, hy - H * 0.2 + (i % 2 ? 0.8 : 0), 1.5, 1.2, W.furL);
@@ -380,6 +385,11 @@ function hoodBackSide(g: Geo, hx: number, hy: number, sY: number): string {
 }
 function headWearSide(kind: Wear['head'], g: Geo, hx: number, hy: number): string {
   const R = g.hrx, H = g.hry;
+  if (kind === 'beads') {
+    let s = stroke(`M${hx + R * 0.9},${hy + H * 0.16}Q${hx},${hy + H * 0.88} ${hx - R},${hy + H * 0.14}`, '#714f32', 1.5);
+    for (let i = 0; i < 5; i++) s += ell(hx + R * 0.78 - i * R * 0.42, hy + H * 0.35 + i * 0.05, 1.3, 1.4, i % 2 ? '#d9c79a' : '#e8eee2', '#62523d');
+    return s;
+  }
   if (kind === 'cap') {
     let s = shape(`M${hx + R * 0.86},${hy - H * 0.34}C${hx + R * 0.4},${hy - H - 3.6} ${hx - R - 1.6},${hy - H - 2.4} ${hx - R - 1.3},${hy + 1.2}L${hx - R * 0.15},${hy - H * 0.08}Q${hx + R * 0.35},${hy - H * 0.3} ${hx + R * 0.86},${hy - H * 0.34}Z`, W.fur, W.furLine);
     for (let i = 0; i < 4; i++) s += ell(hx + R * 0.7 - i * R * 0.42, hy - H * 0.22 + (i % 2 ? 0.7 : 0), 1.4, 1.1, W.furL);

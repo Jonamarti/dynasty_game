@@ -287,6 +287,7 @@ import { ComarcaOffmapRuntime } from '../world/ComarcaOffmapRuntime.ts';
 import type { Person } from '../entities/Person.ts';
 import { type BandContext } from '../systems/BandSystem.ts';
 import { TECH, TECHS } from '../knowledge/Tech.ts';
+import { deserializeSave, serializeSave } from '../persistence/SaveFile.ts';
 
 describe('frontier demography and drought gates',()=>{
   const config={seed:'frontier-gates',world:{width:32,height:32},population:{bands:1,peoplePerBand:4,conceptionChance:0},time:{ticksPerDay:120,daysPerSeason:20,startDay:0},needs:{coldRate:0}};
@@ -299,9 +300,13 @@ describe('frontier demography and drought gates',()=>{
     const residents=state.current.people.filter(p=>p.id!==id); expect(residents.length).toBeGreaterThan(0); expect(total()).toBe(before);
     const society=[...state.peoples!.sim.peoples.values()].find(p=>p.away>0)!; expect(society.away).toBe(residents.length);
     const residentIds=residents.map(p=>p.id).sort((a,b)=>a-b);
+    const identities=residents.map(p=>[p.id,p.name] as const).sort((a,b)=>a[0]-b[0]);
+    const reloaded=deserializeSave(serializeSave(state,0));
+    expect(reloaded.current.people.filter(p=>p.id!==id).map(p=>[p.id,p.name] as const).sort((a,b)=>a[0]-b[0])).toEqual(identities);
     expect(state.current.comarcaTravel!.arrive({person:state.current.peopleById.get(id)!,direction:'w',scout:false})).toBeNull(); expect(state.commitPendingCross()).toBe(true);
     expect(state.current.comarcaTravel!.arrive({person:state.current.peopleById.get(id)!,direction:'e',scout:false})).toBeNull(); expect(state.commitPendingCross()).toBe(true);
     expect(state.current.people.filter(p=>p.id!==id).map(p=>p.id).sort((a,b)=>a-b)).toEqual(residentIds); expect(total()).toBe(before);
+    expect(state.current.people.filter(p=>p.id!==id).map(p=>[p.id,p.name] as const).sort((a,b)=>a[0]-b[0])).toEqual(identities);
   });
   it('preserves an absent father through a compact birth and gives the newborn a global fresh ID',()=>{
     const state=new WorldState(config,{geography:frontierGeography(),start:{x:40.5,y:20.5},peoples:false});

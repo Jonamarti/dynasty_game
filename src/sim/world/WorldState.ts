@@ -9,7 +9,7 @@ import { PlaceMemory } from '../social/PlaceMemory.ts';
 import { Person } from '../entities/Person.ts';
 import { Household } from '../entities/Household.ts';
 import { RNG } from '../core/RNG.ts';
-import { NAME_ONSETS, NAME_CODAS } from '../../data/names.ts';
+import { regionalResidentName } from './RegionalNames.ts';
 import { WorldKnowledge } from '../social/WorldKnowledge.ts';
 import { materialize } from './PeopleMaterialize.ts';
 import { populationOf } from './PeopleSim.ts';
@@ -528,12 +528,13 @@ export class WorldState {
     const stagedIds=IdSpace.fromSnapshot(this.ids.snapshot());
     const transit=Simulation.fromCheckpointRecordWithSharedIds(journey.transit,stagedIds);
     const tpd=transit.config.time.ticksPerDay, rng=RNG.fromSnapshot(journey.rng), encounters=[...journey.encounters];
+    const travellerIds=[...journey.travellerIds];
     let arrivalTick=journey.arrivalTick, advanced=journey.lastAdvancedTick;
     // Do not collapse elapsed time into one needs update: food choice, spoilage,
     // death and daily effects must be identical across save/resume boundaries.
     while(advanced<tick && advanced<arrivalTick) {
       const next=advanced+1;
-      transit.advanceJourneyTick(journey.travellerIds,next);
+      transit.advanceJourneyTick(travellerIds,next);
       advanced=next;
       if(next%tpd===0&&next<arrivalTick){
         const event=rng.next();
@@ -541,12 +542,15 @@ export class WorldState {
         else if(event<0.08){encounters.push('wildlife');const actor=transit.peopleById.get(journey.actorId);if(actor?.alive){actor.health-=5;if(actor.health<=0)actor.die('injury');}}
         else if(event<0.13) encounters.push('settlement');
       }
+      if(next%tpd===0) travellerIds.push(...transit.advanceJourneyLifeDay(travellerIds));
     }
-    const provisions=journey.travellerIds.reduce((sum,id)=>sum+[...(transit.peopleById.get(id)?.inventory.entries()??[])].reduce((n,[item,count])=>n+(ITEMS[item]?.nutrition>0?count:0),0),0);
-    const preservedProvisions=journey.travellerIds.reduce((sum,id)=>sum+[...(transit.peopleById.get(id)?.inventory.entries()??[])].reduce((n,[item,count])=>n+(ITEMS[item]?.nutrition>0&&ITEMS[item]?.spoilTicks===0?count:0),0),0);
-    const cargoUnits=journey.travellerIds.reduce((sum,id)=>sum+(transit.peopleById.get(id)?.inventory.total??0),0);
-    const updated={...journey,arrivalTick,lastAdvancedTick:advanced,provisions,preservedProvisions,cargoUnits,transit:toCheckpointRecord(transit),rng:rng.snapshot(),encounters};
+    const provisions=travellerIds.reduce((sum,id)=>sum+[...(transit.peopleById.get(id)?.inventory.entries()??[])].reduce((n,[item,count])=>n+(ITEMS[item]?.nutrition>0?count:0),0),0);
+    const preservedProvisions=travellerIds.reduce((sum,id)=>sum+[...(transit.peopleById.get(id)?.inventory.entries()??[])].reduce((n,[item,count])=>n+(ITEMS[item]?.nutrition>0&&ITEMS[item]?.spoilTicks===0?count:0),0),0);
+    const cargoUnits=travellerIds.reduce((sum,id)=>sum+(transit.peopleById.get(id)?.inventory.total??0),0);
+    const updated={...journey,travellerIds,arrivalTick,lastAdvancedTick:advanced,provisions,preservedProvisions,cargoUnits,transit:toCheckpointRecord(transit),rng:rng.snapshot(),encounters};
     this.frontier.updateJourney(updated);
+    // A travelling birth allocates an ordinary global identity; commit its allocator only with the checkpoint.
+    this.ids.restore(stagedIds.snapshot());
     if(advanced>=arrivalTick) this.arriveJourney(updated);
   }
 
@@ -779,7 +783,13 @@ export class WorldState {
       const privateState = destination as unknown as { normsByBand:Map<number,typeof band.norms>;strangerRegardByBand:Map<number,number> };
       privateState.normsByBand.set(bandId,band.norms); privateState.strangerRegardByBand.set(bandId,band.strangerRegard);
       for(const sample of drawn) {
-        const spot = rng.pick(ground), name = rng.pick(NAME_ONSETS)+rng.pick(NAME_CODAS);
+        const spot = rng.pick(ground);
+        // These two slots used to choose an onset and coda from the global bank
+        // shared resident stream. Reserve them so person traits remain stable;
+        // names now have their own seed-derived stream and follow identity.
+        rng.next(); rng.next();
+        const personId = destination.ids.snapshot().next.person;
+        const name = regionalResidentName(destination.config.seed, this.geography.kind, region, personId);
         const person = new Person(name,spot.x,spot.y,bandId,rng,destination.time.daysPerYear,destination.ids);
         origins.push([person.id,people.id]);
         person.sex=sample.sex; person.age=sample.ageYears*person.daysPerYear; for(const tech of sample.techs) person.knownTech.add(tech);

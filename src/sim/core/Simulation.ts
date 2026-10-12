@@ -32,7 +32,8 @@ import { ITEMS, Inventory, type GarmentUnit } from '../entities/Item.ts';
 import { equipContainer, itemCapacityFor, reconcileCarry } from './Carry.ts';
 import {
   manualEquipReasonText, manualEquipRefusal, manualEquipSlot,
-  manualGarmentReasonText, manualGarmentRefusal,
+  manualGarmentReasonText, manualGarmentRefusal, planGarmentMending,
+  garmentMendingReasonText, planHideDressing, hideDressingReasonText, type GarmentMendingMethod,
 } from './ToolEquipment.ts';
 import {
   BUSH_SPECIES, BUSHES, WILD_PLANTS, RESOURCE_KINDS, ORE_COUNTS, bushPhase, ResourceNode, isFoodKind, isPlantFood, seasonLoreKind,
@@ -66,7 +67,7 @@ import {
   judgeOwn, answerDemand, DISMISSED_GRUDGE, SHAME_RENOWN, REFUSED_STANDING, type Case, judgesByLaw, verdictGrudge,
 } from '../social/Justice.ts';
 import {
-  Building, BUILDINGS, isTrap, isHerd, isStructure, type BuildingDef,
+  Building, BUILDINGS, isTrap, isHerd, isStructure, isStationFor, type BuildingDef,
 } from '../entities/Building.ts';
 import { earthworkTiles, slopeAcross } from '../entities/Earthwork.ts';
 import { fieldSeasonGrowth } from '../entities/Irrigation.ts';
@@ -92,6 +93,7 @@ import { ForestSystem, seedInitialForest } from '../systems/ForestSystem.ts';
 import {
   LifeSystem, findHeir, roofOverSleeper, settleEstate,
 } from '../systems/LifeSystem.ts';
+import { wearWornGarments } from '../systems/GarmentSystem.ts';
 import { linkFamily } from '../social/SocialSystem.ts';
 import { BandSystem, TERRITORY_RADIUS } from '../systems/BandSystem.ts';
 import { foundBand, type FoundingContext } from '../systems/Founding.ts';
@@ -132,8 +134,9 @@ import type { WorldGeography } from '../world/WorldGeography.ts';
 import { geographicResourceAvailable } from '../world/GeographicResources.ts';
 import { stepMark } from './StepProbe.ts';
 import { approachComarcaEdge, type ComarcaTravel } from '../world/ComarcaTravel.ts';
-import { applyHouseWalls, houseInteriorContains, houseInteriorTiles, houseContainsFootprint, houseForFootprint } from '../world/HouseInterior.ts';
-import { lightAt as measuredLightAt, lightFactor, torchLight, hearthNear } from './Light.ts';
+import { applyHouseWalls, houseInteriorContains, houseInteriorTiles, houseContainsFootprint, houseForFootprint, sleepQualityAt } from '../world/HouseInterior.ts';
+import { lightAt as measuredLightAt, lightFactor, torchLight, hearthNear, hearthLight } from './Light.ts';
+import { sleepMoodChange } from './SleepComfort.ts';
 import { saltSourceNear } from './Preservation.ts';
 import { advanceTorchBurn, torchIgnitionRefusal, torchRefusalText, transferableUnits, burningTorchRefusalText } from './Torch.ts';
 import { advanceFatLamps, FAT_LAMP_FUEL_TICKS, fatLampRefusal, fatLampRefusalText } from './FatLamp.ts';
@@ -486,6 +489,7 @@ export class Simulation {
   /** Records are static once cut, so the index is rebuilt only on change. */
   readonly inscriptionHash = new SpatialHash<Inscription>(8);
   readonly buildingHash = new SpatialHash<Building>(8);
+  private readonly raidDitchScratch: Building[] = [];
   /** The person the player currently inhabits. Null in headless runs. */
   player: Person | null = null;
   /**
@@ -738,7 +742,7 @@ export class Simulation {
     this.time = new TimeManager(this.config.time);
 
     this.needsSystem = new NeedsSystem(this.config.needs, this.world);
-    this.pathfinder = new Pathfinder(this.world);
+    this.pathfinder = new Pathfinder(this.world, (x, y) => this.isFinishedDitchTile(x, y));
     this.movementSystem = new MovementSystem(this.world, moveRng, this.pathfinder,
       this.config.motivation.infantsStill, this.config.carry.sledgeSpeed, this.config.childhood);
     this.social = new SocialSystem(
@@ -1102,7 +1106,7 @@ export class Simulation {
       if (!value) throw new TypeError(`Invalid checkpoint state: missing RNG stream ${path}`);
       return value;
     };
-    const pathfinder = new Pathfinder(world);
+    const pathfinder = new Pathfinder(world, (x, y) => this.isFinishedDitchTile(x, y));
     const movementRng = stream('simulation.movementSystem.rng');
     const movementSystem = new MovementSystem(world, movementRng, pathfinder,
       state.config.motivation.infantsStill, state.config.carry.sledgeSpeed, state.config.childhood);
@@ -2622,14 +2626,19 @@ export class Simulation {
     this.assertExecutionAuthority();
     this.assertCanonical(this.peopleById, payer, 'person');
     this.assertCanonical(this.peopleById, captive, 'person');
-    if (!payer.alive || !captive.alive || !isCaptive(captive) || count <= 0) return false;
+    if (!payer.alive || !captive.alive || !isCaptive(captive) || !Number.isSafeInteger(count) || count <= 0) return false;
     if (payer.bandId !== captive.captiveFrom || payer.distanceTo(captive) > 6) return false;
     if (!payer.inventory.has(itemId, count)) return false;
     const captor = this.people.find(person =>
       person.alive && person.bandId === captive.captiveOf && !person.isChild);
     if (!captor) return false;
-    payer.inventory.remove(itemId, count);
-    captor.inventory.add(itemId, count);
+    // Release is the consequence of payment, so validate and move the complete
+    // offer first. A failed garment insertion rolls both inventories back and
+    // must not free the captive for goods they never received.
+    try { payer.inventory.transferItemsTo(captor.inventory, [[itemId, count]]); }
+    catch { return false; }
+    reconcileCarry(payer, this.config.carry, (x, y, id, amount, units) => this.dropAt(x, y, id, amount, units));
+    reconcileCarry(captor, this.config.carry, (x, y, id, amount, units) => this.dropAt(x, y, id, amount, units));
     const oldBand = captive.captiveFrom;
     captive.captiveOf = null;
     captive.serfOf = null;
@@ -3144,9 +3153,8 @@ export class Simulation {
       this.lastRefusal = t('{name} cannot carry any more', { name: receiver.name });
       return 0;
     }
-    const moved = giver.inventory.remove(itemId, Math.min(room, count, available));
+    const moved = giver.inventory.transferTo(receiver.inventory, itemId, Math.min(room, count, available));
     if (moved === 0) return 0;
-    receiver.inventory.add(itemId, moved);
     // Worn layers are ownership references too. Handing over the last copy
     // must clear the visible layer and any capacity it supplied immediately.
     reconcileCarry(giver, this.config.carry, (x, y, id, amount, units) => this.dropAt(x, y, id, amount, units));
@@ -3857,6 +3865,8 @@ export class Simulation {
       tech: person.targetTech,
       itemId: person.targetItemId,
       count: person.targetItemCount,
+      garmentUnitId: person.targetGarmentUnitId,
+      garmentMendingMethod: person.targetGarmentMendingMethod,
       x: person.targetX,
       y: person.targetY,
       ...(person.saltDrinkTarget === true ? { saltDrinkTarget: true } : {}),
@@ -3902,6 +3912,8 @@ export class Simulation {
       techId: pending.tech ?? undefined,
       itemId: pending.itemId ?? undefined,
       count: pending.count ?? undefined,
+      garmentUnitId: pending.garmentUnitId ?? undefined,
+      garmentMendingMethod: pending.garmentMendingMethod ?? undefined,
       x: pending.nodeId === null && pending.treeId === null &&
         pending.buildingId === null && pending.personId === null &&
         pending.animalId === null && pending.pileId === null
@@ -4000,6 +4012,51 @@ export class Simulation {
       const roof = roofOverSleeper(person, this.buildingsById);
       const sheltered = roof !== null;
       const household = person.householdId === null ? null : this.householdsById.get(person.householdId);
+      const band = this.bands.find(candidate => candidate.id === person.bandId && !candidate.outcast);
+      const ownCamp = (roof !== null && roof.ownerBandId === person.bandId) ||
+        (!!band && Math.hypot(person.x - band.homeX, person.y - band.homeY) <= this.config.motivation.nightRadius);
+      const huddled = this.peopleHash.queryRadius(person.x, person.y, 3).some(other =>
+        other.id !== person.id && other.alive && other.bandId === person.bandId);
+      const guarded = this.peopleHash.queryRadius(person.x, person.y, this.config.sightRadius).some(other =>
+        other.id !== person.id && other.alive && other.bandId === person.bandId && other.job === 'guard');
+      const claimed = this.territoryOwnerAt(person.x, person.y) === person.bandId;
+      const furnishings = roof?.def.interior
+        ? this.buildingHash.queryRadius(roof.centerX, roof.centerY,
+          Math.max(roof.def.width, roof.def.height) + 1).filter(piece => piece.hostId === roof.id)
+        : [];
+      const quality = roof
+        ? sleepQualityAt(roof, person.x, person.y, furnishings,
+          hearthNear(this.buildingHash, person.x, person.y, 3))
+        : sleepQualityAt(null, person.x, person.y, [], hearthNear(this.buildingHash, person.x, person.y, 3));
+      const snowy = !sheltered && isBuried(person.x, person.y, this.snowDepth, this.treeHash);
+      const moodChange = sleepMoodChange({
+        quality,
+        cold: person.needs.cold,
+        snow: snowy,
+        ownCamp,
+        huddled,
+        guarded,
+        claimed,
+      });
+      // M15 phase 16f: keep a direct audit trail for the homes scenario. These
+      // are the inputs consumed by this sleeper's mood sample, not a second
+      // telemetry-only reconstruction of what the night looked like.
+      telemetry.count('sleep_mood_samples');
+      telemetry.count('sleep_mood_quality_sum', quality);
+      telemetry.count('sleep_mood_cold_sum', person.needs.cold);
+      telemetry.count('sleep_mood_snow', snowy ? 1 : 0);
+      if (roof?.def.interior) {
+        telemetry.count('sleep_home_samples');
+        if (quality >= 1) telemetry.count('sleep_home_furnished_samples');
+      }
+      telemetry.count('sleep_safety_camp', ownCamp ? 1 : 0);
+      telemetry.count('sleep_safety_huddle', huddled ? 1 : 0);
+      telemetry.count('sleep_safety_guard', guarded ? 1 : 0);
+      telemetry.count('sleep_safety_claimed', claimed ? 1 : 0);
+      person.mood.add('comfort', moodChange.comfort,
+        t(moodChange.comfort >= 0 ? 'slept comfortably' : 'slept through a cold night'), this.time.tick);
+      person.mood.add('security', moodChange.security,
+        t(moodChange.security >= 0 ? 'slept in safety' : 'slept without enough protection'), this.time.tick);
       if (sheltered && household?.homeBuildingId === roof!.id) {
         person.mood.add('belonging', 3, 'slept at home', this.time.tick);
       } else {
@@ -4041,7 +4098,7 @@ export class Simulation {
    */
   litNear(x: number, y: number, r: number): boolean {
     if (this.buildingHash.queryRadius(x, y, r + 2).some(b =>
-      b.complete && !b.ruined && b.def.id === 'hearth' &&
+      hearthLight(b) !== null &&
       Math.hypot(b.centerX - x, b.centerY - y) <= r)) return true;
     return this.peopleHash.queryRadius(x, y, r * 2 + 1).some(person =>
       !!torchLight(person) && Math.hypot(person.x - x, person.y - y) <= r * 2);
@@ -4055,7 +4112,7 @@ export class Simulation {
       // Run for the nearest fire, or failing that straight away from it. A
       // bitten person who stood and carried on would simply be bitten again.
       const fire = this.buildingHash.findNearest(person.x, person.y, 40,
-        b => b.complete && !b.ruined && (b.def.id === 'hearth' || b.def.shelter > 0));
+        b => hearthLight(b) !== null || b.def.shelter > 0);
       const dx = person.x - animal.x;
       const dy = person.y - animal.y;
       const length = Math.max(0.001, Math.hypot(dx, dy));
@@ -4158,6 +4215,17 @@ export class Simulation {
 
   /** Takes a killed animal out of the world and its index. */
   private removeAnimal(animal: Animal, counter = 'animal_killed'): void {
+    const wasPresent = this.animalsById.has(animal.id);
+    // Natural predator deaths leave goods people can gather. This is not a
+    // carcass entity or animal scavenging: use the species' established meat
+    // yield and the one hide already harvested by doHunt. Edge departures and
+    // human kills have separate accounting and must not create duplicate goods.
+    if (wasPresent && animal.def.predator &&
+        (counter === 'animal_starved_out' || counter === 'animal_predated')) {
+      this.dropAt(animal.x, animal.y, 'meat', animal.def.meat);
+      this.dropAt(animal.x, animal.y, 'hide', 1);
+      telemetry.count('predator_remains_dropped');
+    }
     this.animalsById.delete(animal.id);
     this.animals = this.animals.filter(a => a.id !== animal.id);
     telemetry.count(counter);
@@ -4237,6 +4305,8 @@ export class Simulation {
        */
       itemId?: string;
       count?: number;
+      garmentUnitId?: string;
+      garmentMendingMethod?: GarmentMendingMethod;
     } = {}
   ): boolean {
     this.assertExecutionAuthority();
@@ -4269,6 +4339,23 @@ export class Simulation {
         this.lastRefusal = manualGarmentReasonText(refusal);
         return false;
       }
+    }
+    if (action === 'mend_garment') {
+      const plan = planGarmentMending(person, target.itemId ?? '', target.garmentUnitId,
+        target.garmentMendingMethod);
+      if (typeof plan === 'string') {
+        this.lastRefusal = garmentMendingReasonText(plan);
+        return false;
+      }
+      target = { ...target, garmentUnitId: plan.unitId, garmentMendingMethod: plan.method };
+    }
+    if (action === 'dress_hide') {
+      const plan = planHideDressing(person, target.itemId ?? '', target.garmentUnitId);
+      if (typeof plan === 'string') {
+        this.lastRefusal = hideDressingReasonText(plan);
+        return false;
+      }
+      target = { ...target, garmentUnitId: plan.unitId };
     }
     if (action === 'light_torch') {
       const refusal = torchIgnitionRefusal(person, target.itemId ?? '', this.hearthNear(person.x, person.y, 2));
@@ -4336,6 +4423,8 @@ export class Simulation {
       person.targetItemId = target.itemId;
       person.targetItemCount = target.count ?? null;
     }
+    if (target.garmentUnitId !== undefined) person.targetGarmentUnitId = target.garmentUnitId;
+    if (target.garmentMendingMethod !== undefined) person.targetGarmentMendingMethod = target.garmentMendingMethod;
     // Set here for the same reason: a `discuss` is aimed at a person and would
     // otherwise lose the technology to that branch's own return.
     if (target.techId !== undefined) person.targetTech = target.techId;
@@ -4343,6 +4432,10 @@ export class Simulation {
     if (target.mode !== undefined) person.talkMode = target.mode;
 
     if (target.recipeId !== undefined) {
+      const recipe = RECIPES[target.recipeId];
+      if (recipe?.operation === 'hide_dressing') {
+        return this.cancelOrder(person, t('Choose a hide garment to dress'));
+      }
       person.targetRecipe = target.recipeId;
 
       // M8.1, mechanism 4: the first of the two channels a missing station
@@ -4357,7 +4450,7 @@ export class Simulation {
           ? null
           : this.buildingsById.get(target.buildingId);
         const label = BUILDINGS[stationId]?.label.toLowerCase() ?? stationId;
-        if (!named || !named.complete || named.def.id !== stationId) {
+        if (!named || !named.complete || named.ruined || !isStationFor(named.def, stationId)) {
           return this.cancelOrder(person, t('that has to be made at {station}', {
             station: aNoun(label),
           }));
@@ -4897,6 +4990,9 @@ export class Simulation {
     if (!tile || !def) return null;
     const furniture = new Building(def, tile.x, tile.y, host.ownerBandId, this.ids);
     furniture.hostId = host.id;
+    // Player-ordered placement is a deliberate fixture choice; autonomous
+    // household upkeep must leave those fixtures under the player's control.
+    furniture.playerPlaced = person.isPlayer && person.order !== null;
     if (itemId === 'fat_lamp') furniture.fuelRemaining = FAT_LAMP_FUEL_TICKS;
     furniture.sponsorId = person.id;
     furniture.plannedTick = this.time.tick;
@@ -5757,6 +5853,7 @@ export class Simulation {
     }
     if (this.time.tick % this.config.time.ticksPerDay === 0) {
       for (const person of travellers) if (person.alive) { decayMacroBalance(person); decayMacroTarget(person); }
+      for (const person of travellers) if (person.alive) wearWornGarments(person, this.time.tick);
       // Phase 17d enables spoilage only for provisions in transit. The detailed
       // economy still keeps its configured zero rate until phase 15 is measured;
       // travelling must not make fresh food keep indefinitely by inheriting it.
@@ -5764,6 +5861,51 @@ export class Simulation {
       for (const person of travellers) if (person.alive)
         person.inventory.spoil(this.config.time.ticksPerDay * journeySpoilRate, () => 1);
     }
+  }
+
+  /** Apply the ordinary calendar-day life rules to the journey's canonical owners only. */
+  advanceJourneyLifeDay(travellerIds: readonly number[]): number[] {
+    this.assertExecutionAuthority();
+    const ids = new Set(travellerIds);
+    const travellers = travellerIds.map(id => this.peopleById.get(id));
+    if (travellers.some(person => !person)) throw new RangeError('Journey traveller is not owned by its checkpoint');
+    const born: number[] = [];
+    const midwifeFor = (mother: Person): Person | null => {
+      let best: Person | null = null, quality = 0;
+      for (const helper of this.peopleHash.queryRadius(mother.x, mother.y, this.config.sightRadius)) {
+        if (!ids.has(helper.id) || helper.id === mother.id || helper.bandId !== mother.bandId) continue;
+        const candidate = midwifeQuality(helper);
+        if (candidate > quality || (candidate === quality && candidate > 0 && best !== null && helper.id < best.id)) {
+          best = helper; quality = candidate;
+        }
+      }
+      return best;
+    };
+    this.lifeSystem.daily(travellers.filter((person): person is Person => !!person), {
+      parentArchive: this.comarcaParent,
+      rng: this.lifeRng,
+      population: this.config.population,
+      tick: this.time.tick,
+      day: this.time.day,
+      peopleById: this.peopleById,
+      householdsById: this.householdsById,
+      roofTonight: new Map(),
+      makeChild: (mother, childRng) => {
+        const name = childRng.pick(NAME_ONSETS) + childRng.pick(NAME_CODAS);
+        const child = new Person(name, mother.x, mother.y, mother.bandId, childRng, this.time.daysPerYear, this.ids);
+        child.skillGain = this.config.learning.skillGain;
+        return child;
+      },
+      onBirth: (child, mother, father) => { this.registerBirth(child, mother, father); born.push(child.id); },
+      onDeath: (person, cause) => person.die(cause),
+      pregnancyCare: {
+        rng: this.healthRng,
+        midwifeFor,
+        onMiscarriage: (mother, father, cause) => this.registerMiscarriage(mother, father, cause),
+        onComplicatedBirth: (mother, midwife) => this.registerComplicatedBirth(mother, midwife),
+      },
+    });
+    return born;
   }
 
   // -------------------------------------------------------------------------
@@ -5880,6 +6022,7 @@ export class Simulation {
         if (node.species !== null && node.amount > 0 && bushPhase(node.species, season) === 'bare') node.amount = 0;
       }
       this.social.dailyUpkeep(this.people);
+      for (const person of this.people) if (person.alive) wearWornGarments(person, this.time.tick);
       this.woundsOfTheDay();
       this.shareTheHearth();
       // Renown decays far more slowly than an ordinary opinion's `deeds`
@@ -5948,6 +6091,9 @@ export class Simulation {
         tick: this.time.tick,
         motivation: this.config.motivation,
         buildings: this.buildings,
+        world: this.world,
+        buildingHash: this.buildingHash,
+        freshShoreHash: this.freshShoreHash,
         place: (defId, x, y, bandId, sponsorId) => this.place(defId, x, y, bandId, sponsorId),
         onExile: (person, band, factionSize) => this.exile(person, band, factionSize),
         onAdopt: (person, band) => this.adopt(person, band),
@@ -6623,7 +6769,15 @@ export class Simulation {
         if (lore && isPlantFood(node.def)) {
           // Learned species by species once bushes have them: a sloe in
           // fruit in winter says nothing about a raspberry.
-          person.seasonLore.observe(seasonLoreKind(node), this.time.season, year, node.amount >= 1);
+          const season = this.time.season;
+          if (node.amount >= 1) {
+            person.seasonLore.observe(seasonLoreKind(node), season, year, true);
+          } else if (node.species === null || bushPhase(node.species, season) === 'bare') {
+            // An empty bush in its ripening/holding season may just have been
+            // harvested. Only the species' actual bare phase is evidence that
+            // this season produces no fruit.
+            person.seasonLore.observe(seasonLoreKind(node), season, year, false);
+          }
         }
       }
       for (const tree of this.treeHash.queryRadius(person.x, person.y, radius, this.placeTreeCandidates)) {
@@ -6929,6 +7083,14 @@ export class Simulation {
     for (const animal of this.animals) {
       if (animal.alive) this.animalHash.insert(animal);
     }
+  }
+
+  /** Spatially resolve a completed trench tile; path searches must not scan buildings. */
+  private isFinishedDitchTile(x: number, y: number): boolean {
+    const nearby = this.buildingHash.queryRadius(x + 0.5, y + 0.5, 8, this.raidDitchScratch);
+    return nearby.some(building => building.complete && !building.ruined &&
+      (building.def.id === 'ditch' || building.def.id === 'city_wall') &&
+      building.earth?.some(tile => tile.x === x && tile.y === y));
   }
 
   /** Fuel is advanced by simulation time only, so pause freezes carried light. */

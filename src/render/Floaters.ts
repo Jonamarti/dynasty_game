@@ -239,6 +239,7 @@ export const ACTION_LABELS: Record<string, string> = {
   make_peace: 'making peace',
   wear_garment: 'putting on clothes',
   take_off_garment: 'taking off clothes',
+  mend_garment: 'mending a garment',
   place_furniture: 'placing furniture',
   light_torch: 'lighting torch',
 };
@@ -297,6 +298,11 @@ export const STOP_REASONS: Record<string, string> = {
   garment_already_worn: 'that garment was already being worn',
   garment_not_worn: 'that garment was not being worn',
   too_young_to_wear: 'they were too young to dress themselves',
+  garment_still_worn: 'they had to take the garment off before mending it',
+  garment_not_damaged: 'that garment did not need mending',
+  mending_materials_missing: 'they no longer had the mending materials',
+  mending_tool_missing: 'they no longer had a suitable mending method',
+  garment_order_lost: 'the garment mending order was lost',
   no_furniture: 'they had no furniture to place',
   house_gone: 'the house was no longer there',
   lack_furniture: 'they were no longer carrying that furniture',
@@ -317,6 +323,7 @@ export const STOP_REASONS: Record<string, string> = {
 
   // The job finished itself.
   node_empty: 'there was nothing left to take',
+  gathered_enough: 'they had gathered enough for the hearth',
   tree_bare: 'there was no fruit left on it',
 
   // The world changed underneath them.
@@ -333,6 +340,7 @@ export const STOP_REASONS: Record<string, string> = {
   target_gone: 'they were gone',
   quarry_gone: 'the animal was gone',
   quarry_escaped: 'the animal outran them',
+  projectile_ammo_missing: 'they had no ammunition for their weapon',
   // M11 phase 12b. `quarry_escaped` speaks of an animal; a person who gets
   // away from an attack needed their own sentence.
   target_escaped: 'they got away',

@@ -1,7 +1,7 @@
 # Garment condition ownership — design note
 
-Status: ownership foundation delivered on 2026-10-11; wear and mending are not
-active. `Inventory` now holds one condition row per garment count and exposes
+Status: ownership foundation, daily wear, repairable mending, and player-led
+hide dressing are delivered as of 2026-10-12. `Inventory` now holds one condition row per garment count and exposes
 `takeGarmentUnit` / `putGarmentUnit` so an explicit caller can move a garment
 without resetting condition. `setGarmentUnitCondition` bounds condition and
 banked repair progress. New and legacy garments start pristine, and explicit
@@ -22,12 +22,88 @@ The 2026-10-11 estate-transfer slice uses the same atomic whole-inventory path
 for inheritance to a living heir or the household home. Estates with neither
 destination drop physical garment rows into the ground pile. Inconsistent
 garment counts are rejected before any heir/home transfer or ground drop.
-Other internal building transfers remain pending.
+The 2026-10-12 handover slice preserves garment rows for direct player gifts
+and timed NPC gifts of non-food goods. Garment stack transfer now rolls back
+both inventories if insertion fails partway. Other internal building
+transfers remain pending.
+The 2026-10-12 theft slice also transfers the selected garment units through
+the same rollback-safe API and reconciles both owners' worn layers and pocket
+capacity after success. Invalid garment ownership is rejected before either
+inventory changes. Amends use a multi-stack inventory transaction, preserving
+garments offered as compensation and rolling back earlier goods if a later
+stack cannot move; the payer's worn references are reconciled after payment.
+The 2026-10-12 tribute delivery path preserves garments when withdrawing a
+named item from a household store to a bearer; the existing store deposit leg
+then carries that same unit to the overlord. Autonomous tribute selection still
+uses `mostOf`, which admits servable food only, and territory access demands
+use `bestFood`. The local building-store audit found no other direct store to
+store mover: household home-store consolidation is the sole seam and uses
+`Inventory.transferAllTo`. Other store trips have a person as the carrier.
+The Comarca escrow graph also retains garment rows through `take`, food
+consumption, validated JSON, and `restore`; partial failures during multi-source
+extraction or restore roll back the inventories. Traveller ownership through
+world traffic is covered below; quantity-only caravan manifests remain a
+separate restriction on garment barter.
 
-This is a foundation only: the existing gameplay transfer seams listed below
-still use generic count-based `add`/`remove` in places. Wear/remending must not
-be activated until those routes move garment rows too. Generic `remove` treats
-a garment as consumed and destroys its row; it is never a transfer operation.
+The 2026-10-12 phase 35 traveller route now carries garments inside each
+traveller's validated `Inventory` checkpoint from staging through save/load,
+arrival, and return. Person graph hydration validates physical row/count
+agreement and unique unit identity, so missing or duplicated traveller rows
+reject the enclosing world save before it can become an owner. Caravan manifests
+remain quantity-only: garment offers are rejected and garments are excluded
+from camp barter/return manifests, keeping their physical rows on the named
+traveller. The focused test covers a worn unit with banked repair progress over
+the full out-and-back trip. See the
+[phase 35 contract](m15_phase35_journeys.md).
+
+The 2026-10-12 consumer audit closes both garment-input routes: the `toggles`
+prototype sample and the `toggled_coat` recipe. `Inventory.consumeItems`
+prevalidates and removes a complete material set transactionally; its callback
+reconciles the worn-unit reference before the inventory transaction commits.
+Failure restores the inventory and the action restores equipment. Tests cover
+successful consumption of a worn, damaged `fur_coat` and rollback when a later
+material removal fails. Other count-only removal sites are food/nutrition,
+non-garment technology or inscription materials, tool/container displacement,
+or explicit destruction; current recipes and technology prototypes have no
+other garment inputs. Quantity-only caravan manifests reject garments.
+Ownership and current garment-consumer coverage now have no identified
+count-only laundering route.
+
+Daily wear is now active for exact worn units in the detailed simulation and
+traveller ticks. Each garment declares `wearPerDay` in `[0, 1]`; the current
+bounded starting value is `0.005` for every garment, so a pristine unit reaches
+zero after 200 uninterrupted worn days. Wear has no RNG draws. The wearer's
+warmth and armour contribution scale linearly with that unit's condition; at
+zero the unit is destroyed, its equipment reference is cleared, and the wearer's
+chronicle records the break. Unworn spares do not age. This is a deliberate
+initial rate, not a cohort-calibrated balance claim. Condition remains private
+to its owner; observers receive no wear value through `Knowledge`.
+
+The `mend_garment` action is offered only for the actor's own garment stack. It
+selects one damaged, unworn physical unit and carries its unit ID and method on
+`Person`, including through checkpoints and need-interrupted order resume. Its
+first bounded contract is 100 build-work points: known tailoring with one
+needle and one thread restores full condition; rope without the complete
+tailoring kit restores at most 0.25 condition. Tailoring wins when its complete
+kit is present; otherwise rope is selected. Materials are consumed only at
+completion in the same inventory transaction that updates the exact garment.
+Interrupted work remains on `repairProgress`, so another worker can resume it.
+Refusals and runtime failures are localized and visible. These fixed starting
+thresholds are bounded design values, not cohort-calibrated claims.
+
+Hide dressing now extends the physical unit contract: only garment definitions
+marked as hide carry hideDressed and dressingProgress. The target-based
+hide_dressing recipe consumes one fat only when 100 build-work points finish;
+interrupted work is banked on that same unit. A completed treatment halves only
+that unit's daily wear. Existing transfer/checkpoint validators preserve both
+fields and synthesize untreated defaults for legacy four-field garment rows.
+The treatment is an explicit player action; autonomous dressing is not shipped.
+
+This is an ownership foundation with daily wear and manual mending. Generic
+`remove` treats a garment as consumed and destroys its row; it is never a
+transfer operation. A garment ingredient must go through the transactional
+`consumeItems` path so the worn reference is cleared with the consumption or
+restored together with the inventory on failure.
 
 ## The invariant
 
@@ -47,12 +123,16 @@ identity) that exists independently of a worn slot.
 The current Inventory boundary makes unit movement explicit:
 
 ```ts
-type GarmentUnit = { unitId: string; itemId: string; wear: number; repairProgress: number };
+type GarmentUnit = {
+  unitId: string; itemId: string; wear: number; repairProgress: number;
+  hideDressed?: boolean; dressingProgress?: number;
+};
 
 inventory.takeGarmentUnit(itemId): GarmentUnit | null;
 inventory.putGarmentUnit(unit): void;
 inventory.garmentUnitsOf(itemId?): readonly GarmentUnit[];
 inventory.setGarmentUnitCondition(unitId, wear, repairProgress): boolean;
+inventory.setGarmentDressing(unitId, hideDressed, dressingProgress): boolean;
 ```
 
 The current unit identity is local to its Inventory; merges re-key collisions,
@@ -65,10 +145,11 @@ validation, not the gameplay routes below.
 ## Existing ownership paths to convert
 
 `Inventory` is reused by people, buildings, piles, and off-map escrow. Its
-current `transferSnapshot()` validates an exact three-field shape (`version`,
-`stacks`, `spoilage`); condition data must be added to that state and its
-validation before escrow can carry worn garments. Here `InventoryTransferState.version`
-is the inventory/cache generation, not a schema version. The enclosing
+`transferSnapshot()` validates `version`, `stacks`, `spoilage`, and physical
+`garmentUnits` rows, including exact count agreement and unique unit identity.
+Legacy transfer snapshots without garment rows synthesize pristine units;
+present-but-incomplete or malformed rows are rejected. Here
+`InventoryTransferState.version` is the inventory/cache generation, not a schema version. The enclosing
 `ComarcaInventoryTransferRecord.version` is the v1 record schema version. The
 graph-based entity checkpoint captures `Inventory` fields, but the explicit
 transfer record validates its inventory state separately.
@@ -78,13 +159,14 @@ The main movement seams found in the current tree are:
 | Route | Existing seam | Condition requirement |
 | --- | --- | --- |
 | Put on, take off, replace clothing | `ToolEquipment.changeGarment` | Equipment references a specific owned unit; swapping keeps the displaced unit in inventory. |
-| Give, trade, steal, amends, tribute | `Simulation.handOver`, `doGive`, `doTrade`, `doSteal`, `doMakeAmends`, `Simulation` tribute path | Move selected garment units with condition; never recreate them with plain `add`. Pending. |
-| Store and withdraw | `Building.accept`, `Simulation.storeItem` / `takeItem`, `ActionSystem.doStore` / `doTake` | **Delivered for person↔building store** and household home-store merges: direct/autonomous paths preserve condition and snapshots; whole-inventory merge is validated and rolls back both sides on failure. Other building-to-building transfers remain pending. |
+| Give, trade, steal, amends, tribute, demand, ransom | `Simulation.handOver`, `doGive`, `doTrade`, `doSteal`, `doMakeAmends`, `ransomCaptive`, `doThreaten`, tribute path | **Delivered for direct handover, timed non-food gifts, theft, amends, named-item tribute, threats, and ransom.** Physical transfer preserves garment rows and wear references; ransom releases only after complete atomic payment. `doTrade` and autonomous tribute selectors are food-only. |
+| Store and withdraw | `Building.accept`, `Simulation.storeItem` / `takeItem`, `ActionSystem.doStore` / `doTake` / `doRender` / `doHaul`, `Simulation.mergeHouseholdsImpl` | **Delivered for person↔building store**, household home-store merges, store-to-bearer tribute, and construction haul: `Inventory.transferTo` preserves garment rows if selected; whole-inventory merge is validated and rolls back both sides on failure, including colliding local IDs. Current construction material definitions do not include garments. |
 | Drop, pickup, carry overflow | `Simulation.drop`, `Simulation.takeFromPile`, `Simulation.dropAt`, `Carry.reconcileCarry` | **Delivered:** worn slot references an exact unit; drop, pickup and carry overflow move unit rows and preserve condition/progress. Generic `dropAt` still creates pristine garments for produced goods. |
 | Death and inheritance | `LifeSystem.settleEstate`, called from `Simulation` death handling | **Delivered:** whole estate moves atomically to heir/home, or garment rows drop intact at the deceased's feet. |
-| Comarca staging and restore | `ComarcaInventoryTransfer.take`, `consume`, `restore`, `toRecord` | Include condition in validated escrow graphs and restore it atomically with stacks/spoilage. |
-| World traffic / traveller cargo | `WorldTrafficCoordinator` plus `WorldState` cargo staging and return | Preserve condition through transit inventory and both directions of travel. |
-| Crafting and explicit consumption | `ActionSystem.doCraft` and other `inventory.remove` consumers | New garment outputs are pristine; a garment used as an ingredient is explicitly destroyed, not silently detached from its condition. |
+| Comarca staging and restore | `ComarcaInventoryTransfer.take`, `consume`, `restore`, `toRecord` | **Delivered for escrow records:** validated graphs preserve unit ID, wear, and repair progress through JSON and food consumption; malformed or incomplete present rows and duplicate identities are rejected, and multi-source take/restore roll back on later failure. Consuming a garment itself is explicit destruction. |
+| World traffic / traveller cargo | `WorldTrafficCoordinator` plus `WorldState` cargo staging and return | **Delivered for traveller inventories:** exact rows survive staging, checkpoint save/load, arrival and return; checkpoint hydration rejects missing/duplicate rows. Quantity-only caravan manifests reject garments and camp barter/return selection leaves garment stacks on the traveller. |
+| Mending | `Simulation.order`, `ActionCatalog.itemActions`, `ActionSystem.doMendGarment` | **Delivered for manual own-inventory repair:** exact damaged unworn unit, fixed work threshold, persistent per-unit progress, localized refusal and atomic material/condition completion. |
+| Crafting and explicit consumption | `ActionSystem.doCraft`, `doPrototype`, food/ingredient consumers | New garment outputs are pristine. The `toggled_coat` recipe and `TECH.toggles.prototype.fur_coat` prototype sample intentionally destroy garment inputs through the atomic `Inventory.consumeItems` path, reconciling the worn reference and rolling back inventory/equipment on failure. Current food, inscription, and other material consumers do not select garments. |
 
 Other `remove`/`add` pairs exist for food, tools, earth, and materials. They
 need not all become per-unit APIs, but every route capable of moving a garment
@@ -94,11 +176,12 @@ the common drop, store, or inheritance path as a laundering loophole.
 ## Persistence and compatibility
 
 The ordinary checkpoint path serializes the object graph and retains class
-prototypes. Add condition state to `Inventory` and validate it during graph
-hydration; do not derive it from the worn equipment slot during restore. The
-separate `ComarcaInventoryTransfer` record is stricter: `Inventory` currently
-rejects unknown fields and its record version is v1, so a condition-bearing
-version must explicitly validate, serialize, and restore the additional rows.
+prototypes. Validate `Inventory` condition state during graph hydration; do not
+derive it from the worn equipment slot during restore. The separate
+`ComarcaInventoryTransfer` record uses the allow-listed graph codec and
+validates hydrated inventory state before it can be restored. Its record
+version remains v1: the graph already carries the added Inventory field, while
+legacy count-only transfer snapshots still receive pristine garment rows.
 
 Legacy checkpoints have no condition records. Hydration should assign full
 condition to every garment unit represented by legacy counts and equipment,
@@ -122,9 +205,6 @@ Any future condition display must preserve the existing knowledge boundary.
 
 ## Separate future behavior
 
-Mending is a later action built on this ownership model. It should bank work on
-the garment unit, so another worker can resume it, and run the shared
-interruption/refusal path. Tailoring with the appropriate needle/thread should
-restore full condition; the rough cordage method should restore only part.
-Material consumption, work thresholds, tool requirements, and exact refusal
-texts remain for that feature's design and tests.
+Mending and hide dressing are explicit actions on owned garments off the body.
+Autonomous garment work, additional repair materials, wear-rate calibration,
+and any public condition display remain separate design work.

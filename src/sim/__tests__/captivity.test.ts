@@ -12,6 +12,8 @@ import { Simulation } from '../core/Simulation.ts';
 import type { Person } from '../entities/Person.ts';
 import { isCaptive, isEscapee } from '../social/Captivity.ts';
 import { isBound } from '../social/Defence.ts';
+import { Inventory, type GarmentUnit } from '../entities/Item.ts';
+import { changeGarment } from '../core/ToolEquipment.ts';
 
 const SMALL = {
   seed: 'captivity-test',
@@ -147,6 +149,66 @@ describe('rescue from a rope', () => {
     expect(isEscapee(captive)).toBe(true);
     expect(payer.inventory.count('flint')).toBe(0);
     expect(captor.inventory.count('flint')).toBeGreaterThanOrEqual(2);
+  });
+
+  it('ransoms a captive for the exact physical garment and keeps its condition', () => {
+    const { sim, captor, captive } = aCapture();
+    captor.inventory = new Inventory();
+    const payer = sim.livingPeople().find(person =>
+      person.bandId === 1 && !person.isChild && person.id !== captive.id)!;
+    payer.inventory.add('wool_cloak', 1);
+    const unit = payer.inventory.garmentUnitsOf('wool_cloak')[0]!;
+    payer.inventory.setGarmentUnitCondition(unit.unitId, 0.29, 99);
+    expect(changeGarment(payer, 'wool_cloak', 'wear_garment')).toBeNull();
+    payer.x = captive.x; payer.y = captive.y;
+
+    expect(sim.ransomCaptive(payer, captive, 'wool_cloak', 1)).toBe(true);
+    expect(isCaptive(captive)).toBe(false);
+    expect(payer.inventory.count('wool_cloak')).toBe(0);
+    expect(payer.equipment.cloak).toBeUndefined();
+    expect(captor.inventory.garmentUnitsOf('wool_cloak')).toEqual([
+      { unitId: unit.unitId, itemId: 'wool_cloak', wear: 0.29, repairProgress: 99 },
+    ]);
+  });
+
+  it('does not release a captive or lose a garment if the ransom receiver rejects it', () => {
+    class RejectGarmentInventory extends Inventory {
+      override putGarmentUnit(unit: GarmentUnit): string { throw new Error(`rejected ${unit.itemId}`); }
+    }
+    const { sim, captor, captive } = aCapture();
+    captor.inventory = new RejectGarmentInventory();
+    const payer = sim.livingPeople().find(person =>
+      person.bandId === 1 && !person.isChild && person.id !== captive.id)!;
+    payer.inventory.add('wool_cloak', 1);
+    const unit = payer.inventory.garmentUnitsOf('wool_cloak')[0]!;
+    payer.inventory.setGarmentUnitCondition(unit.unitId, 0.29, 99);
+    expect(changeGarment(payer, 'wool_cloak', 'wear_garment')).toBeNull();
+    payer.x = captive.x; payer.y = captive.y;
+    const payerBefore = payer.inventory.transferSnapshot();
+    const captorBefore = captor.inventory.transferSnapshot();
+
+    expect(sim.ransomCaptive(payer, captive, 'wool_cloak', 1)).toBe(false);
+    expect(payer.inventory.transferSnapshot()).toEqual(payerBefore);
+    expect(captor.inventory.transferSnapshot()).toEqual(captorBefore);
+    expect(payer.equipment.cloak?.unitId).toBe(unit.unitId);
+    expect(isCaptive(captive)).toBe(true);
+  });
+
+  it('rejects malformed garment ownership before a ransom can release the captive', () => {
+    const { sim, captor, captive } = aCapture();
+    captor.inventory = new Inventory();
+    const payer = sim.livingPeople().find(person =>
+      person.bandId === 1 && !person.isChild && person.id !== captive.id)!;
+    payer.inventory.add('wool_cloak', 1);
+    const unit = payer.inventory.garmentUnitsOf('wool_cloak')[0]!;
+    payer.inventory.setGarmentUnitCondition(unit.unitId, 0.29, 99);
+    payer.x = captive.x; payer.y = captive.y;
+    (payer.inventory as unknown as { garmentUnits: GarmentUnit[] }).garmentUnits.length = 0;
+
+    expect(sim.ransomCaptive(payer, captive, 'wool_cloak', 1)).toBe(false);
+    expect(payer.inventory.count('wool_cloak')).toBe(1);
+    expect(captor.inventory.count('wool_cloak')).toBe(0);
+    expect(isCaptive(captive)).toBe(true);
   });
 
   it('makes a captor order obeyed even when the captive has no standing', () => {

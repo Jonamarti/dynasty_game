@@ -21,6 +21,99 @@ export function manualEquipSlot(action: string): ManualEquipmentSlot | null {
 }
 
 export type ManualGarmentVerb = 'wear_garment' | 'take_off_garment';
+export type GarmentMendingMethod = 'tailoring' | 'cordage';
+export type HideDressingRefusal = 'unknown_garment' | 'hide_dressing_unknown' | 'garment_not_owned'
+  | 'garment_still_worn' | 'garment_already_dressed' | 'dressing_fat_missing';
+export type GarmentMendingRefusal = 'unknown_garment' | 'garment_not_owned' | 'garment_still_worn'
+  | 'garment_not_damaged' | 'mending_materials_missing' | 'mending_tool_missing';
+export interface GarmentMendingPlan { unitId: string; method: GarmentMendingMethod }
+
+export function planHideDressing(
+  person: Person, itemId: string, unitId?: string,
+): { unitId: string } | HideDressingRefusal {
+  const garment = ITEMS[itemId]?.garment;
+  if (!garment) return 'unknown_garment';
+  if (garment.material !== 'hide') return 'unknown_garment';
+  if (!person.knownTech.has('hide_dressing')) return 'hide_dressing_unknown';
+  if (person.inventory.count(itemId) <= 0) return 'garment_not_owned';
+  const units = person.inventory.garmentUnitsOf(itemId);
+  const equipped = person.equipment[garment.slot];
+  const unit = unitId
+    ? units.find(candidate => candidate.unitId === unitId)
+    : units.find(candidate => !candidate.hideDressed &&
+      !(equipped?.item === itemId && equipped.unitId === candidate.unitId));
+  if (!unit) return unitId && !units.some(candidate => candidate.unitId === unitId)
+    ? 'garment_not_owned' : 'garment_already_dressed';
+  if (equipped?.item === itemId && equipped.unitId === unit.unitId) return 'garment_still_worn';
+  if (unit.hideDressed) return 'garment_already_dressed';
+  if (!person.inventory.has('fat')) return 'dressing_fat_missing';
+  return { unitId: unit.unitId };
+}
+
+export function hideDressingReasonText(reason: HideDressingRefusal): string {
+  switch (reason) {
+    case 'unknown_garment': return t('Only hide garments can be dressed');
+    case 'hide_dressing_unknown': return t('You need to know hide dressing');
+    case 'garment_not_owned': return t('You no longer have that garment');
+    case 'garment_still_worn': return t('Take the garment off before dressing it');
+    case 'garment_already_dressed': return t('That garment has already been dressed');
+    case 'dressing_fat_missing': return t('You need one fat to dress that garment');
+  }
+}
+
+/** Choose one damaged, unworn physical unit and a deterministic repair method. */
+export function planGarmentMending(
+  person: Person, itemId: string, unitId?: string, requestedMethod?: GarmentMendingMethod,
+): GarmentMendingPlan | GarmentMendingRefusal {
+  const garment = ITEMS[itemId]?.garment;
+  if (!garment) return 'unknown_garment';
+  if (person.inventory.count(itemId) <= 0) return 'garment_not_owned';
+  const units = person.inventory.garmentUnitsOf(itemId);
+  const equipped = person.equipment[garment.slot];
+  const unit = unitId
+    ? units.find(candidate => candidate.unitId === unitId && candidate.wear < 1)
+    : units.find(candidate => candidate.wear < 1 &&
+      !(equipped?.item === itemId && equipped.unitId === candidate.unitId));
+  if (!unit) {
+    if (unitId && !units.some(candidate => candidate.unitId === unitId)) {
+      return 'garment_not_owned';
+    }
+    if (units.some(candidate => candidate.wear < 1 && equipped?.unitId === candidate.unitId)) return 'garment_still_worn';
+    return 'garment_not_damaged';
+  }
+  if (equipped?.item === itemId && equipped.unitId === unit.unitId) return 'garment_still_worn';
+  // Tailoring is the precise method and wins only when both required supplies
+  // are present. Otherwise a rope repair remains available without switching
+  // methods halfway through banked work.
+  if (requestedMethod === 'tailoring') {
+    if (person.knownTech.has('tailoring') && person.inventory.has('needle') && person.inventory.has('thread')) {
+      return { unitId: unit.unitId, method: 'tailoring' };
+    }
+    return person.knownTech.has('tailoring') ? 'mending_materials_missing' : 'mending_tool_missing';
+  }
+  if (requestedMethod === 'cordage') {
+    return person.inventory.has('rope')
+      ? { unitId: unit.unitId, method: 'cordage' } : 'mending_materials_missing';
+  }
+  if (person.knownTech.has('tailoring') && person.inventory.has('needle') && person.inventory.has('thread')) {
+    return { unitId: unit.unitId, method: 'tailoring' };
+  }
+  if (person.inventory.has('rope')) return { unitId: unit.unitId, method: 'cordage' };
+  if (person.knownTech.has('tailoring')) return 'mending_materials_missing';
+  return 'mending_tool_missing';
+}
+
+export function garmentMendingReasonText(reason: GarmentMendingRefusal): string {
+  switch (reason) {
+    case 'unknown_garment': return t('That is not a garment');
+    case 'garment_not_owned': return t('You no longer have that garment');
+    case 'garment_still_worn': return t('Take the garment off before mending it');
+    case 'garment_not_damaged': return t('That garment does not need mending');
+    case 'mending_materials_missing': return t('You need thread and a needle, or rope, to mend that garment');
+    case 'mending_tool_missing': return t('You need rope, or tailoring with thread and a needle, to mend that garment');
+  }
+}
+
 export type ManualGarmentReason = 'unknown_garment' | 'garment_not_owned'
   | 'garment_already_worn' | 'garment_not_worn' | 'too_young_to_wear';
 

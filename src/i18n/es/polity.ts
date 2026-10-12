@@ -3,6 +3,14 @@
  * Kept in a file of its own so the block's words are reviewable together.
  */
 export const ES_POLITY: Record<string, string> = {
+  // M15 phase 38: State fortification built on earthworks.
+  "City walls": "Murallas",
+  "watched a raid reach the camp and thought of raising a wall around it":
+    "vio llegar una incursión al campamento y pensó en levantar un muro alrededor",
+  "dug a boundary for the whole band and left one gate to pass through":
+    "cavó un límite para toda la banda y dejó una puerta para pasar",
+  "joined stonework to a deep earthwork and made a defended boundary":
+    "unió la mampostería a una obra de tierra profunda y creó un límite defendido",
   // Phase 38a: the feast.
   "{actor} held a feast": "{actor} celebró un banquete",
   "held a feast, and one guest came": "celebró un banquete, y acudió un invitado",
