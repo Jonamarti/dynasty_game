@@ -25,6 +25,8 @@ offers an alternative when one hide is available but the bedding recipe's
 thatch or two-hide load is not. It adds no save fields or RNG draws. The
 focused capture is
 `artifacts/screenshots/m15-phase16d-hide-rug-2026-10-12/01-hide-rug-in-house.png`.
+The repeatable Playwright spec writes to `test-results/phase16-hide-rug.png` so
+later runs do not overwrite the dated milestone capture.
 This is a mechanism delivery, not comfort calibration or a population claim.
 
 ## Deliberate scope

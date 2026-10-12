@@ -1,4 +1,3 @@
-import { mkdirSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
 
 test('hide rug in a household interior', async ({ page }) => {
@@ -8,7 +7,8 @@ test('hide rug in a household interior', async ({ page }) => {
   await page.waitForFunction(() => !!(window as any).__dynasty?.renderer?.art);
   await page.evaluate(async () => {
     const d = (window as any).__dynasty, sim = d.sim, person = sim.player;
-    const { BUILDINGS, Building } = await import(/* @vite-ignore */ '/src/sim/entities/Building.ts');
+    const buildingModule = '/src/sim/entities/Building.ts';
+    const { BUILDINGS, Building } = await import(/* @vite-ignore */ buildingModule);
     let house = null;
     for (let radius = 0; radius < 12 && !house; radius++) {
       for (let y = Math.floor(person.y) - radius; y <= Math.floor(person.y) + radius && !house; y++) {
@@ -40,7 +40,5 @@ test('hide rug in a household interior', async ({ page }) => {
     d.renderer.interpolator.clear();
     d.renderer.render(null, 0);
   });
-  const shots = 'artifacts/screenshots/m15-phase16d-hide-rug-2026-10-12';
-  mkdirSync(shots, { recursive: true });
-  await page.screenshot({ path: `${shots}/01-hide-rug-in-house.png` });
+  await page.screenshot({ path: 'test-results/phase16-hide-rug.png' });
 });

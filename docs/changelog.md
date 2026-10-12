@@ -15719,3 +15719,4 @@ encima usa la calidad 1,0 del lector existente; los hogares NPC pueden
 fabricarla como alternativa cuando falta un lecho. La razón es ofrecer una
 opción real cuando solo hay una piel y no hay paja disponible. Sin calibración
 ni afirmaciones demográficas. Captura: `artifacts/screenshots/m15-phase16d-hide-rug-2026-10-12/`.
+La prueba e2e guarda sus capturas repetibles en `test-results/`, sin sobrescribir este registro.
