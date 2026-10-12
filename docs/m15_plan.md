@@ -2068,8 +2068,9 @@ está.
 - Escenario **`salters`**: costa, dos bandas en la misma semilla, una con
   `pottery`, `preserving`, `saltmaking` y `salting` y otra sin ellas.
 - `preserved-food-lasts`: fracción de las comidas de invierno que son comida
-  conservada, en la banda que sabe. El informe actual sigue fallando (0/3 en
-  la última ejecución), sin convertirlo en `n/a`.
+  conservada, en la banda que sabe. Tras el selector de reserva estacional, el
+  último `salters` pasa 1/1 checks aplicables y cuenta 1/5 comidas conservadas;
+  esto demuestra el mecanismo en una semilla, no una mejora económica.
 - `salters-checks.test.ts` verifica un control focal positivo y negativo:
   consume una conserva nutritiva de verdad en invierno por
   `Simulation.eatItem`, comprueba que el observador la cuente como conservada,
@@ -2079,15 +2080,17 @@ está.
 - El observador también separa stock accesible, hambre del portador y elección:
   en el rerun del 2026-10-12 hubo 480 person-ticks con conserva (960
   unidad-ticks), hambre media 24,5 y ningún tick con hambre ≥40; el selector
-  prefirió otra comida en los 480 ticks. No es una barrera de acceso. No se
-  modifica la urgencia global ni el ranking nutricional con esta evidencia.
-  **Diagnóstico entregado; consumo autónomo de invierno sigue pendiente** y el
-  check explícito continúa fallando (0/3).
+  prefirió otra comida en los 480 ticks. No era una barrera de acceso: el scorer
+  tenía un bypass del selector compartido, y además no reservaba una conserva
+  para hambre invernal moderada. Ahora en invierno y con hambre ≥25 prioriza una
+  conserva solo cuando la persona aprendió `spoils:<input>`; fuera de esa
+  necesidad conserva el ranking normal. El escenario focal registra 1/5.
 - `spoilage-is-answered` se retiró: la pérdida nutritiva por banda no discrimina
   preservación y también pasa al retirar las recetas.
-- **Coste declarado:** ≤ 4 puntos, todavía sin medir. La activación por defecto
-  de 15c permanece diferida mientras falle la comida de invierno y no haya una
-  comparación económica discriminante.
+- **Coste declarado:** ≤ 4 puntos, todavía sin medir. 15c (activar `spoilRate`
+  por defecto) sigue diferida hasta una comparación económica pareada y
+  discriminante; no se activa por esta sola semilla. La cohorte queda pendiente
+  hasta que no interfiera con la comparación fase 12f en curso.
 
 **Commits:** `m15: medir la comida que se pierde`; `m15: secar y ahumar`;
 `m15: la sal`; `m15: la comida se estropea`; `m15: el escenario salters`.

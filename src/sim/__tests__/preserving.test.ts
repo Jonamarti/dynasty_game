@@ -55,6 +55,23 @@ describe('drying on a physical rack', () => {
     finally { spy.mockRestore(); }
   });
 
+  it('spends an observed-spoilage reserve in winter once hunger is noticeable', () => {
+    const { sim, person } = fixture();
+    person.isPlayer = false; person.action = 'idle'; person.order = null;
+    person.needs.hunger = 28;
+    person.inventory.add('roast_meat', 1);
+    person.inventory.add('dried_meat', 1);
+    person.beliefs.learn('spoils:meat', 1, 1, 'seen', sim.time.tick);
+    const winterStartDay = sim.config.time.daysPerSeason * 3;
+    sim.time.tick = (winterStartDay - sim.config.time.startDay) * sim.config.time.ticksPerDay +
+      Math.floor(sim.config.time.ticksPerDay / 2);
+    expect(sim.time.season).toBe('winter');
+
+    for (let tick = 0; tick < 12 && !person.eatenToday.has('dried_meat'); tick++) sim.step();
+    expect(person.eatenToday.get('dried_meat')).toBe(1);
+    expect(person.eatenToday.has('roast_meat')).toBe(false);
+  });
+
   it('dries meat and fish at the rack, consumes each input once and persists the station', () => {
     const { sim, person, rack } = fixture();
     for (const [raw, dried] of [['meat', 'dried_meat'], ['fish', 'dried_fish']] as const) {

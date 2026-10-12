@@ -1650,7 +1650,7 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
       ' person-ticks (' + (tel.salters_winter_preserved_carried_units_knowing ?? 0) + ' unit-ticks), mean carrier hunger=' +
       carrierHunger.toFixed(1) + ', hunger≥40=' + (tel.salters_winter_preserved_carrier_hunger40_ticks_knowing ?? 0) +
       ', hunger≥60=' + (tel.salters_winter_preserved_carrier_hunger60_ticks_knowing ?? 0) +
-      ', selector chose preserved=' + (tel.salters_winter_preserved_best_food_ticks_knowing ?? 0) +
+      ', normal appeal chooser chose preserved=' + (tel.salters_winter_preserved_best_food_ticks_knowing ?? 0) +
       ', chose other food=' + (tel.salters_winter_other_food_best_ticks_with_preserved_knowing ?? 0) +
       ', eat-action ticks=' + (tel.salters_winter_eat_action_ticks_with_preserved_knowing ?? 0) +
       '; loss comparison failed negative verification, no check or survival claim');

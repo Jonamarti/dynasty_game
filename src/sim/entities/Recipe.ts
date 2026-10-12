@@ -880,6 +880,38 @@ export function recipeFor(itemId: string): RecipeDef | null {
   return null;
 }
 
+/** The learned-spoilage source for a preserved output, or null for ordinary food. */
+export function preservingInputFor(itemId: string): string | null {
+  // Brain asks this during every score pass. The recipe table is stable during
+  // play, so keep the common path O(1); validate the live row because tests
+  // temporarily remove recipes to check attribution behavior.
+  if (preservingOutputRecipeIds === null) {
+    preservingOutputRecipeIds = new Map();
+    for (const recipe of Object.values(RECIPES)) {
+      if (!recipe.preservesInput) continue;
+      for (const outputId of Object.keys(recipe.output)) {
+        if (!preservingOutputRecipeIds.has(outputId)) preservingOutputRecipeIds.set(outputId, recipe.id);
+      }
+    }
+  }
+  const recipeId = preservingOutputRecipeIds.get(itemId);
+  const indexed = recipeId ? RECIPES[recipeId] : undefined;
+  if (indexed?.preservesInput && Object.hasOwn(indexed.output, itemId)) return indexed.preservesInput;
+
+  // A test or future data edit may have changed the live table after indexing.
+  // Repair just this entry instead of making the normal score path rescan it.
+  preservingOutputRecipeIds.delete(itemId);
+  for (const recipe of Object.values(RECIPES)) {
+    if (recipe.preservesInput && Object.hasOwn(recipe.output, itemId)) {
+      preservingOutputRecipeIds.set(itemId, recipe.id);
+      return recipe.preservesInput;
+    }
+  }
+  return null;
+}
+
+let preservingOutputRecipeIds: Map<string, string> | null = null;
+
 /**
  * A recipe that consumes `itemId`, or null.
  *

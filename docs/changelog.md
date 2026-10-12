@@ -1,3 +1,13 @@
+## 2026-10-12 — M15 fase 15d: gastar la reserva aprendida en invierno
+
+El selector usa un índice de recetas para reconocer comida conservada y,
+durante el invierno, la prioriza desde hambre 25 solo si la persona aprendió
+que el insumo se estropea. La prueba autónoma verifica el consumo frente a una
+comida fresca. `salters` pasa su único check aplicable y registra 1/5 comidas
+conservadas en la semilla focal; esto no mide una mejora económica. 15c sigue
+diferida hasta una comparación económica pareada. Typecheck y 8 pruebas focales
+pasan. Versión `0.15.120-alpha`.
+
 ## 2026-10-12 — M15 fase 14d: tinte de ocre persistente
 
 `dyeing` consume un depósito real y finito de ocre rojo para cambiar una prenda

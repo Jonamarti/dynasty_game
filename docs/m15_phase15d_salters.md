@@ -122,3 +122,22 @@ carrier hungry or override a more nutritious alternative. The rerun still
 records 0/3 preserved winter meals, with 480/480 carrier ticks ranking another
 food ahead and no carrier hunger ≥40. No economy or survival gain is claimed;
 15d's autonomous winter outcome and 15c activation remain pending.
+
+## 2026-10-12 learned winter reserve
+
+The scorer now recognizes preserved outputs through a shared recipe index. It
+spends one only in winter, once hunger reaches 25, and only when that person has
+learned `spoils:<preserved input>`. The ordinary appeal chooser still selects
+food outside that need; this narrowly connects the learned spoilage fact to a
+cold-season use for the longer-lived ration. The output index validates live
+recipe rows and repairs an entry if a table mutation invalidates it.
+
+The focal autonomous test starts a person at hunger 28 with roast meat and
+dried meat in inventory, gives them the spoilage belief, and verifies the first
+meal is dried meat. The old scorer failed this case. `preserving.test.ts` and
+`salters-checks.test.ts` pass 8/8 combined; typecheck passes. The already-run
+single-seed salters report is PASS 1/1 applicable checks, with 1/5 winter meals
+preserved. That is evidence that the behavior can fire, not an economic or
+survival improvement. No cohort was run while the paired phase 12f comparison
+was active. Phase 15c default spoilage activation remains deferred until a
+paired, discriminating economy comparison is available.

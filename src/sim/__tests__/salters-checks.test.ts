@@ -14,6 +14,8 @@ describe('salters checks detect real preservation', () => {
     const meals = report.telemetry.salters_winter_meals_knowing ?? 0;
     const preserved = report.telemetry.salters_winter_preserved_knowing ?? 0;
     expect(meals).toBeGreaterThan(0);
+    expect(preserved).toBeGreaterThan(0);
+    expect(check.ok).toBe(true);
     expect(check.ok).toBe(meals > 0 && preserved > 0);
     expect(check.skipped).not.toBe(true);
     // The failed outcome is currently a demand/choice mismatch, not missing

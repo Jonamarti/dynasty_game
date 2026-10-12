@@ -57,7 +57,7 @@ import { planGarmentMending, planHideDressing, type GarmentMendingMethod } from 
 import { hearthNear } from '../core/Light.ts';
 import { saltSourceNear } from '../core/Preservation.ts';
 import {
-  RECIPES, hasIngredients, recipeFor, recipeUsing, nutritionPerUnit, recipeTechPower,
+  RECIPES, hasIngredients, recipeFor, recipeUsing, preservingInputFor, nutritionPerUnit, recipeTechPower,
 } from '../entities/Recipe.ts';
 import { INSCRIPTIONS, type Inscription } from '../entities/Inscription.ts';
 import { pressedByNeed, EARSHOT } from '../systems/ActionSystem.ts';
@@ -1095,6 +1095,7 @@ export class Brain {
     // choice in `bestFoodFor()` before `doEat` ever got a target.
     const carriedFood = bestFoodFor(person, undefined,
       ctx.motivation.cravings, ctx.motivation.beliefChoice);
+    const winterReserveFood = this.winterReserveFood(person, ctx);
     let hydratingFood: string | null = null;
     let hydration = 0;
     for (const [itemId, count] of person.inventory.entries()) {
@@ -1105,9 +1106,13 @@ export class Brain {
       }
     }
     const foodToEat = thirst > hunger && person.needs.hunger < 25 && hydratingFood
-      ? hydratingFood : carriedFood;
-    if (carriedFood) {
-      add('eat', hunger * 3.2 + hunger * variety * 0.35);
+      ? hydratingFood : winterReserveFood ?? carriedFood;
+    if (carriedFood || winterReserveFood) {
+      const ordinaryEatScore = hunger * 3.2 + hunger * variety * 0.35;
+      // Seeing food rot teaches the person why a durable ration matters. In
+      // winter, a moderately hungry person spends that learned reserve rather
+      // than leaving it untouched behind a more nourishing fresh meal.
+      add('eat', winterReserveFood ? Math.max(ordinaryEatScore, 1.2) : ordinaryEatScore);
     }
 
     // Clothing is a direct answer to cold only once it is worn. Compare learned
@@ -4703,6 +4708,34 @@ export class Brain {
       (1 - person.traits.loyalty * 0.8) / (1 + theirFriends * 0.3) *
       PREDATION * (1 + this.bandHostility(person, prey.bandId, ctx) * 0.5) *
       this.proximityBonus(person, prey, ctx.sightRadius);
+  }
+
+  /**
+   * A ration made to outlast spoilage is a winter reserve, not a better meal
+   * in every season. Spend one only after the person has learned that its
+   * input spoils and hunger has become noticeable; this keeps the ordinary
+   * nutrition ranking intact while making preservation answer its cold-season
+   * need.
+   */
+  private winterReserveFood(person: Person, ctx: BrainContext): string | null {
+    if (ctx.time.season !== 'winter' || person.needs.hunger < 25) return null;
+    let chosen: string | null = null;
+    let bestAppeal = -Infinity;
+    let chosenDurability = Infinity;
+    for (const [itemId, count] of person.inventory.entries()) {
+      if (count <= 0) continue;
+      const input = preservingInputFor(itemId);
+      if (!input || person.beliefs.expect('spoils:' + input).value <= 0) continue;
+      const appeal = appealOf(person, itemId, VARIETY_WEIGHT,
+        ctx.motivation.cravings, ctx.motivation.beliefChoice);
+      const durability = ITEMS[itemId]?.spoilTicks ?? 0;
+      if (appeal > bestAppeal || (appeal === bestAppeal && durability < chosenDurability)) {
+        chosen = itemId;
+        bestAppeal = appeal;
+        chosenDurability = durability;
+      }
+    }
+    return chosen;
   }
 
   /**
