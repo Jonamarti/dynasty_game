@@ -5038,7 +5038,6 @@ amplitudes de calidad, frío/nieve y seguridad todavía no se han contrastado
 con cohortes. No es un fallo funcional observado: calibración y escenario
 `homes` quedan diferidos a 16f, y no se deben presentar los valores actuales
 como una mejora demográfica medida.
-
 ## 2026-10-12 — Producción compacta: cobertura por receta aún sin muestra
 
 El lector ahora puede atribuir trabajo y cambios físicos de inventario a una
@@ -5049,3 +5048,12 @@ activos del runtime son cultivo con `Crop`/`Soil` detallados y groats con su
 receta/coste/estación detallados; no equivalen a una calibración de producción.
 La próxima expansión queda bloqueada por esa falta de muestra y de contabilidad
 física de almacenes, no por un rendimiento nulo observado.
+
+## 2026-10-12 — 14d opcional: teñido por unidad sigue abierto
+
+Las cuentas ya llevan estatus persistente por `GarmentUnit`, pero el teñido
+necesita guardar y transferir además un color por unidad y que el arte
+compuesto lo dibuje sin convertir el color en estado global del tipo de
+objeto. Varias copias de una misma prenda pueden divergir. Hasta que exista
+esa propiedad y su representación visual, no se ofrece `dyeing`; de otro modo
+el ocre se consumiría sin producir una prenda teñida.

@@ -15327,7 +15327,6 @@ quede protegida solo porque se añadió después al inventario. Prueba focal en
 ambos órdenes de inserción; `sim:check -- --scenario salters` sigue fallando
 0/8 comidas de invierno conservadas, por lo que no se reclama una mejora
 estacional ni económica. No se cambia `needs.spoilRate` ni se ejecutan cohortes.
-
 ## 2026-10-12 — m15: atribución de producción por receta
 
 El reporte de producción ahora separa contadores observados de trabajo y
@@ -15358,3 +15357,13 @@ pertenece a la casa del cazador y el estante tiene hueco. Se guarda mediante la
 acción ordinaria item-scoped; no desaloja comida ni ropa del inventario. Pruebas
 focales de éxito y controles negativos. Sin RNG, UI, ni calibración.
 
+## 2026-10-12 — M15 14d, cuentas de estatus físicas (0.15.97-alpha)
+
+`beads` abre con trabajo de hueso y la receta consume dos huesos y una cuerda
+para producir `bone_beads`, un adorno de cabeza sin calor. Su estatus
+viaja en la unidad física y sólo cuenta mientras esa unidad exacta está puesta;
+reduce la presión de estatus y mejora la primera impresión. El generador de
+arte añade su icono y su capa visible. La prueba focal mide ambos lectores y
+la conservación de la unidad. Captura: `artifacts/screenshots/m15-phase14d-2026-10-12/01-bone-beads.png`.
+El teñido sigue apartado porque el sistema aún no persiste ni representa color
+por unidad; véase bugs.

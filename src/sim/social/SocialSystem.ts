@@ -25,7 +25,7 @@ import { DEED_WEIGHT, HEARSAY_WEIGHT, VICTIM_MULTIPLIER, describeEvent } from '.
 import type { MemoryEntry } from './Memory.ts';
 import type { ConversationMode } from './Conversation.ts';
 import { CONVERSATION_MODES, crossBand } from './Conversation.ts';
-import { techPower } from '../knowledge/Tech.ts';
+import { techPower, wornGarmentStatus } from '../knowledge/Tech.ts';
 import type { BandRelations } from './BandRelations.ts';
 import { WORK_ACTIONS } from '../entities/Job.ts';
 import { noteCaught } from './Defence.ts';
@@ -194,11 +194,13 @@ const GOSSIP_BACKLASH = 8;
  * closer than a neighbour from the same camp whatever the blood says.
  */
 export function firstImpression(observer: Person, subject: Person, bandRelations: BandRelations): number {
+  const ornament = wornGarmentStatus(subject) * 1.5;
   if (observer.householdId !== null && observer.householdId === subject.householdId) {
-    return HOUSEHOLD_BIAS;
+    return HOUSEHOLD_BIAS + ornament;
   }
-  if (observer.bandId === subject.bandId) return IN_GROUP_BIAS;
-  return outGroupBias(bandRelations.standing(observer.bandId, subject.bandId));
+  const regard = observer.bandId === subject.bandId
+    ? IN_GROUP_BIAS : outGroupBias(bandRelations.standing(observer.bandId, subject.bandId));
+  return regard + ornament;
 }
 
 /**

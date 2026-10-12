@@ -1,5 +1,6 @@
 /** Spanish for data. Keys are the English templates; see `i18n.ts`. */
 export const ES_DATA: Record<string, string> = {
+  'Bone beads': 'Cuentas de hueso',
   'Fur hat': 'Gorro de piel',
   'Wool cloak': 'Manto de lana',
   'Toggled coat': 'Abrigo con alamares',

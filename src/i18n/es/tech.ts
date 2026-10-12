@@ -1,5 +1,11 @@
 /** Spanish for tech. Keys are the English templates; see `i18n.ts`. */
 export const ES_TECH: Record<string, string> = {
+  'Upper Palaeolithic ornaments; exact dates vary': 'Adornos del Paleolítico superior; las fechas exactas varían',
+  'strung shaped bone beads together to make a visible personal ornament': 'ensartó cuentas de hueso talladas para crear un adorno personal visible',
+  'made a bright ornament to be noticed among the band': 'hizo un adorno llamativo para destacar entre la banda',
+  'Shaped bone beads strung on cord and worn at the head; their visible ornament earns respect.': 'Cuentas de hueso talladas y ensartadas en un cordel que se llevan en la cabeza; su adorno visible inspira respeto.',
+  'Worn bone beads ease status pressure and improve first impressions.': 'Las cuentas de hueso reducen la presión por el estatus y mejoran la primera impresión.',
+  'RECIPES.bone_beads; GarmentUnit.status; statusPressure and firstImpression': 'RECIPES.bone_beads; GarmentUnit.status; statusPressure y firstImpression',
   'Earthworks': 'Obras de tierra',
   'Planned cuts and banks of earth. A ditch slows the climb out of its cut; a water moat reaches below walking depth and fills from the shore.': 'Cortes y terraplenes planificados. La zanja ralentiza la subida desde el corte; el foso llega a una profundidad infranqueable y se llena desde la orilla.',
   'cut a line through the ground and found the earth itself could be shaped into a boundary': 'abrió una línea en el terreno y vio que la propia tierra podía formar un límite',

@@ -76,6 +76,8 @@ export interface ItemDef {
     pocket?: number;
     /** Physical hide garments can be grease-dressed; fibres and wool cannot. */
     material?: 'hide';
+    /** M15 phase 14d: social standing carried by this physical, worn garment. */
+    status?: number;
   };
   /**
    * M15 phase 11a. What kind of thing this is for a container's `accepts`
@@ -528,6 +530,8 @@ export const ITEMS: Record<string, ItemDef> = {
   // things only when worn; packed cloth does not grant extra carrying room.
   linen_tunic: { id: 'linen_tunic', label: 'Linen tunic', nutrition: 0, spoilTicks: 0, baseValue: 10,
     class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'torso', warmth: 0.20, pocket: 4, wearPerDay: 0.005 } },
+  bone_beads: { id: 'bone_beads', label: 'Bone beads', nutrition: 0, spoilTicks: 0, baseValue: 8,
+    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 }, garment: { slot: 'head', warmth: 0, wearPerDay: 0.005, status: 4 } },
 };
 
 export class Inventory {
@@ -557,6 +561,7 @@ export class Inventory {
         itemId,
         wear: 1,
         repairProgress: 0,
+        ...(ITEMS[itemId]?.garment?.status !== undefined ? { status: ITEMS[itemId]!.garment!.status } : {}),
       });
     }
     this.stacks.set(itemId, (this.stacks.get(itemId) ?? 0) + count);
@@ -846,6 +851,7 @@ export class Inventory {
         itemId,
         wear: 1,
         repairProgress: 0,
+        ...(ITEMS[itemId]?.garment?.status !== undefined ? { status: ITEMS[itemId]!.garment!.status } : {}),
       });
     }
   }
@@ -987,6 +993,8 @@ export interface GarmentUnit {
   readonly hideDressed?: boolean;
   /** Interruptible dressing work, independent of repair work. */
   readonly dressingProgress?: number;
+  /** M15 phase 14d: visible status value stays with the physical garment. */
+  readonly status?: number;
 }
 
 function validateGarmentUnit(value: unknown): GarmentUnit {
@@ -994,20 +1002,25 @@ function validateGarmentUnit(value: unknown): GarmentUnit {
   const unit = value as Partial<GarmentUnit>;
   const fields = Object.keys(value);
   const legacy = fields.length === 4 && !Object.hasOwn(value, 'hideDressed') && !Object.hasOwn(value, 'dressingProgress');
-  if ((!legacy && (fields.length !== 6 || typeof unit.hideDressed !== 'boolean' ||
+  const hasStatus = Object.hasOwn(value, 'status');
+  const statusOnly = fields.length === 5 && hasStatus && !Object.hasOwn(value, 'hideDressed') && !Object.hasOwn(value, 'dressingProgress');
+  if ((!legacy && !statusOnly && (fields.length !== (hasStatus ? 7 : 6) || typeof unit.hideDressed !== 'boolean' ||
         !Number.isFinite(unit.dressingProgress) || unit.dressingProgress! < 0 || unit.dressingProgress! > 140)) ||
       typeof unit.unitId !== 'string' || !unit.unitId || typeof unit.itemId !== 'string' || !unit.itemId ||
       !Number.isFinite(unit.wear) || unit.wear! < 0 || unit.wear! > 1 ||
       !Number.isFinite(unit.repairProgress) || unit.repairProgress! < 0 || unit.repairProgress! > 140) {
     throw new RangeError('garment unit has invalid identity, condition, repair, or dressing progress');
   }
-  const hideDressed = legacy ? false : unit.hideDressed!;
-  const dressingProgress = legacy ? 0 : unit.dressingProgress!;
+  const hideDressed = legacy || statusOnly ? false : unit.hideDressed!;
+  const dressingProgress = legacy || statusOnly ? 0 : unit.dressingProgress!;
   if ((hideDressed || dressingProgress > 0) && ITEMS[unit.itemId]?.garment?.material !== 'hide') {
     throw new RangeError('only hide garments can carry dressing state');
   }
+  const status = unit.status ?? ITEMS[unit.itemId]?.garment?.status;
+  if (status !== undefined && (!Number.isFinite(status) || status < 0 || status > 10)) throw new RangeError('garment status must be between zero and ten');
   return { unitId: unit.unitId, itemId: unit.itemId, wear: unit.wear!, repairProgress: unit.repairProgress!,
-    ...(hideDressed || dressingProgress > 0 ? { hideDressed, dressingProgress } : {}) };
+    ...(hideDressed || dressingProgress > 0 || status !== undefined ? { hideDressed, dressingProgress } : {}),
+    ...(status !== undefined ? { status } : {}) };
 }
 
 export function validateInventoryTransferState(value: unknown): InventoryTransferState {
@@ -1049,7 +1062,8 @@ export function validateInventoryTransferState(value: unknown): InventoryTransfe
   // Old transfer records had counts only. Give every represented garment a
   // pristine unit with a deterministic identity and no random draws.
   if (!hasGarmentUnits) for (const [itemId, count] of stacks) if (ITEMS[itemId]?.garment) {
-    for (let i = 0; i < count; i++) garmentUnits.push({ unitId: `g:legacy:${state.version}:${itemId}:${i}`, itemId, wear: 1, repairProgress: 0 });
+    for (let i = 0; i < count; i++) garmentUnits.push({ unitId: `g:legacy:${state.version}:${itemId}:${i}`, itemId, wear: 1, repairProgress: 0,
+      ...(ITEMS[itemId]?.garment?.status !== undefined ? { status: ITEMS[itemId]!.garment!.status } : {}) });
   }
   const garmentIds = new Set([...stacks.map(([itemId]) => itemId), ...garmentUnits.map(unit => unit.itemId)]);
   for (const itemId of garmentIds) {

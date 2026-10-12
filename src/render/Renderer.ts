@@ -74,8 +74,10 @@ export function wornGarmentsOf(person: Person): PersonAspect['wear'] {
   // and cached appearances already use the two torso/cloak keys.
   const legs = person.equipment.legs?.item === 'leggings' && person.inventory.ownsGarmentUnit('leggings', person.equipment.legs?.unitId)
     ? 'trousers' as const : undefined;
-  const head = person.equipment.head?.item === 'fur_hat' && person.inventory.ownsGarmentUnit('fur_hat', person.equipment.head?.unitId)
-    ? 'cap' as const : undefined;
+  const headItem = person.equipment.head?.item;
+  const head = headItem && person.inventory.ownsGarmentUnit(headItem, person.equipment.head?.unitId)
+    ? headItem === 'fur_hat' ? 'cap' as const : headItem === 'bone_beads' ? 'beads' as const : undefined
+    : undefined;
   const hipId = person.equipment.hips?.item;
   const hips = hipId && person.inventory.ownsGarmentUnit(hipId, person.equipment.hips?.unitId)
     ? hipId === 'hide_loincloth' || hipId === 'fibre_skirt' ? hipId : undefined

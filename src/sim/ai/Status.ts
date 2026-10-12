@@ -1,6 +1,7 @@
 import type { Person } from '../entities/Person.ts';
 import type { Household } from '../entities/Household.ts';
 import { DEED_WEIGHT } from '../social/Events.ts';
+import { wornGarmentStatus } from '../knowledge/Tech.ts';
 
 /**
  * Relative standing, not a fixed idea of wealth or rank. A family's recent
@@ -14,5 +15,5 @@ export function statusPressure(person: Person, household: Household | null, band
     if (deed.actorId === person.id) personalRecent += DEED_WEIGHT[deed.type] * deed.salience;
   }
   const gap = bandAverage - household.renown - personalRecent;
-  return Math.max(0, Math.min(1, gap / 24));
+  return Math.max(0, Math.min(1, (gap - wornGarmentStatus(person)) / 24));
 }

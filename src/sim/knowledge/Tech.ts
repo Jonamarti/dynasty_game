@@ -212,6 +212,8 @@ export const TECHS = [
   'leggings',
   'moccasins',
   'fur_hat',
+  // M15 phase 14d: bone-and-shell beads make a real, wearable status signal.
+  'beads',
   'toggles',
   'linen_tunic',
   'wool_cloak',
@@ -518,6 +520,19 @@ export const TECH: Record<Tech, TechDef> = {
         weight: 0.5, story: 'folded a winter hide into a covering for the head' },
     ],
     description: 'A sewn hide cap warms the head independently of a coat or cloak.',
+  },
+  beads: {
+    id: 'beads', label: 'Bone beads', domain: 'cloth', tier: 'craft', web: 'clothing',
+    age: 'upper_palaeolithic', firstKnown: 'Upper Palaeolithic ornaments; exact dates vary',
+    kind: 'device', requires: ['bone_working'], difficulty: 0.3, skill: 'build',
+    prototype: { bone: 2, rope: 1 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'bone_working' }, { kind: 'holding', item: 'bone' }, { kind: 'holding', item: 'rope' }, { kind: 'doing', action: 'craft' }],
+        weight: 0.8, story: 'strung shaped bone beads together to make a visible personal ornament' },
+      { needs: [{ kind: 'knows', tech: 'bone_working' }, { kind: 'feeling', need: 'company' }, { kind: 'season', season: 'winter' }],
+        weight: 0.4, story: 'made a bright ornament to be noticed among the band' },
+    ],
+    description: 'Shaped bone beads strung on cord and worn at the head; their visible ornament earns respect.',
   },
   linen_tunic: {
     id: 'linen_tunic', label: 'Linen tunic', domain: 'cloth', tier: 'craft', web: 'clothing',
@@ -2895,6 +2910,8 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
     site: 'RECIPES.toggled_coat; ITEMS.toggled_coat garment; warmthFrom and Renderer.wornGarmentsOf' },
   fur_hat: { summary: 'A sewn fur hat warms the head only while worn.',
     site: 'RECIPES.fur_hat retained needle; ITEMS.fur_hat garment; warmthFrom and Renderer.wornGarmentsOf' },
+  beads: { summary: 'Worn bone beads ease status pressure and improve first impressions.',
+    site: 'RECIPES.bone_beads; GarmentUnit.status; statusPressure and firstImpression' },
   moccasins: { summary: 'Sewn moccasins warm the feet more than wraps while actually worn.',
     site: 'RECIPES.moccasins retained needle; ITEMS.moccasins garment; warmthFrom and Renderer.wornGarmentsOf' },
   leggings: { summary: 'Sewn leggings warm the legs only while worn.',
@@ -3683,6 +3700,19 @@ export function warmthFrom(person: Person, omitGarmentId?: string): number {
     unwarmed *= 1 - Math.max(0, Math.min(1, warmth));
   }
   return 1 - unwarmed;
+}
+
+/** Visible standing from exact physical garment units currently worn. */
+export function wornGarmentStatus(person: Person): number {
+  let status = 0;
+  for (const slot of GARMENT_SLOTS) {
+    const worn = person.equipment[slot];
+    const def = worn ? ITEMS[worn.item]?.garment : undefined;
+    if (!worn || !def || def.slot !== slot) continue;
+    const unit = person.inventory.garmentUnitsOf(worn.item).find(candidate => candidate.unitId === worn.unitId);
+    if (unit) status += unit.status ?? def.status ?? 0;
+  }
+  return status;
 }
 
 // ---------------------------------------------------------------------------

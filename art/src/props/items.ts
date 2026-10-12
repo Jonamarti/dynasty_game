@@ -6,6 +6,11 @@ export type ItemArt = [id: string, label: string, tech: string, draw: () => stri
 export const WOOD = '#86633c', WOOD_D = '#3a2716', STONE = '#a9adb0', STONE_D = '#3d4244', BONE = '#e6dcc0', BONE_D = '#7a6d4e', CORD = '#c9b27f';
 const rot = (inner: string, deg: number, cx = 32, cy = 32): string => `<g transform="rotate(${deg} ${cx} ${cy})">${inner}</g>`;
 export const ITEMS: ItemArt[] = [
+  ['bone_beads', 'Cuentas de hueso', 'beads', () => {
+    let s = stroke('M8,22Q32,5 56,22M8,22Q32,43 56,22', '#72563a', 2.5);
+    for (let i = 0; i < 9; i++) s += ell(9 + i * 5.7, 22 + Math.sin(i / 8 * Math.PI) * 10, 3.1, 3.8, i % 2 ? '#d7c79e' : '#e8eee2', '#514633');
+    return s;
+  }],
   ['fibre_skirt', 'Falda de fibra', 'fibre_skirt', () =>
     shape(smooth([[9, 19], [21, 14], [43, 14], [55, 19], [59, 49], [45, 55], [32, 51], [19, 55], [5, 49]]), '#a89558', '#594728')
       + stroke('M10,20Q32,27 54,20M18,26L13,47M31,27L31,49M45,26L51,47', '#796640', 1.8)

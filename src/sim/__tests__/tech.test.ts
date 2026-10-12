@@ -600,7 +600,7 @@ describe('the sub-webs (M15 phase 13a)', () => {
   });
 
   it('marks the existing garment variants as craft nodes in Clothes', () => {
-    for (const tech of ['foot_wraps', 'leggings', 'moccasins', 'fur_hat'] as const) {
+    for (const tech of ['foot_wraps', 'leggings', 'moccasins', 'fur_hat', 'beads'] as const) {
       expect(TECH[tech].tier, tech).toBe('craft');
       expect(webOf(tech), tech).toBe('clothing');
     }

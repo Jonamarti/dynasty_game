@@ -842,6 +842,8 @@ export const RECIPES: Record<string, RecipeDef> = {
     workTicks: 90, ingredients: { hide: 1, sinew: 1 }, toolOptions: ['needle'], output: { moccasins: 1 }, keep: 1 },
   fur_hat: { id: 'fur_hat', label: 'Fur hat', icon: '🪡', tech: 'fur_hat', skill: 'build',
     workTicks: 80, ingredients: { hide: 1 }, toolOptions: ['needle'], output: { fur_hat: 1 }, keep: 1 },
+  bone_beads: { id: 'bone_beads', label: 'Bone beads', icon: '📿', tech: 'beads', skill: 'build',
+    workTicks: 90, ingredients: { bone: 2, rope: 1 }, output: { bone_beads: 1 }, keep: 1 },
   toggled_coat: { id: 'toggled_coat', label: 'Toggled coat', icon: '🧥', tech: 'toggles', skill: 'build',
     workTicks: 110, ingredients: { fur_coat: 1, bone: 2 }, output: { toggled_coat: 1 }, keep: 1 },
   linen_tunic: { id: 'linen_tunic', label: 'Linen tunic', icon: '👕', tech: 'linen_tunic', skill: 'build',

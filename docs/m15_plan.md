@@ -1908,6 +1908,15 @@ primera impresión que causa (`firstImpression`, M11 fase 7). Nodos: `beads`
 `dyeing` (tinte de ocre, requiere `ochre`). Es la estratificación que se ve.
 Si cuesta, se aparta sin bloquear nada.
 
+**Avance del 2026-10-12 — cuentas físicas entregadas:** `beads` abre con
+`bone_working` y consume dos huesos y una cuerda en la receta normal. `bone_beads` ocupa
+la cabeza, no abriga, y su valor de estatus vive en cada `GarmentUnit`; tanto
+`statusPressure` como `firstImpression` leen sólo la unidad exacta equipada.
+Transferencia/checkpoint conservan el valor y el render dibuja las cuentas.
+Tinte sigue apartado: no hay todavía un campo persistente de color ni un
+renderizador que represente colores por unidad; aplicar un bono estático sin
+consumir pigmento por unidad no modelaría teñido real.
+
 ### 14e. Checks y escenario
 
 **Avance del 2026-10-10 — instrumento parcial:** `tailors` ofrece gorros
