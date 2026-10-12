@@ -53,7 +53,7 @@ import {
 import { wantedOreKinds } from '../knowledge/Ore.ts';
 import { torchInHand, torchIgnitionRefusal } from '../core/Torch.ts';
 import { FAT_LAMP_REFILL_FAT } from '../core/FatLamp.ts';
-import { planHideDressing } from '../core/ToolEquipment.ts';
+import { planGarmentMending, planHideDressing, type GarmentMendingMethod } from '../core/ToolEquipment.ts';
 import { hearthNear } from '../core/Light.ts';
 import { saltSourceNear } from '../core/Preservation.ts';
 import {
@@ -250,6 +250,9 @@ interface FoundTargets {
   water: { x: number; y: number } | null;
   foodToEat: string | null;
   garmentItem: string | null;
+  garmentMendingItem: string | null;
+  garmentMendingUnitId: string | null;
+  garmentMendingMethod: GarmentMendingMethod | null;
   hideDressingItem: string | null;
   hideDressingUnitId: string | null;
   torchItem: string | null;
@@ -1062,6 +1065,9 @@ export class Brain {
     // is genuinely the better errand rather than whichever was scored last.
     let pickupBest = 0;
     let garmentItem: string | null = null;
+    let garmentMendingItem: string | null = null;
+    let garmentMendingUnitId: string | null = null;
+    let garmentMendingMethod: GarmentMendingMethod | null = null;
     let hideDressingItem: string | null = null;
     let hideDressingUnitId: string | null = null;
     let garmentToRemove: string | null = null;
@@ -1139,6 +1145,25 @@ export class Brain {
         }
       }
       if (hideDressingItem) add('dress_hide', 0.9 * bestRemaining);
+    }
+    // Repair only an unworn unit this adult carries. The unit owns its work
+    // bank, so interruption or later transfer does not lose progress. Avoid
+    // starting a rope repair on a nearly pristine unit when its 0.25 cap
+    // would waste most of the only condition it can restore.
+    if (!person.isPlayer && person.age >= 1 && !pressedByNeed(person, ctx.needs.workLimits)) {
+      let bestRepair = 0;
+      for (const unit of person.inventory.garmentUnitsOf()) {
+        const plan = planGarmentMending(person, unit.itemId, unit.unitId);
+        if (typeof plan === 'string') continue;
+        if (plan.method === 'cordage' && unit.repairProgress <= 0 && unit.wear > 0.75) continue;
+        const score = Math.min(1, 1 - unit.wear + unit.repairProgress / 100 * 0.1);
+        if (score <= bestRepair) continue;
+        bestRepair = score;
+        garmentMendingItem = unit.itemId;
+        garmentMendingUnitId = unit.unitId;
+        garmentMendingMethod = plan.method;
+      }
+      if (garmentMendingItem) add('mend_garment', bestRepair);
     }
     // Warmth has no separate overheating meter yet. The physical cold ledger
     // is still a real thermal signal: in warm weather, once it is almost empty,
@@ -4263,7 +4288,7 @@ export class Brain {
     return {
       scores,
       found: {
-        water, foodToEat, garmentItem, hideDressingItem, hideDressingUnitId, torchItem, furnitureItem, furnitureHome, waterQuestionPeer, explorePoint, waterExplorePoint, bringFoodPoint, foodNode, pickupPile, pickupItem, matNode, grassSpot, plantSpot, companion, suitor, sparPartner, student, childPupil, mentor, colleague,
+        water, foodToEat, garmentItem, garmentMendingItem, garmentMendingUnitId, garmentMendingMethod, hideDressingItem, hideDressingUnitId, torchItem, furnitureItem, furnitureHome, waterQuestionPeer, explorePoint, waterExplorePoint, bringFoodPoint, foodNode, pickupPile, pickupItem, matNode, grassSpot, plantSpot, companion, suitor, sparPartner, student, childPupil, mentor, colleague,
         victim, foe, attackRoute, intruder, restrainee, kinDefence, correctee, amendsTo, complainTo, parleyWith, peaceWith, helpCallerTarget, bindTarget, patrolPoint, investigatePoint, concealCorpse, giftee, giftItem, feastStore, feastHost, beneficiary, nursingChild, playmate, tradePartner, fleeFrom, fleePoint,
         quarry,
         site, shelter, restShelter, restFurniture, storeTarget, storeItemId, storeItemCount, larderTarget,
@@ -5118,6 +5143,11 @@ export class Brain {
       case 'dress_hide':
         person.targetItemId = found.hideDressingItem;
         person.targetGarmentUnitId = found.hideDressingUnitId;
+        break;
+      case 'mend_garment':
+        person.targetItemId = found.garmentMendingItem;
+        person.targetGarmentUnitId = found.garmentMendingUnitId;
+        person.targetGarmentMendingMethod = found.garmentMendingMethod;
         break;
       case 'light_torch':
         person.targetItemId = found.torchItem;

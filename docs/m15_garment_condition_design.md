@@ -1,7 +1,7 @@
 # Garment condition ownership — design note
 
-Status: ownership foundation, daily wear, repairable mending, and player-led
-hide dressing are delivered as of 2026-10-12. `Inventory` now holds one condition row per garment count and exposes
+Status: ownership foundation, daily wear, player and NPC repairable mending,
+and player-led hide dressing are delivered as of 2026-10-12. `Inventory` now holds one condition row per garment count and exposes
 `takeGarmentUnit` / `putGarmentUnit` so an explicit caller can move a garment
 without resetting condition. `setGarmentUnitCondition` bounds condition and
 banked repair progress. New and legacy garments start pristine, and explicit
@@ -24,8 +24,8 @@ destination drop physical garment rows into the ground pile. Inconsistent
 garment counts are rejected before any heir/home transfer or ground drop.
 The 2026-10-12 handover slice preserves garment rows for direct player gifts
 and timed NPC gifts of non-food goods. Garment stack transfer now rolls back
-both inventories if insertion fails partway. Other internal building
-transfers remain pending.
+both inventories if insertion fails partway. At that audit point, other
+internal building transfers remained pending; later slices below cover them.
 The 2026-10-12 theft slice also transfers the selected garment units through
 the same rollback-safe API and reconciles both owners' worn layers and pocket
 capacity after success. Invalid garment ownership is rejected before either
@@ -69,6 +69,14 @@ other garment inputs. Quantity-only caravan manifests reject garments.
 Ownership and current garment-consumer coverage now have no identified
 count-only laundering route.
 
+The 2026-10-12 transfer audit found no remaining condition-bearing transfer
+gap in escrow, local food trade, or caravans: escrow JSON keeps the rows;
+`doTrade` exchanges food only; and caravan barter/manifests validate
+quantity-only cargo while rejecting garment definitions before mutation.
+Traveller-owned units remain attached to their person through the whole
+journey and camp selection. Supporting garment barter through caravan cargo
+would require a physical-unit manifest contract, not another count transfer.
+
 Daily wear is now active for exact worn units in the detailed simulation and
 traveller ticks. Each garment declares `wearPerDay` in `[0, 1]`; the current
 bounded starting value is `0.005` for every garment, so a pristine unit reaches
@@ -90,6 +98,16 @@ completion in the same inventory transaction that updates the exact garment.
 Interrupted work remains on `repairProgress`, so another worker can resume it.
 Refusals and runtime failures are localized and visible. These fixed starting
 thresholds are bounded design values, not cohort-calibrated claims.
+
+Adults who are not player-controlled can also score this same action for one
+of their own damaged, unworn units when no work-stopping need is pressing. The
+score favors lower condition and resumes banked work. Tailoring is selected
+when the actor knows it and carries needle plus thread; otherwise available
+rope provides its existing capped repair. To preserve rope for useful work,
+NPC skip a new rope repair above 0.75 condition, while a unit with banked rope
+repair remains resumable. NPC do not fetch garments or materials, and this
+priority has not been calibrated by cohort. Worn items, player autonomy, and
+wear rates are unchanged by this scorer.
 
 Hide dressing now extends the physical unit contract: only garment definitions
 marked as hide carry hideDressed and dressingProgress. The target-based

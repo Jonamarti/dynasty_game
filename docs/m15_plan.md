@@ -6,6 +6,13 @@ misma acción interrumpible y el mismo `GarmentUnit` del jugador. No buscan
 materiales ni se afirma calibración/cohorte. Contrato en
 [`m15_garment_condition_design.md`](m15_garment_condition_design.md).
 
+**Avance del 2026-10-12 — 14c, remiendo autónomo:** adultos NPC pueden elegir
+`mend_garment` para una unidad propia dañada y no vestida si no les frena una
+necesidad. La elección usa el método real disponible, conserva el progreso en
+la unidad y deja intacta la autonomía del jugador. No buscan materiales ni se
+ajusta el desgaste; prioridad y tasa siguen sin calibrar por cohortes. Contrato
+en [`m15_garment_condition_design.md`](m15_garment_condition_design.md).
+
 **Avance del 2026-10-12 — 16d, grasa en montones para lámparas:** si la casa
 terminada de un adulto tiene una lámpara NPC vacía, puede recoger grasa real de
 un montón cercano mediante el pickup existente, dentro de la misma región y

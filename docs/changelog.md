@@ -1,3 +1,11 @@
+## 2026-10-12 — m15: remiendo autónomo de prendas (0.15.110-alpha)
+
+Adultos NPC pueden elegir el remiendo de una unidad propia, dañada y no vestida
+cuando una necesidad no los frena. Reutilizan el progreso, la acción y los
+materiales existentes; no buscan prendas ni consumibles. Se evita empezar un
+remiendo con cuerda si la condición supera 0,75 y no hay progreso previo. La
+prioridad queda sin calibrar por cohortes.
+
 ## 2026-10-12 — m15: curtido autónomo por unidad (0.15.107-alpha)
 
 NPC con `hide_dressing` pueden conservar una prenda de piel propia mediante

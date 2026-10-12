@@ -1,3 +1,10 @@
+**Avance del 2026-10-12 — 14c, remiendo autónomo:** adultos NPC pueden remendar
+una prenda propia dañada que no llevan puesta si no les frena una necesidad.
+El scorer reusa la orden interrumpible y la caja de progreso de cada unidad;
+usa sastrería completa cuando lleva el kit y, en otro caso, cuerda con el tope
+habitual. No recogen prendas/materiales ni cambian el ritmo de desgaste; la
+prioridad no está calibrada por cohortes. [Contrato](m15_garment_condition_design.md).
+
 **Avance del 2026-10-11 — 14c, bolsillos:** túnica cosida y de lino y abrigo con alamares aportan cuatro unidades; parka, dos. Sólo cuenta la prenda propia en su hueco vestido. El lector compartido aumenta capacidad agregada y límites por objeto pequeño, sin aumentar los límites de comida o cargas grandes. Cambiarse o perder la última prenda reconcilia el exceso en montones físicos; el guardado deriva la capacidad del equipo canónico. [Contrato](m15_phase14c_pockets.md). Siguen propiedad de condición, desgaste/remiendo, curtido y estatus opcional; no se cierra 14c/14e ni M15, ni se afirma mejora económica.
 
 **Avance del 2026-10-11 — 14c, retirada por calor:** los NPC pueden quitarse una capa cuyo abrigo han probado cuando el ambiente es cálido y la deuda de frío ya es baja. Se conserva la prenda, las órdenes del jugador y las armaduras dedicadas; los umbrales están en configuración. [Contrato](m15_phase14c_heat_removal.md). No existe aún una necesidad de sobrecalentamiento ni se afirma mejora demográfica. Bolsillos y propiedad física para desgaste/remiendo siguen pendientes; 14c/14e y M15 continúan abiertos, con cohortes/matriz diferidas.

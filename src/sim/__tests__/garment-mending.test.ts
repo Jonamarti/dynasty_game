@@ -1,8 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { Simulation } from '../core/Simulation.ts';
 import { changeGarment, planGarmentMending } from '../core/ToolEquipment.ts';
 import { toCheckpointRecord } from '../persistence/CheckpointRecords.ts';
 import { itemActions } from '../ai/ActionCatalog.ts';
+import { lastScores } from '../ai/Brain.ts';
+import type { Brain } from '../ai/Brain.ts';
 
 function fixture() {
   const sim = new Simulation({ seed: 'garment-mending', world: { width: 48, height: 48 },
@@ -19,6 +21,58 @@ function fixture() {
 }
 
 describe('garment mending', () => {
+  it('lets an unhurried adult NPC choose an owned damaged unit and its available method', () => {
+    const { sim, person } = fixture();
+    person.isPlayer = false;
+    person.inventory.add('fur_coat', 1);
+    person.inventory.add('rope', 1);
+    const unit = person.inventory.garmentUnitsOf('fur_coat')[0]!;
+    person.inventory.setGarmentUnitCondition(unit.unitId, 0.4, 12);
+    sim.time.tick = Math.floor(sim.config.time.ticksPerDay / 2);
+    lastScores.delete(person.id);
+    const brain = (sim as unknown as { brain: Brain }).brain;
+    const score = brain.score.bind(brain);
+    vi.spyOn(brain, 'score').mockImplementation((actor, context) => {
+      const result = score(actor, context);
+      return actor === person
+        ? { ...result, scores: result.scores.filter(row => row.id === 'mend_garment') }
+        : result;
+    });
+
+    for (let i = 0; i < 40 && !lastScores.has(person.id); i++) sim.step();
+
+    const repairScore = lastScores.get(person.id)?.find(row => row.id === 'mend_garment')?.score ?? 0;
+    expect(repairScore).toBeGreaterThan(0);
+    expect(person.action).toBe('mend_garment');
+    expect(person.targetItemId).toBe('fur_coat');
+    expect(person.targetGarmentUnitId).toBe(unit.unitId);
+    expect(person.targetGarmentMendingMethod).toBe('cordage');
+    expect(person.inventory.garmentUnitsOf('fur_coat')[0]!.repairProgress).toBeGreaterThan(12);
+  });
+
+  it('does not offer autonomous repairs to the player, a worn garment, or a pressured NPC', () => {
+    const { sim, person } = fixture();
+    person.inventory.add('fur_coat', 1);
+    person.inventory.add('rope', 1);
+    const unit = person.inventory.garmentUnitsOf('fur_coat')[0]!;
+    person.inventory.setGarmentUnitCondition(unit.unitId, 0.4, 0);
+    lastScores.delete(person.id);
+    sim.step();
+    expect(lastScores.get(person.id)?.some(row => row.id === 'mend_garment') ?? false).toBe(false);
+
+    person.isPlayer = false;
+    expect(changeGarment(person, 'fur_coat', 'wear_garment')).toBeNull();
+    lastScores.delete(person.id);
+    for (let i = 0; i < 40 && !lastScores.has(person.id); i++) sim.step();
+    expect(lastScores.get(person.id)?.some(row => row.id === 'mend_garment') ?? false).toBe(false);
+
+    expect(changeGarment(person, 'fur_coat', 'take_off_garment')).toBeNull();
+    person.needs.thirst = 90;
+    lastScores.delete(person.id);
+    for (let i = 0; i < 40 && !lastScores.has(person.id); i++) sim.step();
+    expect(lastScores.get(person.id)?.some(row => row.id === 'mend_garment') ?? false).toBe(false);
+  });
+
   it('uses a fixed 100-work tailored repair to restore the exact unit fully', () => {
     const { sim, person } = fixture();
     person.knownTech.add('tailoring');
