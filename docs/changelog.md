@@ -15310,3 +15310,13 @@ quede protegida solo porque se añadió después al inventario. Prueba focal en
 ambos órdenes de inserción; `sim:check -- --scenario salters` sigue fallando
 0/8 comidas de invierno conservadas, por lo que no se reclama una mejora
 estacional ni económica. No se cambia `needs.spoilRate` ni se ejecutan cohortes.
+
+## 2026-10-12 — m15: atribución de producción por receta
+
+El reporte de producción ahora separa contadores observados de trabajo y
+entradas/salidas por ID de receta, además del resumen agregado por acción.
+Esto permite investigar una posible tasa sin mezclar recetas con rendimientos
+distintos. El registro del instrumento pasa a versión 3; la observación
+compacta interna pasa a versión 2. No se ejecutó la ventana de medición y no se
+añadió otro productor ni se escogieron coeficientes. Ver
+`m15_phase32b_compact.md`, sección 7.

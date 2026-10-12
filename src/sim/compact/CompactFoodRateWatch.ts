@@ -6,7 +6,7 @@
 import { RATION_NUTRITION } from '../world/ResourceProfile.ts';
 import { COMPACT_BAND_FOOD_SOURCES, type CompactBandFoodSeason, type CompactBandFoodSource } from './CompactBandFood.ts';
 import { observeCompactProduction, type CompactProductionObservation } from './CompactProductionWatch.ts';
-export const COMPACT_FOOD_RATE_WATCH_RECORD_VERSION = 2 as const;
+export const COMPACT_FOOD_RATE_WATCH_RECORD_VERSION = 3 as const;
 export type CompactFoodRateCoverage = 'measured' | 'n/a';
 export interface CompactFoodSeasonObservation { readonly days: number; readonly meanAmbientTemperature: number | null }
 export interface CompactFoodSourceRateRecord {

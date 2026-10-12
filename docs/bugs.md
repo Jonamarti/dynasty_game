@@ -5004,3 +5004,14 @@ amplitudes de calidad, frío/nieve y seguridad todavía no se han contrastado
 con cohortes. No es un fallo funcional observado: calibración y escenario
 `homes` quedan diferidos a 16f, y no se deben presentar los valores actuales
 como una mejora demográfica medida.
+
+## 2026-10-12 — Producción compacta: cobertura por receta aún sin muestra
+
+El lector ahora puede atribuir trabajo y cambios físicos de inventario a una
+receta concreta, pero la ventana de `tools/compact-food-rates.ts` no se ha
+ejecutado con ese esquema. No hay datos por trabajador, estación, carga, terreno
+ni estación del año que sustenten otro productor compacto. Los únicos pasos
+activos del runtime son cultivo con `Crop`/`Soil` detallados y groats con su
+receta/coste/estación detallados; no equivalen a una calibración de producción.
+La próxima expansión queda bloqueada por esa falta de muestra y de contabilidad
+física de almacenes, no por un rendimiento nulo observado.

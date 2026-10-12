@@ -5002,7 +5002,10 @@ export class ActionSystem {
     const foodRecipe = telemetry.isEnabled() && (Object.keys(recipe.output).some(itemId => (ITEMS[itemId]?.nutrition ?? 0) > 0) ||
       [recipe.ingredients, ...(recipe.ingredientOptions ?? [])].some(ingredients =>
         Object.keys(ingredients).some(itemId => (ITEMS[itemId]?.nutrition ?? 0) > 0)));
-    if (foodRecipe) telemetry.count('compact_production_work_ticks_processing');
+    if (foodRecipe) {
+      telemetry.count('compact_production_work_ticks_processing');
+      telemetry.count('compact_production_work_ticks_recipe_' + recipe.id);
+    }
     person.bankWork(bankKey, pace);
     if (person.actionTimer > 0) {
       // `ignoreLaden`, for the same reason felling passes it: nothing is taken
@@ -5040,11 +5043,17 @@ export class ActionSystem {
     }
     for (const [itemId, count] of ingredients) {
       person.handled.set(itemId, ctx.tick);
-      if (foodRecipe) telemetry.count('compact_production_input_processing_' + itemId, count);
+      if (foodRecipe) {
+        telemetry.count('compact_production_input_processing_' + itemId, count);
+        telemetry.count('compact_production_input_recipe_' + recipe.id + '_' + itemId, count);
+      }
     }
     for (const [itemId, count] of Object.entries(recipe.output)) {
       person.inventory.add(itemId, count);
-      if (foodRecipe) telemetry.count('compact_production_output_processing_' + itemId, count);
+      if (foodRecipe) {
+        telemetry.count('compact_production_output_processing_' + itemId, count);
+        telemetry.count('compact_production_output_recipe_' + recipe.id + '_' + itemId, count);
+      }
       equipContainer(person, itemId);
       person.handled.set(itemId, ctx.tick);
     }
