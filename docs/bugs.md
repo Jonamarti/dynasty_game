@@ -5138,3 +5138,18 @@ los mensajes de validación de inventario; prendas, secado, transferencias y
 animación pasan focalmente (55 pruebas). No se declara verde la suite global.
 Quedan por discriminar las fallas restantes del conjunto y repetir los casos
 con el build integrado estable.
+
+## 2026-10-12 — M15 fase 41: `generations` y hambre persisten
+
+La cohorte `npm.cmd run sim:seeds -- --scenario generations --seeds 20` terminó
+en 4.218,5 s: supervivencia media 14,7%, extinción 9/20 y colapso bajo 25% en
+15/20. Solo 2/20 quedaron por encima de su punto mínimo al cierre y 12/20
+terminaron sin banda viable para recuperarse. Se atribuyeron al hambre 56
+muertes de lactantes, 15 de niños mayores y 119 de adultos. Es un fallo del
+objetivo de persistencia/recuperación que necesita diagnóstico de oferta,
+ingesta y demografía por semilla; no se ajustaron parámetros. En una ablación
+emparejada de `lean`, `world.predators=0` movió la supervivencia solo de 4,5%
+a 4,9%, mantuvo colapso en 20/20 y elevó extinciones de 2/20 a 4/20. Quitó 51
+asesinatos, pero añadió 80 muertes por hambre; los supervivientes por semilla
+variaron sin dirección consistente. Depredadores no explican por sí solos la
+crisis de `lean`. Resultados completos: `m15_calibration.md`.

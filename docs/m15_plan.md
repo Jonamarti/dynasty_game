@@ -4331,6 +4331,16 @@ en una sola semilla con `sim:check -- --scenario band`; los escenarios
 y límites en [m15_calibration.md](m15_calibration.md). La tabla de 34–40 más
 abajo expresa objetivos de evidencia, no comandos actualmente disponibles.
 
+**Avance del 2026-10-12:** completadas cohortes de 20 semillas para
+`generations` (14,7% de supervivencia, 9 extinciones, recuperación insuficiente)
+y una ablación emparejada `lean` con `world.predators=0` (4,9% frente a 4,5%
+base, 20/20 colapsos y más extinciones). No se cambió calibración: la ablación
+no aisló una causa de la crisis y persiste el hambre en todas las edades. Faltan
+diagnosticar persistencia/recuperación y `answered`, resolver o aceptar los
+fallos heredados sin rebajar checks, revisar `architecture.md` y reescribir
+`next-steps.md` para cerrar M15. Evidencia y cifras: `m15_calibration.md` y
+`bugs.md`.
+
 - La segunda pasada completa del protocolo de la fase 10 en `generations`,
   `century`, `lean` y los escenarios con mapa, con la tabla en
   `m15_calibration.md`.

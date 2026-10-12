@@ -173,3 +173,28 @@ distintas: el movimiento histórico grande ocurrió antes de fase 27 y el 4,5%
 actual no demuestra una regresión nueva ni una mejora causal. La semilla exacta
 debe compararse bajo una ablación a la vez; no se ajustan parámetros con este
 dato. Hallazgo en `bugs.md`.
+
+### `lean`, ablación emparejada sin depredadores
+
+`npm.cmd run sim:seeds -- --scenario lean --seeds 20 --set world.predators=0`
+terminó en 973,6 s con el mismo pool y 24.000 pasos/semilla. Supervivencia
+media 4,9% frente a 4,5% base (+0,4 puntos porcentuales), pero extinción 4/20
+frente a 2/20 y colapso <25% en 20/20 en ambos; hubo 5 nacimientos frente a 2.
+Las muertes totales fueron 702 en ambos. Sin depredadores hubo 51 asesinatos
+menos, compensados por 80 muertes adicionales por hambre y 23 menos por
+exposición, además de pequeñas diferencias en otras causas. Las diferencias
+emparejadas de supervivientes por seed fueron heterogéneas (beta +3, eta −6;
+suma neta +1), sin respuesta uniforme. No respalda a los depredadores como
+causa principal de la crisis alimentaria ni justifica cambiar parámetros.
+
+### `generations`, cohorte de 20 semillas
+
+`npm.cmd run sim:seeds -- --scenario generations --seeds 20` terminó con exit
+0 en 4.218,5 s (15 años por semilla). Supervivencia media 14,7%; 9/20 mundos
+extintos, 15/20 colapsaron bajo un cuarto de población, 79 nacimientos y solo
+2/20 terminaron por encima de su punto mínimo. Doce no tenían una banda capaz
+de recuperarse; hubo 56 muertes de lactantes, 15 de niños mayores y 119 de
+adultos por hambre. Se midieron 615 golpes entre pueblos (91% cerca de un
+campamento), 18 asesinatos y 14/20 mundos elegibles superaron 20 puntos de
+standing. La métrica de recuperación sigue por debajo del objetivo (no se
+interpreta como censura: el escenario terminó). Hallazgo en `bugs.md`.

@@ -1,3 +1,11 @@
+**Avance del 2026-10-12 — fase 41, calibración M15 aún abierta:** la cohorte
+`generations` de 20 semillas terminó con 14,7% de supervivencia, 9 extinciones
+y solo 2 mundos por encima de su punto mínimo. La ablación `lean` sin
+depredadores mantuvo 20/20 colapsos y apenas movió la supervivencia de 4,5% a
+4,9%; no aisló la causa alimentaria. No se cambiaron parámetros. Faltan
+diagnosticar persistencia/recuperación y `answered`, registrar el resto de
+evidencia final y revisar arquitectura antes del cierre. [Resultados](m15_calibration.md).
+
 **Avance del 2026-10-12 — 14c, remiendo autónomo:** adultos NPC pueden remendar
 una prenda propia dañada que no llevan puesta si no les frena una necesidad.
 El scorer reusa la orden interrumpible y la caja de progreso de cada unidad;

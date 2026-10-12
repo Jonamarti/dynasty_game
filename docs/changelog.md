@@ -15582,3 +15582,13 @@ codec de roster rechazaba antes de llegar a la validación de propietarios. La
 regresión ahora deja el checkpoint válido y añade el extra al manifiesto de
 viajeros, probando específicamente el desacuerdo entre ambos propietarios.
 
+## 2026-10-12 — docs: registrar cohortes M15 de `generations` y `lean`
+
+La cohorte de 20 semillas de `generations` terminó con 14,7% de supervivencia,
+9/20 extinciones y señales de persistencia/recuperación bajo objetivo. La
+ablación emparejada de `lean` sin depredadores apenas movió la supervivencia
+(4,5% → 4,9%) y mantuvo los 20 colapsos; se documenta que no aisló una causa
+principal. No se cambiaron parámetros. Se actualizaron los pendientes de fase
+41 en `m15_plan.md` y `next-steps.md`; datos completos en `m15_calibration.md`
+y `bugs.md`.
+
