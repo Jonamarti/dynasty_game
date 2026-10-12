@@ -1,10 +1,11 @@
-## 2026-10-12 — docs: acotar el cuello de botella del fixture `salters`
+## 2026-10-12 — docs: corregir trazado de stock en `salters`
 
-Un probe temporal ubicó la tanda real en otoño (tick 140) y su agotamiento
-antes del invierno (tick 480). Retener unidades o inyectar una conserva en
-invierno produce comidas atribuibles solo con hambre/stock forzados; al quitar
-las recetas desaparece la atribución. Se documenta como control del camino de
-consumo, no como resultado de economía autónoma. No se cambian reglas del juego.
+Dos reruns exactos muestran que las dos unidades reales siguen en inventario al
+entrar el invierno (tick 480), sin estropearse, y se consumen fuera del invierno
+en ticks 1604 y 1947. Se corrige la hipótesis previa de agotamiento antes del
+invierno. Conservar/injectar stock y hambre sí genera comidas atribuibles en un
+montaje preparado, pero no demuestra uso autónomo durante invierno. Sin cambios
+de reglas.
 
 ## 2026-10-12 — docs: registrar rechecks de `homes` y `tailors`
 

@@ -5204,16 +5204,14 @@ semillas (rho 9 frente a 1) y hubo pérdidas en alpha, theta y sigma. No muestra
 un rescate agregado; la penalización metabólica de lactancia por sí sola no
 explica la crisis. Cifras: `m15_calibration.md`.
 
-### 2026-10-12 — M15 fase 15d: tanda de conserva agotada antes del invierno
+### 2026-10-12 — M15 fase 15d: stock preservado no se consume en invierno
 
-El `salters` autónomo sigue en 0/3 comidas invernales conservadas. Un probe
-temporal constató que la primera tanda real aparece en inventario en tick 140
-(otoño) y se consume antes del inicio del invierno en tick 480. Retener esas
-dos unidades hasta el invierno o inyectar `dried_meat` en el inventario de un
-adulto con hambre 80 sí permite comidas conservadas; retirar las siete recetas
-en memoria elimina la atribución del mismo montaje. Esto confirma el camino de
-consumo y el control negativo bajo condiciones preparadas, no que la IA
-reserve producción ni que haya un beneficio económico autónomo. No se cambió
-producción, scorer ni balance; decidir si 15d acepta otro gate o necesita un
-mecanismo de reserva requiere diseñar una verificación que no oculte la
-carencia observada.
+El `salters` autónomo sigue en 0/3 comidas invernales conservadas. Dos probes
+exactos constataron que la primera tanda aparece en el inventario de Narak en
+tick 140 y sus dos unidades siguen allí en tick 480 (invierno), sin pudrirse;
+Ungok come una en tick 1604 y Narak la otra en tick 1947, ambas fuera de
+invierno. Un montaje con stock y hambre inyectados sí produce comidas
+conservadas y su negativo sin recetas elimina la atribución, pero la causa de
+no usar el stock durante invierno sigue abierta. No se cambió producción,
+scorer ni balance; hace falta observar disponibilidad, selección y presión de
+comida durante el invierno antes de proponer un mecanismo de reserva.

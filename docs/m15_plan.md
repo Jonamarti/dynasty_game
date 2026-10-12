@@ -4354,11 +4354,12 @@ cero dio 5,3% de supervivencia y 486 muertes por hambre, sin rescate consistente
 Se mejoró el control negativo de 15d con una prueba focal de consumo de conserva
 en invierno, pero `salters` sigue con 0/3 comidas conservadas en su ejecución
 autónoma (pérdidas atribuidas 716/1151, sin lectura causal); no se activa 15c.
-Un probe del fixture situó la tanda real en tick 140 y su agotamiento antes del
-invierno (tick 480); solo al forzar stock y hambre aparecen comidas invernales
-conservadas, y el control sin recetas deja de atribuirlas. Esto valida el
-camino de observación/consumo bajo condiciones preparadas, no la conducta
-autónoma ni el beneficio económico; no se modificaron reglas.
+Dos reruns exactos corrigieron la lectura inicial: la tanda real aparece en el
+inventario en tick 140 y sigue allí al entrar el invierno en tick 480, sin
+estropearse; se consume fuera de invierno en los ticks 1604 y 1947. Los montajes
+que fuerzan stock y hambre sí producen comidas atribuibles, pero no explican por
+qué la IA no las come durante invierno. No se modificaron reglas ni se concluye
+beneficio económico.
 Faltan resolver persistencia/recuperación y
 `answered`, resolver o aceptar los fallos heredados sin rebajar checks, revisar
 `architecture.md` y reescribir `next-steps.md` para cerrar M15. Evidencia y

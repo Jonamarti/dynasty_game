@@ -53,11 +53,15 @@ m15-salters-winter.log and m15-salters-final.log.
 spoiled nutrition was 716 (knowing) versus 1151 (other). These are trajectory
 diagnostics, not a preservation comparison or economy claim.
 
-An ephemeral fixture probe located a specific bottleneck without changing the
-scenario: the real first batch enters inventory at tick 140 (autumn) and is
-gone before winter begins at tick 480 (day 6). With an adult in the knowing
-band artificially set to hunger 80 on winter arrival and the two produced
-units retained until then, the fixture records 9 winter meals, 1 preserved.
+An ephemeral fixture probe corrected an earlier, mistaken reading of the
+batch timeline. In two exact reruns, the real first batch enters Narak's
+inventory at tick 140 and both units are still there at tick 480 (day 6,
+winter); neither has spoiled. They are later consumed outside winter: Ungok
+takes one at tick 1604 and Narak eats the other at tick 1947. Thus the batch
+survives into winter but does not contribute a preserved meal there. With an
+adult in the knowing band artificially set to hunger 80 on winter arrival and
+the two produced units retained until then, the fixture records 9 winter
+meals, 1 preserved.
 Adding one `dried_meat` directly to that adult's inventory at winter arrival
 records 8 meals, 1 preserved. The same injected-stock setup with all seven
 preservation recipes removed records 12 meals, 0 preserved. This is a useful
