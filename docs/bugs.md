@@ -4982,8 +4982,14 @@ lactantes, 64 niños y 326 adultos fallecidos por hambre. `recovered` 0/60 qued�
 censurado al final y 17/20 mundos no tenían banda capaz de recuperarse.
 Malnutrición media 0,249. La referencia antigua fue 21,8% de supervivencia y
 11/20 colapsos, pero corresponde a otra revisión; sin una comparación
-emparejada no se atribuye causa a las diferencias. No cambiar tasas ni pesos
-hasta diagnosticar oferta/ingesta y mortalidad. Informe: `m15_calibration.md`.
+emparejada no se atribuye causa a las diferencias. Un control emparejado
+anterior de fase 27 (mismos 20 seeds) ya tenía `lean` en 3,26% antes y 2,89%
+después, con colapso en 20/20; por tanto la caída desde 21,8% ocurrió antes de
+fase 27. El 4,5% actual no demuestra una regresión frente a ese corte (es otra
+revisión y no está emparejado). Próximo diagnóstico recomendado: una ablación
+por vez con el mismo pool de seeds para depredadores, luego estaciones de
+bayas si hace falta. No cambiar tasas ni pesos hasta diagnosticar
+oferta/ingesta y mortalidad. Informe: `m15_calibration.md`.
 
 ### 2026-10-12 — M15 fase 41: resultados nuevos de `century` sin causa aislada
 La cohorte actual `npm.cmd run sim:seeds -- --scenario century --seeds 20`

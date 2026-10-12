@@ -1,3 +1,10 @@
+## 2026-10-12 — docs: contextualizar cohorte lean con fase 27
+
+El control emparejado de fase 27 ya medía 3,26% → 2,89% de supervivencia en
+`lean` (20/20 colapsos), por lo que la caída frente al 21,8% antiguo precede
+ese bloque. El 4,5% actual no es una regresión probada ni una mejora causal.
+Se registra el próximo diagnóstico como ablación de una sola variable.
+
 ## 2026-10-12 — docs: registrar cohorte M15 lean
 
 La cohorte `lean` de 20 semillas terminó con 4,5% de supervivencia media,
