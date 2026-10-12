@@ -35,10 +35,19 @@ function update(f: ReturnType<typeof fixture>, opts: {
 describe('animal night rest', () => {
   it('puts a calm, fed herbivore to sleep without drawing randomness', () => {
     const f = fixture();
+    f.world.grass.fill(0);
     const before = f.rng.getState();
     update(f);
     expect(f.animal.sleeping).toBe(true);
     expect(f.rng.getState()).toEqual(before);
+  });
+
+  it('keeps a fed herbivore awake when there is grass to graze', () => {
+    const f = fixture();
+    const before = f.world.grassAt(f.animal.x, f.animal.y);
+    for (let tick = 4; tick <= 40 && f.world.grassAt(f.animal.x, f.animal.y) === before; tick++) update(f, { tick });
+    expect(f.animal.sleeping).toBe(false);
+    expect(f.world.grassAt(f.animal.x, f.animal.y)).toBeLessThan(before);
   });
 
   it('keeps herbivores active in daylight, winter pressure, or hunger', () => {

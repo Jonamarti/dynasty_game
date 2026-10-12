@@ -33,7 +33,8 @@ test('an active harvest order shows the crop-working gesture', async ({ page }) 
     if (!sim.order(person, 'reap', { buildingId: field.id })) throw new Error('Simulation refused the harvest order');
     for (let tick = 0; tick < 20 && person.workedTicks <= 0; tick++) sim.step();
     if (person.workedTicks <= 0 || person.action !== 'reap') throw new Error('The harvest order never entered active work');
-    const { farmingPose } = await import('/src/render/WorkAnimation.ts');
+    const modulePath = '/src/render/WorkAnimation.ts';
+    const { farmingPose } = await import(modulePath);
     const pose = farmingPose(person, sim, false, 0);
     d.camera.zoom = 7.5; d.camera.snapTo(person.x, person.y); d.camera.following = false;
     d.renderer.fogEnabled = false; d.renderer.interpolator.clear(); d.renderer.render(null, 0);

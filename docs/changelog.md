@@ -1,3 +1,11 @@
+## 2026-10-12 — M15: preservar el pastoreo nocturno observable
+
+Un herbívoro alimentado ya no se duerme mientras tenga hierba comestible bajo
+sus patas. Así el descanso explícito no oculta una comida real ni deja hierba
+intacta cuando la simulación registra el evento de pastoreo. Las pruebas
+aisladas de descanso y observaciones animales cubren ambos caminos. Versión
+`0.15.115-alpha`.
+
 ## 2026-10-12 — M15 fase 17: gesto de cultivo
 
 Sembrar y segar usan cuatro poses generadas cuando existe una orden real en un

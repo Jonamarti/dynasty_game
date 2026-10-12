@@ -1,3 +1,10 @@
+**Corrección del 2026-10-12 — 17, descanso animal y pastoreo:** los
+herbívoros alimentados descansan en noches templadas solo si no tienen hierba
+comestible bajo sus patas; si la hay, siguen pastando y registran la comida
+real. Esto conserva el evento observado por animación y evita perder bocados
+por la nueva pose de sueño. Pruebas focales en `animal-sleep.test.ts` y
+`animal-observations.test.ts`.
+
 **Avance del 2026-10-12 — 14c, curtido autónomo por unidad:** los NPC con
 `hide_dressing`, una grasa real y sin necesidades que impidan trabajar pueden
 tratar una prenda de piel propia que no lleven puesta. Se prioriza la unidad

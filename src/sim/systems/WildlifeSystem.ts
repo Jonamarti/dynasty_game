@@ -259,7 +259,8 @@ export class WildlifeSystem {
       if (animal.alarmedUntil > ctx.tick) this.bolt(animal, ctx);
       else if (animal.tamedBy !== null && this.heel(animal, ctx)) continue;
       else if (ctx.isNight && animal.fed >= SLEEP_MIN_FED &&
-        (ctx.dailyGrowth ?? 1) >= SLEEP_MIN_DAILY_GROWTH) animal.sleeping = true;
+        (ctx.dailyGrowth ?? 1) >= SLEEP_MIN_DAILY_GROWTH &&
+        ctx.world.grassAt(animal.x, animal.y) <= STUBBLE + BITE) animal.sleeping = true;
       else this.graze(animal, centroids.get(animal.herdId), ctx);
     }
   }
