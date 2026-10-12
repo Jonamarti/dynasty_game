@@ -281,7 +281,7 @@ export class ComarcaInventoryTransfer {
     for (let i = 0; i < this.sources.length; i++) this.sources[i]!.destination.assertCanRestoreTransferState(states[i]!);
     for (let i = 0; i < this.sources.length; i++) {
       if (hasInventoryContents(states[i]!) &&
-          Math.max(this.sources[i]!.destination.version, states[i]!.version) >= Number.MAX_SAFE_INTEGER - 1) {
+          Math.max(this.sources[i]!.destination.version, states[i]!.version) >= Number.MAX_SAFE_INTEGER) {
         throw new RangeError('inventory version cannot advance for transfer rollback');
       }
     }

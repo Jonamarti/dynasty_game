@@ -104,7 +104,7 @@ describe('ComarcaInventoryTransfer', () => {
     expect(pack.entries()).toEqual([]);
     expect(food.entries()).toEqual([]);
     expect(pack.garmentUnitsOf()).toEqual([]);
-    expect(transfer.nutrition()).toBe(RATION_NUTRITION + ITEMS.meal!.nutrition);
+    expect(transfer.nutrition()).toBe(ITEMS.meal!.nutrition);
     transfer.restore();
     expect(pack.garmentUnitsOf('fur_hat')).toEqual([original]);
     expect(food.count('meal')).toBe(1);
@@ -225,7 +225,7 @@ describe('ComarcaInventoryTransfer', () => {
     const malformed = wire(transfer.toRecord());
     const wear = garmentRow(malformed, 0).fields.find(([name]) => name === 'wear')!;
     wear[1] = 1.5;
-    expect(() => ComarcaInventoryTransfer.fromRecord(malformed, resolve)).toThrow(/invalid identity, condition, or repair progress/);
+    expect(() => ComarcaInventoryTransfer.fromRecord(malformed, resolve)).toThrow(/invalid identity, condition, repair, or dressing progress/);
 
     const missing = wire(transfer.toRecord());
     garmentRows(missing).values.pop();

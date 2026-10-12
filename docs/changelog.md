@@ -15433,3 +15433,10 @@ La negativa `need_fat` ya tiene una frase visible y su traducción al español,
 igual que el resto de las interrupciones de engrasado. Corrige la cobertura de
 motivos de parada; no cambia cuándo se interrumpe la acción.
 
+## 2026-10-12 — m15: permite restaurar inventarios en el último valor seguro (0.15.105-alpha)
+
+El rollback de una transferencia comarcal admite avanzar la versión del
+inventario desde `MAX_SAFE_INTEGER - 1` hasta `MAX_SAFE_INTEGER`. Antes
+rechazaba ese último incremento seguro junto con los incrementos realmente
+inseguros; la prueba cubre ambos límites.
+
