@@ -4364,6 +4364,10 @@ Un trace de ticks 480–959 muestra a Narak conservando ambas unidades (hambre
 11,3→37,7), mientras el bando sí come tres veces; elige manzana/carne. La
 presión y el stock están presentes, pero el motivo por el que el selector no
 elige `dried_meat` sigue sin diagnóstico.
+La cohorte apareada `generations` con `world.bushSeasons=false` terminó: 16,8%
+de supervivencia, 9 extinciones, 13 colapsos y 168 muertes por hambre frente a
+14,7%, 9, 15 y 190 en el control. Señal favorable insuficiente para cerrar
+persistencia/recuperación o cambiar la configuración global.
 Faltan resolver persistencia/recuperación y
 `answered`, resolver o aceptar los fallos heredados sin rebajar checks, revisar
 `architecture.md` y reescribir `next-steps.md` para cerrar M15. Evidencia y

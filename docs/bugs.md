@@ -5220,3 +5220,23 @@ no seleccionar el stock real durante invierno sigue abierta (valoración,
 acceso o puerta de decisión no aislados). No se cambió producción,
 scorer ni balance; hace falta observar disponibilidad, selección y presión de
 comida durante el invierno antes de proponer un mecanismo de reserva.
+
+### 2026-10-12 — M15 fase 41: ablación de bayas en `generations`
+
+`npm.cmd run sim:seeds -- --scenario generations --seeds 20 --set
+world.bushSeasons=false` terminó con exit 0 (20 × 144.000 pasos; 3.818,3 s).
+Resultados por semilla (supervivientes finales / nacimientos / muertes por
+hambre: lactante-niño-adulto): century 8/2/3-0-8; alpha 0/0/1-1-7; beta
+4/8/6-2-7; gamma 0/3/5-0-3; delta 0/7/8-0-6; eps 13/6/2-0-1; zeta
+0/5/2-0-9; eta 10/5/1-0-10; theta 7/3/1-0-3; iota 12/6/0-0-5; kappa
+0/5/4-0-6; lambda 21/5/1-0-3; mu 1/5/4-1-9; nu 13/6/1-0-4; xi
+0/1/1-1-6; omicron 0/0/1-0-6; pi 12/3/0-3-2; rho 0/1/0-1-10; sigma
+0/3/1-0-5; tau 5/8/3-0-4.
+
+El agregado fue 16,8% de supervivencia, 9/20 extinciones, 13/20 colapsos,
+82 nacimientos, 597 muertes y 168 por hambre (45/9/114). Frente al control
+documentado: +2,1 puntos de supervivencia, mismas extinciones, dos colapsos
+menos, tres nacimientos más y 22 muertes por hambre menos. Diez mundos aún
+acabaron sin banda viable y `HISTORY recovered` fue 0/52 (52 censuradas); solo
+3/20 quedaron sobre su mínimo al final. Mejora parcial, no rescate de la
+persistencia. La configuración global no se modifica.

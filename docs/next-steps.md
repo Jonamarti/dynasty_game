@@ -8,6 +8,9 @@ emparejada, con arbustos genéricos presentes todo el año, subió `lean` a 12,8
 y redujo hambre de 489 a 408 muertes, pero siguió con 18/20 colapsos y 3
 extinciones; no se cambió la configuración global. Quitar el coste metabólico
 de lactancia no rescató `lean` (5,3%, 486 muertes por hambre, 4 extinciones).
+La nueva cohorte `generations` sin estacionalidad de bayas mejoró supervivencia
+a 16,8%, hambre a 168 muertes y colapsos a 13/20, pero mantuvo 9/20
+extinciones y solo 3 mundos sobre su mínimo; no cambia la configuración global.
 Faltan resolver persistencia/recuperación y `answered`, y revisar arquitectura
 antes del cierre. En 15d, el control focal de conserva invernal discrimina
 recetas presentes/ausentes, aunque el escenario autónomo sigue en 0/3; 15c no

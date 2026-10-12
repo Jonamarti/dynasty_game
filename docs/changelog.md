@@ -1,3 +1,11 @@
+## 2026-10-12 — docs: registrar cohorte apareada de bayas en `generations`
+
+20 semillas × 144.000 pasos con `world.bushSeasons=false`: supervivencia 16,8%
+frente a 14,7%, hambre 168 frente a 190 muertes, y colapsos 13/20 frente a
+15/20; extinciones permanecen en 9/20. Mejora parcial, insuficiente para
+resolver persistencia o justificar un cambio global. Se registran métricas y
+límites en calibración/bugs; no cambia la simulación.
+
 ## 2026-10-12 — docs: precisar selección de comida invernal en `salters`
 
 El probe por tick confirma que Narak conserva ambas unidades de `dried_meat`

@@ -206,6 +206,21 @@ campamento), 18 asesinatos y 14/20 mundos elegibles superaron 20 puntos de
 standing. La métrica de recuperación sigue por debajo del objetivo (no se
 interpreta como censura: el escenario terminó). Hallazgo en `bugs.md`.
 
+### `generations`, ablación emparejada sin estacionalidad de bayas
+
+`npm.cmd run sim:seeds -- --scenario generations --seeds 20 --set
+world.bushSeasons=false` terminó con exit 0 en 3.818,3 s (20 × 144.000
+pasos). Supervivencia media 16,8% frente a 14,7% del control (+2,1 puntos);
+extinciones iguales (9/20), colapso bajo 25% en 13/20 frente a 15/20,
+82 nacimientos frente a 79 y 597 muertes frente a 615. El hambre bajó a 168
+(45 lactantes, 9 niños mayores, 114 adultos), desde 190 (56/15/119). Diez
+mundos terminaron sin banda viable para recuperarse (frente a 12), y 3/20
+acabaron por encima del mínimo (frente a 2/20). `HISTORY recovered` dio 0/52,
+52 censuradas: no se equipara a la métrica de estar sobre el mínimo. La mejora
+no elimina extinciones ni colapsos; no se cambia la configuración global. El
+resultado apunta a un coste de disponibilidad estacional en este escenario,
+pero no a una solución suficiente. La tabla por semilla queda en `bugs.md`.
+
 ### Ablación emparejada `lean`: arbustos genéricos todo el año
 
 `npm.cmd run sim:seeds -- --scenario lean --seeds 20 --set world.bushSeasons=false`
