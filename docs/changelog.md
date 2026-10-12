@@ -30,6 +30,14 @@ colocación, falla si no puede crear sus obras y permite que el control negativo
 de progreso detecte un fallo real. 117 pruebas focales pasan; no cambia el
 comportamiento de la simulación.
 
+## 2026-10-13 — M15: verificar suite completa en 0.15.123-alpha
+
+Tras corregir las premisas obsoletas, la suite completa terminó con 2.229
+pruebas aprobadas, 5 fallidas y 1 omitida. Los cuatro fallos de fixture
+corregidos pasan ahora; quedan compact-correspondence, la telemetría de comida
+compacta, people-knowledge y dos pruebas de polity. Métricas y límites en
+`docs/bugs.md`; no se rebajaron umbrales.
+
 ## 2026-10-12 — M15 fase 17: cortar hierba también se ve
 
 `cut_grass` usa cuatro poses generadas de barrido bajo, seleccionadas solo

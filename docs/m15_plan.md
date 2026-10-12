@@ -4584,6 +4584,14 @@ tiene que ejercitar, porque llegar desde cero cuesta años.
 
 ## Verificación
 
+**Estado 2026-10-13 en `0.15.123-alpha`:** `typecheck` pasa; la suite completa
+da 2.229 aprobados, 5 fallidos y 1 omitido en 306 archivos. Las cuatro
+premisas obsoletas de configuración, recursos y `diggers` se corrigieron en
+`fb650a6`; quedan fallos de correspondencia compacta, telemetría de comida,
+difusión tecnológica y política, registrados en `bugs.md`. El `sim:check`
+individual tampoco está verde (dieta, ánimo, presupuesto de rendimiento y
+visibilidad de colinas). No se modificaron los límites para hacerlos pasar.
+
 ```bash
 npm run typecheck
 npm test

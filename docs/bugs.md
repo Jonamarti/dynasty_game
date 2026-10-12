@@ -5264,7 +5264,7 @@ and `diggers` now knows `earthworks`, verifies both sites were placed and
 proves the broken-progress control fails without being skipped. These changes
 passed 117 focused tests across the four affected files on 0.15.123-alpha. The
 remaining behavior/telemetry failures are still unresolved and no assertion
-threshold was relaxed. The full suite has not yet been rerun after these fixes.
+threshold was relaxed. A full rerun after these fixes is recorded below.
 
 The default single-seed `npm.cmd run sim:check` also finished non-green:
 143/147 applicable checks passed; `cravings-steer-the-diet`,
@@ -5275,3 +5275,22 @@ The isolated `perf-budget` value is machine-sensitive; do not infer a renderer
 regression from it. No thresholds were relaxed. Full outputs were returned by
 the commands in the 2026-10-13 M15 task session; they were not saved to a
 tracked log file.
+
+### 2026-10-13 — M15 full test rerun after premise fixes on 0.15.123-alpha
+
+`npm.cmd test -- --maxWorkers=1 --testTimeout=15000` completed in 625.26 s:
+2,229 passed, 5 failed and 1 skipped across 306 files. The four stale-premise
+failures corrected in `fb650a6` now pass. Remaining failures are
+`compact-correspondence` (lean/delta thirst difference 16.90 vs limit 15),
+`determinism` (`compact_food_nutrition_gather` remains 0),
+`people-knowledge` (dispersion 0.70 vs limit 0.60), and `polity` (tribute
+delivery remains 0; a plot test retains chief id 2 rather than expected 1).
+These match existing unresolved findings; no thresholds were relaxed and this
+run does not establish whether they predate every intervening commit.
+
+The new tree-planting visual has typecheck and 59 focused unit/art tests passing;
+its one E2E case reported `ok 1` before Playwright's server shutdown stalled and
+was interrupted. The screenshot was inspected and shows the stationary work
+pose. `art:sheet` remains unable to finish because its existing `dig` section
+draws an empty canvas (`InvalidStateError`); the failure occurs before the new
+planting contact, so no claim is made that the contact-sheet tour passed.
