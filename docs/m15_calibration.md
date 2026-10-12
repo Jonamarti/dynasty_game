@@ -89,10 +89,9 @@ las cohortes más cortas y merecen seguimiento, no ajuste:
 - **No se ha barrido ningún parámetro de `Config.motivation`.** Esta pasada es
   solo la línea de partida; el protocolo pide medir antes de tocar nada, y
   `answered` es el primer candidato una vez diagnosticado.
-- **`generations` a 20 semillas** para medir `recovered` con la muestra
-  completa que pide el objetivo — a ~11 min/semilla, unas 3,7 horas de
-  cómputo; se deja para cuando haya un tramo de ejecución en segundo plano
-  igual de largo.
+- La cohorte `generations` a 20 semillas ya se completó el 2026-10-12; su
+  persistencia y recuperación quedan bajo objetivo. Ver resultados más abajo
+  y el diagnóstico en `bugs.md`.
 - **Diagnóstico de `answered`** con `npm run why` sobre una agresión concreta,
   antes de mover el coeficiente de autoridad o de ánimo de respuesta.
 - **La segunda pasada de calibración (fase 41)**, después de los bloques
@@ -144,8 +143,9 @@ bugs.md](bugs.md).
 
 La línea base previa de 92,3% se midió en otra revisión del juego. Sin un build
 emparejado y sin aislar un mecanismo, esta diferencia no atribuye la caída a
-una funcionalidad concreta. No se cambió ningún parámetro; `lean` y
-`generations` siguen en curso.
+una funcionalidad concreta. No se cambió ningún parámetro. Cohortes completas
+de `lean` y `generations` constan más abajo; una ablación adicional de `lean`
+sin depredadores mostró efecto heterogéneo y no aisló la causa alimentaria.
 
 El diagnóstico `npm.cmd run violence -- --scenario century --steps 40000
 --cases` sobre el seed nominal terminó sin casos de adultos golpeados para
@@ -153,10 +153,10 @@ seguir con `why`; observó cinco muertes por hambre en ese seed sin exponer una
 causa individual. Esto no diagnostica el numerador de `answered` ni explica la
 supervivencia agregada. El resultado queda inconcluso.
 
-Mientras se completan las cohortes descritas abajo, no hay un barrido de
-parámetros ni una decisión de calibración. Los resultados se deben incorporar
-cuando termine cada trabajo; la muestra única de los escenarios cortos solo
-confirma sus checks de mecanismo.
+No hay un barrido de parámetros ni una decisión de calibración. La muestra
+única de los escenarios cortos solo confirma sus checks de mecanismo; las
+cohortes y la ablación de fase 41 se registran abajo, sin afirmar causalidad
+para cambios de supervivencia agregada.
 
 ### `lean`, cohorte actual de 20 semillas
 

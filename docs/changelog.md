@@ -15592,3 +15592,10 @@ principal. No se cambiaron parámetros. Se actualizaron los pendientes de fase
 41 en `m15_plan.md` y `next-steps.md`; datos completos en `m15_calibration.md`
 y `bugs.md`.
 
+## 2026-10-12 — docs: reconciliar estado histórico de calibración
+
+Se retiraron de la lista de pendientes las 20 semillas de `generations`, ya
+completadas, y se aclaró que `lean`/`generations` no siguen en curso. Se
+mantienen pendientes el diagnóstico de recuperación y `answered`; no se
+calibraron parámetros.
+
