@@ -11,6 +11,7 @@ export interface HistoryReport {
   bandLost: Record<string, number>; worldLost: boolean; selfDestroyed: number; inBandKills: number;
   violentAdultDeaths: number; adultDeaths: number; blowRepeat: number; blowRepeatUnanswered: number; warPairs: WarPair[];
   blowRepeatActions: Record<string, number>; blowRepeatUnansweredActions: Record<string, number>;
+  fertilityCounters: Record<string, number>;
   fireBy: number | null; adoptionDays: number[]; adoptionNotReached: number; malnutrition: number;
   proteinNutrition: number; totalNutrition: number;
 }
@@ -152,6 +153,10 @@ export class HistoryWatch {
     const unansweredActions = Object.fromEntries(Object.entries(telemetrySnapshot)
       .filter(([key]) => key.startsWith('blow_repeat_unanswered_action_'))
       .map(([key, value]) => [key.slice('blow_repeat_unanswered_action_'.length), value]));
+    const fertilityCounters = Object.fromEntries(Object.entries(telemetrySnapshot)
+      .filter(([key]) => key.startsWith('conception_') || key.startsWith('pregnancy_loss_') || key === 'pregnancy_live_birth')
+      .map(([key, value]) => [key, value]));
+    fertilityCounters.conception_started = telemetrySnapshot.conception ?? 0;
     const ownKills = [...this.killCounts.values()].reduce((a, b) => a + b, 0);
     const selfDestroyed = [...this.killCounts.entries()].filter(([id, kills]) => kills >= (this.peaks.get(id) ?? 0) * .5).length;
     return {
@@ -161,6 +166,7 @@ export class HistoryWatch {
       inBandKills: ownKills, violentAdultDeaths: this.violentAdultDeaths, adultDeaths: this.adultDeaths,
       blowRepeat: repeat, blowRepeatUnanswered: telemetrySnapshot.blow_repeat_unanswered ?? 0,
       blowRepeatActions: repeatActions, blowRepeatUnansweredActions: unansweredActions,
+      fertilityCounters,
       warPairs: [...this.warDays.values()], fireBy: this.fireBy, adoptionDays: this.adoptionDays,
       adoptionNotReached: this.adoptionNotReached,
       malnutrition: this.malnutritionSamples ? this.malnutritionSum / this.malnutritionSamples : 0,
@@ -206,6 +212,13 @@ export function formatHistory(rows: HistoryReport[]): string {
     }
     return [...counts].sort(([a], [b]) => a.localeCompare(b)).map(([action, count]) => action + ':' + count).join(',') || 'none';
   };
+  const fertility = new Map<string, number>();
+  for (const row of rows) for (const [key, count] of Object.entries(row.fertilityCounters)) {
+    fertility.set(key, (fertility.get(key) ?? 0) + count);
+  }
+  const fertilityCount = (key: string) => fertility.get(key) ?? 0;
+  const fertileDays = fertilityCount('conception_opportunity');
+  const number = (value: number) => Number.isInteger(value) ? String(value) : value.toFixed(3);
   return '  HISTORY drawdown p50/p90/max ' + [0.5, 0.9, 1].map(q => {
     const s = [...allDrawdowns].sort((a, b) => a - b);
     return s.length ? s[Math.min(s.length - 1, Math.floor((s.length - 1) * q))]!.toFixed(3) : 'n/a';
@@ -218,6 +231,15 @@ export function formatHistory(rows: HistoryReport[]): string {
     ' · answered ' + ratio(sum(r => r.blowRepeat - r.blowRepeatUnanswered), sum(r => r.blowRepeat)) +
     ' (' + sum(r => r.blowRepeatUnanswered) + '/' + sum(r => r.blowRepeat) + ' unanswered; actions ' +
     actionCounts('blowRepeatActions') + '; unanswered ' + actionCounts('blowRepeatUnansweredActions') + ')' +
+    ' · fertility funnel ' + (fertileDays === 0 ? 'n/a (no opportunities)' :
+      'opportunities ' + number(fertileDays) + '; blocked spacing/partner/hunger/health ' +
+      ['conception_block_spacing', 'conception_block_partner', 'conception_block_hunger', 'conception_block_health']
+        .map(fertilityCount).map(number).join('/') + '; attempts ' + number(fertilityCount('conception_attempt')) +
+      '; expected rolls ' + number(fertilityCount('conception_expected_rolls')) + '; roll misses ' +
+      number(fertilityCount('conception_roll_miss')) + '; no roof ' + number(fertilityCount('conception_no_roof')) +
+      '; pregnancies ' + number(fertilityCount('conception_started')) + '; losses hunger/fever/blow ' +
+      ['hunger', 'fever', 'blow'].map(cause => number(fertilityCount('pregnancy_loss_' + cause))).join('/') +
+      '; live births ' + number(fertilityCount('pregnancy_live_birth')) + ')') +
     ' · war episodes/year ' + ratio(episodes.length * 365, totalDays) + ' median days ' + String(median(durations) ?? 'n/a') +
     ' peace share ' + ratio(peaceDays, warSpan) + ' · firemaking first known day ' + (fire.length ? Math.min(...fire) : 'never') +
     ' · adoption median days ' + String(median(adoption) ?? 'n/a') + ' not reached ' + sum(r => r.adoptionNotReached) +

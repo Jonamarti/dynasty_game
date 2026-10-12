@@ -11,6 +11,7 @@ describe('historical measurement', () => {
     const report = formatHistory([new HistoryWatch(sim).finish()]);
     expect(report).toContain('drawdown p50/p90/max n/a/n/a/n/a');
     expect(report).toContain('answered n/a (0/0 unanswered; actions none; unanswered none)');
+    expect(report).toContain('fertility funnel n/a (no opportunities)');
     telemetry.disable();
     telemetry.reset();
   });
@@ -23,8 +24,17 @@ describe('historical measurement', () => {
     telemetry.count('blow_repeat_action_give', 2);
     telemetry.count('blow_repeat_action_flee', 1);
     telemetry.count('blow_repeat_unanswered_action_give', 2);
+    telemetry.count('conception_opportunity', 3);
+    telemetry.count('conception_block_spacing', 1);
+    telemetry.count('conception_block_partner', 1);
+    telemetry.count('conception_attempt', 1);
+    telemetry.count('conception_expected_rolls', 0.5);
+    telemetry.count('conception_roll_miss', 1);
     expect(formatHistory([new HistoryWatch(sim).finish()])).toContain(
       'answered 0.333 (2/3 unanswered; actions flee:1,give:2; unanswered give:2)'
+    );
+    expect(formatHistory([new HistoryWatch(sim).finish()])).toContain(
+      'fertility funnel opportunities 3; blocked spacing/partner/hunger/health 1/1/0/0; attempts 1; expected rolls 0.500; roll misses 1'
     );
     telemetry.disable();
     telemetry.reset();

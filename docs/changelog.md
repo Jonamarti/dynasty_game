@@ -15773,3 +15773,14 @@ fabricarla como alternativa cuando falta un lecho. La razón es ofrecer una
 opción real cuando solo hay una piel y no hay paja disponible. Sin calibración
 ni afirmaciones demográficas. Captura: `artifacts/screenshots/m15-phase16d-hide-rug-2026-10-12/`.
 La prueba e2e guarda sus capturas repetibles en `test-results/`, sin sobrescribir este registro.
+
+## 2026-10-12 — m15: instrumentar el embudo de recuperación
+
+Se añadieron contadores observacionales para oportunidades y bloqueos de
+concepción, intentos y sorteos, techo compartido, embarazos, pérdidas y
+nacimientos; el historial y `sim:seeds` los presentan en agregado y por semilla,
+con `n/a` cuando falta denominador. Las pruebas focales cubren los bloqueos,
+las etapas y el formato. La cohorte `century` de 20 semillas recoge el desglose
+`answered` pero precede al embudo; una muestra posterior de dos semillas valida
+el formato sin ser una calibración. No se cambió el comportamiento del juego ni
+se ajustaron parámetros.

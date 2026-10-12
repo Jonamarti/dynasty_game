@@ -168,6 +168,47 @@ segundos golpes, el cociente continúa como `n/a` y las listas se muestran como
 `none`; el detalle es evidencia diagnóstica, no una atribución causal. Hay que
 recogerlo en la siguiente cohorte antes de valorar un ajuste.
 
+### Recuperación: embudo falsable de concepción
+
+La recuperación se sigue midiendo como volver al 75% del máximo previo después
+de una caída al 60% o menos. Para distinguir una falta de nacimientos de una
+pérdida posterior, `LifeSystem` ahora cuenta por cohorte los días de oportunidad
+de concepción y los bloqueos por espaciamiento, pareja no disponible, hambre o
+salud nulas; cuenta también las oportunidades con sorteo, su probabilidad
+acumulada, los rechazos por falta de techo compartido, embarazos establecidos,
+pérdidas por causa y nacimientos vivos. Las filas por semilla emparejan esos
+conteos con caídas recuperadas/censuradas. Son contadores observacionales: no
+alteran decisiones ni sorteos.
+
+La hipótesis que puede refutarse es que las caídas no rebotan porque las
+oportunidades de concepción se cierran antes del embarazo (parejas, necesidades
+o techo). Si aparecen embarazos y nacimientos en semillas/caídas que siguen
+censuradas, la explicación está después de la concepción o en otra dinámica de
+población; este embudo no autoriza por sí solo a cambiar el techo ni las tasas.
+Los resultados son agregados por semilla, no enlazan aún cada nacimiento a una
+caída concreta. Un `n/a` significa que no hubo días elegibles para intentar
+concebir.
+
+### Muestra actualizada y cohorte `answered`
+
+La cohorte `century` de 20 semillas (40.000 pasos, 1.929,6 s) se ejecutó antes
+de añadir el embudo. Sí incluye el nuevo desglose de `answered`: 35 respuestas
+`flee`, 2 `give`, 1 `go_home`, 1 `drink` y 3 `idle`; 7 de 42 segundos golpes
+quedaron sin respuesta (answered 0,833). Es un desglose descriptivo de esta
+cohorte, no una calibración. Su recuperación anterior al embudo fue 0/42 con
+42 episodios censurados, por lo que no sirve para atribuir el resultado a una
+etapa de concepción.
+
+Después de instrumentar el embudo, una muestra de formato `century`, 2 semillas
+de 5.000 pasos (18,5 s), imprimió métricas agregadas y filas por semilla:
+460 oportunidades, 80 bloqueos por pareja, 380 intentos, 36,440 sorteos
+esperados, 350 fallos de sorteo, 30 rechazos por techo, 0 embarazos, pérdidas o
+nacimientos vivos. Las semillas `century` y `alpha` mostraron respectivamente
+220 y 240 oportunidades; `answered` agregado fue `n/a` con denominador 0 y el
+resumen conservó los episodios de recuperación por semilla. Esta muestra valida
+el flujo y el formato, no calibra recuperación ni justifica cambios de
+parámetros.
+
 No hay un barrido de parámetros ni una decisión de calibración. La muestra
 única de los escenarios cortos solo confirma sus checks de mecanismo; las
 cohortes y la ablación de fase 41 se registran abajo, sin afirmar causalidad

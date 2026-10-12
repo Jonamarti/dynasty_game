@@ -14,6 +14,7 @@ import { availableActions, type CatalogContext } from '../ai/ActionCatalog.ts';
 import { stopReasonLabel } from '../../render/Floaters.ts';
 import { setLanguage } from '../../i18n/i18n.ts';
 import { knowledgeOfPerson, pregnancyLine } from '../social/Knowledge.ts';
+import { telemetry } from '../core/Telemetry.ts';
 
 /** A woman `along` of the way through a pregnancy (0 to 1). */
 function expecting(along: number): Person {
@@ -381,6 +382,7 @@ describe('M15 phase 19d: miscarriage and a hard birth', () => {
 
   it('loses the child when the dice say so, with the cause, and waits half the usual spacing', () => {
     const { sim, mother, father } = couple('risk-loss');
+    telemetry.reset(); telemetry.enable();
     mother.pregnant = true; mother.pregnantBy = father.id;
     mother.gestationLeft = 6;
     mother.needs.hunger = 95;
@@ -395,6 +397,8 @@ describe('M15 phase 19d: miscarriage and a hard birth', () => {
     expect(mother.pregnantBy).toBeNull();
     expect(mother.health).toBe(92);
     expect(mother.lastBirthDay).toBe(100 - mother.daysPerYear / 4);
+    expect(telemetry.snapshot().pregnancy_loss_hunger).toBe(1);
+    telemetry.disable(); telemetry.reset();
   });
 
   it('keeps the child when the dice say so', () => {
@@ -410,6 +414,7 @@ describe('M15 phase 19d: miscarriage and a hard birth', () => {
 
   it('does not roll a miscarriage on the day she is due, and rolls the birth', () => {
     const { sim, mother, father } = couple('risk-due');
+    telemetry.reset(); telemetry.enable();
     mother.pregnant = true; mother.pregnantBy = father.id; mother.gestationLeft = 1;
     mother.needs.hunger = 95;
     const { rng, rolls } = dice(0.99);
@@ -419,6 +424,8 @@ describe('M15 phase 19d: miscarriage and a hard birth', () => {
     new LifeSystem().daily([mother], ctx);
     expect(born).toBe(1);
     expect(rolls.n).toBe(1);
+    expect(telemetry.snapshot().pregnancy_live_birth).toBe(1);
+    telemetry.disable(); telemetry.reset();
   });
 
   it('complicates a birth on a low roll, and a midwife changes how often', () => {

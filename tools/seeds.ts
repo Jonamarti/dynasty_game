@@ -470,6 +470,20 @@ function main(): void {
   console.log(formatDemography(results.map(r => r.demography)));
   console.log(formatCohesion(results.map(r => r.cohesion)));
   console.log(formatHistory(results.map(r => r.history)));
+  console.log('  RECOVERY / FERTILITY BY SEED: seed recovered/episodes censored opportunities spacing partner hunger health no-roof pregnancies losses-h/f/b live-births');
+  for (const result of results) {
+    const counters = result.history.fertilityCounters;
+    const count = (key: string) => counters[key] ?? 0;
+    const episodes = result.history.recoveries;
+    const recovered = episodes.filter(episode => episode.recoveredAt !== null).length;
+    console.log('    ' + result.seed.padEnd(9) + recovered + '/' + episodes.length + ' ' +
+      (episodes.length - recovered) + ' ' + count('conception_opportunity') + ' ' +
+      count('conception_block_spacing') + ' ' + count('conception_block_partner') + ' ' +
+      count('conception_block_hunger') + ' ' + count('conception_block_health') + ' ' +
+      count('conception_no_roof') + ' ' + count('conception_started') + ' ' +
+      ['hunger', 'fever', 'blow'].map(cause => count('pregnancy_loss_' + cause)).join('/') + ' ' +
+      count('pregnancy_live_birth'));
+  }
   console.log('  FOOD ACCESS accessible ' + sum(r => r.foodAccessible) + ' · blocked by reach ' +
     sum(r => r.foodBlockedByReach) + ' · absent from search ' + sum(r => r.foodAbsentInSearch));
   if (results.some(r => r.frontierWater !== null)) {

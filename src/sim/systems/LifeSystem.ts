@@ -152,10 +152,17 @@ export class LifeSystem {
   }
 
   private tryConceive(mother: Person, ctx: LifeContext): void {
-    if (ctx.day - mother.lastBirthDay < birthSpacingDays(mother)) return;
+    telemetry.count('conception_opportunity');
+    if (ctx.day - mother.lastBirthDay < birthSpacingDays(mother)) {
+      telemetry.count('conception_block_spacing');
+      return;
+    }
 
     const father = mother.spouseId === null ? null : ctx.peopleById.get(mother.spouseId);
-    if (!father || !father.alive || father.isChild) return;
+    if (!father || !father.alive || father.isChild) {
+      telemetry.count('conception_block_partner');
+      return;
+    }
 
     // Hunger and injury suppress conception. A band on the edge of starvation
     // does not produce a baby boom, which is what stops the population from
@@ -168,24 +175,34 @@ export class LifeSystem {
       Math.max(0, 1 - mother.needs.hunger / 140) *
       Math.max(0, mother.health / 100) *
       (mother.years < 38 ? 1 : 0.6);
-    if (condition <= 0) return;
-
-    if (ctx.rng.chance(ctx.population.conceptionChance * condition)) {
-      // M15 phase 18: under the same roof tonight, or not at all. The gate sits
-      // *after* the draw on purpose: the life stream also feeds mortality, so a
-      // gate before it removed numbers and shifted every death in the world,
-      // breaking unrelated runs (`diggers`' earthworks) by pure divergence.
-      // Drawn first, a refused conception changes only the conception.
-      const roof = ctx.roofTonight.get(mother.id);
-      if (roof === undefined || ctx.roofTonight.get(father.id) !== roof) {
-        telemetry.count('conception_no_roof');
-        return;
-      }
-      mother.pregnant = true;
-      mother.gestationLeft = gestationDays(mother);
-      mother.pregnantBy = father.id;
-      telemetry.count('conception');
+    if (condition <= 0) {
+      if (mother.needs.hunger >= 140) telemetry.count('conception_block_hunger');
+      if (mother.health <= 0) telemetry.count('conception_block_health');
+      return;
     }
+
+    const chance = ctx.population.conceptionChance * condition;
+    telemetry.count('conception_attempt');
+    telemetry.count('conception_expected_rolls', chance);
+    if (!ctx.rng.chance(chance)) {
+      telemetry.count('conception_roll_miss');
+      return;
+    }
+
+    // M15 phase 18: under the same roof tonight, or not at all. The gate sits
+    // *after* the draw on purpose: the life stream also feeds mortality, so a
+    // gate before it removed numbers and shifted every death in the world,
+    // breaking unrelated runs (`diggers`' earthworks) by pure divergence.
+    // Drawn first, a refused conception changes only the conception.
+    const roof = ctx.roofTonight.get(mother.id);
+    if (roof === undefined || ctx.roofTonight.get(father.id) !== roof) {
+      telemetry.count('conception_no_roof');
+      return;
+    }
+    mother.pregnant = true;
+    mother.gestationLeft = gestationDays(mother);
+    mother.pregnantBy = father.id;
+    telemetry.count('conception');
   }
 
   private advancePregnancy(mother: Person, ctx: LifeContext): void {
@@ -208,6 +225,7 @@ export class LifeSystem {
           // birth, and the full wait would be a second punishment.
           mother.lastBirthDay = ctx.day - birthSpacingDays(mother) / 2;
           mother.health = Math.max(1, mother.health - 8);
+          telemetry.count('pregnancy_loss_' + risk.cause);
           care.onMiscarriage(mother, father, risk.cause);
           return;
         }
@@ -231,6 +249,7 @@ export class LifeSystem {
       complicated = care.rng.next() < complicationChance(midwife ? midwifeQuality(midwife) : 0);
     }
     ctx.onBirth(child, mother, father);
+    telemetry.count('pregnancy_live_birth');
     if (care && complicated) care.onComplicatedBirth(mother, midwife);
   }
 
