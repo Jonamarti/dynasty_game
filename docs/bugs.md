@@ -5159,6 +5159,19 @@ asesinatos, pero añadió 80 muertes por hambre; los supervivientes por semilla
 variaron sin dirección consistente. Depredadores no explican por sí solos la
 crisis de `lean`. Resultados completos: `m15_calibration.md`.
 
+## 2026-10-12 — suite unitaria completa tras el control focal de 15d
+
+`npm.cmd test -- --maxWorkers=1 --testTimeout=15000` ejecutó 303 archivos:
+2.190 pruebas pasaron, 1 quedó omitida y 7 fallaron en cinco archivos.
+Fallos: `compact-band-knowledge` (ledger parcial/stream derivado),
+`determinism` (contador de recolección compacto en cero), `earthwork-checks`
+(dos expectativas), `people-knowledge` (dispersión 0,66 frente a <0,6) y
+`polity` (tributo no entregado y conspiración con dos jefes). Ninguno toca el
+fixture de salters; su prueba focal pasa 2/2 y typecheck pasa. Son fallas de
+regresión fuera del cambio 15d; no se declara verde la suite. El single-seed
+`salters` falla su check esperado `preserved-food-lasts` (0/3), sin regresión
+del instrumento.
+
 ### 2026-10-12 — M15 fase 41: proxy `answered` sigue sin causa aislada
 
 El 79,5% de `century` sigue bajo el objetivo ≥90%. El contador `answered` no

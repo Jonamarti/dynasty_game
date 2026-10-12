@@ -1,3 +1,11 @@
+## 2026-10-12 — docs: registrar verificación global M15
+
+La suite completa ejecutó 303 archivos: 2.190 pruebas pasan, 1 omitida y 7
+fallan en cinco archivos (conocimiento compacto, determinismo, excavación,
+difusión y polity). La prueba focal de salters y el typecheck pasan; el
+healthcheck de una semilla sigue fallando 0/3 conservas invernales. Ver
+`bugs.md`; no se declara la suite global verde.
+
 ## 2026-10-12 — docs: reflejar estado de fase 15d en próximos pasos
 
 `next-steps.md` ya distingue el control focal de conserva que pasa del
