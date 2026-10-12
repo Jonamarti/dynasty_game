@@ -157,3 +157,15 @@ Mientras se completan las cohortes descritas abajo, no hay un barrido de
 parámetros ni una decisión de calibración. Los resultados se deben incorporar
 cuando termine cada trabajo; la muestra única de los escenarios cortos solo
 confirma sus checks de mecanismo.
+
+### `lean`, cohorte actual de 20 semillas
+
+`npm.cmd run sim:seeds -- --scenario lean --seeds 20` terminó en 935,1 s con
+24.000 pasos por semilla: supervivencia media 4,5%; colapso <25% en 20/20;
+`worldLost` 2/20; 2 nacimientos y 702 muertes (99 lactantes, 64 niños mayores,
+326 adultos murieron de hambre); ninguna de 60 caídas se recuperó antes del
+final y 17/20 mundos no tenían banda capaz de recuperarse. `answered` 77,3%,
+malnutrición 0,249, `peaceShare` 99,8%, `inBandKillRate` 0,000; `firemaking`
+se conoció primero en el día 44. Frente a la referencia de 21,8% y 11/20
+colapsos, esta lectura cae de forma marcada; no hay build emparejado ni causa
+aislada, y no se ajustan parámetros con este dato. Hallazgo en `bugs.md`.

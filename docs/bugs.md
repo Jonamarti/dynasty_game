@@ -4974,6 +4974,17 @@ synthesis corregidas en b3f9907 y verificadas focalmente. Permanecen los siete
 fallos anteriores: difusión, correspondencia, contador de comida, tierra,
 tributo, conspiración y sed. Ningún resultado global verde afirmado.
 
+### 2026-10-12 — M15 fase 41: cohorte `lean` colapsa sin causa aislada
+`npm.cmd run sim:seeds -- --scenario lean --seeds 20` (24.000 pasos/semilla)
+terminó con supervivencia media 4,5%, colapso bajo 25% en 20/20 y `worldLost`
+2/20. Hubo solo dos nacimientos frente a 702 muertes; el reporte cuenta 99
+lactantes, 64 niños y 326 adultos fallecidos por hambre. `recovered` 0/60 quedó
+censurado al final y 17/20 mundos no tenían banda capaz de recuperarse.
+Malnutrición media 0,249. La referencia antigua fue 21,8% de supervivencia y
+11/20 colapsos, pero corresponde a otra revisión; sin una comparación
+emparejada no se atribuye causa a las diferencias. No cambiar tasas ni pesos
+hasta diagnosticar oferta/ingesta y mortalidad. Informe: `m15_calibration.md`.
+
 ### 2026-10-12 — M15 fase 41: resultados nuevos de `century` sin causa aislada
 La cohorte actual `npm.cmd run sim:seeds -- --scenario century --seeds 20`
 terminó con 54,8% de supervivencia media, un mundo colapsado de veinte, y

@@ -1,3 +1,11 @@
+## 2026-10-12 — docs: registrar cohorte M15 lean
+
+La cohorte `lean` de 20 semillas terminó con 4,5% de supervivencia media,
+20/20 colapsos y 2/20 mundos perdidos; 17/20 no tenían banda capaz de
+recuperarse. La diferencia frente a la referencia histórica de 21,8% no tiene
+causa aislada ni build emparejado. Se registra para diagnóstico antes de tocar
+el balance.
+
 ## 2026-10-12 — docs: registrar límite del diagnóstico century
 
 `violence --scenario century --steps 40000 --cases` no encontró un adulto
