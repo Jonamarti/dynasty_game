@@ -1919,8 +1919,7 @@ abrigo y capa visual. [Contrato y captura](m15_phase14c_fur_hat.md).
 **2026-10-10, avance 14c:** parka con alamares `toggled_coat` entregada como
 nodo de receta `toggles`, tras sastrería y trabajo de hueso. Consume parka 1
 y hueso 2; abrigo 0,48 sólo puesta, con cierres visibles y persistencia.
-[Contrato y captura](m15_phase14c_toggles.md). Bolsillos, desgaste y reparación
-siguen pendientes; no se declara cerrada 14c ni mejora de supervivencia.
+[Contrato y captura](m15_phase14c_toggles.md).
 
 **2026-10-10, avance 14c:** túnica de lino `linen_tunic` entregada tras tejido:
 tela 2 e hilo 1, aguja retenida, torso con abrigo 0,20 sólo puesto. Su capa
@@ -1935,8 +1934,13 @@ sin sumar ambas y sin destruirla, con variante visual de lana y JSON.
 **2026-10-10, avance 14c:** subred Ropa entregada con siete recetas y tres
 técnicas. Las cuatro prendas previas pasan a `craft`; hilado/tejido/lana
 conservan sus prerequisitos externos reales. [Contrato y captura](m15_phase14c_clothing_web.md).
-Quedan taparrabos/falda, curtido, bolsillos, desgaste/reparación, creencias,
-retirada por calor y escenario tailors. 14c sigue abierta.
+La posterior integración cerró el catálogo indicado aquí (taparrabos, falda,
+envolturas, polainas, mocasines, gorro, lino, lana y alamares), bolsillos,
+creencias de abrigo, retirada por calor, condición/propiedad por unidad,
+curtido y desgaste/remiendo manual y autónomo. El escenario `tailors` verifica
+uso, efecto térmico y rotura/remiendo con checks de mecanismo. La prioridad y
+el efecto demográfico no se han calibrado por cohortes; dyeing permanece
+apartado en 14d por falta de color persistente/representación por unidad.
 
 ### 14d. Estatus (medido; opcional dentro de la fase)
 

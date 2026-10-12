@@ -1,3 +1,11 @@
+## 2026-10-12 — docs: reconciliar estado de la ropa 14c
+
+La sección histórica del catálogo de ropa ya no enumera como pendientes los
+bolsillos, condición, desgaste, curtido, remiendo autónomo, creencias térmicas,
+retirada por calor o el escenario `tailors`, completados después. Se aclara que
+la calibración demográfica sigue abierta y el tinte por unidad queda apartado
+por falta de color persistente y representación.
+
 ## 2026-10-12 — docs: actualizar arquitectura al estado M15
 
 Se añadió una síntesis del ciclo de antorchas, propiedad/condición por unidad
