@@ -1,7 +1,7 @@
 # Architecture
 
-Current as of 2026-10-11 (M15 garment heat removal and pockets). No runtime
-dependencies, Vite + a 2D canvas.
+Current as of 2026-10-12 (M15 per-unit garment work and phase-41 diagnostics).
+No runtime dependencies, Vite + a 2D canvas.
 
 ## Layout
 
@@ -26,6 +26,40 @@ tools/          simcheck (library) + headless / scenarios / seeds / why (CLIs);
                 demographic cohort observer for seeded calibration
 e2e/            Playwright smoke tests and screenshot tour
 ```
+
+## M15 field equipment and preservation — 2026-10-12
+
+Torches are physical hand-held items; the light reader samples active flames
+through the shared spatial query, and the renderer consumes the resulting
+light field without writing simulation state. A lit torch has finite fuel and
+may be recovered from a nearby pile by an eligible NPC. See
+[`m15_phase12d_torches.md`](m15_phase12d_torches.md).
+
+Clothing is represented by owned `GarmentUnit` rows, not only item counts.
+Equipment references one exact unit; transfers, storage, death, inheritance,
+checkpoint and traveller staging preserve its condition and repair progress.
+Wear and repair progress live on the unit. Manual and autonomous mending use
+the same interruptible action and bank progress there; autonomous work uses
+materials already carried and does not fetch supplies. Pocket capacity is
+derived from owned garments in canonical worn slots. See
+[`m15_garment_condition_design.md`](m15_garment_condition_design.md).
+
+Preservation recipes produce physical foods with item-specific durability.
+Winter-meal telemetry reads actual `eatenToday` increments and classifies the
+food against the live recipe catalog. The focused test proves both attribution
+of a real winter meal and its removal when preservation recipes are absent.
+The autonomous `salters` world still records zero preserved winter meals in
+its latest single-seed run; `needs.spoilRate` remains at its default and phase
+15c is not activated. This is a mechanism-test result, not an economy claim;
+see [`m15_phase15d_salters.md`](m15_phase15d_salters.md) and
+[`m15_calibration.md`](m15_calibration.md).
+
+Phase 41 currently records completed 20-seed `century`, `lean`,
+`generations`, and `frontier-cohort` runs plus paired `lean` ablations. No
+balance parameters were changed: persistence, recovery, the `answered` proxy,
+and the autonomous winter-preservation outcome remain open. Calibration
+figures and inherited verification failures are tracked in
+[`m15_calibration.md`](m15_calibration.md) and [`bugs.md`](bugs.md).
 
 ## Simulation LOD — revised owner decision, 2026-10-08
 

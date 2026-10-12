@@ -1,3 +1,9 @@
+## 2026-10-12 — docs: actualizar arquitectura al estado M15
+
+Se añadió una síntesis del ciclo de antorchas, propiedad/condición por unidad
+de ropa, trabajo de remiendo, control focal de conservas y límites actuales de
+fase 41. Se enlazaron los contratos y métricas de detalle.
+
 ## 2026-10-12 — docs: registrar verificación global M15
 
 La suite completa ejecutó 303 archivos: 2.190 pruebas pasan, 1 omitida y 7
