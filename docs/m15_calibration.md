@@ -147,6 +147,12 @@ emparejado y sin aislar un mecanismo, esta diferencia no atribuye la caída a
 una funcionalidad concreta. No se cambió ningún parámetro; `lean` y
 `generations` siguen en curso.
 
+El diagnóstico `npm.cmd run violence -- --scenario century --steps 40000
+--cases` sobre el seed nominal terminó sin casos de adultos golpeados para
+seguir con `why`; observó cinco muertes por hambre en ese seed sin exponer una
+causa individual. Esto no diagnostica el numerador de `answered` ni explica la
+supervivencia agregada. El resultado queda inconcluso.
+
 Mientras se completan las cohortes descritas abajo, no hay un barrido de
 parámetros ni una decisión de calibración. Los resultados se deben incorporar
 cuando termine cada trabajo; la muestra única de los escenarios cortos solo

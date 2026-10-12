@@ -1,3 +1,10 @@
+## 2026-10-12 — docs: registrar límite del diagnóstico century
+
+`violence --scenario century --steps 40000 --cases` no encontró un adulto
+golpeado que pudiera seguirse con `why` en el seed nominal. Señaló cinco muertes
+por hambre sin telemetría individual de exposición; el resultado no explica la
+cohorte agregada.
+
 ## 2026-10-12 — docs: refresh M15 plan summaries
 
 Clarified that the phase 14c and phase 16 lamp-upkeep notes describe earlier

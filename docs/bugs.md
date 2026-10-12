@@ -4983,6 +4983,11 @@ en 79,5% frente a ≥90%, y `fireBy` en 8/20 frente a ≥50%. `worldLost` 0/20,
 otra revisión; no hay build emparejado ni diagnóstico causal. No ajustar pesos
 por esta diferencia sola. Informe completo en `m15_calibration.md`; pendiente
 diagnóstico y comparación apropiada durante fase 41.
+El intento de diagnóstico `npm.cmd run violence -- --scenario century
+--steps 40000 --cases` sobre el seed nominal de la primera fila terminó sin
+casos de adultos golpeados que seguir con `why`; reportó cinco muertes por
+hambre en ese seed, pero no identifica su exposición ni una causa individual.
+El fallo de supervivencia sigue sin mecanismo aislado.
 
 ### 2026-10-10 — llegada a estación de un tile, corregida
 Movimiento detenía a0.6tiles pero reachBuilding exigía quedar en la huella de
