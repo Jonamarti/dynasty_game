@@ -5165,5 +5165,10 @@ extinciones aumentaron de 2/20 a 3/20 y `recovered` siguió 0/60 censurado. En
 la fila individual de `omicron`. El contraste apunta a un coste real de la
 disponibilidad estacional de bayas en `lean`, pero la recuperación y las
 extinciones siguen fallando, así que no se desactiva el sistema ni se calibra
-el juego con una sola lectura. La ablación separada de `childhood.lactationHunger`
-está pendiente. Cifras: `m15_calibration.md`.
+el juego con una sola lectura. Una tercera ablación con
+`childhood.lactationHunger=0` dio 5,3% de supervivencia frente a 4,5%, 486
+muertes por hambre frente a 489 y 4/20 extinciones frente a 2/20. Sumó 39
+supervivientes finales frente a 33, pero la mejora se concentró en pocas
+semillas (rho 9 frente a 1) y hubo pérdidas en alpha, theta y sigma. No muestra
+un rescate agregado; la penalización metabólica de lactancia por sí sola no
+explica la crisis. Cifras: `m15_calibration.md`.

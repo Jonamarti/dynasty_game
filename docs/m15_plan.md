@@ -4338,10 +4338,12 @@ base, 20/20 colapsos y más extinciones). No se cambió calibración: la ablaci�
 no aisló una causa de la crisis. Una segunda ablación emparejada sin temporadas
 de baya elevó `lean` a 12,8% y redujo muertes por hambre de 489 a 408, pero dejó
 18/20 colapsos y 3 extinciones; el coste de la estacionalidad merece revisión,
-no un cambio automático. Faltan cerrar el diagnóstico de lactancia,
-persistencia/recuperación y `answered`, resolver o aceptar los fallos heredados
-sin rebajar checks, revisar `architecture.md` y reescribir `next-steps.md` para
-cerrar M15. Evidencia y cifras: `m15_calibration.md` y `bugs.md`.
+no un cambio automático. Una tercera ablación con coste metabólico de lactancia
+cero dio 5,3% de supervivencia y 486 muertes por hambre, sin rescate consistente.
+Faltan resolver persistencia/recuperación y `answered`, resolver o aceptar los
+fallos heredados sin rebajar checks, revisar `architecture.md` y reescribir
+`next-steps.md` para cerrar M15. Evidencia y cifras: `m15_calibration.md` y
+`bugs.md`.
 
 - La segunda pasada completa del protocolo de la fase 10 en `generations`,
   `century`, `lean` y los escenarios con mapa, con la tabla en

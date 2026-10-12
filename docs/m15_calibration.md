@@ -214,3 +214,16 @@ la fila de `omicron`. Es evidencia emparejada de que la disponibilidad anual
 de bayas puede mejorar esta cohorte `lean`, pero no resuelve las extinciones ni
 demuestra que deba desactivarse la estacionalidad en el juego. Se mide aparte
 la penalización metabólica de lactancia. Hallazgo en `bugs.md`.
+
+### Ablación emparejada `lean`: coste metabólico de lactancia a cero
+
+`npm.cmd run sim:seeds -- --scenario lean --seeds 20 --set childhood.lactationHunger=0`
+terminó con exit 0 en 883,6 s (20 × 24.000 pasos). Supervivencia media 5,3%
+frente a 4,5% del control; extinción 4/20 frente a 2/20; colapso <25% en
+19/20. Hubo 696 muertes totales, 486 por hambre (97 lactantes, 75 niños
+mayores, 314 adultos), frente a 702 totales y 489 por hambre (99/64/326).
+Nacimientos: 2 en ambas. `answered` 77,8%; `recovered` 0/60 censuradas.
+Reducir solo este coste no ofrece señal de rescate agregado ni de menor hambre;
+no justifica cambiar la configuración. Junto a las ablaciones de depredadores
+y bayas, indica que ninguna variable aislada aquí resuelve la persistencia de
+`lean`. Hallazgo en `bugs.md`.

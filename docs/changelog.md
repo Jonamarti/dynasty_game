@@ -1,3 +1,10 @@
+## 2026-10-12 — docs: registrar ablación del coste de lactancia
+
+`lean` con `childhood.lactationHunger=0` dio 5,3% de supervivencia y 486
+muertes por hambre, frente a 4,5% y 489 en el control, con 4/20 extinciones.
+No evidencia un rescate agregado, así que no se cambió la configuración.
+Se actualizan calibración, bugs y próximos pasos con el resultado.
+
 ## 2026-10-12 — docs: registrar ablación de bayas en fase 41
 
 La prueba emparejada `lean` con bayas genéricas todo el año dio 12,8% de

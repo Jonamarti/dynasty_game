@@ -6,8 +6,10 @@ depredadores mantuvo 20/20 colapsos y apenas movió la supervivencia de 4,5% a
 diagnosticar persistencia/recuperación y `answered`. Una segunda ablación
 emparejada, con arbustos genéricos presentes todo el año, subió `lean` a 12,8%
 y redujo hambre de 489 a 408 muertes, pero siguió con 18/20 colapsos y 3
-extinciones; no se cambió la configuración global. Falta el diagnóstico de
-lactancia y revisar arquitectura antes del cierre. [Resultados](m15_calibration.md).
+extinciones; no se cambió la configuración global. Quitar el coste metabólico
+de lactancia no rescató `lean` (5,3%, 486 muertes por hambre, 4 extinciones).
+Faltan resolver persistencia/recuperación y `answered`, y revisar arquitectura
+antes del cierre. [Resultados](m15_calibration.md).
 
 **Avance del 2026-10-12 — 14c, remiendo autónomo:** adultos NPC pueden remendar
 una prenda propia dañada que no llevan puesta si no les frena una necesidad.
