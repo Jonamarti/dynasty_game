@@ -1622,12 +1622,14 @@ construyen a tiempo (`the-hearth-warms`).
 
 ### 12f. Checks y escenario
 
-**2026-10-10 — instrumento entregado, mediciones pendientes.** `nights` y sus
-tres checks pasan con oportunidades controladas de observación, fabricación
-y encendido real; las mutaciones sin lectores de luz/sin antorcha fallan.
-Contrato y límites: [12f nights](m15_phase12f_nights.md). No demuestra adopción
-autónoma ni cambia la simulación. Cohorte de robos/violencia y coste ≤3 puntos
-siguen diferidos por la instrucción de verificación rápida de M15.
+**2026-10-12 — escenario ampliado; medición de población pendiente.** `nights`
+y sus tres checks pasan con oportunidades controladas de observación,
+fabricación y encendido autónomo: un portador con creencia de luz, frío y una
+antorcha real, sin orden de encendido. Quitar la antorcha hace fallar el check.
+El fixture desactiva la presión de volver a casa para aislar la decisión; una
+persona/semilla no demuestra adopción poblacional. Contrato y límites:
+[12f nights](m15_phase12f_nights.md). La cohorte de robos/violencia y coste ≤3
+puntos siguen pendientes.
 
 - Escenario **`nights`**: invierno duro, dos bandas que saben `firemaking`.
 - `darkness-hides`: la fracción de hechos con testigo es menor de noche que de

@@ -15465,3 +15465,10 @@ interior; sus radios ya no cruzan el perímetro. Las fuentes exteriores y las de
 una casa arruinada conservan su radio abierto. Una prueba focal cubre el caso
 interior y exterior. No hay cambio de interfaz, arte, RNG ni calibración.
 
+## 2026-10-12 — m15: adopción autónoma de antorchas en `nights` (0.15.108-alpha)
+
+El escenario de noches ya no ordena encender la antorcha: un portador que conoce
+su utilidad y siente frío decide hacerlo junto a un hogar real. `torches-are-carried`
+ahora acredita esa ruta autónoma; la prueba negativa sin antorcha falla. Es una
+medición controlada de una persona, no una tasa de adopción poblacional. Sin UI.
+

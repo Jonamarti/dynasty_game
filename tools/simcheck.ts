@@ -311,9 +311,10 @@ function setupSmiths(sim: Simulation): void {
 
 export const SCENARIOS: Record<string, Scenario> = {
   nights: {
-    name: 'nights', description: 'Hard winter, two firemaking bands; paired witness and ordered craft/torch opportunities, not autonomous crime or survival calibration.',
+    name: 'nights', description: 'Hard winter, two firemaking bands; paired witness and autonomous torch uptake with ordered craft, not crime or survival calibration.',
     config: { seed: 'nights', world: { width: 48, height: 48 }, time: { daysPerSeason: 6, startDay: 18 },
       needs: { coldRate: 0.16 }, carry: { legacyPack: true }, otherBandThinkInterval: 1,
+      motivation: { homePressure: false },
       population: { bands: 2, peoplePerBand: 8, startingTech: withPrerequisites(['firemaking', 'hafting']) } },
     steps: 150, setup: setupNights, checks: ['darkness-hides', 'torches-are-carried', 'light-lets-work'],
   },
@@ -1602,7 +1603,7 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
     add('darkness-hides', !!night && night.dayWitnesses !== null && night.nightWitnesses < night.dayWitnesses,
       'paired theft probes: night witnesses=' + night?.nightWitnesses + ', day=' + night?.dayWitnesses);
     add('torches-are-carried', (night?.torchSamples ?? 0) > 0,
-      (night?.torchSamples ?? 0) + ' winter night samples with an owned burning torch after ordered ignition');
+      (night?.torchSamples ?? 0) + ' winter night samples with an owned burning torch after autonomous ignition');
     const lit = (night?.work[0] ?? 0) / Math.max(1, night?.samples[0] ?? 0);
     const dark = (night?.work[1] ?? 0) / Math.max(1, night?.samples[1] ?? 0);
     add('light-lets-work', !!night && night.samples.every(samples => samples > 0) && lit > dark,

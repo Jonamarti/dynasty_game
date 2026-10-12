@@ -46,9 +46,14 @@ export function setupNights(sim: Simulation): void {
   }
   carrier.x = fire.centerX; carrier.y = fire.centerY;
   carrier.targetX = carrier.x; carrier.targetY = carrier.y;
+  // Give the warmth need a real reason to compete with night-time travel home.
+  carrier.needs.cold = 80;
   carrier.inventory.add('fat_torch', 1);
+  // Model a person who has already learned that flame helps in darkness. The
+  // scenario must test whether the scorer chooses to light it, not assign the
+  // action as the earlier mechanism-only fixture did.
+  carrier.beliefs.learn('light:torch', 0.7, 0.25, 'own', sim.time.tick);
   sim.peopleHash.rebuild(sim.livingPeople());
-  if (!sim.order(carrier, 'light_torch', { itemId: 'fat_torch' })) throw new Error('nights ignition refused');
   watches.set(sim, { actors, makers, carrier, nightWitnesses: deed(sim, actors), dayWitnesses: null,
     previous: makers.map(person => person.bankedFor('craft:handaxe')), work: [0, 0], samples: [0, 0], torchSamples: 0 });
 }

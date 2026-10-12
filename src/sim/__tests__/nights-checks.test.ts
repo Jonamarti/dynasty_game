@@ -16,7 +16,7 @@ describe('nights mechanism checks', () => {
     expect(report.checks.find(check => check.id === 'light-lets-work')?.ok).toBe(false);
     expect(report.checks.find(check => check.id === 'torches-are-carried')?.ok).toBe(true);
   });
-  it('detects a torch removed before ignition completes', () => {
+  it('requires autonomous ignition rather than a supplied torch order', () => {
     const scenario = SCENARIOS.nights!;
     const report = runScenario({ ...scenario, setup(sim) {
       scenario.setup!(sim);
