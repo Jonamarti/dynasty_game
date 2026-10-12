@@ -15419,3 +15419,11 @@ un corte de una casilla, pues cruzarlo costaba menos que ir por un extremo.
 Las pruebas cubren el rodeo, la excepción de obra inacabada y la conectividad
 de la puerta. Sin cambio UI; la disuasión en una cohorte queda para calibración.
 
+## 2026-10-12 — corrige la aserción del nacimiento durante un viaje
+
+El test de ciclo vital buscaba al recién nacido solo en el checkpoint activo,
+aunque el viaje sin jugador deja su destino aparcado. Ahora consulta el registro
+canónico del mundo y compara la representación JSON tras guardar y cargar;
+Vitest consideraba desiguales objetos rehidratados con la misma estructura
+serializada. Sin cambio de comportamiento ni de versión.
+

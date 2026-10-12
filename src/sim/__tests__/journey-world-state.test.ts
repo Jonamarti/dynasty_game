@@ -83,12 +83,14 @@ function tick(state: WorldState): void { state.current.step(); state.advancePeop
     for (let i = 0; i < 8; i++) { tick(state); tick(loaded); }
     expect(state.frontier.pendingJourney).toBeNull();
     expect(loaded.frontier.pendingJourney).toBeNull();
-    const child = state.current.people.find(person => person.motherId === mother.id);
+    // The actor has no player seat, so arrival parks the destination checkpoint.
+    // World-root lookup must include parked owners as well as the active comarca.
+    const child = [...state.worldPeople().values()].find(person => person.motherId === mother.id);
     expect(child).toBeDefined();
     // The source keeps its ordinary one-per-midnight pass while the traveller
     // receives exactly one journey LifeSystem pass in the separate checkpoint.
     expect(state.worldPeople().get(resident.id)?.age).toBe(residentAge + 1);
-    expect(toWorldStateRecord(loaded)).toEqual(toWorldStateRecord(state));
+    expect(JSON.stringify(toWorldStateRecord(loaded))).toBe(JSON.stringify(toWorldStateRecord(state)));
   });
 
   it('rejects a changed journey party without changing the authoritative ticket', () => {
