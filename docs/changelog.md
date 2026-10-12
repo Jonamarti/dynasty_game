@@ -1,3 +1,11 @@
+## 2026-10-12 — m15: curtido autónomo por unidad (0.15.107-alpha)
+
+NPC con `hide_dressing` pueden conservar una prenda de piel propia mediante
+`dress_hide` cuando llevan grasa y no están frenados por una necesidad. El
+objetivo sigue siendo una unidad física: el trabajo interrumpido queda
+guardado allí y se consume una grasa al completar. No se añaden acopio,
+interfaz ni RNG; la prioridad no está calibrada con cohortes.
+
 ## 2026-10-12 — m15: city_walls convierte earthworks en perímetro de Estado (0.15.92-alpha)
 
 Portada de forma acotada desde `fcb642d` al checkout wave3: `city_walls`

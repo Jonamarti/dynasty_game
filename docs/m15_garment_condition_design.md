@@ -97,7 +97,13 @@ hide_dressing recipe consumes one fat only when 100 build-work points finish;
 interrupted work is banked on that same unit. A completed treatment halves only
 that unit's daily wear. Existing transfer/checkpoint validators preserve both
 fields and synthesize untreated defaults for legacy four-field garment rows.
-The treatment is an explicit player action; autonomous dressing is not shipped.
+NPC can also choose to dress an unworn hide garment they carry when they know
+the technique, have one real unit of fat, and are not pressed by a work-stopping
+need. They select the eligible unit with the most remaining condition and
+uncompleted work, and run the same unit-targeted action as the player. The
+action's normal interruption and checkpoint behavior retains progress on that
+unit. This is a preservation behavior only: NPC do not fetch fat or garments
+for it, and it has no cohort-calibrated priority.
 
 This is an ownership foundation with daily wear and manual mending. Generic
 `remove` treats a garment as consumed and destroys its row; it is never a

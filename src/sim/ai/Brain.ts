@@ -53,6 +53,7 @@ import {
 import { wantedOreKinds } from '../knowledge/Ore.ts';
 import { torchInHand, torchIgnitionRefusal } from '../core/Torch.ts';
 import { FAT_LAMP_REFILL_FAT } from '../core/FatLamp.ts';
+import { planHideDressing } from '../core/ToolEquipment.ts';
 import { hearthNear } from '../core/Light.ts';
 import { saltSourceNear } from '../core/Preservation.ts';
 import {
@@ -249,6 +250,8 @@ interface FoundTargets {
   water: { x: number; y: number } | null;
   foodToEat: string | null;
   garmentItem: string | null;
+  hideDressingItem: string | null;
+  hideDressingUnitId: string | null;
   torchItem: string | null;
   furnitureItem: string | null;
   furnitureHome: Building | null;
@@ -1059,6 +1062,8 @@ export class Brain {
     // is genuinely the better errand rather than whichever was scored last.
     let pickupBest = 0;
     let garmentItem: string | null = null;
+    let hideDressingItem: string | null = null;
+    let hideDressingUnitId: string | null = null;
     let garmentToRemove: string | null = null;
     let torchItem: string | null = null;
 
@@ -1113,6 +1118,27 @@ export class Brain {
         }
       }
       if (garmentItem) add('wear_garment', drive.warmth * 1.4 * bestGain / 0.4);
+    }
+    // Preserve hide clothing before it wears out, but only spend real fat on
+    // a physical unit the person can treat. The action banks work on that unit,
+    // so interruption and later resumption do not waste the investment.
+    if (!person.isPlayer && person.age >= 1 && person.knownTech.has('hide_dressing') &&
+        person.inventory.has('fat') && !pressedByNeed(person, ctx.needs.workLimits)) {
+      let bestRemaining = 0;
+      for (const [itemId, count] of person.inventory.entries()) {
+        if (count <= 0 || ITEMS[itemId]?.garment?.material !== 'hide') continue;
+        const plan = planHideDressing(person, itemId);
+        if (typeof plan === 'string') continue;
+        const unit = person.inventory.garmentUnitsOf(itemId).find(candidate => candidate.unitId === plan.unitId);
+        if (!unit) continue;
+        const remaining = 1 - (unit.dressingProgress ?? 0) / RECIPES.hide_dressing!.workTicks;
+        if (remaining > bestRemaining) {
+          bestRemaining = remaining;
+          hideDressingItem = itemId;
+          hideDressingUnitId = unit.unitId;
+        }
+      }
+      if (hideDressingItem) add('dress_hide', 0.9 * bestRemaining);
     }
     // Warmth has no separate overheating meter yet. The physical cold ledger
     // is still a real thermal signal: in warm weather, once it is almost empty,
@@ -4219,7 +4245,7 @@ export class Brain {
     return {
       scores,
       found: {
-        water, foodToEat, garmentItem, torchItem, furnitureItem, furnitureHome, waterQuestionPeer, explorePoint, waterExplorePoint, bringFoodPoint, foodNode, pickupPile, pickupItem, matNode, grassSpot, plantSpot, companion, suitor, sparPartner, student, childPupil, mentor, colleague,
+        water, foodToEat, garmentItem, hideDressingItem, hideDressingUnitId, torchItem, furnitureItem, furnitureHome, waterQuestionPeer, explorePoint, waterExplorePoint, bringFoodPoint, foodNode, pickupPile, pickupItem, matNode, grassSpot, plantSpot, companion, suitor, sparPartner, student, childPupil, mentor, colleague,
         victim, foe, attackRoute, intruder, restrainee, kinDefence, correctee, amendsTo, complainTo, parleyWith, peaceWith, helpCallerTarget, bindTarget, patrolPoint, investigatePoint, concealCorpse, giftee, giftItem, feastStore, feastHost, beneficiary, nursingChild, playmate, tradePartner, fleeFrom, fleePoint,
         quarry,
         site, shelter, restShelter, restFurniture, storeTarget, storeItemId, storeItemCount, larderTarget,
@@ -5070,6 +5096,10 @@ export class Brain {
       case 'wear_garment':
       case 'take_off_garment':
         person.targetItemId = found.garmentItem;
+        break;
+      case 'dress_hide':
+        person.targetItemId = found.hideDressingItem;
+        person.targetGarmentUnitId = found.hideDressingUnitId;
         break;
       case 'light_torch':
         person.targetItemId = found.torchItem;

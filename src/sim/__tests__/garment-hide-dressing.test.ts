@@ -101,6 +101,24 @@ describe('hide dressing', () => {
     });
   });
 
+  it('autonomously treats an unworn hide garment on its own unit', () => {
+    const { sim, person } = fixture();
+    person.isPlayer = false;
+    person.knownTech.add('leatherwork');
+    person.knownTech.add('hide_dressing');
+    person.inventory.add('fur_coat', 1);
+    person.inventory.add('fat', 1);
+    const unit = person.inventory.garmentUnitsOf('fur_coat')[0]!;
+    // Avoid other errands while allowing the ordinary scorer and action loop
+    // to decide whether to start this optional durability work.
+    for (const key of ['hunger', 'thirst', 'fatigue', 'cold'] as const) person.needs[key] = 0;
+    for (let i = 0; i < 1200 && !person.inventory.garmentUnitsOf('fur_coat')[0]!.hideDressed; i++) sim.step();
+    expect(person.inventory.garmentUnitsOf('fur_coat')[0]).toMatchObject({
+      unitId: unit.unitId, hideDressed: true, dressingProgress: 0,
+    });
+    expect(person.inventory.count('fat')).toBe(0);
+  });
+
   it('rejects wool, already treated garments, and missing grease with a visible reason', () => {
     const { sim, person } = fixture();
     person.knownTech.add('leatherwork');

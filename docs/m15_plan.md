@@ -1,3 +1,11 @@
+**Avance del 2026-10-12 — 14c, curtido autónomo por unidad:** los NPC con
+`hide_dressing`, una grasa real y sin necesidades que impidan trabajar pueden
+tratar una prenda de piel propia que no lleven puesta. Se prioriza la unidad
+con más condición restante y progreso pendiente; el trabajo y el gasto usan la
+misma acción interrumpible y el mismo `GarmentUnit` del jugador. No buscan
+materiales ni se afirma calibración/cohorte. Contrato en
+[`m15_garment_condition_design.md`](m15_garment_condition_design.md).
+
 **Avance del 2026-10-12 — 14c, engrasado por unidad:** el nodo hide_dressing
 requiere leatherwork; la receta hide_dressing consume una grasa y trabaja sobre
 una unidad concreta de piel, fuera del cuerpo. El progreso interrumpible y el
