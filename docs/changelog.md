@@ -6,6 +6,15 @@ guardados, y el renderer tiñe solo la unidad equipada. Captura en
 `artifacts/screenshots/m15-phase14d-2026-10-12/03-red-ochre-dye-v0.15.118.png`.
 Versión `0.15.118-alpha`.
 
+## 2026-10-12 — M15 fase 17: remendar una prenda también se ve
+
+Una reparación de prenda que ha iniciado trabajo usa cuatro poses generadas
+`r0`–`r3`. El selector mira los marcadores de trabajo establecidos por la acción,
+no inventario o conocimiento privado; el avance continúa guardado en la unidad
+física. Pruebas de arte/selector y E2E con orden real; captura en
+`artifacts/screenshots/m15-mending-animation-2026-10-12/`. Sin cambios de
+simulación ni RNG. Versión `0.15.119-alpha`.
+
 ## 2026-10-12 — M15 fase 17: gesto de construcción
 
 La construcción y reparación de obras usa cuatro poses de martillo generadas,

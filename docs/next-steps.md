@@ -1716,6 +1716,8 @@ perfil corregido y materialización antes de leave_comarca/follow_me/scout.
 
 2026-10-10: fase17 extracción sílex/arcilla/minerales animada desde trabajo real. 38 focales y typecheck pasan; captura artifacts/screenshots/m15-extraction-animation-2026-10-10/. Otras familias/sueño animal pendientes; m15_extraction_animation.md.
 
+2026-10-12: fase17 añade gesto de costura `r0`–`r3` al remiendo real de una unidad de prenda; el progreso sigue guardado en `GarmentUnit` y la presentación no inspecciona inventario. Captura `artifacts/screenshots/m15-mending-animation-2026-10-12/`; otras familias de trabajo mantienen abierta la fase. Contrato `m15_mending_animation.md`.
+
 2026-10-10: frontera conserva32 avisos al unir colas y el ledger vuelve a cargar. Regresión detecta33 en build previo; cuatro focales pasan. Ver m15_phase34_notice_transfer.md; veredictos completos.
 
 2026-10-10: entregado M15 16b, muros y habitación física; contrato m15_phase16b_house_walls.md. Continúan techos/mobiliario. Verificación focal20/20 y typecheck; sim:check conserva dos fallos conocidos.

@@ -29,7 +29,9 @@ Key: `p/<slot>/<variant>/<age>.<sex>/<dir>/<pose>` (`personKey`).
 - **age** `infant child adolescent adult elder` (`sizeClassOf`); **sex** `m f`;
   **dir** `S E N`, with `W` the renderer's mirror of `E` about x = 48.
 - **pose** `idle w0 w1 w2 w3 g0 g1 g2 g3 f0 f1 f2 f3` (four walk, gathering
-  and shallow-water fishing frames).
+  and shallow-water fishing frames), plus the work families `x`, `d`, `c`, `m`,
+  `a`, `b` and `r` for extraction, digging, chopping, crafting, farming,
+  construction and garment mending.
   Other work, sleep, sit and swim poses come with their phases: add a name to `ART_POSES`, draw it in
   `people/rig.ts`, rebuild. A pose is a set of layers like any other.
 - **Cell** 96 px, feet on row 88. The upper body bobs by
@@ -137,12 +139,15 @@ rule (and the key), and the two pictures stay.
 - **Garments are not in the sim yet**: `PersonAspect.wear` is always empty until
   phase 14. The layers exist, are drawn for every age, sex and facing, and are on
   `npm run art:sheet`.
-- **Other work, sleep and sit poses** and the swimming pose (phase 27) are not drawn.
+- **Other work outside the named work families, sleep and sit poses**, and the
+  swimming pose (phase 27) are not drawn.
   Gathering uses four poses for berries, sticks, reeds, wild grain and tree
-  fruit; shallow-water fishing has its own four-frame low reach. Deep-water fish,
-  flint and clay keep their previous appearance. The same hand gesture is used
-  for bush and tree fruit; different reaching heights remain a possible visual
-  refinement. The procedural fallback has no work gesture.
+  fruit; shallow-water fishing has its own four-frame low reach. The extraction
+  gesture covers flint, clay and copper/tin/iron ores. Garment mending has its
+  own four-frame waist-level needle gesture; repairing a building uses the
+  hammer pose. The same hand gesture is used for bush and tree fruit; different
+  reaching heights remain a possible visual refinement. The procedural fallback
+  has no work gesture.
 - **Trees, resource nodes and terrain** are still drawn in code.
 
 ## Gathering cost measured on 2026-10-02

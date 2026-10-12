@@ -2293,6 +2293,13 @@ reloj existente y no lee inventario ni conocimientos privados. Contrato:
 `artifacts/screenshots/m15-farming-animation-2026-10-12/00-active-crop-harvest.png`.
 La fase 17 sigue abierta para otras familias.
 
+**Avance del 2026-10-12 (remiendo de prendas).** Una orden activa de `mend_garment`
+usa cuatro poses generadas `r0`–`r3`, ligadas al trabajo real iniciado en
+`ActionSystem`; el render no inspecciona inventario, prenda ni progreso privado.
+Contrato: [m15_mending_animation.md](m15_mending_animation.md). Captura real:
+`artifacts/screenshots/m15-mending-animation-2026-10-12/00-active-garment-mending.png`.
+Quedan otras familias de trabajo y la fase 17 sigue abierta.
+
 **Avance del 2026-10-03 (animales):** cuatro poses de comer, correr y atacar
 en ciervo, jabalí, liebre, lobo, oso y lince, compartidas por especie. El renderer
 lee marcas de eventos reales. Cuenta también desplazamientos norte/sur y conserva

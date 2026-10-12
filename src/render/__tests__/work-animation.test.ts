@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Person } from '../../sim/entities/Person.ts';
 import { RNG } from '../../sim/core/RNG.ts';
-import { buildingPose, diggingPose, extractionPose, farmingPose, fishingPose, gatheringPose } from '../WorkAnimation.ts';
+import { buildingPose, diggingPose, extractionPose, farmingPose, fishingPose, gatheringPose, mendingPose } from '../WorkAnimation.ts';
 import type { Simulation } from '../../sim/core/Simulation.ts';
 
 function fixture() {
@@ -215,6 +215,36 @@ describe('building animation', () => {
     site.earth = [];
     site.def.earthwork = { kind: 'dig' };
     expect(buildingPose(person, sim, false)).toBeNull();
+  });
+});
+
+describe('garment mending animation', () => {
+  it('cycles a sewing gesture only after a live mending action enters work', () => {
+    const person = new Person('Mender', 4, 4, 0, new RNG('mending-animation'));
+    person.action = 'mend_garment'; person.actionTimer = 1; person.actionTotal = 100; person.workedTicks = 1;
+    expect([1, 3, 5, 7, 9].map(ticks => { person.workedTicks = ticks; return mendingPose(person, false, 0); }))
+      .toEqual(['r0', 'r1', 'r2', 'r3', 'r0']);
+    expect(person.actionTotal).toBe(100);
+    expect(person.workedTicks).toBe(9);
+  });
+
+  it('hides the gesture while moving, dead, interrupted, or still preparing', () => {
+    const person = new Person('Mender', 4, 4, 0, new RNG('mending-animation-guards'));
+    person.action = 'mend_garment'; person.actionTimer = 1; person.actionTotal = 100; person.workedTicks = 1;
+    expect(mendingPose(person, true)).toBeNull();
+    expect(mendingPose(person, false)).toBe('r0');
+    person.actionTimer = 0; expect(mendingPose(person, false)).toBeNull();
+    person.actionTimer = 1; person.actionTotal = 0; expect(mendingPose(person, false)).toBeNull();
+    person.actionTotal = 100; person.workedTicks = 0; expect(mendingPose(person, false)).toBeNull();
+    person.workedTicks = 1; person.alive = false; expect(mendingPose(person, false)).toBeNull();
+    person.alive = true; person.action = 'idle'; expect(mendingPose(person, false)).toBeNull();
+  });
+
+  it('freezes the sewing frame against the bounded simulation fraction', () => {
+    const person = new Person('Mender', 4, 4, 0, new RNG('mending-animation-clock'));
+    person.action = 'mend_garment'; person.actionTimer = 1; person.actionTotal = 100; person.workedTicks = 2;
+    expect(mendingPose(person, false, 0.5)).toBe('r0');
+    expect(mendingPose(person, false, 1)).toBe('r1');
   });
 });
 

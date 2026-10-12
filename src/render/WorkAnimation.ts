@@ -2,7 +2,7 @@
 import type { Simulation } from '../sim/core/Simulation.ts';
 import type { Person } from '../sim/entities/Person.ts';
 import { ARRIVAL_RADIUS } from '../sim/systems/MovementSystem.ts';
-import { BUILD_POSES, CHOP_POSES, DIG_POSES, EXTRACT_POSES, FARM_POSES, FISH_POSES, GATHER_POSES, MAKE_POSES, type ArtPose } from './ArtManifest.ts';
+import { BUILD_POSES, CHOP_POSES, DIG_POSES, EXTRACT_POSES, FARM_POSES, FISH_POSES, GATHER_POSES, MAKE_POSES, MEND_POSES, type ArtPose } from './ArtManifest.ts';
 import { RECIPES } from '../sim/entities/Recipe.ts';
 import { isStationFor } from '../sim/entities/Building.ts';
 
@@ -141,4 +141,14 @@ export function buildingPose(
     if (site.durability === null || site.durability >= site.def.workTicks) return null;
   } else if (!site.materialsReady || site.progress <= 0) return null;
   return workFrame(BUILD_POSES, person.workedTicks, alpha);
+}
+
+/** Sewing is shown only after the garment repair has entered real work. */
+export function mendingPose(person: Person, moving: boolean, alpha = 1): ArtPose | null {
+  // ActionSystem sets actionTotal only after validating the physical garment,
+  // repair method and supplies. The renderer observes that committed work
+  // marker without inspecting another person's private inventory or target.
+  if (moving || !person.alive || person.action !== 'mend_garment' || person.actionTimer <= 0 ||
+      person.actionTotal <= 0 || person.workedTicks <= 0) return null;
+  return workFrame(MEND_POSES, person.workedTicks, alpha);
 }
