@@ -74,11 +74,10 @@ describe('drying on a physical rack', () => {
   it('reports a ruined rack before consuming the raw food', () => {
     const { sim, person, rack } = fixture(); person.inventory.add('meat', 2);
     rack.durability = 0;
-    expect(sim.order(person, 'craft', { recipeId: 'dried_meat', buildingId: rack.id })).toBe(true);
+    expect(sim.order(person, 'craft', { recipeId: 'dried_meat', buildingId: rack.id })).toBe(false);
     sim.step();
     expect(person.inventory.count('meat')).toBe(2);
     expect(person.inventory.count('dried_meat')).toBe(0);
-    expect(sim.interruptions.some(notice => notice.personId === person.id &&
-      notice.reason === 'no_station_drying_rack')).toBe(true);
+    expect(sim.lastRefusal).toContain('drying rack');
   });
 });

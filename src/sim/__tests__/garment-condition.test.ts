@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { Inventory, type GarmentUnit, validateInventoryTransferState } from '../entities/Item.ts';
 import { Simulation } from '../core/Simulation.ts';
 import { changeGarment } from '../core/ToolEquipment.ts';
@@ -20,13 +20,14 @@ describe('garment condition ownership foundation', () => {
     const unit = person.inventory.garmentUnitsOf('fur_coat')[0]!;
     person.inventory.setGarmentUnitCondition(unit.unitId, 0.29, 93);
     expect(changeGarment(person, 'fur_coat', 'wear_garment')).toBeNull();
-    const idea = { tech: 'toggles' as const, stage: 'researching' as const, insight: 1, story: 'test',
+    const idea = { tech: 'toggles' as const, stage: 'researching' as const, insight: 10, story: 'test',
       conceivedTick: 0, effort: 0, discussedWith: [], trials: 0, proof: 0, failedTests: 0, tries: 0 };
     person.ideas.push(idea);
+    person.bankWork('prototype:toggles', 10_000);
     person.action = 'prototype';
     person.actionTimer = 1;
 
-    sim.step();
+    for (let tick = 0; tick < 500 && idea.stage === 'researching'; tick++) sim.step();
 
     expect(person.inventory.count('fur_coat')).toBe(0);
     expect(person.inventory.count('bone')).toBe(0);
@@ -44,19 +45,20 @@ describe('garment condition ownership foundation', () => {
     const unit = person.inventory.garmentUnitsOf('fur_coat')[0]!;
     person.inventory.setGarmentUnitCondition(unit.unitId, 0.29, 93);
     expect(changeGarment(person, 'fur_coat', 'wear_garment')).toBeNull();
-    const idea = { tech: 'toggles' as const, stage: 'researching' as const, insight: 1, story: 'test',
+    const idea = { tech: 'toggles' as const, stage: 'researching' as const, insight: 10, story: 'test',
       conceivedTick: 0, effort: 0, discussedWith: [], trials: 0, proof: 0, failedTests: 0, tries: 0 };
     person.ideas.push(idea);
+    person.bankWork('prototype:toggles', 10_000);
     const before = person.inventory.transferSnapshot();
-    const remove = person.inventory.remove.bind(person.inventory);
-    person.inventory.remove = (itemId, count) => {
+    const remove = Inventory.prototype.remove;
+    const removeSpy = vi.spyOn(Inventory.prototype, 'remove').mockImplementation(function(this: Inventory, itemId, count) {
       if (itemId === 'bone') throw new Error('injected material removal failure');
-      return remove(itemId, count);
-    };
+      return remove.call(this, itemId, count);
+    });
     person.action = 'prototype';
     person.actionTimer = 1;
 
-    sim.step();
+    try { sim.step(); } finally { removeSpy.mockRestore(); }
 
     expect(person.inventory.transferSnapshot()).toEqual(before);
     expect(person.equipment.torso).toMatchObject({ item: 'fur_coat', unitId: unit.unitId });
@@ -256,6 +258,7 @@ describe('garment condition ownership foundation', () => {
     expect(carriedTribute).toMatchObject({ wear: 0.26, repairProgress: 101 });
     expect(bearer.inventory.garmentUnitsOf('fur_hat')).toMatchObject([
       { unitId: preexisting.unitId, wear: 0.92, repairProgress: 3 },
+      { unitId: carriedTribute.unitId, wear: 0.26, repairProgress: 101 },
     ]);
     expect(bearer.renderGoods).toEqual({
       itemId: 'fur_hat', count: 1, garmentUnitIds: [carriedTribute.unitId],
@@ -384,7 +387,7 @@ describe('garment condition ownership foundation', () => {
     expect(() => destination.setGarmentUnitCondition(unit.unitId, 1.1, 0)).toThrow();
     expect(() => validateInventoryTransferState({ ...record,
       garmentUnits: [{ ...record.garmentUnits[0], repairProgress: 141 }],
-    })).toThrow(/invalid identity, condition, or repair progress/);
+    })).toThrow(/invalid identity, condition, repair, or dressing progress/);
     expect(() => validateInventoryTransferState({ ...record, garmentUnits: [] }))
       .toThrow(/garment units do not match garment counts/);
   });
@@ -594,14 +597,17 @@ describe('garment condition ownership foundation', () => {
     }
     const sourceBefore = sourceStore.store.transferSnapshot();
     const targetBefore = targetStore.store.transferSnapshot();
-    const put = targetStore.store.putGarmentUnit.bind(targetStore.store);
+    const put = Inventory.prototype.putGarmentUnit;
     let attempts = 0;
-    targetStore.store.putGarmentUnit = unit => {
+    const putSpy = vi.spyOn(Inventory.prototype, 'putGarmentUnit').mockImplementation(function(this: Inventory, unit) {
+      if (this !== targetStore.store) return put.call(this, unit);
       if (++attempts === 2) throw new Error('simulated home-store insertion failure');
-      return put(unit);
-    };
+      return put.call(this, unit);
+    });
 
-    expect(() => sim.mergeHouseholds(elder, younger)).toThrow('simulated home-store insertion failure');
+    try {
+      expect(() => sim.mergeHouseholds(elder, younger)).toThrow('simulated home-store insertion failure');
+    } finally { putSpy.mockRestore(); }
     expect(sourceStore.store.transferSnapshot()).toEqual(sourceBefore);
     expect(targetStore.store.transferSnapshot()).toEqual(targetBefore);
     expect(targetHouse.memberIds).not.toContain(younger.id);

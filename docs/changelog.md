@@ -15440,3 +15440,12 @@ inventario desde `MAX_SAFE_INTEGER - 1` hasta `MAX_SAFE_INTEGER`. Antes
 rechazaba ese último incremento seguro junto con los incrementos realmente
 inseguros; la prueba cubre ambos límites.
 
+## 2026-10-12 — actualiza fixtures de prendas y secado
+
+Las pruebas de prototipos ahora alcanzan su gate de conocimiento y completan
+el trabajo persistido antes de comprobar el consumo atómico. La entrega de
+tributo comprueba también la prenda que el portador lleva entre sus dos tramos;
+el rack arruinado se rechaza al ordenar sin consumir carne. Se alinearon además
+los dobles de estación/ropa con los campos de dominio actuales. Sin cambio de
+comportamiento ni de versión.
+

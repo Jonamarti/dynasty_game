@@ -49,7 +49,7 @@ describe('crafting animation', () => {
     person.targetRecipe = recipe.id; person.targetBuildingId = 7;
     expect(craftingPose(person, sim, false)).toBeNull();
     let inside = false;
-    const station = { complete: true, def: { id: recipe.station }, contains: () => inside };
+    const station = { complete: true, def: { id: recipe.station, station: true }, contains: () => inside };
     sim.buildingsById.set(7, station as any);
     expect(craftingPose(person, sim, false)).toBeNull();
     inside = true;

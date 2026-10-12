@@ -5085,3 +5085,15 @@ compuesto lo dibuje sin convertir el color en estado global del tipo de
 objeto. Varias copias de una misma prenda pueden divergir. Hasta que exista
 esa propiedad y su representación visual, no se ofrece `dyeing`; de otro modo
 el ocre se consumiría sin producir una prenda teñida.
+
+## 2026-10-12 — suite unitaria completa posterior a integración M15
+
+`npm.cmd test -- --maxWorkers=1 --testTimeout=15000` ejecutó 2.193 pruebas:
+2.172 pasaron, 1 quedó omitida y 20 fallaron en 12 archivos. Los baselines ya
+registrados siguen incluyendo excavación, difusión de conocimiento, comida,
+tributo, conspiración y correspondencia compacta. Se corrigieron aparte el
+fixture de estación de animación, las expectativas del escrow nutricional y
+los mensajes de validación de inventario; prendas, secado, transferencias y
+animación pasan focalmente (55 pruebas). No se declara verde la suite global.
+Quedan por discriminar las fallas restantes del conjunto y repetir los casos
+con el build integrado estable.
