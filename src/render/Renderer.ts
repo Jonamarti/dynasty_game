@@ -47,7 +47,7 @@ import { Floaters } from './Floaters.ts';
 import { t, tc } from '../i18n/i18n.ts';
 import { ArtAtlas, type PersonAspect } from './ArtAtlas.ts';
 import type { ArtDir, ArtPose } from './ArtManifest.ts';
-import { choppingPose, craftingPose, diggingPose, extractionPose, fishingPose, gatheringPose } from './WorkAnimation.ts';
+import { choppingPose, craftingPose, diggingPose, extractionPose, farmingPose, fishingPose, gatheringPose } from './WorkAnimation.ts';
 import { ADULT_YEARS } from '../sim/entities/Person.ts';
 import { showing } from '../sim/entities/Pregnancy.ts';
 import {
@@ -2156,7 +2156,8 @@ export class Renderer {
     const digging = diggingPose(person, this.sim, moving, this.workAlpha);
     const chopping = choppingPose(person, this.sim, moving, this.workAlpha);
     const crafting = craftingPose(person, this.sim, moving, this.workAlpha);
-    const workPose = gathering ?? fishing ?? extraction ?? digging ?? chopping ?? crafting;
+    const farming = farmingPose(person, this.sim, moving, this.workAlpha);
+    const workPose = gathering ?? fishing ?? extraction ?? digging ?? chopping ?? crafting ?? farming;
     const torch = heldTorchFor(person);
     const otherHeld = gathering || crafting ? null : heldItemFor(person, this.sim.config.carry.autoEquipTools, true);
     const aspect: PersonAspect = {

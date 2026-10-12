@@ -2,7 +2,7 @@
 import type { Simulation } from '../sim/core/Simulation.ts';
 import type { Person } from '../sim/entities/Person.ts';
 import { ARRIVAL_RADIUS } from '../sim/systems/MovementSystem.ts';
-import { CHOP_POSES, DIG_POSES, EXTRACT_POSES, FISH_POSES, GATHER_POSES, MAKE_POSES, type ArtPose } from './ArtManifest.ts';
+import { CHOP_POSES, DIG_POSES, EXTRACT_POSES, FARM_POSES, FISH_POSES, GATHER_POSES, MAKE_POSES, type ArtPose } from './ArtManifest.ts';
 import { RECIPES } from '../sim/entities/Recipe.ts';
 import { isStationFor } from '../sim/entities/Building.ts';
 
@@ -109,4 +109,17 @@ export function craftingPose(
     if (!station?.complete || !isStationFor(station.def, recipe.station) || !station.contains(person.x, person.y)) return null;
   }
   return workFrame(MAKE_POSES, person.workedTicks, alpha);
+}
+
+/** Sowing and reaping share a low, hand-worked crop gesture. */
+export function farmingPose(
+  person: Person, sim: Pick<Simulation, 'buildingsById'>,
+  moving: boolean, alpha = 1,
+): ArtPose | null {
+  if (moving || !person.alive || (person.action !== 'sow' && person.action !== 'reap') || person.workedTicks <= 0 || person.targetBuildingId === null) return null;
+  const field = sim.buildingsById.get(person.targetBuildingId);
+  if (!field?.complete || !field.crop || !field.contains(person.x, person.y)) return null;
+  // Show the hand motion only while the crop's actual state supports this order.
+  if (person.action === 'sow' ? !field.crop.isFallow : !field.crop.isRipe) return null;
+  return workFrame(FARM_POSES, person.workedTicks, alpha);
 }

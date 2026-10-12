@@ -1,3 +1,14 @@
+## 2026-10-12 — M15 fase 17: gesto de cultivo
+
+Sembrar y segar usan cuatro poses generadas cuando existe una orden real en un
+campo completo y el cultivo conserva el estado correspondiente. El gesto se
+apaga al viajar, perder progreso, salir del campo o cambiar el cultivo. Captura
+de cosecha real en `artifacts/screenshots/m15-farming-animation-2026-10-12/`;
+las ejecuciones repetidas de Playwright guardan en `test-results/` para
+preservar el registro fechado. Typecheck y pruebas focales de arte/selector
+pasan. No añade estado de simulación ni RNG. La fase 17 continúa abierta para
+las demás familias.
+
 ## 2026-10-12 — m15: diagnosticar elección de conservas en `salters`
 
 El escenario registra stock conservado en los inventarios, hambre de sus

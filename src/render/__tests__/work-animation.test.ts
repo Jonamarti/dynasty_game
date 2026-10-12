@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Person } from '../../sim/entities/Person.ts';
 import { RNG } from '../../sim/core/RNG.ts';
-import { diggingPose, extractionPose, fishingPose, gatheringPose } from '../WorkAnimation.ts';
+import { diggingPose, extractionPose, farmingPose, fishingPose, gatheringPose } from '../WorkAnimation.ts';
 import type { Simulation } from '../../sim/core/Simulation.ts';
 
 function fixture() {
@@ -142,6 +142,38 @@ describe('digging animation', () => {
     expect(diggingPose(person, sim, false, 1)).toBe('d1');
     expect(diggingPose(person, sim, false, 50)).toBe('d1');
     expect(diggingPose(person, sim, false, -50)).toBe('d0');
+  });
+});
+
+describe('farming animation', () => {
+  function farmFixture() {
+    const person = new Person('Farmer', 4, 4, 0, new RNG('farm-animation'));
+    person.action = 'sow'; person.targetBuildingId = 3; person.workedTicks = 1;
+    const crop = { isFallow: true, isRipe: false };
+    const field = { complete: true, crop, contains: (x: number, y: number) => x >= 3 && x <= 5 && y >= 3 && y <= 5 };
+    const sim = { buildingsById: new Map([[3, field]]) } as unknown as Pick<Simulation, 'buildingsById'>;
+    return { person, crop, field, sim };
+  }
+
+  it('cycles the planted hand gesture only during real sowing or ripe-crop reaping', () => {
+    const { person, crop, sim } = farmFixture();
+    expect([1, 3, 5, 7, 9].map(ticks => { person.workedTicks = ticks; return farmingPose(person, sim, false, 0); }))
+      .toEqual(['a0', 'a1', 'a2', 'a3', 'a0']);
+    person.action = 'reap'; crop.isFallow = false; crop.isRipe = true;
+    expect(farmingPose(person, sim, false)).toBe('a0');
+  });
+
+  it('stops when travelling, outside the field, without work, or when the crop no longer matches', () => {
+    const { person, crop, field, sim } = farmFixture();
+    expect(farmingPose(person, sim, true)).toBeNull();
+    person.x = 7;
+    expect(farmingPose(person, sim, false)).toBeNull();
+    person.x = 4; person.workedTicks = 0;
+    expect(farmingPose(person, sim, false)).toBeNull();
+    person.workedTicks = 1; crop.isFallow = false;
+    expect(farmingPose(person, sim, false)).toBeNull();
+    crop.isFallow = true; field.complete = false;
+    expect(farmingPose(person, sim, false)).toBeNull();
   });
 });
 

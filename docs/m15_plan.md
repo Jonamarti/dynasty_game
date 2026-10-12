@@ -2255,6 +2255,15 @@ real; capturas revisadas en `artifacts/screenshots/m15-dig-2026-10-03-final-pass
 Contrato: [m15_dig_animation.md](m15_dig_animation.md). La tala ya tiene su gesto;
 otras familias siguen pendientes. La fase 17 continúa abierta.
 
+**Avance del 2026-10-12 (gesto de cultivo).** Las acciones reales de sembrar y
+segar muestran cuatro poses generadas `a0`–`a3` mientras la persona trabaja en
+el campo objetivo y el cultivo conserva el estado requerido. Viaje, falta de
+progreso, salir del campo o cambiar de cultivo apagan el gesto; la fase usa el
+reloj existente y no lee inventario ni conocimientos privados. Contrato:
+[m15_farming_animation.md](m15_farming_animation.md). Captura:
+`artifacts/screenshots/m15-farming-animation-2026-10-12/00-active-crop-harvest.png`.
+La fase 17 sigue abierta para otras familias.
+
 **Avance del 2026-10-03 (animales):** cuatro poses de comer, correr y atacar
 en ciervo, jabalí, liebre, lobo, oso y lince, compartidas por especie. El renderer
 lee marcas de eventos reales. Cuenta también desplazamientos norte/sur y conserva
