@@ -32,8 +32,7 @@ fase 9).
 | `answered` (adultos) | ≥90% | **33,3%** | n/a (muy pocos golpes) | **0,0%** |
 | niños que huyen | ≥90% de atacados | n/a (0/0 muestras) | n/a (0/0 muestras) | n/a (0/0 muestras) |
 | `peaceShare` | ≥60% | 99,9% | 99,9% | 99,7% |
-| 
-ightNearHome` (<15 casillas) | ≥75% | 82,6% | 78,0% | 80,6% |
+| `nightNearHome` (<15 casillas) | ≥75% | 82,6% | 78,0% | 80,6% |
 | niños dentro del radio (¬far>12) | ≥80% | 92,6% | 85,6% | 92,9% |
 | `fireBy` | ≥50% de semillas (solo se pide en `century`) | 90,0% (18/20) | — | — |
 | `adoption` mediana | ≤80 días | 7 días | 4 días (5 cohortes nunca llegaron) | 8 días (1 nunca llegó) |
@@ -51,8 +50,7 @@ de la banda, `peaceShare`, sueño cerca de casa, niños dentro del radio,
 parámetro sin saber qué mide. Es probable que esté relacionado con las fases 7
 (coste de las órdenes) y 8 (incursiones e instigadores), que son las más
 recientes en tocar cómo se responde a una agresión; se deja anotado en
-`docs/bugs.md` para diagnosticarlo con 
-pm run why` antes de mover ningún
+`docs/bugs.md` para diagnosticarlo con `npm run why` antes de mover ningún
 coeficiente. `violentShare` en `lean` (0,2%) está muy por debajo del 5%-30%
 recomendado — el mundo pobre es demasiado pacífico para su propia escasez —
 mientras que `century` (4,5%) queda justo al borde inferior.
@@ -95,8 +93,7 @@ las cohortes más cortas y merecen seguimiento, no ajuste:
   completa que pide el objetivo — a ~11 min/semilla, unas 3,7 horas de
   cómputo; se deja para cuando haya un tramo de ejecución en segundo plano
   igual de largo.
-- **Diagnóstico de `answered`** con 
-pm run why` sobre una agresión concreta,
+- **Diagnóstico de `answered`** con `npm run why` sobre una agresión concreta,
   antes de mover el coeficiente de autoridad o de ánimo de respuesta.
 - **La segunda pasada de calibración (fase 41)**, después de los bloques
   III-VI (manos, sal, noche, cuerpo, fauna), que es la que de verdad fija
@@ -108,17 +105,11 @@ Se actualizaron checks cortos tras M15, sin cambiar parámetros:
 
 | Escenario | Comando | Resultado | Límite |
 |---|---|---|---|
-| `food-news` | 
-pm.cmd run sim:check -- --scenario food-news` | PASS 1/1, `word-of-food-travels` | 600 pasos; prueba el mecanismo de rumor, no su adopción poblacional. |
-| `frontier` | 
-pm.cmd run sim:check -- --scenario frontier` | PASS 2/2, 
-obody-drinks-the-sea`, `rivers-are-crossed` | 300 pasos; prueba agua/frontera en una semilla. |
-| `frontier-cohort` | 
-pm.cmd run sim:seeds -- --scenario frontier-cohort --seeds 20` | supervivencia media 91,8%; `worldLost` 0/20; colapso 0/20; 43 nacimientos; 2 muertes por deshidratación y 24 por hambre | 12.000 pasos/semilla; 485,1 s bajo cohortes simultáneas. Sin comparación emparejada ni inferencia de mejora. |
-| `band` | 
-pm.cmd run sim:check -- --scenario band` | 3 fallos: `cravings-steer-the-diet`, `perf-budget`, `hills-see-farther` | Una sola semilla, ejecutada mientras corrían cohortes largas; la cifra de rendimiento no es una medición válida bajo esa carga. |
-| `salters` | 
-pm.cmd run sim:check -- --scenario salters` | FAIL `preserved-food-lasts`: 0/3 comidas invernales conservadas | El monitor de pérdida sigue sin comparación que detecte el build sin recetas de conserva; no demuestra mejora ni habilita 15c. |
+| `food-news` | `npm.cmd run sim:check -- --scenario food-news` | PASS 1/1, `word-of-food-travels` | 600 pasos; prueba el mecanismo de rumor, no su adopción poblacional. |
+| `frontier` | `npm.cmd run sim:check -- --scenario frontier` | PASS 2/2, `nobody-drinks-the-sea`, `rivers-are-crossed` | 300 pasos; prueba agua/frontera en una semilla. |
+| `frontier-cohort` | `npm.cmd run sim:seeds -- --scenario frontier-cohort --seeds 20` | supervivencia media 91,8%; `worldLost` 0/20; colapso 0/20; 43 nacimientos; 2 muertes por deshidratación y 24 por hambre | 12.000 pasos/semilla; 485,1 s bajo cohortes simultáneas. Sin comparación emparejada ni inferencia de mejora. |
+| `band` | `npm.cmd run sim:check -- --scenario band` | 3 fallos: `cravings-steer-the-diet`, `perf-budget`, `hills-see-farther` | Una sola semilla, ejecutada mientras corrían cohortes largas; la cifra de rendimiento no es una medición válida bajo esa carga. |
+| `salters` | `npm.cmd run sim:check -- --scenario salters` | FAIL `preserved-food-lasts`: 0/3 comidas invernales conservadas | El monitor de pérdida sigue sin comparación que detecte el build sin recetas de conserva; no demuestra mejora ni habilita 15c. |
 
 La lectura de `band` no cambia el registro de fallos previos. Los tres checks
 ya constan como fallos heredados en la línea base; no se ajustaron sus umbrales.
@@ -142,8 +133,7 @@ El detalle y la decisión de no activar la tasa global siguen en
 
 ### `century`, cohorte actual de 20 semillas
 
-
-pm.cmd run sim:seeds -- --scenario century --seeds 20` terminó en 1.964,9 s
+`npm.cmd run sim:seeds -- --scenario century --seeds 20` terminó en 1.964,9 s
 de tiempo de herramienta, con 40.000 pasos por semilla. Resultados: supervivencia
 media 54,8%; colapso 1/20; `worldLost` 0/20; caída >40% recuperada 0/31 (las 31
 seguían censuradas al acabar); `answered` 79,5% (objetivo ≥90%); aprendizaje de
@@ -157,8 +147,7 @@ emparejado y sin aislar un mecanismo, esta diferencia no atribuye la caída a
 una funcionalidad concreta. No se cambió ningún parámetro; `lean` y
 `generations` siguen en curso.
 
-El diagnóstico 
-pm.cmd run violence -- --scenario century --steps 40000
+El diagnóstico `npm.cmd run violence -- --scenario century --steps 40000
 --cases` sobre el seed nominal terminó sin casos de adultos golpeados para
 seguir con `why`; observó cinco muertes por hambre en ese seed sin exponer una
 causa individual. Esto no diagnostica el numerador de `answered` ni explica la
@@ -171,8 +160,7 @@ confirma sus checks de mecanismo.
 
 ### `lean`, cohorte actual de 20 semillas
 
-
-pm.cmd run sim:seeds -- --scenario lean --seeds 20` terminó en 935,1 s con
+`npm.cmd run sim:seeds -- --scenario lean --seeds 20` terminó en 935,1 s con
 24.000 pasos por semilla: supervivencia media 4,5%; colapso <25% en 20/20;
 `worldLost` 2/20; 2 nacimientos y 702 muertes (99 lactantes, 64 niños mayores,
 326 adultos murieron de hambre); ninguna de 60 caídas se recuperó antes del
@@ -180,7 +168,7 @@ final y 17/20 mundos no tenían banda capaz de recuperarse. `answered` 77,3%,
 malnutrición 0,249, `peaceShare` 99,8%, `inBandKillRate` 0,000; `firemaking`
 se conoció primero en el día 44. Frente a la referencia de 21,8% y 11/20
 colapsos, el corte emparejado más reciente ya estaba en 3,26% antes y 2,89%
-después de fase 27 y 20/20 colapsos. Los tres resultados son de revisiones
+después de fase 27, con 20/20 colapsos. Los tres resultados son de revisiones
 distintas: el movimiento histórico grande ocurrió antes de fase 27 y el 4,5%
 actual no demuestra una regresión nueva ni una mejora causal. La semilla exacta
 debe compararse bajo una ablación a la vez; no se ajustan parámetros con este
