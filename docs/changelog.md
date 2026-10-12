@@ -1,3 +1,10 @@
+## 2026-10-12 — docs: precisar límite del proxy `answered`
+
+Un diagnóstico temporal de `generations` vio una sola repetición de golpe y
+ninguna sin respuesta, insuficiente para explicar el 79,5% de `century`. Se
+aclaró que el proxy solo cuenta segundos golpes del mismo agresor en 40 ticks;
+no se ajustan coeficientes. El detalle queda en calibración y bugs.
+
 ## 2026-10-12 — m15: prueba discriminante de conservas en invierno
 
 El observador `salters` consulta ahora el catálogo vivo de recetas para decidir

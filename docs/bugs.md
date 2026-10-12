@@ -5159,6 +5159,19 @@ asesinatos, pero añadió 80 muertes por hambre; los supervivientes por semilla
 variaron sin dirección consistente. Depredadores no explican por sí solos la
 crisis de `lean`. Resultados completos: `m15_calibration.md`.
 
+### 2026-10-12 — M15 fase 41: proxy `answered` sigue sin causa aislada
+
+El 79,5% de `century` sigue bajo el objetivo ≥90%. El contador `answered` no
+mide toda reacción a violencia: cuenta solo el segundo golpe del mismo agresor
+dentro de 40 ticks y clasifica si la víctima huye, forcejea o pide ayuda. Un
+probe temporal de `generations` (144.000 pasos) observó solo una repetición
+(`blow_repeat=1`, `blow_repeat_unanswered=0`), en tick 12.375; la víctima ya
+ejecutaba `give`. El script `violence --cases` registró 13 huidas y un agresor
+desaparecido, pero son todos los ataques, no el denominador reducido de este
+proxy. Una muestra no diagnostica el porcentaje del cohorte; no se cambió el
+umbral ni la IA. Hace falta telemetría por seed del numerador/denominador antes
+de ajustar respuesta. Ver `m15_calibration.md`.
+
 ### 2026-10-12 — M15 fase 41: estacionalidad de bayas agrava `lean`
 
 En una segunda ablación emparejada de 20 seeds (`world.bushSeasons=false`, que

@@ -147,11 +147,16 @@ una funcionalidad concreta. No se cambió ningún parámetro. Cohortes completas
 de `lean` y `generations` constan más abajo; una ablación adicional de `lean`
 sin depredadores mostró efecto heterogéneo y no aisló la causa alimentaria.
 
-El diagnóstico `npm.cmd run violence -- --scenario century --steps 40000
---cases` sobre el seed nominal terminó sin casos de adultos golpeados para
-seguir con `why`; observó cinco muertes por hambre en ese seed sin exponer una
-causa individual. Esto no diagnostica el numerador de `answered` ni explica la
-supervivencia agregada. El resultado queda inconcluso.
+El diagnóstico de century `npm.cmd run violence -- --scenario century --steps
+40000 --cases` sobre el seed nominal terminó sin adultos golpeados que seguir
+con `why`; observó cinco muertes por hambre sin exposición individual. No
+diagnostica `answered`. Un probe temporal de `generations` a 144.000 pasos dio
+`blow_repeat=1` y `blow_repeat_unanswered=0`: la única repetición ocurrió en
+tick 12.375 y la víctima ya ejecutaba `give`. Los casos del instrumento de
+violencia (13 huidas, 1 agresor desaparecido) miden todos los golpes, mientras
+`answered` solo mide el segundo golpe del mismo agresor dentro de 40 ticks.
+Una muestra de un solo evento no explica el 79,5% de century; la causa sigue
+abierta y no se ajusta el umbral ni los coeficientes.
 
 No hay un barrido de parámetros ni una decisión de calibración. La muestra
 única de los escenarios cortos solo confirma sus checks de mecanismo; las
