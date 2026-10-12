@@ -15818,3 +15818,17 @@ las etapas y el formato. La cohorte `century` de 20 semillas recoge el desglose
 `answered` pero precede al embudo; una muestra posterior de dos semillas valida
 el formato sin ser una calibración. No se cambió el comportamiento del juego ni
 se ajustaron parámetros.
+
+## 2026-10-12 — M15 fase 12f: cohorte apareada de lectores de luz
+
+Se comparó `light.enabled=true` y `false` en serie sobre HEAD `0c93cfc`, con
+las mismas 20 semillas `lean` y 24.000 pasos cada una. La supervivencia media
+fue 4,2% frente a 6,1% (−1,9 puntos, dentro de la cota de 3 puntos de 12b/12d);
+`inBandKillRate` fue 0,000 en ambos brazos. Los 20 mundos cayeron por debajo
+del 25% del pico en ambos. Los golpes interbandas fueron 126 frente a 32; no
+hubo golpes ni robos intrabanda. Este escenario frágil no demuestra una mejora
+general de supervivencia. `sim:seeds` no separa robos de día y noche ni cuenta
+personas-día con antorcha encendida; siguen sin medirse la cuota de robo
+nocturno y la adopción poblacional de antorchas. La cota independiente de 12e
+también sigue abierta. Dos corridas previas que cruzaron versiones se
+descartaron. Agregados y límites: `docs/m15_phase12f_nights.md`.

@@ -1684,9 +1684,14 @@ y sus tres checks pasan con oportunidades controladas de observación,
 fabricación y encendido autónomo: un portador con creencia de luz, frío y una
 antorcha real, sin orden de encendido. Quitar la antorcha hace fallar el check.
 El fixture desactiva la presión de volver a casa para aislar la decisión; una
-persona/semilla no demuestra adopción poblacional. Contrato y límites:
-[12f nights](m15_phase12f_nights.md). La cohorte de robos/violencia y coste ≤3
-puntos siguen pendientes.
+persona/semilla no demuestra adopción poblacional. La cohorte autorizada de 20
+semillas `lean` apareadas en HEAD `0c93cfc` mide 4,2% de supervivencia con luz
+frente a 6,1% sin lectores (−1,9 puntos; dentro de ≤3), `inBandKillRate` 0,000
+en ambos brazos, y 126 frente a 32 golpes interbandas; ambos brazos cayeron por
+debajo del 25% del pico en las veinte semillas. No hubo golpes ni robos de
+propiedad intrabanda en el recuento. El contrato registra también las corridas
+descartadas, el límite de separar día/noche y los resultados: [12f nights](m15_phase12f_nights.md).
+La cota separada de 12e y la adopción poblacional de antorchas siguen abiertas.
 
 - Escenario **`nights`**: invierno duro, dos bandas que saben `firemaking`.
 - `darkness-hides`: la fracción de hechos con testigo es menor de noche que de
