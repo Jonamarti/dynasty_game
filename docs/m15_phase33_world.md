@@ -16,7 +16,7 @@ Lo nuevo, todo detrás de `options.game` (apagado en las herramientas):
 
 Ningún stream es un `fork` de `Simulation.rng` ni toca `spawnRng`: con o sin pueblos, la comarca detallada es la misma (el ajuste en `WorldState` está en el commit siguiente). No hay fila nueva en `AGENTS.md`.
 
-**Repertorio de nombres: no se hace todavía.** El plan lo nombra, pero un pueblo solo tiene nombres cuando alguien lo mira de cerca y se materializa en personas con nombre (fases 34-36); declararlo ahora sería contenido inerte (regla del propietario). Queda en `docs/bugs.md`.
+**Nombres al materializar residentes (2026-10-12).** `PeopleSim` aún no guarda nombres de personas, pero el lector ya existe en `WorldState.materializeResidents`: residentes reciben un nombre reproducible de una fonología ficticia regional al materializarse. Los datos de la Tierra del repositorio no incluyen lingüística, así que no se afirma correspondencia histórica. Ver [detalle de nombres](m15_phase33_regional_names.md); la limitación de fuentes queda en `docs/bugs.md`.
 
 ## El registro (`PeopleWorldRecord`)
 

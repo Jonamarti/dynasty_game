@@ -9,7 +9,7 @@ import { PlaceMemory } from '../social/PlaceMemory.ts';
 import { Person } from '../entities/Person.ts';
 import { Household } from '../entities/Household.ts';
 import { RNG } from '../core/RNG.ts';
-import { NAME_ONSETS, NAME_CODAS } from '../../data/names.ts';
+import { regionalResidentName } from './RegionalNames.ts';
 import { WorldKnowledge } from '../social/WorldKnowledge.ts';
 import { materialize } from './PeopleMaterialize.ts';
 import { populationOf } from './PeopleSim.ts';
@@ -783,7 +783,13 @@ export class WorldState {
       const privateState = destination as unknown as { normsByBand:Map<number,typeof band.norms>;strangerRegardByBand:Map<number,number> };
       privateState.normsByBand.set(bandId,band.norms); privateState.strangerRegardByBand.set(bandId,band.strangerRegard);
       for(const sample of drawn) {
-        const spot = rng.pick(ground), name = rng.pick(NAME_ONSETS)+rng.pick(NAME_CODAS);
+        const spot = rng.pick(ground);
+        // These two slots used to choose an onset and coda from the global bank
+        // shared resident stream. Reserve them so person traits remain stable;
+        // names now have their own seed-derived stream and follow identity.
+        rng.next(); rng.next();
+        const personId = destination.ids.snapshot().next.person;
+        const name = regionalResidentName(destination.config.seed, this.geography.kind, region, personId);
         const person = new Person(name,spot.x,spot.y,bandId,rng,destination.time.daysPerYear,destination.ids);
         origins.push([person.id,people.id]);
         person.sex=sample.sex; person.age=sample.ageYears*person.daysPerYear; for(const tech of sample.techs) person.knownTech.add(tech);

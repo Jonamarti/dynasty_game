@@ -3378,9 +3378,9 @@ historia tenga la misma forma sin ser la misma.
   aleatorio / la Tierra…» con la lista, y **elegir dónde empieza tu pueblo**
   (en la Tierra, por ejemplo, la península ibérica). Los demás pueblos se
   siembran en todo el mundo (fase 33).
-- **Nombres:** cada pueblo recibe nombre de un **repertorio por región** (en la
-  Tierra, por gran familia lingüística de la zona; en el aleatorio,
-  fonologías generadas). **No se colocan pueblos históricos por guion**: no
+- **Nombres:** al materializar residentes, sus nombres salen de una fonología
+  ficticia reproducible por región; los mapas terrestres disponibles no tienen
+  fuentes lingüísticas para defender familias reales. **No se colocan pueblos históricos por guion**: no
   aparecen «los lusitanos» porque sí. Lo que se simula es algo **como** ellos:
   pueblos distintos en zonas distintas de la península, con culturas que
   divergen (memoria del propietario: surgir, no programar). Ver
@@ -3763,8 +3763,8 @@ cultura desde el principio, y el ajuste de partida del mundo (29c).
   las bandas de la comarca de partida, `PeopleSim` recibe **pueblos en todas
   las regiones habitables** (fase 32c), con una densidad que sale de la
   capacidad de carga de cada región para la técnica de partida. Cada uno
-  recibe sus normas, su `strangerRegard` y su repertorio de nombres del stream
-  del mundo, porque son culturas distintas desde el principio.
+  recibe sus normas y su `strangerRegard`; los residentes toman nombres de una
+  fonología ficticia de su región al materializarse (véase fase 33).
 - **33c. Guardado de partida** (decisión aprobada). Con los registros (28), los
   libros (32) y el estado de `PeopleSim` es poco más que serializar la comarca
   detallada al amanecer: el `WorldState`, los niveles 1 y 2, la `Simulation`
@@ -3774,7 +3774,7 @@ cultura desde el principio, y el ajuste de partida del mundo (29c).
   guardar, cargar, avanzar N pasos y comparar con no haber guardado (**tiene
   que ser bit-idéntico**).
 
-**Avance del 2026-10-07 (33a y 33c).** `PeopleWorld` pasa a `src/` y siembra el mundo en el juego (cultura propia por pueblo, densidad por productividad, región del jugador reservada); `WorldState.peoples` avanza con el reloj; la partida entera (comarca + pueblos) se guarda como un texto (`WorldStateRecord` v2, `SaveFile`) con ida y vuelta medida, en IndexedDB con exportar/importar y botones en el menú de pausa. El juego abre ahora sobre la Tierra para elegir dónde empezar (o una isla aleatoria), y todo inicio con mapa se mide para tener agua dulce (33d, 33e). **Falta:** elegir zona dentro de la región, elegir mapa, y el repertorio de nombres (cuando un pueblo se materialice). Las puertas 32c que fallan siguen fallando: el mundo sembrado es ese modelo. [Detalle](m15_phase33_world.md).
+**Avance del 2026-10-07 (33a y 33c).** `PeopleWorld` pasa a `src/` y siembra el mundo en el juego (cultura propia por pueblo, densidad por productividad, región del jugador reservada); `WorldState.peoples` avanza con el reloj; la partida entera (comarca + pueblos) se guarda como un texto (`WorldStateRecord` v2, `SaveFile`) con ida y vuelta medida, en IndexedDB con exportar/importar y botones en el menú de pausa. El juego abre ahora sobre la Tierra para elegir dónde empezar (o una isla aleatoria), y todo inicio con mapa se mide para tener agua dulce (33d, 33e). **Falta:** elegir zona dentro de la región y elegir mapa. El hueco de nombres al materializar residentes se cerró el 2026-10-12 con fonologías ficticias regionales; fuentes lingüísticas históricas no existen en los atlas actuales. Las puertas 32c que fallan siguen fallando: el mundo sembrado es ese modelo. [Detalle](m15_phase33_world.md) y [nombres](m15_phase33_regional_names.md).
 
 ## Fase 34 — Salir de la comarca (M14 fase 16)
 

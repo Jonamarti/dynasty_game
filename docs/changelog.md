@@ -1,3 +1,15 @@
+## 2026-10-12 — m15: nombres reproducibles para residentes regionales (0.15.91-alpha)
+
+Al materializar población distante, se asignan nombres desde fonologías
+ficticias derivadas por geografía y comarca; el nombre deriva además del ID
+persistente de la persona. Se mantiene la secuencia de inicialización de
+residentes y no se agregan forks de `Simulation`. Atlas actuales no respaldan
+familias lingüísticas históricas: esa limitación y el diseño están en
+`docs/m15_phase33_regional_names.md`. Tests cubren repetibilidad, inventarios
+regionales y continuidad de nombres/IDs tras viajes y guardado. Sin UI ni
+cohortes. Verificación pendiente: este worktree no incluye `node_modules` ni
+`tsc`/`vitest`; no se ejecutaron typecheck ni pruebas.
+
 ## 2026-10-12 — m15: remiendo físico de prendas (0.15.88-alpha)
 
 Se añade `mend_garment` al catálogo del inventario del dueño. La reparación
