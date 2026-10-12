@@ -1,3 +1,11 @@
+**Avance del 2026-10-12 — 14d, tinte por unidad:** `dyeing` consume un
+depósito físico de ocre rojo y guarda `GarmentUnit.dye` junto a un punto de
+estatus. Transferencias y checkpoints preservan el color; el renderer lo aplica
+a la prenda exacta que lleva la persona y lo incluye en la clave de caché.
+El recurso usa un stream propio al final y terreno rocoso como proxy geológico
+documentado. Pruebas y captura E2E en
+[`m15_phase14d_dyeing.md`](m15_phase14d_dyeing.md).
+
 **Avance del 2026-10-12 — 17, gesto de construcción:** el trabajador que
 construye o repara una obra terminada usa cuatro poses generadas `b0`–`b3`.
 El selector exige alcance, trabajo activo y progreso/materiales reales; no

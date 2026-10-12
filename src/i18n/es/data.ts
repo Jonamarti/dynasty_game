@@ -1,5 +1,13 @@
 /** Spanish for data. Keys are the English templates; see `i18n.ts`. */
 export const ES_DATA: Record<string, string> = {
+  'Red ochre': 'Ocre rojo',
+  'Red ochre deposit': 'Yacimiento de ocre rojo',
+  'node|red_ochre': 'ocre rojo',
+  'Dye': 'Teñir',
+  'That item is not a garment': 'Ese objeto no es una prenda',
+  'You need to know dyeing': 'Necesitas conocer el teñido',
+  'That garment is already dyed': 'Esa prenda ya está teñida',
+  'You need one red ochre to dye that garment': 'Necesitas una unidad de ocre rojo para teñir esa prenda',
   'Bone beads': 'Cuentas de hueso',
   'Fur hat': 'Gorro de piel',
   'Wool cloak': 'Manto de lana',

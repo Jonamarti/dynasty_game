@@ -33,10 +33,11 @@ import { equipContainer, itemCapacityFor, reconcileCarry } from './Carry.ts';
 import {
   manualEquipReasonText, manualEquipRefusal, manualEquipSlot,
   manualGarmentReasonText, manualGarmentRefusal, planGarmentMending,
-  garmentMendingReasonText, planHideDressing, hideDressingReasonText, type GarmentMendingMethod,
+  garmentMendingReasonText, planHideDressing, hideDressingReasonText, planGarmentDye, garmentDyeReasonText,
+  type GarmentMendingMethod,
 } from './ToolEquipment.ts';
 import {
-  BUSH_SPECIES, BUSHES, WILD_PLANTS, RESOURCE_KINDS, ORE_COUNTS, bushPhase, ResourceNode, isFoodKind, isPlantFood, seasonLoreKind,
+  BUSH_SPECIES, BUSHES, WILD_PLANTS, RESOURCE_KINDS, ORE_COUNTS, RED_OCHRE_DEPOSITS, bushPhase, ResourceNode, isFoodKind, isPlantFood, seasonLoreKind,
   type BushSpecies, type ResourceKind,
 } from '../entities/ResourceNode.ts';
 import { canWork } from '../knowledge/Ore.ts';
@@ -846,6 +847,9 @@ export class Simulation {
     // M15 phase 40a, appended after oreRng (row 24): iron has a pass of its
     // own so adding wet-ground candidates cannot shift the M15-37 metals.
     const ironRng = this.rng.fork();
+    // M15 phase 14d, appended after ironRng (row 25): exposed red ochre gets
+    // its own pass so it cannot move any existing resource, herd, or founder.
+    const redOchreRng = this.rng.fork();
 
     if (geographicStart) this.spawnGeographicResources();
     else this.spawnResources(spawnRng);
@@ -861,6 +865,7 @@ export class Simulation {
     this.spawnPredators(this.ecologyRng);
     this.spawnOres(oreRng);
     this.spawnIronOre(ironRng);
+    this.spawnRedOchre(redOchreRng);
     // A seed-derived pass after all existing spawns keeps both spawnRng and IDs of old fauna stable.
     this.spawnTransportAnimals(new RNG(`${this.config.seed}:transport-fauna`));
     // Geography is construction input, not live simulation state. The root may
@@ -1466,6 +1471,18 @@ export class Simulation {
   }
 
   /**
+   * Exposed iron-oxide pigment, placed after the existing deposits on its own
+   * appended stream. The map data has no ochre-specific geology yet, so both
+   * classic and mapped worlds use the same visible rock/hill terrain gate;
+   * mapped worlds still derive placement from the selected map seed and extent.
+   */
+  private spawnRedOchre(rng: RNG): void {
+    const geographic = this.geographicStart !== null;
+    this.spawnResourceKind('red_ochre', RED_OCHRE_DEPOSITS,
+      geographic ? this.geographicResourceRng('red_ochre') : rng, false);
+  }
+
+  /**
    * Places the hunters, M15 phase 23e: a pack of three wolves, a bear and a
    * lynx on the woods and hills, away from where people begin so that nobody
    * wakes beside one. Their own pass on their own stream, after everything
@@ -1524,6 +1541,9 @@ export class Simulation {
         return (biome === 'forest' || biome === 'grass' || biome === 'hills') &&
           this.treeHash.findNearest(x, y, 6, t => t.standing) !== null;
       case 'flint': return flintHabitat(biome);
+      // Ochre is exposed as mineral pigment in rocky uplands. Continental
+      // geology does not yet encode iron-oxide deposits, so see spawnRedOchre.
+      case 'red_ochre': return biome === 'rock' || biome === 'hills';
       // Reeds and clay both belong at the water's edge, which quietly makes
       // shoreline the most valuable ground to camp on.
       case 'reeds':
@@ -4353,6 +4373,14 @@ export class Simulation {
       const plan = planHideDressing(person, target.itemId ?? '', target.garmentUnitId);
       if (typeof plan === 'string') {
         this.lastRefusal = hideDressingReasonText(plan);
+        return false;
+      }
+      target = { ...target, garmentUnitId: plan.unitId };
+    }
+    if (action === 'dye_garment') {
+      const plan = planGarmentDye(person, target.itemId ?? '', target.garmentUnitId);
+      if (typeof plan === 'string') {
+        this.lastRefusal = garmentDyeReasonText(plan);
         return false;
       }
       target = { ...target, garmentUnitId: plan.unitId };

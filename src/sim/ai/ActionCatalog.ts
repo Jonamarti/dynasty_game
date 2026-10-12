@@ -50,7 +50,7 @@ import { swimRefusal, swimRouteRefusal, swimRefusalText } from '../core/Swimming
 import { houseInteriorContains, houseInteriorTiles } from '../world/HouseInterior.ts';
 import {
   manualGarmentReasonText, manualGarmentRefusal, planGarmentMending, garmentMendingReasonText,
-  planHideDressing, hideDressingReasonText,
+  planHideDressing, hideDressingReasonText, planGarmentDye, garmentDyeReasonText,
 } from '../core/ToolEquipment.ts';
 import { torchIgnitionRefusal, torchRefusalText, transferableUnits, burningTorchRefusalText } from '../core/Torch.ts';
 import { fatLampRefusal, fatLampRefusalText } from '../core/FatLamp.ts';
@@ -353,6 +353,12 @@ export function itemActions(
     reason: garmentRefusal ? manualGarmentReasonText(garmentRefusal) : undefined,
   });
   if (def?.garment) {
+    const dyeing = planGarmentDye(actor, itemId);
+    options.push({
+      id: 'dye_garment', label: t('Dye'), icon: '\u{1F3A8}',
+      enabled: typeof dyeing !== 'string',
+      reason: typeof dyeing === 'string' ? garmentDyeReasonText(dyeing) : undefined,
+    });
     const mending = planGarmentMending(actor, itemId);
     options.push({
       id: 'mend_garment', label: t('Mend'), icon: '\u{1FA79}',

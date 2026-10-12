@@ -82,7 +82,19 @@ export function wornGarmentsOf(person: Person): PersonAspect['wear'] {
   const hips = hipId && person.inventory.ownsGarmentUnit(hipId, person.equipment.hips?.unitId)
     ? hipId === 'hide_loincloth' || hipId === 'fibre_skirt' ? hipId : undefined
     : undefined;
-  return { torso, cloak, ...(feet ? { feet } : {}), ...(legs ? { legs } : {}), ...(head ? { head } : {}), ...(hips ? { hips } : {}) };
+  const dyes: NonNullable<PersonAspect['wear']['dyes']> = {};
+  const visibleSlots = [
+    ['torso', person.equipment.torso], ['cloak', person.equipment.cloak],
+    ['feet', person.equipment.feet], ['legs', person.equipment.legs],
+    ['head', person.equipment.head], ['hips', person.equipment.hips],
+  ] as const;
+  for (const [slot, equipped] of visibleSlots) {
+    if (!equipped || !person.inventory.ownsGarmentUnit(equipped.item, equipped.unitId)) continue;
+    const unit = person.inventory.garmentUnitsOf(equipped.item).find(row => row.unitId === equipped.unitId);
+    if (unit?.dye === 'ochre') dyes[slot] = '#a33d23';
+  }
+  return { torso, cloak, ...(feet ? { feet } : {}), ...(legs ? { legs } : {}), ...(head ? { head } : {}), ...(hips ? { hips } : {}),
+    ...(Object.keys(dyes).length > 0 ? { dyes } : {}) };
 }
 
 const BIOME_COLORS: Record<Biome, [string, string]> = {
@@ -164,6 +176,7 @@ const RESOURCE_COLORS: Record<ResourceKind, string> = {
   gold: '#e6c34a',
   // Bog iron reads as a dark rust stain against wet ground.
   iron_ore: '#875b4c',
+  red_ochre: '#a33d23',
 };
 
 /**

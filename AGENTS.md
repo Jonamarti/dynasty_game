@@ -51,6 +51,7 @@ invalidates every saved seed and every pinned test world.
 > | 22 | `edgeRng` (M15 phase 23h, which herd comes in at the rim, where, and which one leaves) | `Simulation.ts:660` |
 > | 23 | `oreRng` (M15 phase 37, where the native copper lies on a classic island; a map world draws each kind from its own derived stream) | `Simulation.ts:776` |
 > | 24 | `ironRng` (M15 phase 40a, where bog iron lies on a classic island; a map world draws it from its own derived stream) | after `oreRng`, before `spawnResources` |
+> | 25 | `redOchreRng` (M15 phase 14d, where finite red-ochre deposits lie on rocky ground; a map world uses its own derived stream) | after `ironRng`, before `spawnResources` |
 >
 > **The genuine append point is the line after the last row of that table**,
 > immediately before the `spawnResources` block. Appending where the comment
@@ -59,9 +60,9 @@ invalidates every saved seed and every pinned test world.
 > the same to the cereal.
 >
 > A fork appended genuinely last cannot shift anything, and the reason is worth
-> knowing: `this.rng` is drawn from **only** by these twenty-four `fork()` calls —
-> nothing else in the constructor takes a number from it — so a twenty-fifth at
-> the bottom leaves all twenty-four exactly where they were.
+> knowing: `this.rng` is drawn from **only** by these twenty-five `fork()` calls —
+> nothing else in the constructor takes a number from it — so a twenty-sixth at
+> the bottom leaves all twenty-five exactly where they were.
 >
 > This paragraph has been wrong before, which is the reason for the table. It
 > used to call the forest fork "the fourteenth" and describe it as the last one

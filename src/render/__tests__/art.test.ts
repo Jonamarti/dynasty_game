@@ -19,6 +19,7 @@ import { EXPRESSIONS } from '../../sim/core/Mood.ts';
 import { SPECIES } from '../../sim/entities/Animal.ts';
 import { DIG_TOOLS } from '../../sim/core/Earth.ts';
 import { heldItemFor } from '../Sprites.ts';
+import { ArtAtlas, type PersonAspect } from '../ArtAtlas.ts';
 import { Person } from '../../sim/entities/Person.ts';
 import { RNG } from '../../sim/core/RNG.ts';
 
@@ -80,6 +81,19 @@ describe('art coverage', () => {
 
   it('draws an inventory icon for the sling', () => {
     expect(props.keys['item/sling']).toBeDefined();
+  });
+
+  it('draws an inventory icon for mined red ochre pigment', () => {
+    expect(props.keys['item/red_ochre']).toBeDefined();
+  });
+
+  it('keeps differently dyed versions of one garment in distinct sprite cache entries', () => {
+    const aspect = (dyes?: PersonAspect['wear']['dyes']): PersonAspect => ({
+      age: 'adult', sex: 'm', dir: 'S', pose: 'idle', skin: '#d0a070', hair: '#382018', band: '#608040',
+      hairStyle: 'short', beard: false, expression: 'calm', wear: { torso: 'fur_coat', ...(dyes ? { dyes } : {}) },
+      carryBaby: false, held: null,
+    });
+    expect(ArtAtlas.aspectKey(aspect())).not.toBe(ArtAtlas.aspectKey(aspect({ torso: '#a33d23' })));
   });
 
   it('draws inventory icons for projectile ammunition', () => {

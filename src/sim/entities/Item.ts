@@ -263,6 +263,7 @@ export const ITEMS: Record<string, ItemDef> = {
   sledge:   { id: 'sledge',   label: 'Sledge',     nutrition: 0,  spoilTicks: 0,    baseValue: 12, class: 'bulky', hand: { perHand: 0, perArms: 0, hands: 2 }, container: { slot: 'left', capacity: 30, accepts: ['small', 'long', 'bulky', 'food'] } },
   net:      { id: 'net',      label: 'Net',        nutrition: 0,  spoilTicks: 0,    baseValue: 7, class: 'bulky', hand: { perHand: 1, perArms: 1, hands: 1 } },
   flint:    { id: 'flint',    label: 'Flint',      nutrition: 0,  spoilTicks: 0,    baseValue: 2, class: 'small', hand: { perHand: 1, perArms: 3, hands: 1 } },
+  red_ochre: { id: 'red_ochre', label: 'Red ochre', nutrition: 0, spoilTicks: 0, baseValue: 4, class: 'small', hand: { perHand: 2, perArms: 6, hands: 1 } },
   sticks:   { id: 'sticks',   label: 'Sticks',     nutrition: 0,  spoilTicks: 0,    baseValue: 1, class: 'long', hand: { perHand: 2, perArms: 6, hands: 1 } },
   wood:     { id: 'wood',     label: 'Timber',     nutrition: 0,  spoilTicks: 0,    baseValue: 4, class: 'long', hand: { perHand: 0, perArms: 1, hands: 2, shoulder: 2 } },
   handaxe:  {
@@ -690,6 +691,16 @@ export class Inventory {
     return true;
   }
 
+  /** Apply an actual pigment to one physical garment; dye never belongs to the item type. */
+  setGarmentUnitDye(unitId: string, dye: GarmentDye): boolean {
+    this.ensureGarmentUnits();
+    const index = this.garmentUnits.findIndex(unit => unit.unitId === unitId);
+    if (index < 0 || this.garmentUnits[index]!.dye !== undefined) return false;
+    this.garmentUnits[index] = validateGarmentUnit({ ...this.garmentUnits[index]!, dye });
+    this.version++;
+    return true;
+  }
+
   /** Apply daily wear to exactly one unit; a ruined unit is destroyed outright. */
   applyGarmentWear(unitId: string, amount: number): 'missing' | 'worn' | 'broken' {
     if (!Number.isFinite(amount) || amount < 0 || amount > 1) throw new RangeError('garment wear must be between 0 and 1');
@@ -997,32 +1008,44 @@ export interface GarmentUnit {
   readonly dressingProgress?: number;
   /** M15 phase 14d: visible status value stays with the physical garment. */
   readonly status?: number;
+  /** M15 phase 14d: pigment carried by this physical garment, not its item id. */
+  readonly dye?: GarmentDye;
 }
+
+export type GarmentDye = 'ochre';
 
 function validateGarmentUnit(value: unknown): GarmentUnit {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new TypeError('garment unit must be an object');
   const unit = value as Partial<GarmentUnit>;
   const fields = Object.keys(value);
-  const legacy = fields.length === 4 && !Object.hasOwn(value, 'hideDressed') && !Object.hasOwn(value, 'dressingProgress');
+  const hasHideDressed = Object.hasOwn(value, 'hideDressed');
+  const hasDressingProgress = Object.hasOwn(value, 'dressingProgress');
+  const hasDressing = hasHideDressed && hasDressingProgress;
+  const dressingPairValid = hasHideDressed === hasDressingProgress;
   const hasStatus = Object.hasOwn(value, 'status');
-  const statusOnly = fields.length === 5 && hasStatus && !Object.hasOwn(value, 'hideDressed') && !Object.hasOwn(value, 'dressingProgress');
-  if ((!legacy && !statusOnly && (fields.length !== (hasStatus ? 7 : 6) || typeof unit.hideDressed !== 'boolean' ||
-        !Number.isFinite(unit.dressingProgress) || unit.dressingProgress! < 0 || unit.dressingProgress! > 140)) ||
+  const hasDye = Object.hasOwn(value, 'dye');
+  const legacy = !hasDressing && !hasStatus && !hasDye && fields.length === 4;
+  const expectedFields = 4 + (hasDressing ? 2 : 0) + (hasStatus ? 1 : 0) + (hasDye ? 1 : 0);
+  if ((!legacy && (fields.length !== expectedFields || !dressingPairValid ||
+        (hasDressing && (typeof unit.hideDressed !== 'boolean' ||
+          !Number.isFinite(unit.dressingProgress) || unit.dressingProgress! < 0 || unit.dressingProgress! > 140)))) ||
       typeof unit.unitId !== 'string' || !unit.unitId || typeof unit.itemId !== 'string' || !unit.itemId ||
       !Number.isFinite(unit.wear) || unit.wear! < 0 || unit.wear! > 1 ||
       !Number.isFinite(unit.repairProgress) || unit.repairProgress! < 0 || unit.repairProgress! > 140) {
     throw new RangeError('garment unit has invalid identity, condition, repair, or dressing progress');
   }
-  const hideDressed = legacy || statusOnly ? false : unit.hideDressed!;
-  const dressingProgress = legacy || statusOnly ? 0 : unit.dressingProgress!;
+  const hideDressed = hasDressing ? unit.hideDressed! : false;
+  const dressingProgress = hasDressing ? unit.dressingProgress! : 0;
   if ((hideDressed || dressingProgress > 0) && ITEMS[unit.itemId]?.garment?.material !== 'hide') {
     throw new RangeError('only hide garments can carry dressing state');
   }
-  const status = unit.status ?? ITEMS[unit.itemId]?.garment?.status;
+  const dye = unit.dye;
+  if (dye !== undefined && dye !== 'ochre') throw new RangeError('garment dye must be a supported pigment');
+  const status = unit.status ?? ITEMS[unit.itemId]?.garment?.status ?? (dye === 'ochre' ? 1 : undefined);
   if (status !== undefined && (!Number.isFinite(status) || status < 0 || status > 10)) throw new RangeError('garment status must be between zero and ten');
   return { unitId: unit.unitId, itemId: unit.itemId, wear: unit.wear!, repairProgress: unit.repairProgress!,
     ...(hideDressed || dressingProgress > 0 || status !== undefined ? { hideDressed, dressingProgress } : {}),
-    ...(status !== undefined ? { status } : {}) };
+    ...(status !== undefined ? { status } : {}), ...(dye !== undefined ? { dye } : {}) };
 }
 
 export function validateInventoryTransferState(value: unknown): InventoryTransferState {

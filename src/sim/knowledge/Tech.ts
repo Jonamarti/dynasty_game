@@ -226,6 +226,8 @@ export const TECHS = [
   'earthworks',
   // M15 phase 16d: the household fire web has the hearth and lamp together.
   'fireplace', 'fat_lamp',
+  // M15 phase 14d: a unit-targeted pigment treatment, appended to preserve web order.
+  'dyeing',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -533,6 +535,19 @@ export const TECH: Record<Tech, TechDef> = {
         weight: 0.4, story: 'made a bright ornament to be noticed among the band' },
     ],
     description: 'Shaped bone beads strung on cord and worn at the head; their visible ornament earns respect.',
+  },
+  dyeing: {
+    id: 'dyeing', label: 'Dyeing', domain: 'cloth', tier: 'craft', web: 'clothing',
+    age: 'upper_palaeolithic', firstKnown: 'Upper Palaeolithic pigment use',
+    kind: 'device', requires: ['ochre'], difficulty: 0.3, skill: 'build',
+    prototype: { red_ochre: 1, hide_cape: 1 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'ochre' }, { kind: 'holding', item: 'red_ochre' }, { kind: 'holding', item: 'hide_cape' }],
+        weight: 1.0, story: 'rubbed red earth into a hide cloak until its colour stayed' },
+      { needs: [{ kind: 'knows', tech: 'ochre' }, { kind: 'holding', item: 'red_ochre' }, { kind: 'feeling', need: 'company' }],
+        weight: 0.5, story: 'marked a garment with red pigment so others would notice it' },
+    ],
+    description: 'Grind exposed red ochre into a lasting colour on one garment at a time.',
   },
   linen_tunic: {
     id: 'linen_tunic', label: 'Linen tunic', domain: 'cloth', tier: 'craft', web: 'clothing',
@@ -2912,6 +2927,8 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
     site: 'RECIPES.fur_hat retained needle; ITEMS.fur_hat garment; warmthFrom and Renderer.wornGarmentsOf' },
   beads: { summary: 'Worn bone beads ease status pressure and improve first impressions.',
     site: 'RECIPES.bone_beads; GarmentUnit.status; statusPressure and firstImpression' },
+  dyeing: { summary: 'Red ochre permanently colours one physical garment and marks its wearer.',
+    site: 'ResourceNode.red_ochre; GarmentUnit.dye; ArtAtlas garment tint' },
   moccasins: { summary: 'Sewn moccasins warm the feet more than wraps while actually worn.',
     site: 'RECIPES.moccasins retained needle; ITEMS.moccasins garment; warmthFrom and Renderer.wornGarmentsOf' },
   leggings: { summary: 'Sewn leggings warm the legs only while worn.',

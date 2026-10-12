@@ -7,6 +7,13 @@ without resetting condition. `setGarmentUnitCondition` bounds condition and
 banked repair progress. New and legacy garments start pristine, and explicit
 inventory transfer records validate and preserve these rows.
 
+The 2026-10-12 dyeing slice adds an optional `GarmentUnit.dye` value. Its only
+supported value is `ochre`; applying it consumes one physical `red_ochre`
+resource atomically and adds one status point to that unit. The exact dye is
+preserved by the same inventory/checkpoint paths as wear and repair. The art
+renderer reads the exact currently worn unit and tints its garment layers;
+spare clothing remains private. See the [phase 14d dyeing contract](m15_phase14d_dyeing.md).
+
 The 2026-10-11 pile-transfer slice also gives each worn slot an exact unit
 reference and preserves garment rows through drop, pickup, and carry overflow.
 When inventories merge, colliding inventory-local IDs are re-keyed; condition
@@ -150,6 +157,7 @@ The current Inventory boundary makes unit movement explicit:
 type GarmentUnit = {
   unitId: string; itemId: string; wear: number; repairProgress: number;
   hideDressed?: boolean; dressingProgress?: number;
+  dye?: 'ochre';
 };
 
 inventory.takeGarmentUnit(itemId): GarmentUnit | null;

@@ -34,8 +34,14 @@ export const RESOURCE_KINDS = [
   'gold',
   // M15 phase 40a: bog iron is a later, separately placed wet-ground ore.
   'iron_ore',
+  // M15 phase 14d: exposed iron-oxide ochre is an independent deposit, not
+  // generic mud recoloured by the garment action. Simulation gives it its own
+  // appended stream and spawn pass.
+  'red_ochre',
 ] as const;
 export type ResourceKind = (typeof RESOURCE_KINDS)[number];
+/** Finite classic-world quota for the non-metal red-earth pigment deposits. */
+export const RED_OCHRE_DEPOSITS = 5;
 
 export interface ResourceDef {
   kind: ResourceKind;
@@ -129,6 +135,10 @@ export const RESOURCE_DEFS: Record<ResourceKind, ResourceDef> = {
   iron_ore: {
     kind: 'iron_ore', itemId: 'iron_ore', maxAmount: 20, regrowPerTick: 0,
     harvestTicks: 24, skill: 'knap', requiresTech: 'mining',
+  },
+  red_ochre: {
+    kind: 'red_ochre', itemId: 'red_ochre', maxAmount: 12, regrowPerTick: 0,
+    harvestTicks: 14, skill: 'knap', groundLevel: true,
   },
 };
 

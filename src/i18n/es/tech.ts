@@ -1,5 +1,12 @@
 /** Spanish for tech. Keys are the English templates; see `i18n.ts`. */
 export const ES_TECH: Record<string, string> = {
+  'Dyeing': 'Teñido',
+  'Upper Palaeolithic pigment use': 'Uso de pigmentos en el Paleolítico superior',
+  'rubbed red earth into a hide cloak until its colour stayed': 'frotó tierra roja sobre una capa de piel hasta fijar el color',
+  'marked a garment with red pigment so others would notice it': 'marcó una prenda con pigmento rojo para que los demás la vieran',
+  'Grind exposed red ochre into a lasting colour on one garment at a time.': 'Muele ocre rojo expuesto para fijar el color en una prenda cada vez.',
+  'Red ochre permanently colours one physical garment and marks its wearer.': 'El ocre rojo tiñe de forma permanente una prenda física y distingue a quien la lleva.',
+  'ResourceNode.red_ochre; GarmentUnit.dye; ArtAtlas garment tint': 'ResourceNode.red_ochre; GarmentUnit.dye; tinte de prenda de ArtAtlas',
   'Upper Palaeolithic ornaments; exact dates vary': 'Adornos del Paleolítico superior; las fechas exactas varían',
   'strung shaped bone beads together to make a visible personal ornament': 'ensartó cuentas de hueso talladas para crear un adorno personal visible',
   'made a bright ornament to be noticed among the band': 'hizo un adorno llamativo para destacar entre la banda',

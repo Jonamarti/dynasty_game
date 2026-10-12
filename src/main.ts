@@ -943,6 +943,13 @@ function handleItemAction(
       say(ordered ? t('dressing hide') : reason ?? t('could not dress that hide garment'), ordered);
       break;
     }
+    case 'dye_garment': {
+      const ordered = sim.order(person, verb, { itemId });
+      const reason = ordered ? null : sim.lastRefusal;
+      if (!ordered) sim.lastRefusal = null;
+      say(ordered ? t('dyeing garment') : reason ?? t('could not dye that garment'), ordered);
+      break;
+    }
     case 'light_torch': {
       const ordered = sim.order(person, verb, { itemId });
       const reason = ordered ? null : sim.lastRefusal;

@@ -1,3 +1,11 @@
+## 2026-10-12 — M15 fase 14d: tinte de ocre persistente
+
+`dyeing` consume un depósito real y finito de ocre rojo para cambiar una prenda
+física concreta. El color y el punto de estatus sobreviven transferencias y
+guardados, y el renderer tiñe solo la unidad equipada. Captura en
+`artifacts/screenshots/m15-phase14d-2026-10-12/03-red-ochre-dye-v0.15.118.png`.
+Versión `0.15.118-alpha`.
+
 ## 2026-10-12 — M15 fase 17: gesto de construcción
 
 La construcción y reparación de obras usa cuatro poses de martillo generadas,

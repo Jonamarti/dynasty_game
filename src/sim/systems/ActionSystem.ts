@@ -61,7 +61,7 @@ import { canTake, equipContainer, itemCapacityFor, reconcileCarry, reconcileGarm
 import {
   changeGarment, equipFor as fitToolForAction, equipItemInSlot, manualEquipRefusal,
   manualEquipSlot, manualGarmentRefusal, planGarmentMending,
-  planHideDressing, hideDressingReasonText,
+  planHideDressing, hideDressingReasonText, planGarmentDye, garmentDyeReasonText,
   type ToolAction, type ManualGarmentVerb,
 } from '../core/ToolEquipment.ts';
 import { RECIPES, hasIngredients, ingredientsFor, recipeTechPower } from '../entities/Recipe.ts';
@@ -811,6 +811,7 @@ export class ActionSystem {
       case 'take_off_garment': this.doChangeGarment(person, ctx); break;
       case 'mend_garment': this.doMendGarment(person, ctx); break;
       case 'dress_hide': this.doDressHide(person, ctx); break;
+      case 'dye_garment': this.doDyeGarment(person, ctx); break;
       case 'light_torch': this.doLightTorch(person, ctx); break;
       case 'shelter': this.doShelter(person, ctx); break;
       case 'sleep': this.doSleep(person, ctx); break;
@@ -1742,6 +1743,39 @@ export class ActionSystem {
       return;
     }
     telemetry.count('garment_hide_dressed');
+    this.finish(person);
+  }
+
+  /** One-tick pigment work: the consumed mineral and exact garment update commit atomically. */
+  private doDyeGarment(person: Person, ctx: ActionContext): void {
+    const itemId = person.targetItemId;
+    const unitId = person.targetGarmentUnitId;
+    if (!itemId || !unitId) {
+      this.abandon(person, 'garment_order_lost', ctx);
+      return;
+    }
+    const plan = planGarmentDye(person, itemId, unitId);
+    if (typeof plan === 'string') {
+      this.abandon(person, garmentDyeReasonText(plan), ctx);
+      return;
+    }
+    const interrupted = this.interruption(person, ctx, { ignoreLaden: true });
+    if (interrupted) {
+      this.stop(person, interrupted, ctx);
+      return;
+    }
+    try {
+      person.inventory.consumeItems([['red_ochre', 1]], () => {
+        if (!person.inventory.setGarmentUnitDye(unitId, 'ochre')) {
+          throw new Error('garment changed during dyeing');
+        }
+      });
+    } catch {
+      this.abandon(person, garmentDyeReasonText('dyeing_pigment_missing'), ctx);
+      return;
+    }
+    person.actionTimer = 1;
+    telemetry.count('garment_dyed_ochre');
     this.finish(person);
   }
 

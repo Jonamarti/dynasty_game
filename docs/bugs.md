@@ -5123,14 +5123,13 @@ receta/coste/estación detallados; no equivalen a una calibración de producció
 La próxima expansión queda bloqueada por esa falta de muestra y de contabilidad
 física de almacenes, no por un rendimiento nulo observado.
 
-## 2026-10-12 — 14d opcional: teñido por unidad sigue abierto
+## 2026-10-12 — 14d opcional: teñido por unidad entregado
 
-Las cuentas ya llevan estatus persistente por `GarmentUnit`, pero el teñido
-necesita guardar y transferir además un color por unidad y que el arte
-compuesto lo dibuje sin convertir el color en estado global del tipo de
-objeto. Varias copias de una misma prenda pueden divergir. Hasta que exista
-esa propiedad y su representación visual, no se ofrece `dyeing`; de otro modo
-el ocre se consumiría sin producir una prenda teñida.
+El teñido ahora consume un depósito físico finito de ocre rojo y guarda
+`GarmentUnit.dye` junto al estatus de esa pieza; el renderer tiñe el ejemplar
+equipado por su unidad exacta. En mapas sin una capa geológica de ocre, los
+depósitos usan terreno rocoso como aproximación. Véase
+[`m15_phase14d_dyeing.md`](m15_phase14d_dyeing.md).
 
 ## 2026-10-12 — suite unitaria completa posterior a integración M15
 

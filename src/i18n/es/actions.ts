@@ -60,6 +60,8 @@ export const ES_ACTIONS: Record<string, string> = {
   "they no longer had a suitable mending method": "ya no tenía un método adecuado para remendar",
   "the garment mending order was lost": "se perdió la orden de remendar la prenda",
   "dressing hide": "engrasando piel",
+  "dyeing garment": "tiñendo una prenda",
+  "could not dye that garment": "no se pudo teñir esa prenda",
   "could not dress that hide garment": "no pudo engrasar esa prenda de piel",
   "the hide dressing order was lost": "se perdió la orden de engrasar la prenda de piel",
   "they ran out of fat before finishing the hide": "se quedó sin grasa antes de terminar de engrasar la piel",

@@ -22,11 +22,38 @@ export function manualEquipSlot(action: string): ManualEquipmentSlot | null {
 
 export type ManualGarmentVerb = 'wear_garment' | 'take_off_garment';
 export type GarmentMendingMethod = 'tailoring' | 'cordage';
+export type GarmentDyeRefusal = 'unknown_garment' | 'dyeing_unknown' | 'garment_not_owned'
+  | 'garment_already_dyed' | 'dyeing_pigment_missing';
 export type HideDressingRefusal = 'unknown_garment' | 'hide_dressing_unknown' | 'garment_not_owned'
   | 'garment_still_worn' | 'garment_already_dressed' | 'dressing_fat_missing';
 export type GarmentMendingRefusal = 'unknown_garment' | 'garment_not_owned' | 'garment_still_worn'
   | 'garment_not_damaged' | 'mending_materials_missing' | 'mending_tool_missing';
 export interface GarmentMendingPlan { unitId: string; method: GarmentMendingMethod }
+export interface GarmentDyePlan { unitId: string }
+
+/** Select one owned physical garment and require real, harvested ochre pigment. */
+export function planGarmentDye(person: Person, itemId: string, unitId?: string): GarmentDyePlan | GarmentDyeRefusal {
+  if (!ITEMS[itemId]?.garment) return 'unknown_garment';
+  if (!person.knownTech.has('dyeing')) return 'dyeing_unknown';
+  if (person.inventory.count(itemId) <= 0) return 'garment_not_owned';
+  const units = person.inventory.garmentUnitsOf(itemId);
+  const unit = unitId ? units.find(candidate => candidate.unitId === unitId) : units.find(candidate => !candidate.dye);
+  if (!unit) return unitId && !units.some(candidate => candidate.unitId === unitId)
+    ? 'garment_not_owned' : 'garment_already_dyed';
+  if (unit.dye) return 'garment_already_dyed';
+  if (!person.inventory.has('red_ochre')) return 'dyeing_pigment_missing';
+  return { unitId: unit.unitId };
+}
+
+export function garmentDyeReasonText(reason: GarmentDyeRefusal): string {
+  switch (reason) {
+    case 'unknown_garment': return t('That item is not a garment');
+    case 'dyeing_unknown': return t('You need to know dyeing');
+    case 'garment_not_owned': return t('You no longer have that garment');
+    case 'garment_already_dyed': return t('That garment is already dyed');
+    case 'dyeing_pigment_missing': return t('You need one red ochre to dye that garment');
+  }
+}
 
 export function planHideDressing(
   person: Person, itemId: string, unitId?: string,

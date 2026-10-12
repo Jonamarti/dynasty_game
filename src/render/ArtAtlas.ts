@@ -32,6 +32,8 @@ export interface WornGarments {
   hands?: 'gloves';
   head?: 'cap' | 'hood' | 'beads';
   cloak?: 'cloak' | 'wool_cloak';
+  /** Visible pigment is looked up from the exact worn unit by Renderer. */
+  dyes?: Partial<Record<'hips' | 'torso' | 'legs' | 'feet' | 'head' | 'cloak', string>>;
 }
 
 export interface PersonAspect {
@@ -142,6 +144,7 @@ export class ArtAtlas {
     return [
       a.age, a.sex, a.dir, a.pose, a.skin, a.hair, a.band, a.hairStyle, a.beard ? 'b' : '-', a.expression,
       w.torso ?? '', w.legs ?? '', w.feet ?? '', w.hands ?? '', w.head ?? '', w.cloak ?? '', w.hips ?? '',
+      w.dyes?.hips ?? '', w.dyes?.torso ?? '', w.dyes?.legs ?? '', w.dyes?.feet ?? '', w.dyes?.head ?? '', w.dyes?.cloak ?? '',
       a.carryBaby ? 'c' : '', a.held ?? '', a.heldLeft ?? '', a.belly ? 'belly' : '',
     ].join('|');
   }
@@ -168,23 +171,24 @@ export class ArtAtlas {
     for (const slot of order) {
       const base = slot.replace(/_(far|near)$/, '');
       let variant: string | null = 'base';
+      let garmentTint: string | undefined;
       switch (base) {
-        case 'loincloth': variant = w.hips ?? (covers ? null : 'base'); break;
+        case 'loincloth': variant = w.hips ?? (covers ? null : 'base'); garmentTint = w.dyes?.hips; break;
         case 'chestband': if (bandCovered) variant = null; break;
         case 'hands': case 'hand': variant = w.hands ?? 'base'; break;
-        case 'trousers': variant = w.legs ?? null; break;
-        case 'feet': variant = w.feet ?? null; break;
-        case 'torso_wear': case 'sleeves': case 'sleeve': variant = w.torso ?? null; break;
-        case 'cloak_back': case 'cloak_front': variant = w.cloak ?? null; break;
+        case 'trousers': variant = w.legs ?? null; garmentTint = w.dyes?.legs; break;
+        case 'feet': variant = w.feet ?? null; garmentTint = w.dyes?.feet; break;
+        case 'torso_wear': case 'sleeves': case 'sleeve': variant = w.torso ?? null; garmentTint = w.dyes?.torso; break;
+        case 'cloak_back': case 'cloak_front': variant = w.cloak ?? null; garmentTint = w.dyes?.cloak; break;
         case 'hair': case 'hair_back': case 'shine': variant = a.hairStyle; break;
         case 'face': variant = a.expression; break;
         case 'beard': variant = a.beard ? 'beard' : null; break;
-        case 'head_back': case 'head_wear': variant = w.head ?? null; break;
+        case 'head_back': case 'head_wear': variant = w.head ?? null; garmentTint = w.dyes?.head; break;
         case 'baby': case 'baby_skin': variant = a.carryBaby ? 'baby' : null; break;
         // Bare skin where nothing covers the abdomen; the same bulge in the
         // garment's colours where a wrap or a tunic does.
         case 'belly': variant = a.belly && !(w.torso && BELLY_COVERS.has(w.torso)) ? 'base' : null; break;
-        case 'belly_wear': variant = a.belly && w.torso && BELLY_COVERS.has(w.torso) ? w.torso : null; break;
+        case 'belly_wear': variant = a.belly && w.torso && BELLY_COVERS.has(w.torso) ? w.torso : null; garmentTint = w.dyes?.torso; break;
         case 'held': break;
         default: break;
       }
@@ -205,7 +209,7 @@ export class ArtAtlas {
       // loincloth still takes the band colour, as it did before hips existed.
       const glove = (base === 'hands' || base === 'hand') && w.hands;
       const materialColour = glove || (base === 'loincloth' && w.hips);
-      const colour = materialColour ? null : tintSlot === 'skin' ? a.skin : tintSlot === 'hair' ? a.hair : tintSlot === 'band' ? a.band : null;
+      const colour = garmentTint ?? (materialColour ? null : tintSlot === 'skin' ? a.skin : tintSlot === 'hair' ? a.hair : tintSlot === 'band' ? a.band : null);
       layers.push({ manifest: this.people, key: personKey(slot, variant, a.age, a.sex, dir, a.pose), tint: colour, dx: 0, dy });
     }
 

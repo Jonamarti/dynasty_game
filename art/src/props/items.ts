@@ -376,6 +376,9 @@ export const ITEMS: ItemArt[] = [
     shape(smooth([[10, 34], [20, 24], [44, 24], [54, 34], [44, 48], [20, 48]]), '#e9e0c8', BONE_D)
     + ell(32, 34, 15, 7, '#a53a20', '#5b1d10') + ell(28, 32, 5, 2, '#c95a3a')
     + stroke('M16,28l-4,-6M48,28l4,-6', '#a53a20', 2)],
+  ['red_ochre', 'Pigmento de ocre rojo', 'ochre', () =>
+    shape(smooth([[9, 38], [15, 24], [28, 20], [51, 26], [57, 39], [46, 49], [21, 47]]), '#a53a20', '#5b1d10')
+    + ell(29, 31, 7, 3, '#cf6543') + ell(42, 39, 5, 2.4, '#7f2818')],
   ['hoe', 'Azada de asta', 'farming', () => rot(
     limb([[32, 60], [32, 12]], 3.2, WOOD, WOOD_D)
     + shape(poly([[32, 12], [50, 8], [52, 14], [34, 22]]), BONE, BONE_D)
