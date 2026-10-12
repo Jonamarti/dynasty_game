@@ -4,6 +4,14 @@ Clarified that the phase 14c and phase 16 lamp-upkeep notes describe earlier
 cuts, and linked their then-open items to the later deliveries. Cohort
 calibration and additional furniture remain open. No gameplay behavior changed.
 
+## 2026-10-12 — docs: registrar cohorte M15 century
+
+La cohorte de 20 semillas en `century` dio 54,8% de supervivencia media;
+`recovered` 0/31 censuradas, `answered` 79,5% y `fireBy` 8/20 quedaron bajo
+sus objetivos. No hay build emparejado para atribuir la diferencia frente a la
+línea base anterior y no se ajustaron parámetros. El hallazgo queda en
+`docs/bugs.md` para diagnóstico de fase 41.
+
 ## 2026-10-12 — docs: registrar cohorte M15 frontier
 
 La cohorte actual de `frontier-cohort` (20 semillas, 12.000 pasos) dio 91,8%

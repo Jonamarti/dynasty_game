@@ -4974,6 +4974,16 @@ synthesis corregidas en b3f9907 y verificadas focalmente. Permanecen los siete
 fallos anteriores: difusión, correspondencia, contador de comida, tierra,
 tributo, conspiración y sed. Ningún resultado global verde afirmado.
 
+### 2026-10-12 — M15 fase 41: resultados nuevos de `century` sin causa aislada
+La cohorte actual `npm.cmd run sim:seeds -- --scenario century --seeds 20`
+terminó con 54,8% de supervivencia media, un mundo colapsado de veinte, y
+`recovered` 0/31 (las 31 caídas seguían censuradas al final). `answered` quedó
+en 79,5% frente a ≥90%, y `fireBy` en 8/20 frente a ≥50%. `worldLost` 0/20,
+`inBandKillRate` 0 y `peaceShare` 99,8%. La línea base anterior era 92,3% en
+otra revisión; no hay build emparejado ni diagnóstico causal. No ajustar pesos
+por esta diferencia sola. Informe completo en `m15_calibration.md`; pendiente
+diagnóstico y comparación apropiada durante fase 41.
+
 ### 2026-10-10 — llegada a estación de un tile, corregida
 Movimiento detenía a0.6tiles pero reachBuilding exigía quedar en la huella de
 medio tile: secadero desde su lado corto quedaba con timer0 durante1000ticks.

@@ -131,6 +131,22 @@ mediciones de una sola ejecución con distinta trayectoria, no una tendencia.
 El detalle y la decisión de no activar la tasa global siguen en
 [`m15_phase15d_salters.md`](m15_phase15d_salters.md) y [`bugs.md`](bugs.md).
 
+### `century`, cohorte actual de 20 semillas
+
+`npm.cmd run sim:seeds -- --scenario century --seeds 20` terminó en 1.964,9 s
+de tiempo de herramienta, con 40.000 pasos por semilla. Resultados: supervivencia
+media 54,8%; colapso 1/20; `worldLost` 0/20; caída >40% recuperada 0/31 (las 31
+seguían censuradas al acabar); `answered` 79,5% (objetivo ≥90%); aprendizaje de
+`firemaking` en 8/20 semillas (40%, objetivo ≥50%); `inBandKillRate` 0,000;
+muertes adultas violentas 26,3%; `peaceShare` 99,8%; adopción mediana 11 días
+(16 semillas no la alcanzaron); malnutrición media 0,264. Ver [hallazgo en
+bugs.md](bugs.md).
+
+La línea base previa de 92,3% se midió en otra revisión del juego. Sin un build
+emparejado y sin aislar un mecanismo, esta diferencia no atribuye la caída a
+una funcionalidad concreta. No se cambió ningún parámetro; `lean` y
+`generations` siguen en curso.
+
 Mientras se completan las cohortes descritas abajo, no hay un barrido de
 parámetros ni una decisión de calibración. Los resultados se deben incorporar
 cuando termine cada trabajo; la muestra única de los escenarios cortos solo
