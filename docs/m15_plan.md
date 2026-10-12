@@ -1,3 +1,11 @@
+**Avance del 2026-10-13 — fase 17, engrasado de pieles:** `dress_hide` muestra
+cuatro poses generadas `h0`–`h3` únicamente durante el tratamiento real de una
+unidad de piel ya validado por ActionSystem. El gesto frota la superficie y se
+anima con `workedTicks`; el render no consulta inventario, objetivo privado ni
+progreso material. Pruebas de selector/E2E y captura en
+`artifacts/screenshots/m15-hide-dressing-animation-2026-10-13/`. Contrato:
+[`m15_hide_dressing_animation.md`](m15_hide_dressing_animation.md).
+
 **Medición del 2026-10-13 — fase 16, cohorte doméstica:** después del cierre de
 12f, tres brazos pareados de 20 semillas century (HEAD idéntico, 40.000 pasos):
 baseline, comfortDriveEnabled=false y sleepQualityEffectsEnabled=false.

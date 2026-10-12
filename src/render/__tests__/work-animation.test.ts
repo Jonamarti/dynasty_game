@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Person } from '../../sim/entities/Person.ts';
 import { RNG } from '../../sim/core/RNG.ts';
-import { buildingPose, cuttingGrassPose, diggingPose, extractionPose, farmingPose, fishingPose, gatheringPose, mendingPose, plantingPose } from '../WorkAnimation.ts';
+import { buildingPose, cuttingGrassPose, diggingPose, extractionPose, farmingPose, fishingPose, gatheringPose, hideDressingPose, mendingPose, plantingPose } from '../WorkAnimation.ts';
 import type { Simulation } from '../../sim/core/Simulation.ts';
 
 function fixture() {
@@ -245,6 +245,36 @@ describe('garment mending animation', () => {
     person.action = 'mend_garment'; person.actionTimer = 1; person.actionTotal = 100; person.workedTicks = 2;
     expect(mendingPose(person, false, 0.5)).toBe('r0');
     expect(mendingPose(person, false, 1)).toBe('r1');
+  });
+});
+
+describe('hide dressing animation', () => {
+  it('cycles the grease-working gesture only after a live treatment action enters work', () => {
+    const person = new Person('Hide dresser', 4, 4, 0, new RNG('hide-dressing-animation'));
+    person.action = 'dress_hide'; person.actionTimer = 1; person.actionTotal = 100; person.workedTicks = 1;
+    expect([1, 3, 5, 7, 9].map(ticks => { person.workedTicks = ticks; return hideDressingPose(person, false, 0); }))
+      .toEqual(['h0', 'h1', 'h2', 'h3', 'h0']);
+    expect(person.actionTotal).toBe(100);
+    expect(person.workedTicks).toBe(9);
+  });
+
+  it('hides the gesture while moving, dead, interrupted, preparing, or doing another action', () => {
+    const person = new Person('Hide dresser', 4, 4, 0, new RNG('hide-dressing-animation-guards'));
+    person.action = 'dress_hide'; person.actionTimer = 1; person.actionTotal = 100; person.workedTicks = 1;
+    expect(hideDressingPose(person, true)).toBeNull();
+    expect(hideDressingPose(person, false)).toBe('h0');
+    person.actionTimer = 0; expect(hideDressingPose(person, false)).toBeNull();
+    person.actionTimer = 1; person.actionTotal = 0; expect(hideDressingPose(person, false)).toBeNull();
+    person.actionTotal = 100; person.workedTicks = 0; expect(hideDressingPose(person, false)).toBeNull();
+    person.workedTicks = 1; person.alive = false; expect(hideDressingPose(person, false)).toBeNull();
+    person.alive = true; person.action = 'idle'; expect(hideDressingPose(person, false)).toBeNull();
+  });
+
+  it('uses the bounded simulation fraction to freeze the grease-working frame', () => {
+    const person = new Person('Hide dresser', 4, 4, 0, new RNG('hide-dressing-animation-clock'));
+    person.action = 'dress_hide'; person.actionTimer = 1; person.actionTotal = 100; person.workedTicks = 2;
+    expect(hideDressingPose(person, false, 0.5)).toBe('h0');
+    expect(hideDressingPose(person, false, 1)).toBe('h1');
   });
 });
 

@@ -2,7 +2,7 @@
 import type { Simulation } from '../sim/core/Simulation.ts';
 import type { Person } from '../sim/entities/Person.ts';
 import { ARRIVAL_RADIUS } from '../sim/systems/MovementSystem.ts';
-import { BUILD_POSES, CHOP_POSES, CUT_GRASS_POSES, DIG_POSES, EXTRACT_POSES, FARM_POSES, FISH_POSES, GATHER_POSES, MAKE_POSES, MEND_POSES, PLANT_POSES, type ArtPose } from './ArtManifest.ts';
+import { BUILD_POSES, CHOP_POSES, CUT_GRASS_POSES, DIG_POSES, EXTRACT_POSES, FARM_POSES, FISH_POSES, GATHER_POSES, HIDE_DRESS_POSES, MAKE_POSES, MEND_POSES, PLANT_POSES, type ArtPose } from './ArtManifest.ts';
 import { RECIPES } from '../sim/entities/Recipe.ts';
 import { isStationFor } from '../sim/entities/Building.ts';
 import { CUT_FLOOR } from '../sim/core/Grass.ts';
@@ -152,6 +152,15 @@ export function mendingPose(person: Person, moving: boolean, alpha = 1): ArtPose
   if (moving || !person.alive || person.action !== 'mend_garment' || person.actionTimer <= 0 ||
       person.actionTotal <= 0 || person.workedTicks <= 0) return null;
   return workFrame(MEND_POSES, person.workedTicks, alpha);
+}
+
+/** Greasing a hide is shown only after the validated, banked treatment work starts. */
+export function hideDressingPose(person: Person, moving: boolean, alpha = 1): ArtPose | null {
+  // The action marker is set after ownership, recipe and fat checks. The
+  // renderer needs no access to the worker's inventory or garment target.
+  if (moving || !person.alive || person.action !== 'dress_hide' || person.actionTimer <= 0 ||
+      person.actionTotal <= 0 || person.workedTicks <= 0) return null;
+  return workFrame(HIDE_DRESS_POSES, person.workedTicks, alpha);
 }
 
 /** Low sweeping motion only while cutting reachable grass into thatch. */

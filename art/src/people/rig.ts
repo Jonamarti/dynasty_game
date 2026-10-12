@@ -124,7 +124,7 @@ export function geometry(age: ArtAge, sex: ArtSex): Geo {
 }
 
 /** Whole-pixel upper-body dip; gathering keeps its feet planted like idle. */
-export const POSE_BOB: Record<ArtPose, number> = { idle: 0, w0: 0, w1: 1, w2: 0, w3: 1, g0: 0, g1: 1, g2: 2, g3: 1, f0: 0, f1: 0, f2: 0, f3: 0, x0: 0, x1: 0, x2: 0, x3: 0, d0: 0, d1: 0, d2: 0, d3: 0, c0: 0, c1: 0, c2: 0, c3: 0, m0: 1, m1: 2, m2: 1, m3: 0, a0: 1, a1: 2, a2: 1, a3: 0, b0: 0, b1: 1, b2: 0, b3: 1, r0: 0, r1: 0, r2: 0, r3: 0, q0: 0, q1: 0, q2: 0, q3: 0, p0: 0, p1: 0, p2: 0, p3: 0 };
+export const POSE_BOB: Record<ArtPose, number> = { idle: 0, w0: 0, w1: 1, w2: 0, w3: 1, g0: 0, g1: 1, g2: 2, g3: 1, f0: 0, f1: 0, f2: 0, f3: 0, x0: 0, x1: 0, x2: 0, x3: 0, d0: 0, d1: 0, d2: 0, d3: 0, c0: 0, c1: 0, c2: 0, c3: 0, m0: 1, m1: 2, m2: 1, m3: 0, a0: 1, a1: 2, a2: 1, a3: 0, b0: 0, b1: 1, b2: 0, b3: 1, r0: 0, r1: 0, r2: 0, r3: 0, h0: 0, h1: 0, h2: 0, h3: 0, q0: 0, q1: 0, q2: 0, q3: 0, p0: 0, p1: 0, p2: 0, p3: 0 };
 
 const DIG_FRONT: readonly { reach: number; handY: number; elbowY: number }[] = [
   { reach: 0.4, handY: -0.3, elbowY: 0.05 }, { reach: 0.25, handY: -0.6, elbowY: -0.1 },
@@ -187,6 +187,15 @@ const MEND_FRONT: readonly { rightX: number; rightY: number; leftX: number; left
   { rightX: 4, rightY: 0.82, leftX: 3, leftY: 0.8 },
 ];
 const MEND_SIDE: readonly (readonly [number, number])[] = [[28, 62], [18, 48], [42, 78], [24, 58]];
+// Rub grease into a hide held in front of the body; wider hand travel than
+// sewing makes the treatment read as working a whole surface, not stitching.
+const HIDE_DRESS_FRONT: readonly { rightX: number; rightY: number; leftX: number; leftY: number }[] = [
+  { rightX: 7, rightY: 0.92, leftX: 3, leftY: 0.88 },
+  { rightX: 1, rightY: 0.83, leftX: 6, leftY: 0.94 },
+  { rightX: 6, rightY: 0.9, leftX: 1, leftY: 0.82 },
+  { rightX: 3, rightY: 0.85, leftX: 5, leftY: 0.93 },
+];
+const HIDE_DRESS_SIDE: readonly (readonly [number, number])[] = [[35, 72], [20, 55], [48, 84], [28, 66]];
 
 function poseSwing(pose: ArtPose): { walk: boolean; f: number; sw: number } {
   if (!pose.startsWith('w')) return { walk: false, f: 0, sw: 0 };
@@ -697,7 +706,11 @@ function frontLayers(spec: PersonSpec, back: boolean): PersonOut {
     }
     let hand: Pt = [cx + side * (sh + 1.2 - inward), sY + 2.4 + len];
     let elbow: Pt = [(sh0[0] + hand[0]) / 2 + side * 0.9, (sh0[1] + hand[1]) / 2];
-    if (spec.pose.startsWith('r')) {
+    if (spec.pose.startsWith('h')) {
+      const { rightX, rightY, leftX, leftY } = HIDE_DRESS_FRONT[Number(spec.pose.slice(1))]!;
+      hand = [cx + side * (isRight ? rightX : leftX), sY + g.arm * (isRight ? rightY : leftY)];
+      elbow = [cx + side * (sh + g.arm * (isRight ? 0.2 : 0.16)), sY + g.arm * 0.62];
+    } else if (spec.pose.startsWith('r')) {
       const { rightX, rightY, leftX, leftY } = MEND_FRONT[Number(spec.pose.slice(1))]!;
       // Both hands meet low on the body; the right hand makes the stitch.
       hand = [cx + side * (isRight ? rightX : leftX), sY + g.arm * (isRight ? rightY : leftY)];
@@ -807,7 +820,9 @@ function sideLayers(spec: PersonSpec): PersonOut {
     const col = near ? skin : REF.skinFar;
     const Larm = g.arm / 2;
     let a1 = -sw * 24 * (near ? 1 : -1), a2 = a1 + 14;
-    if (spec.pose.startsWith('r')) {
+    if (spec.pose.startsWith('h')) {
+      [a1, a2] = HIDE_DRESS_SIDE[Number(spec.pose.slice(1))]!;
+    } else if (spec.pose.startsWith('r')) {
       [a1, a2] = MEND_SIDE[Number(spec.pose.slice(1))]!;
     } else if (spec.pose.startsWith('m')) {
       const phase = Number(spec.pose.slice(1));

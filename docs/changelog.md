@@ -1,3 +1,12 @@
+## 2026-10-13 — M15 fase 17: gesto de engrasado de piel
+
+`dress_hide` ahora se representa con cuatro poses generadas `h0`–`h3` durante
+trabajo real ya validado. El selector sigue la acción y sus marcadores públicos
+de trabajo sin inspeccionar el inventario, la unidad tratada ni su progreso;
+viaje y espera no muestran el gesto. Se añaden pruebas de selector y E2E con
+captura estable. Contrato: [m15_hide_dressing_animation.md](m15_hide_dressing_animation.md).
+La versión funcional pasa a `0.15.124-alpha`.
+
 ## 2026-10-13 — M15 fase 16: medición pareada de hogares
 
 Tras cerrar 12f, se ejecutaron en serie baseline y dos ablations de 20 semillas
