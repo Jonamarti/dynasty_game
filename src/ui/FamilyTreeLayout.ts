@@ -10,7 +10,7 @@
  * under its parents without the picture drifting into a family circle.
  */
 import type { Person } from '../sim/entities/Person.ts';
-import { relax, settleOverlaps, fitInto, type GraphEdge, type GraphNode } from './GraphLayout.ts';
+import { relax, settleOverlaps, type GraphEdge, type GraphNode } from './GraphLayout.ts';
 
 export interface FamilyNode extends GraphNode {
   personId: number;
@@ -163,7 +163,7 @@ function collectFamily(
 }
 
 /**
- * Lays a family out inside a box, centred on `subject`.
+ * Lays a family out at its natural scale, centred on `subject`.
  *
  * Called fresh each time the panel opens on somebody new — unlike the tech
  * web's one cached arrangement, a family tree's very shape changes with who
@@ -213,10 +213,26 @@ export function layOutFamily(
   relax(nodes, springs, { iterations: ITERATIONS, repulsion: REPULSION, centring: CENTRING });
   settleOverlaps(nodes, NODE_RADIUS * 2);
 
+  // Keep the requested box as a minimum canvas size, but never shrink the
+  // family to fit it. On a phone, fitting a wide sibling row made every name
+  // unreadable; the overlay now pans and zooms this natural-size canvas.
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  for (const node of nodes) {
+    minX = Math.min(minX, node.x); maxX = Math.max(maxX, node.x);
+    minY = Math.min(minY, node.y); maxY = Math.max(maxY, node.y);
+  }
+  const pad = NODE_RADIUS + 12;
+  const contentWidth = maxX - minX + pad * 2;
+  const contentHeight = maxY - minY + pad * 2;
+  for (const node of nodes) {
+    node.x += pad - minX;
+    node.y += pad - minY;
+  }
+
   return {
-    nodes: fitInto(nodes, width, height, NODE_RADIUS, 1.3),
+    nodes,
     edges,
-    width,
-    height,
+    width: Math.max(width, contentWidth),
+    height: Math.max(height, contentHeight),
   };
 }

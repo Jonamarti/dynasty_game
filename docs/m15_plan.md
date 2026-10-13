@@ -3843,9 +3843,11 @@ conocidos, de oídas y desconocidos, todo por `Knowledge.ts`, y
   hablaron es «de oídas», con el día en que la vio quien te lo contó. Los
   pueblos y civilizaciones que tu personaje conoce se pintan con su nombre y
   lo último que se supo de ellos.
-- Fijar el trazado del árbol ya se hizo en la fase 13c. Queda de esta pasada de
-  interfaz **el zoom de `FamilyTree` en el móvil** (`bugs.md`). El globo se
-  diseña táctil desde el principio.
+- Fijar el trazado del árbol ya se hizo en la fase 13c. El árbol familiar ahora
+  conserva su escala natural y permite arrastrar, ampliar y reducir en móvil;
+  la prueba de 31c está en [`m15_familytree_mobile_zoom.md`](m15_familytree_mobile_zoom.md).
+  El zoom de `TribeGraph` sigue pendiente (`bugs.md`). El globo se diseña táctil
+  desde el principio.
 
 **Avance del 2026-10-06 (31a):** `WorldKnowledge` hecho (`m15: WorldKnowledge`):
 por persona, comarcas vistas y de oídas, con los pueblos encontrados; se escribe
@@ -3855,6 +3857,14 @@ al ver, al conversar y al nacer; ausente en el mundo clásico. [Contrato](m15_ph
 `O`, `WorldMapView` con dos zooms, tres estados (vista, de oídas, desconocida),
 e2e y capturas. `?world=random` es la única puerta hasta el ajuste de la fase 33.
 [Detalle](m15_phase31_world_knowledge.md).
+
+**Avance del 2026-10-13 (31c):** `FamilyTree` mantiene su escala natural, abre
+centrado en la persona seleccionada y permite pan por puntero, pinza táctil y
+zoom por rueda. En móvil, los árboles más anchos que el viewport muestran
+etiquetas legibles y se recorren; la prueba de navegador fabrica una familia de
+16 personas sin añadir estado ni tiradas a la simulación. Capturas en
+`artifacts/screenshots/m15-familytree-mobile-zoom-2026-10-13/`. El grafo tribal
+aún no tiene este viewport y la fase 31 continúa abierta. [Contrato](m15_familytree_mobile_zoom.md).
 
 ## Fase 32 — Simulación por visión y modelos compactos de bandas y pueblos
 

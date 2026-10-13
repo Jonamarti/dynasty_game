@@ -2386,19 +2386,15 @@ retuning `MAX_PUSH`, `heat` or `AT_REST` still moves a web the next time it is
 first laid out. Pinning it across builds would need the positions persisted, which
 13c did not invent. See `m15_phase13_subwebs.md`.
 
-### `FamilyTree` never got the mobile zoom treatment the tech web did
+### `TribeGraph` still has no mobile pan-and-zoom viewport
 
-`PanelBox` fixes the box all three panels ask for, so the family tree no
-longer requests a 480px canvas inside a 378px card. But `FamilyTreeLayout`
-uses `fitInto`, which scales an arrangement to whatever box it is handed, so
-on a phone a large family is scaled down until its names are as unreadable as
-the tech web's nodes were — there is no `.is-far` threshold to make the
-failure obvious, which is probably why it was not reported. The tech web's
-answer was to stop fitting and let the player pan and pinch instead; the
-family tree and the tribe graph would both need the same pan-and-zoom
-viewport to match. Not done here: the owner reported the tech web and the
-tribe graph's motion, and retrofitting a viewport onto two more panels is a
-larger change than either ask.
+The matching `FamilyTree` issue is fixed: its layout now keeps natural-scale
+coordinates, and the overlay centres on the selected person while supporting
+pointer drag, touch pinch and wheel zoom. A 16-person mobile browser fixture
+checks that the canvas remains wider than the viewport and labels open at a
+readable scale. The tribe graph still fits its rows into the panel and can
+shrink names on a narrow screen; it needs its own pan-and-zoom viewport.
+See `m15_familytree_mobile_zoom.md`.
 
 ## Found shipping M11 phase 10, sixth commit, 2026-09-21
 

@@ -1,3 +1,11 @@
+## 2026-10-13 — M15 phase 31: make large family trees readable on mobile
+
+`FamilyTreeLayout` now keeps natural-scale coordinates, and the overlay offers
+pan, pinch and wheel zoom around the selected relative. A 16-person mobile E2E
+fixture verifies readable opening scale, navigation and captures in
+`artifacts/screenshots/m15-familytree-mobile-zoom-2026-10-13/`. The tribe graph
+still needs its own viewport; phase 31 remains open. Version: `0.15.134-alpha`.
+
 ## 2026-10-13 — instrumento de violencia separa asaltos humanos de mordiscos
 
 El diagnóstico abría ventanas al ver `lastHarmedTick`, que también cambia con

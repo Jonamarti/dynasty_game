@@ -1451,7 +1451,22 @@ html, body, #app {
   line-height: 1.5;
 }
 
-.familytree-canvas { position: relative; flex: none; }
+.familytree-viewport {
+  position: relative;
+  flex: none;
+  overflow: hidden;
+  touch-action: none;
+  cursor: grab;
+  background: rgba(0, 0, 0, 0.12);
+}
+.familytree-viewport.is-panning { cursor: grabbing; }
+.familytree-canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
 .familytree-edges { position: absolute; inset: 0; overflow: visible; }
 
 /* Descent is drawn solid; a marriage is drawn faint and dashed, the same

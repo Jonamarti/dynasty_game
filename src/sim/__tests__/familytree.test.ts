@@ -120,16 +120,21 @@ describe('the family tree layout', () => {
     }
   });
 
-  it('keeps every node inside the box it was given', () => {
+  it('keeps the same natural-scale positions for narrow and wide viewports', () => {
     const { subject, peopleById } = makeFamily();
-    const layout = layOutFamily(subject, peopleById, 900, 600);
-    for (const node of layout.nodes) {
+    const narrow = layOutFamily(subject, peopleById, 240, 500);
+    const wide = layOutFamily(subject, peopleById, 900, 700);
+    expect(narrow.nodes.map(({ x, y }) => [x, y]))
+      .toEqual(wide.nodes.map(({ x, y }) => [x, y]));
+    for (const node of narrow.nodes) {
       expect(Number.isFinite(node.x) && Number.isFinite(node.y)).toBe(true);
-      expect(node.x).toBeGreaterThanOrEqual(-1);
-      expect(node.x).toBeLessThanOrEqual(901);
-      expect(node.y).toBeGreaterThanOrEqual(-1);
-      expect(node.y).toBeLessThanOrEqual(601);
+      expect(node.x).toBeGreaterThanOrEqual(0);
+      expect(node.x).toBeLessThanOrEqual(narrow.width);
+      expect(node.y).toBeGreaterThanOrEqual(0);
+      expect(node.y).toBeLessThanOrEqual(narrow.height);
     }
+    // The layout is no longer squeezed to a phone's 240px-wide viewport.
+    expect(narrow.width).toBeGreaterThan(240);
   });
 
   it('handles a subject with no family at all', () => {
