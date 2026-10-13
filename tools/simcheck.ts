@@ -18,6 +18,7 @@ import { capacityFor, equipContainer } from '../src/sim/core/Carry.ts';
 import { anchorOf, carerOf, childRadius } from '../src/sim/ai/Anchor.ts';
 import { telemetry } from '../src/sim/core/Telemetry.ts';
 import { RNG } from '../src/sim/core/RNG.ts';
+import type { Person } from '../src/sim/entities/Person.ts';
 import type { DeepPartial, SimConfig } from '../src/sim/core/Config.ts';
 import { TECH, techPower, type Tech, axeFactor, buildFactor, reapFactor } from '../src/sim/knowledge/Tech.ts';
 import { digTool } from '../src/sim/core/Earth.ts';
@@ -1416,6 +1417,19 @@ export interface PregnancyWatch {
 export interface HomeWatch { adultNightSamples: number; adultsNear: number; adultsSleeping: number; childSamples: number; childrenNear: number; childrenNearAnyParent: number; childActions: Record<string, number> }
 /** M15 phase 5's pre-behaviour instrument: talk choice against belonging mood. */
 export interface MoodChoiceWatch { belongingTalk: { mood: number; talk: boolean }[] }
+
+/**
+ * Pair the action observed after a tick with the belonging that was present
+ * before it. A family conversation raises belonging during execution; reading
+ * mood afterwards made the outcome move the check's own grouping variable.
+ */
+export function moodChoiceObservation(
+  belongingBeforeStep: ReadonlyMap<number, number>,
+  person: Pick<Person, 'id' | 'action'>,
+): { mood: number; talk: boolean } | null {
+  const mood = belongingBeforeStep.get(person.id);
+  return mood === undefined ? null : { mood, talk: person.action === 'talk' };
+}
 
 export interface Report {
   scenario: string;
@@ -4593,6 +4607,13 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
   const started = Date.now();
   const dayLength = sim.config.time.ticksPerDay;
   for (let i = 1; i <= steps; i++) {
+    // Mood must be measured before the action executes: a family talk can
+    // increase belonging in this step, which otherwise makes the check classify
+    // the action by a mood that the action itself just changed.
+    const belongingBeforeStep = i % WATCH_EVERY === 0
+      ? new Map(sim.people.filter(person => person.alive)
+        .map(person => [person.id, person.mood.belonging] as const))
+      : null;
     // The midnight block runs at the start of the step that lands on a day
     // boundary, so the state it saw is the state before that step.
     bedtime = null;
@@ -4777,7 +4798,10 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
         homes: new Map(sim.bands.filter(b => !b.outcast).map(b => [b.id, { x: b.homeX, y: b.homeY }])),
         motivation: sim.config.motivation };
       for (const person of living) {
-        if (!person.isChild) moodChoice.belongingTalk.push({ mood: person.mood.belonging, talk: person.action === 'talk' });
+        if (!person.isChild && belongingBeforeStep) {
+          const observation = moodChoiceObservation(belongingBeforeStep, person);
+          if (observation) moodChoice.belongingTalk.push(observation);
+        }
         if (sim.time.isNight && !person.isChild) {
           const anchor = anchorOf(person, anchorCtx);
           if (anchor) {

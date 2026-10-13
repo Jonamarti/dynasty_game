@@ -11,6 +11,7 @@ import { RNG } from '../core/RNG.ts';
 import { Simulation } from '../core/Simulation.ts';
 import { setLanguage } from '../../i18n/i18n.ts';
 import { telemetry } from '../core/Telemetry.ts';
+import { ResourceNode } from '../entities/ResourceNode.ts';
 
 const SMALL = {
   seed: 'determinism',
@@ -31,6 +32,23 @@ function fingerprint(sim: Simulation): string {
     .join('|');
   const nodes = sim.nodes.map(n => n.id + ':' + n.amount.toFixed(6)).join('|');
   return people + '#' + nodes;
+}
+
+/** Give both determinism arms the same real food harvest, rather than relying
+ * on this small autonomous fixture happening to choose forage in 1,200 ticks. */
+function prepareFoodObservation(sim: Simulation): void {
+  const person = sim.livingPeople()[0]!;
+  const node = new ResourceNode('berries', person.x, person.y, new RNG('determinism-food-observation'), sim.ids);
+  node.amount = node.def.maxAmount;
+  sim.nodes.push(node);
+  sim.nodesById.set(node.id, node);
+  sim.nodeHash.rebuild(sim.nodes);
+  person.action = 'forage';
+  person.actionTimer = 1;
+  person.order = 'forage';
+  person.targetNodeId = node.id;
+  person.targetX = node.x;
+  person.targetY = node.y;
 }
 
 describe('RNG', () => {
@@ -92,6 +110,8 @@ describe('Simulation determinism', () => {
     telemetry.reset();
     const quiet = new Simulation(SMALL);
     const observed = new Simulation(SMALL);
+    prepareFoodObservation(quiet);
+    prepareFoodObservation(observed);
     try {
       telemetry.disable();
       for (let i = 0; i < 1200; i++) quiet.step();

@@ -1843,3 +1843,10 @@ verificación que corresponda. No se debe declarar completado el hito mientras
 esas puertas sigan abiertas. Los bloques siguientes conservan el registro
 histórico de entregas y mediciones.
 
+**Revisión instrumental del 2026-10-13:** se repararon la fórmula del
+denominador de difusión tecnológica, la falta de cosecha en la fixture de
+telemetría compacta y la fuga temporal del check de pertenencia. No se cambiaron
+el modelo, sus umbrales ni sus coeficientes. La discrepancia de sed compacta,
+el test de entrega de tributo, la relación ánimo/charla y la dieta siguen bajo
+diagnóstico; ver `m15_calibration.md` y `bugs.md`. La fase 41 permanece abierta.
+

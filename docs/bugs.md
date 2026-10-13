@@ -1,3 +1,29 @@
+## 2026-10-13 — M15 compact telemetry fixture fixed; thirst correspondence remains open
+
+`determinism.test.ts` previously required `compact_food_nutrition_gather > 0`
+after 1,200 autonomous ticks in a six-person world, but that fixture did not
+actually select a food harvest. It now gives both the telemetry-off and
+telemetry-on runs the same real berry node and forage order. The focused test
+passes 11/11 and still compares the seeded world fingerprints; this is a test
+fixture correction, not a simulation change.
+
+The focused `compact-correspondence.test.ts` on `0.15.138-alpha` still fails
+only `lean/delta` thirst: detailed mean 35.4719, same-window oracle mean
+18.5672 (absolute delta 16.9046 versus the unchanged 15-point tolerance).
+Oracle hunger differs by 1.0060; survival is 35/36 versus 36/36. The run does
+not identify a confirmed mechanism for the thirst gap. The measured table's
+adult autumn thirst fed ratios are around 2.2 in need bin 1, while the oracle
+capacity supplies only each band's empty-day share; this is a lead to measure,
+not evidence that the fed-ratio model is wrong. No table, coefficient, or
+threshold was changed. Full six-seed regeneration was interrupted after the
+three `lean` seeds because it required about 50 seconds per seed and did not
+yield a result before the `craft` runs. Reproduce with:
+
+```powershell
+npm.cmd test -- --run src/sim/__tests__/compact-correspondence.test.ts --maxWorkers=1 --testTimeout=180000
+npm.cmd test -- --run src/sim/__tests__/determinism.test.ts --maxWorkers=1 --testTimeout=15000
+```
+
 ## 2026-10-13 — M15 fase 15d: objetivo del scorer observado en focal
 
 Una prueba ahora observa `FoundTargets.foodToEat` dentro de la llamada real a
@@ -5407,6 +5433,18 @@ de 60 ticks; el mundo termina sin supervivientes. Una muestra no resuelve el
 81,8% de `answered`, cuyo denominador son segundos golpes en 40 ticks. No se
 cambiaron parámetros ni se atribuye causalidad.
 
+### 2026-10-13 — `people-knowledge` medía mal la dispersión inicial
+
+El fallo reportado como 0,70 frente al límite 0,60 venía del test, no del
+modelo. Su denominador usaba `|A ∪ B| − 2|A ∩ B|`; como la unión ya cuenta
+cada técnica compartida una sola vez, eso restaba una intersección de más y
+contaba 5 técnicas iniciales en vez de las 8 de la diferencia simétrica. En la
+misma fixture de 20 seeds × 120 temporadas, la diferencia final media es 3,5:
+el cociente corregido es 0,4375 y pasa el límite original. El helper ahora suma
+las técnicas exclusivas de A y de B. No se cambió el modelo, sus tasas ni el
+umbral; las lecturas históricas de esta prueba que reutilizaron el denominador
+anterior no son comparables con el cociente corregido.
+
 ### 2026-10-13 — fase 41: nuevo diagnóstico agregado de `answered`
 
 `npm.cmd run sim:seeds -- --scenario generations --seeds 20` en `0.15.138-alpha`
@@ -5422,3 +5460,63 @@ explica por qué las víctimas seguían en esas acciones. Haría falta una traza
 temporal por evento para distinguir cadencia de pensamiento y replanificación;
 no se cambian los pesos. Métricas completas en `m15_calibration.md`.
 
+### 2026-10-13 — fase 41: `moods-move-choices` leía el ánimo después de la acción
+
+El observador de `band` tomaba pertenencia y acción tras `sim.step()`. Una charla
+familiar puede añadir pertenencia en ese mismo paso (`ActionSystem`), así que
+el resultado podía mover la variable usada para formar los terciles. El lector
+ahora captura pertenencia antes del paso y la empareja con la acción observada
+después; las personas nuevas durante ese paso no entran en la muestra. En la
+repetición corta de `band`, el check sigue fallando: 2,9% de charla en tercil
+bajo frente a 3,6% alto (950 por grupo), contra 2,9%/3,7% con la medición
+anterior. Por tanto se corrige la contaminación temporal, no se confirma la
+causa del patrón restante ni se cambia el umbral o los pesos.
+
+`cravings-steer-the-diet` también continúa rojo: 6/228 comidas durante antojo
+fuerte fueron ricas en proteína (2,6%), frente a 12/117 en calma (10,3%). En
+4.777 decisiones de búsqueda con antojo, el contador encontró proteína al
+alcance en 1.039 y ninguna proteína en el área de búsqueda en 2.952; los otros
+786 casos tenían proteína fuera del alcance. Esto confirma que la disponibilidad
+es una explicación importante que la métrica de comidas no controla, pero no
+vincula cada comida con las alternativas que había al elegir. No hay evidencia
+para cambiar el scorer o concluir que la comida fue seleccionada contra una
+alternativa proteica disponible; hace falta una medición condicional a esa
+oportunidad. Registro ampliado en `m15_calibration.md`.
+
+### 2026-10-13 — matriz M15 completa y E2E con fallos de escritura
+
+En `0.15.138-alpha`, `npm.cmd run sim:check:all` recorrió 34 escenarios y
+terminó en rojo. Pasan los escenarios cortos de noches, conservas, sastrería,
+hogares, hierro, frontera, noticias, conflictos y bajíos. La matriz general
+repite dieta y sueño, y presenta fallos dependientes del escenario en ánimo,
+supervivencia, descubrimiento, sociedad y fauna; no se cambiaron umbrales ni
+parámetros.
+
+La suite E2E fresca emitió 176/179 casos aprobados. Globo, mundo de una comarca
+y arado de hierro fallaron al guardar capturas con `UNKNOWN: unknown error,
+open`, no en aserciones del juego. Las mismas tres specs pasaron 8/8 al escribir
+en un directorio temporal; la prueba de versión también pasó 2/2 en puerto
+fresco. Playwright quedó en teardown y se interrumpió tras emitir resultados,
+por lo que no hay confirmación de exit 0 de la pasada completa. El tour reescribió
+107 PNG históricos rastreados. La restauración fue rechazada dos veces por el
+revisor automático al considerarla una posible pérdida de trabajo no probado;
+requiere aprobación del propietario para recuperar el estado inicial. Detalle en
+`m15_calibration.md`.
+
+
+### 2026-10-13 — dos premisas antiguas de `polity.test.ts`
+
+El caso de guardia del golpe usaba una población de ocho, pero el roster semillado
+solo tenía cuatro adultos; por eso su corte no asignaba soldados. Además, cuatro
+deeds negativas no cruzaban el umbral de rencor para los adultos que antes eran
+niños. La fixture ahora madura el roster y establece el rencor medido antes de
+comprobar quorum y fuerza. `plots against the king` pasa 3/3 con sus aserciones
+originales de golpe ganado/perdido y exilio.
+
+El tributo sigue sin entrega en la fixture original: el test focal de
+`arrives at the overlord` falla en `tribute_delivered` (0), aunque la orden se
+llega a contar. Una variante diagnóstica logró enviar una orden, pero el portador
+abandonó con `nothing_to_render`; no se confirmó si la causa es capacidad,
+interrupción o estado del origen. Se revirtió esa variante; no se cambió la
+simulación ni se relajó el test. Hace falta instrumentar el trayecto antes de
+atribuir una causa.

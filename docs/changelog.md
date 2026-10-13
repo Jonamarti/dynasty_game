@@ -1,3 +1,33 @@
+## 2026-10-13 — verificación M15 completa con dos puertas unitarias abiertas
+
+La suite unitaria completa dio 2.280 aprobadas, 2 fallidas y 1 omitida; la
+matriz de 34 escenarios quedó en rojo por checks generales. E2E emitió 176/179
+aprobados: tres capturas históricas fallaron al guardarse, pero sus specs pasaron
+8/8 al repetirlas en un directorio temporal. La suite completa se quedó en
+teardown, así que no se registra como exit 0. El tour alteró temporalmente PNG
+históricos; la restauración fue bloqueada por el revisor automático y queda
+pendiente de aprobación del propietario. Resultados y límites en
+[`m15_calibration.md`](m15_calibration.md).
+
+## 2026-10-13 — fase 41: el check de pertenencia usa el estado previo a la acción
+
+`moods-move-choices` agrupaba cada acción por el ánimo leído después de ejecutar
+el paso; una charla familiar puede elevar la pertenencia durante ese mismo paso.
+El observador ahora conserva la pertenencia previa y la empareja con la acción
+posterior. El test enfocado y typecheck pasan. En `band` el check sigue rojo
+(2,9% de charla en el tercil bajo frente a 3,6% en el alto), por lo que esto
+corrige una contaminación temporal del instrumento pero no demuestra el
+mecanismo ni justifica cambiar coeficientes. La dieta también sigue roja; no se
+ajustó el umbral ni el modelo.
+
+## 2026-10-13 — corregido el denominador del test de difusión tecnológica
+
+El test usaba `|A ∪ B| − 2|A ∩ B|` para estimar la diferencia simétrica, que
+restaba una intersección adicional. Ahora cuenta directamente las técnicas
+exclusivas de cada pueblo: 8 al inicio. En la fixture de 20 seeds y 120
+temporadas, la media final es 3,5 y la dispersión correcta 0,4375, bajo el
+límite existente 0,60. No cambian el modelo, sus tasas ni el umbral.
+
 ## 2026-10-13 — M15 phase 17: tame gets an open-palm gesture
 
 The renderer now shows four generated coaxing poses throughout a real `tame`
@@ -16171,3 +16201,24 @@ signal; the eight proxy misses still had `drink`, `give`, `go_home` or `idle` at
 impact. Aggregate counters do not link decisions to individual victims, so no
 cause or coefficient change is justified. M15 remains open.
 
+## 2026-10-13 — make the determinism telemetry fixture exercise a real harvest
+
+The six-person fixture could complete 1,200 autonomous ticks without harvesting
+food, so its positive nutrition-counter assertion tested seed luck rather than
+the read-only telemetry. Both runs now start the same person on the same seeded
+berry harvest. The world fingerprints still match with telemetry off/on and the
+counter is observed. The compact correspondence check remains unresolved at
+16.9046 thirst points against its fixed 15-point tolerance; no model parameter
+or threshold changed. Focal evidence and the unconfirmed lead are in
+[`docs/bugs.md`](bugs.md).
+
+
+## 2026-10-13 — estabilizar la fixture de golpe de Estado
+
+La fixture de ocho habitantes podía tener solo cuatro adultos, así que el caso
+con guardias no preparaba ningún soldado; algunos de los conspiradores tampoco
+alcanzaban el umbral de rencor tras cuatro deeds. Ahora madura el roster de la
+prueba y establece rencor explícito antes de evaluar la facción. Las tres
+pruebas de `plots against the king` pasan sin cambiar las aserciones. El caso de
+tributo sigue en investigación: su fixture focal falla en entrega con contador
+cero y no hay todavía una causa confirmada; detalle en [`docs/bugs.md`](bugs.md).

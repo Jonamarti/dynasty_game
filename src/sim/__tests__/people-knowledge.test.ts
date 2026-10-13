@@ -379,7 +379,10 @@ describe('a technological gap persists (owner decision 2026-10-06: diffusion mus
     for (let k = 0; k < streams; k++) {
       const r = world(`gap-${k}`, [{ n: 40, techs: A }, { n: 40, techs: B }], { mu, partial, contact, seasons });
       const diff = () => { let n = 0; for (const t of new Set([...r.people[0]!.techs.list(), ...r.people[1]!.techs.list()])) if (r.people[0]!.techs.has(t) !== r.people[1]!.techs.has(t)) n++; return n; };
-      initial = new Set([...A, ...B]).size - A.filter(t => B.includes(t)).length * 2;
+      // The symmetric difference is the techniques exclusive to either people.
+      // `|A ∪ B| - 2|A ∩ B|` subtracts one shared technique too many because
+      // the union already counts each shared technique only once.
+      initial = A.filter(t => !B.includes(t)).length + B.filter(t => !A.includes(t)).length;
       sum += diff();
     }
     return sum / streams / initial;
@@ -398,23 +401,9 @@ describe('a technological gap persists (owner decision 2026-10-06: diffusion mus
   });
 
   it('the model is honest that sustained full contact does homogenise, over generations', () => {
-    // 0.3 until M15 phase 37, when it measured 0.21; the ten metal nodes made it
-    // 0.33. The cause is measured, not guessed: leaving those ten out of the
-    // count gives 0.12, so what remains different after thirty years of full
-    // contact is the deep chain (smelting under kiln under pottery...) that a
-    // people picks up slowly, and a longer table has more of it. The world is
-    // not wrong and the claim stands - this is still a third of the ten-year
-    // figure the test above holds above 0.9 and well clear of the hot build's
-    // 0.1 - so the bound moves with the table and says why.
-    //
-    // M15 phase 36 (`trade`) moved it from 0.33 to 0.58, and this time the
-    // cause is not the new node itself: excluding `trade` and `marking` from
-    // `diff()`'s count (checked and reverted, not shipped) leaves the figure
-    // unchanged. One technology added to an already-large reachable set
-    // dilutes how much of each season's contact lands on any one of them, so
-    // the extra divergence is spread thin across techs that were already in
-    // the table, not concentrated in the one that is new. Still a half of the
-    // ten-year figure above and clear of the hot build's 0.1.
+    // `dispersion` divides by the true initial symmetric difference. With
+    // A and B these are eight techniques; contact should shrink that gap below
+    // 0.6 after 120 seasons. The high-diffusion control above guards the test.
     expect(dispersion(1, LEARN_MU_START, PARTIAL_START, 120, 20)).toBeLessThan(0.6);
   });
 });

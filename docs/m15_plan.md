@@ -1,3 +1,15 @@
+**Revisión instrumental del 2026-10-13 — fase 41:** corregidos tres
+instrumentos de verificación sin cambiar la simulación ni sus umbrales. El test
+de difusión divide ahora por la diferencia simétrica inicial correcta (8
+técnicas; resultado 0,4375), el contador de nutrición compacta parte de una
+cosecha real idéntica en ambos brazos, y el check de pertenencia agrupa cada
+acción por el estado anterior a ejecutarla. El último sigue por debajo de su
+relación objetivo (2,9% de charla en baja pertenencia frente a 3,6% en alta).
+También sigue abierto el delta de sed de `lean/delta` (16,90 frente al límite
+15) y el tributo que se ordena pero no se entrega. La explicación de dieta
+continúa sin aislar; los detalles están en [`m15_calibration.md`](m15_calibration.md)
+y [`bugs.md`](bugs.md). Estos arreglos instrumentales no cierran fase 41.
+
 **Avance del 2026-10-13 — fase 41, nueva cohorte `generations`:** 20 semillas
 mostraron supervivencia media 6,0%, extinción 10/20, colapso <25% 19/20,
 `recovered` 0/59 (censuradas) y `answered` 81,8% (36/44). No es una medición

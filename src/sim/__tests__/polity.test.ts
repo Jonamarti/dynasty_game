@@ -5,7 +5,7 @@
 import { describe, it, expect } from 'vitest';
 import { Simulation } from '../core/Simulation.ts';
 import { Building, BUILDINGS } from '../entities/Building.ts';
-import type { Person } from '../entities/Person.ts';
+import { ADULT_YEARS, type Person } from '../entities/Person.ts';
 import {
   CONTRIBUTION_RENOWN, SERF_REVOLT_QUORUM, SOLDIER_UPKEEP, WAR_MIN_DAYS, serfRefuses, fightOf, loyalistsOf, civilisationLacks, strengthOf, submits, TAX_RATES, heirOf, mayKeepSoldier, reignsForLife, TEMPLE_PULL, dueFrom, keepsAccounts, npcTaxRate, recordContribution, taxResentment,
   templeOf, templePull,
@@ -449,17 +449,30 @@ describe('tribute: carried to the overlord', () => {
 });
 
 describe('plots against the king', () => {
-  /** A band of six with a king and three who hate him and trust each other. */
+  /** A grown band with a king and three who hate him and trust each other. */
   function plot(soldiers: number) {
     const sim = new Simulation({ ...SMALL, population: { bands: 1, peoplePerBand: 8, startingTech: ['pottery', 'division_of_labour', 'chiefdom'] } });
     for (let i = 0; i <= sim.config.time.ticksPerDay; i++) sim.step();
     const band = sim.bands.find(b => !b.outcast)!;
+    // The seeded founding roster can contain fewer than six adults. The test
+    // is specifically about the guard's strength, so age the roster before
+    // selecting its three plotters and any soldiers instead of silently
+    // giving the soldier case no guards at all.
+    for (const person of sim.livingPeople().filter(p => p.bandId === band.id)) {
+      person.age = Math.max(person.age, ADULT_YEARS * person.daysPerYear);
+    }
     const king = sim.peopleById.get(band.chiefId!)!;
     learn(king, 'kingship');
     const others = sim.livingPeople().filter(p => p.bandId === band.id && p.id !== king.id && !p.isChild);
     const plotters = others.slice(0, 3);
     for (const p of plotters) {
-      for (let i = 0; i < 4; i++) sim.relationships.addDeed(p.id, king.id, -25, sim.time.tick);
+      // Children aged into the test roster can begin with warmer regard for
+      // the king than the older seed's original adults. Establish the same
+      // actual grudge for every conspirator rather than assuming four deeds
+      // always cross the faction's threshold.
+      for (let i = 0; i < 12 && sim.relationships.opinion(p.id, king.id) > -40; i++) {
+        sim.relationships.addDeed(p.id, king.id, -25, sim.time.tick);
+      }
       for (const q of plotters) if (q !== p) for (let i = 0; i < 3; i++) sim.relationships.addDeed(p.id, q.id, 20, sim.time.tick);
       p.skills.fight = 10;
     }

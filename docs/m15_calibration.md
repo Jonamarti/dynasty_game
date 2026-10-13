@@ -98,6 +98,55 @@ las cohortes más cortas y merecen seguimiento, no ajuste:
   III-VI (manos, sal, noche, cuerpo, fauna), que es la que de verdad fija
   `Config.motivation` para el resto de M15.
 
+### Diagnóstico corto de dieta y pertenencia — 2026-10-13
+
+`npm.cmd run sim:check -- --scenario band` volvió a dar `cravings-steer-the-diet`
+y `moods-move-choices` en rojo. Hubo 228 comidas durante antojo proteico fuerte,
+6 ricas en proteína (2,6%); en calma hubo 117, 12 ricas (10,3%). En las
+decisiones con antojo, la búsqueda halló proteína accesible 1.039 veces y no
+halló proteína 2.952 veces, de 4.777. La medida de comidas no condiciona por
+disponibilidad al escoger cada comida, así que no identifica una elección
+contraria al antojo. Se deja el fallo como pendiente de instrumentación, sin
+ajustar coeficientes ni umbral.
+
+El observador de `moods-move-choices` se corrigió para emparejar la acción del
+paso con pertenencia capturada antes del paso; anteriormente una conversación
+familiar podía elevar la pertenencia antes de que se tomara la muestra. El check
+sigue rojo con 2,9% de charla en baja pertenencia frente a 3,6% en alta (950 por
+grupo), así que la corrección elimina la fuga temporal pero no resuelve el
+comportamiento. El test específico y typecheck pasan. No se alteró simulación,
+umbrales ni versión.
+
+### Verificación autorizada completa — 2026-10-13, `0.15.138-alpha`
+
+`npm.cmd test -- --maxWorkers=1 --testTimeout=15000` terminó en 653,88 s con
+2.280 aprobadas, 2 fallidas y 1 omitida en 311 archivos. Permanecen
+`compact-correspondence` (solo `lean/delta`, sed 16,9046 frente al margen 15)
+y la entrega de tributo (`tribute_ordered` > 0, `tribute_delivered` = 0). La
+prueba de golpe de Estado ya pasa con la población adulta y el rencor que su
+premisa requiere; la difusión y las fixtures de telemetría compacta también
+pasan. No se ajustaron umbrales.
+
+`npm.cmd run sim:check:all` recorrió 34 escenarios y terminó con salida 1. Los
+escenarios de mecanismo `nights` (3/3), `salters` (1/1), `tailors` (3/3),
+`homes` (7/7), los seis de hierro, `frontier-cohort` (3/3), `frontier` (2/2),
+`food-news` (1/1), `conflicts` (1/1) y `shallows` (6/6) pasaron. Los generales
+retienen fallos repetidos de dieta, sueño, pertenencia, supervivencia,
+descubrimiento, sociedad y fauna, desglosados por escenario en la salida de
+esta ejecución. Ningún peso ni check se cambió para perseguir la matriz.
+
+E2E emitió los 179 resultados en servidor fresco: 176 pasaron y tres fallaron
+al escribir PNG históricos (`UNKNOWN: unknown error, open`), sin fallar sus
+aserciones de juego. Las tres specs pasaron después en ejecución focal con
+directorio temporal de capturas (8/8); las dos pruebas de versión también
+pasaron en puerto fresco. Ambos runners se quedaron en teardown y se
+interrumpieron, así que no se afirma un exit 0 completo de Playwright. Las
+ejecuciones E2E reemplazaron temporalmente capturas históricas; la restauración
+quedó bloqueada por el revisor automático y requiere aprobación del propietario.
+
+**Estado:** fase 41 y M15 siguen abiertos. La suite no autoriza a declarar
+calibración cerrada mientras sobrevivan esas puertas.
+
 ## Lecturas de fase 41 — 2026-10-12
 
 Se actualizaron checks cortos tras M15, sin cambiar parámetros:
