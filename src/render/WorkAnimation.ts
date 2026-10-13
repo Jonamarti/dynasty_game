@@ -2,7 +2,7 @@
 import type { Simulation } from '../sim/core/Simulation.ts';
 import type { Person } from '../sim/entities/Person.ts';
 import { ARRIVAL_RADIUS } from '../sim/systems/MovementSystem.ts';
-import { ATTEND_POSES, BUILD_POSES, CHOP_POSES, CUT_GRASS_POSES, DIG_POSES, DYE_POSES, EXTRACT_POSES, FARM_POSES, FISH_POSES, GATHER_POSES, HIDE_DRESS_POSES, INSCRIBE_POSES, MAKE_POSES, MEND_POSES, PLANT_POSES, SPREAD_POSES, type ArtPose } from './ArtManifest.ts';
+import { ATTEND_POSES, BUILD_POSES, CHOP_POSES, CUT_GRASS_POSES, DIG_POSES, DYE_POSES, EXTRACT_POSES, FARM_POSES, FISH_POSES, GATHER_POSES, HIDE_DRESS_POSES, INSCRIBE_POSES, MAKE_POSES, MEND_POSES, PLANT_POSES, SPREAD_POSES, TEND_POSES, type ArtPose } from './ArtManifest.ts';
 import { RECIPES } from '../sim/entities/Recipe.ts';
 import { isStationFor } from '../sim/entities/Building.ts';
 import { CUT_FLOOR } from '../sim/core/Grass.ts';
@@ -222,6 +222,14 @@ export function attendingFeastPose(person: Person, moving: boolean, alpha = 1): 
   if (Math.hypot(person.x - person.targetX, person.y - person.targetY) > FEAST_SEAT) return null;
   // `actionTicks` is the simulation clock for this wait. No host state is read.
   return workFrame(ATTEND_POSES, person.actionTicks, alpha);
+}
+
+/** The healer's hands move only after the real tending action has begun. */
+export function tendingPose(person: Person, moving: boolean, alpha = 1): ArtPose | null {
+  // `workedTicks` advances only after ActionSystem has validated the patient,
+  // knowledge and reach. Do not inspect the patient's private health or body.
+  if (moving || !person.alive || person.action !== 'tend' || person.workedTicks <= 0) return null;
+  return workFrame(TEND_POSES, person.workedTicks, alpha);
 }
 
 /** Carving is visible only while this person adds work to a reached record. */

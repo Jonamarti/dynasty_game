@@ -1,3 +1,14 @@
+## 2026-10-13 — M15 fase 17: el sanador venda una herida
+
+`tend` anima cuatro poses generadas durante el trabajo real de curación. El
+selector observa solo el estado público del sanador y no lee la salud, heridas,
+condiciones ni inventario del paciente. Typecheck pasa; las pruebas focales de
+arte y poses pasan 76/76; la E2E manual contra Vite separado pasa 1/1 y crea
+cuatro capturas revisadas en `artifacts/screenshots/m15-tend-animation-2026-10-13/`.
+`art:build -- people` y `art:sheet` terminan correctamente. No cambia la
+mecánica ni los streams RNG. Contrato:
+[m15_tend_animation.md](m15_tend_animation.md). Versión `0.15.129-alpha`.
+
 ## 2026-10-13 — M15 fase 17: tallar una inscripción también se ve
 
 La orden real `inscribe` anima cuatro poses de talla y un cincel visible al

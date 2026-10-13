@@ -44,6 +44,14 @@ quedó colgado tras el caso y se interrumpió (código 1). Capturas en
 [`m15_inscription_animation.md`](m15_inscription_animation.md). La fase 17
 sigue abierta para otras familias sin gesto.
 
+**Avance del 2026-10-13 — fase 17, atender una herida:** `tend` muestra cuatro
+poses generadas (`t0`–`t3`) mientras el sanador suma trabajo real. El selector
+usa solo la acción, `workedTicks` y vida del sanador; no consulta al paciente
+ni sus heridas o condiciones. La mecánica de curación y sus flujos RNG no
+cambian. Pruebas unitarias y spec E2E de orden real; captura en
+`artifacts/screenshots/m15-tend-animation-2026-10-13/`. Contrato:
+[`m15_tend_animation.md`](m15_tend_animation.md). Versión `0.15.129-alpha`.
+
 **Medición del 2026-10-13 — fase 16, cohorte doméstica:** después del cierre de
 12f, tres brazos pareados de 20 semillas century (HEAD idéntico, 40.000 pasos):
 baseline, comfortDriveEnabled=false y sleepQualityEffectsEnabled=false.

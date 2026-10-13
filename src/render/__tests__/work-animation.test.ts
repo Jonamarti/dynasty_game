@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Person } from '../../sim/entities/Person.ts';
 import { RNG } from '../../sim/core/RNG.ts';
-import { attendingFeastPose, buildingPose, cuttingGrassPose, diggingPose, dyeingPose, extractionPose, farmingPose, fishingPose, gatheringPose, hideDressingPose, inscribingPose, mendingPose, plantingPose, spreadingCompostPose } from '../WorkAnimation.ts';
+import { attendingFeastPose, buildingPose, cuttingGrassPose, diggingPose, dyeingPose, extractionPose, farmingPose, fishingPose, gatheringPose, hideDressingPose, inscribingPose, mendingPose, plantingPose, spreadingCompostPose, tendingPose } from '../WorkAnimation.ts';
 import type { Simulation } from '../../sim/core/Simulation.ts';
 
 function fixture() {
@@ -135,6 +135,46 @@ describe('inscription animation', () => {
     expect(inscribingPose(person, sim, false)).toBeNull();
     record.pending = 'firemaking'; record.unfinished = true; sim.inscriptionsById.clear();
     expect(inscribingPose(person, sim, false)).toBeNull();
+  });
+});
+
+describe('tending animation', () => {
+  function fixture() {
+    const person = new Person('Healer', 4, 4, 0, new RNG('tending-animation'));
+    person.action = 'tend'; person.workedTicks = 1;
+    return person;
+  }
+
+  it('cycles four dressing poses from the healer’s real work ticks without mutation', () => {
+    const healer = fixture();
+    const frames = [1, 3, 5, 7].map(ticks => {
+      healer.workedTicks = ticks;
+      return tendingPose(healer, false, 0);
+    });
+    expect(frames).toEqual(['t0', 't1', 't2', 't3']);
+    expect(healer.action).toBe('tend');
+    expect(healer.workedTicks).toBe(7);
+    expect([healer.x, healer.y]).toEqual([4, 4]);
+  });
+
+  it('shows no dressing gesture while travelling, idle, dead, or before real work', () => {
+    const healer = fixture();
+    expect(tendingPose(healer, true)).toBeNull();
+    healer.action = 'idle';
+    expect(tendingPose(healer, false)).toBeNull();
+    healer.action = 'tend'; healer.workedTicks = 0;
+    expect(tendingPose(healer, false)).toBeNull();
+    healer.workedTicks = 1; healer.alive = false;
+    expect(tendingPose(healer, false)).toBeNull();
+  });
+
+  it('uses only the healer’s public action and work marker', () => {
+    const healer = fixture();
+    healer.workedTicks = 2;
+    const before = { action: healer.action, workedTicks: healer.workedTicks, position: [healer.x, healer.y] };
+    expect(tendingPose(healer, false, 0.5)).toBe('t0');
+    expect(tendingPose(healer, false, 1)).toBe('t1');
+    expect({ action: healer.action, workedTicks: healer.workedTicks, position: [healer.x, healer.y] }).toEqual(before);
   });
 });
 
