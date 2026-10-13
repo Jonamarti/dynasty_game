@@ -1,3 +1,13 @@
+## 2026-10-13 — docs: reconciliar el estado vigente de M15
+
+`next-steps.md` ahora separa un resumen actual del diario histórico y corrige
+la medición doméstica, la fase 17 y los gates abiertos de fase 41.
+`architecture.md` registra la cohorte `century` actual y su límite no pareado.
+En `0.15.127-alpha`, typecheck y `sim:check homes` (7/7) pasan; la suite dio
+2.243 aprobadas, cinco fallidas y una omitida. Los fallos persisten en los
+cuatro archivos ya registrados en `bugs.md` y no se atribuyen al renderer.
+M15 permanece abierto.
+
 ## 2026-10-13 — docs: actualizar diagnóstico de fase 41
 
 Una nueva cohorte `century` de 20 semillas con `0.15.126-alpha` dio 45,6% de

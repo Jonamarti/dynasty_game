@@ -1,12 +1,46 @@
+## Estado vigente — 2026-10-13
+
+M15 sigue siendo el único plan activo y **permanece abierto**. El estado
+autoritativo de sus fases es [m15_plan.md](m15_plan.md); esta página conserva
+el diario de decisiones y entregas históricas debajo de este resumen.
+
+- **Fase 17, arte de trabajo:** el 13 de octubre se entregaron las poses de
+  vestir pieles, teñir, extender compost y atender el banquete. Cada cambio
+  funcional tiene pruebas, contrato, changelog y captura bajo
+  `artifacts/screenshots/`. La fase sigue abierta para otras familias de
+  trabajo sin gesto propio.
+- **Fase 16, hogares:** la cohorte doméstica ya se ejecutó el 13 de octubre.
+  Las tres builds comparadas dieron 45,6%, 45,4% y 45,7% de supervivencia;
+  las diferencias por seed fueron mixtas y casi ningún NPC colocó muebles.
+  Es una muestra descriptiva, no una calibración. Ver
+  [protocolo de hogares](m15_homes_cohort_protocol.md) y `m15_calibration.md`.
+- **Fase 41, calibración y cierre:** la cohorte `century` de 20 semillas
+  del 13 de octubre dio supervivencia media 45,6%, `recovered` 0/42
+  censuradas, `answered` 83,3% (35/42, objetivo ≥90%) y `firemaking` 4/20
+  (20%, objetivo ≥50%). No se cambió ningún coeficiente. La causa de
+  recuperación insuficiente y del proxy `answered` sigue abierta; la matriz
+  `sim:check:all` y la suite unitaria también conservan fallos heredados.
+  Véanse [calibración](m15_calibration.md) y [bugs](bugs.md).
+- **Conservación:** 15c continúa apagada hasta tener una comparación económica
+  emparejada que mida una mejora real. El test del scorer de 15d confirma la
+  elección de conserva bajo sus condiciones, pero el selector autónomo no la
+  consume en invierno de forma suficiente; no se afirma mejora económica.
+- **Documentación de arquitectura:** revisada el 13 de octubre para reflejar
+  los contratos vigentes; no cierra por sí sola la calibración de M15.
+
+El historial siguiente se conserva como registro: sus estados y frases de
+“siguiente fase” corresponden al corte fechado de cada entrada, no al checkout
+actual.
+
 **Avance del 2026-10-12 — fase 16, contrato de cohorte doméstica:**
 `sim:seeds` registra por semilla hogares completos, superficies nocturnas,
 deltas de confort/seguridad, calidad física/efectiva, craft/colocación NPC y
 mortalidad por hambre por edad; los denominadores vacíos dan `n/a`. Los
 controles experimentales `motivation.comfortDriveEnabled` y
 `motivation.sleepQualityEffectsEnabled` permiten ablaciones A/B por `--set`,
-ambos activos por defecto. No se lanzó cohorte ni se afirma calibración. Ver
-[protocolo de hogares](m15_homes_cohort_protocol.md); fase 16 sigue pendiente
-de medición poblacional.
+ambos activos por defecto. La instrumentación no midió por sí misma la
+calibración. La cohorte descrita en el resumen vigente está en
+`m15_calibration.md`.
 
 **Avance del 2026-10-12 — fase 16d, alfombra de piel:** una piel con cordaje
 produce una superficie interior de calidad 1,0; el NPC la fabrica cuando no

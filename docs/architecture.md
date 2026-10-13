@@ -1,6 +1,6 @@
 # Architecture
 
-Current as of 2026-10-13 (M15 phase-17 work poses and phase-41 verification).
+Current as of 2026-10-13 (M15 phase-17 work poses and phase-41 cohort).
 No runtime dependencies, Vite + a 2D canvas.
 
 ## Layout
@@ -63,6 +63,17 @@ pass; many general survival, needs, social and discovery checks still fail
 across the calibrated scenarios. No balance parameters were changed from this
 matrix. M15 remains open; calibration figures and verification failures are
 tracked in
+[`m15_calibration.md`](m15_calibration.md) and [`bugs.md`](bugs.md).
+
+The 2026-10-13 `century` cohort (20 seeds × 40,000 steps, `0.15.126-alpha`)
+measured 45.6% mean survival, `recovered` 0/42 censored episodes, `answered`
+83.3% (35/42), and `firemaking` in 4/20 seeds. This is an unpaired diagnostic
+sample, not a before/after comparison; it changed no balance settings. The
+full unit suite was also rerun at `.127`: 2,243 passed, five failed and one
+was skipped across 307 files. The same known failures remain in four files
+(compact correspondence, food telemetry determinism, social knowledge
+dispersion, and two polity cases); no new failure was attributed to the
+phase-17 renderer change. The current `homes` sim check passes 7/7. See
 [`m15_calibration.md`](m15_calibration.md) and [`bugs.md`](bugs.md).
 
 ## Simulation LOD — revised owner decision, 2026-10-08

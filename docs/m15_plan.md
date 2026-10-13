@@ -4634,19 +4634,18 @@ tiene que ejercitar, porque llegar desde cero cuesta años.
 
 ## Verificación
 
-**Estado de simulación 2026-10-13 (`0.15.123-alpha`; arte/UI actual en
-`0.15.124-alpha`):** `typecheck` pasa; la suite completa
-da 2.229 aprobados, 5 fallidos y 1 omitido en 306 archivos. Las cuatro
-premisas obsoletas de configuración, recursos y `diggers` se corrigieron en
-`fb650a6`; quedan fallos de correspondencia compacta, telemetría de comida,
-difusión tecnológica y política, registrados en `bugs.md`. El `sim:check`
-individual tampoco está verde (dieta, ánimo, presupuesto de rendimiento y
-visibilidad de colinas). No se modificaron los límites para hacerlos pasar.
-La E2E completa de `.124` emitió 161 aprobados y cuatro premisas obsoletas;
-las pruebas E2E afectadas pasaron en corridas focales después de corregir
-la versión fija, la tecla de niebla y la ruta de capturas. El runner completo se
-interrumpió al colgar su apagado y no se volvió a ejecutar después de esos
-arreglos; el detalle consta en `bugs.md`.
+**Estado de simulación 2026-10-13 (`0.15.127-alpha`):** `typecheck` pasa.
+`npm.cmd test -- --maxWorkers=1 --testTimeout=15000` dio 2.243 aprobados,
+5 fallidos y 1 omitido en 307 archivos; son los mismos fallos anotados en
+`bugs.md`: correspondencia compacta (delta thirst 16,90 frente al límite 15),
+telemetría `compact_food_nutrition_gather` a cero, dispersión tecnológica 0,70
+frente a 0,60, tributo sin entrega y el jefe de un golpe de Estado. El escenario
+`homes` pasó sus 7/7 checks en 2.400 pasos. No se modificaron límites para
+hacerlos pasar. La E2E completa de `.124` emitió 161 aprobados y cuatro
+premisas obsoletas; se corrigieron y las pruebas afectadas pasan focalmente,
+incluida la E2E de `attend` en servidor aislado `.127`. Su caso aprobó, pero
+Playwright se interrumpió durante teardown; no se afirma un exit 0 del runner
+ni una nueva pasada E2E completa.
 
 ```bash
 npm run typecheck

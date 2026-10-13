@@ -5346,3 +5346,15 @@ un defecto de respuesta, del proxy o de la secuencia de agresiones. Esta
 cohorte no está emparejada con una build anterior; no se ajusta ningún
 coeficiente ni se infiere una regresión. Ver `m15_calibration.md`.
 
+### 2026-10-13 — verificación actual en `0.15.127-alpha`
+
+`npm.cmd run typecheck` pasó. `npm.cmd test -- --maxWorkers=1
+--testTimeout=15000` terminó en 645,40 s: 2.243 pruebas pasaron, cinco
+fallaron y una se omitió en 307 archivos. Persisten los cinco hallazgos ya
+conocidos: thirst de correspondencia compacta 16,90 (límite 15), contador
+`compact_food_nutrition_gather` en 0, dispersión de conocimiento 0,70 (límite
+0,60), cero tributos entregados en la fixture y `chiefId` 2 en la prueba de
+golpe de Estado. El escenario `homes` pasó 7/7 checks en 2.400 pasos.
+Ninguno de estos resultados se atribuye al cambio de renderer de fase 17 y no
+se relajaron umbrales.
+
