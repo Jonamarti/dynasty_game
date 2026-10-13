@@ -6,8 +6,8 @@ el diario de decisiones y entregas históricas debajo de este resumen.
 
 - **Fase 17, arte de trabajo:** el 13 de octubre se entregaron las poses de
   vestir pieles, teñir, extender compost, atender el banquete, tallar
-  inscripciones y vendar heridas. Cada cambio funcional tiene pruebas,
-  contrato, changelog y captura bajo
+  inscripciones, vendar heridas y pensar una idea. Cada cambio funcional tiene
+  pruebas, contrato, changelog y captura bajo
   `artifacts/screenshots/`. La fase sigue abierta para otras familias de
   trabajo sin gesto propio.
 - **Fase 16, hogares:** la cohorte doméstica ya se ejecutó el 13 de octubre.

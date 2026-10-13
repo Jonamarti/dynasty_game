@@ -1,3 +1,11 @@
+**Avance del 2026-10-13 — fase 17, pensar:** `ponder` muestra cuatro poses
+generadas (`o0`–`o3`) durante trabajo real sobre una idea. El gesto es genérico;
+el selector solo observa la acción, los ticks trabajados y la vida del propio
+personaje, sin leer `ideas`, `targetTech` ni `knownTech`. La mecánica, tasa y RNG
+no cambian. Pruebas focales y E2E de una orden real; capturas en
+`artifacts/screenshots/m15-ponder-animation-2026-10-13/`. Contrato:
+[`m15_ponder_animation.md`](m15_ponder_animation.md). Versión `0.15.130-alpha`.
+
 **Avance del 2026-10-13 — fase 17, asistir al banquete:** una persona con la
 orden `attend` muestra cuatro poses generadas sentada (`v0`–`v3`) tras alcanzar
 su punto objetivo, con el reloj de simulación de la acción. El renderer no lee

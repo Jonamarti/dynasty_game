@@ -1,3 +1,14 @@
+## 2026-10-13 — M15 phase 17: ponder gets a generic thinking gesture
+
+`ponder` now cycles four generated hand-to-chin poses while a real order adds
+effort to an idea. The selector reads only the thinker’s own public action,
+work ticks and alive state; it does not inspect ideas or target technologies.
+The action mechanics, rate and RNG streams are unchanged. Typecheck, focused
+unit tests, people art build/sheet and the manual E2E pass; four reviewed
+captures are in `artifacts/screenshots/m15-ponder-animation-2026-10-13/`.
+Contract: [m15_ponder_animation.md](m15_ponder_animation.md). Version
+`0.15.130-alpha`.
+
 ## 2026-10-13 — verificación completa E2E de `0.15.129-alpha`
 
 `npm run e2e` pasó 170/170 en 17,7 minutos, con los specs de inscripción y

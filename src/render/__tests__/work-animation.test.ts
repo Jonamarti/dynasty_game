@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Person } from '../../sim/entities/Person.ts';
 import { RNG } from '../../sim/core/RNG.ts';
-import { attendingFeastPose, buildingPose, cuttingGrassPose, diggingPose, dyeingPose, extractionPose, farmingPose, fishingPose, gatheringPose, hideDressingPose, inscribingPose, mendingPose, plantingPose, spreadingCompostPose, tendingPose } from '../WorkAnimation.ts';
+import { attendingFeastPose, buildingPose, cuttingGrassPose, diggingPose, dyeingPose, extractionPose, farmingPose, fishingPose, gatheringPose, hideDressingPose, inscribingPose, mendingPose, ponderingPose, plantingPose, spreadingCompostPose, tendingPose } from '../WorkAnimation.ts';
 import type { Simulation } from '../../sim/core/Simulation.ts';
 
 function fixture() {
@@ -175,6 +175,46 @@ describe('tending animation', () => {
     expect(tendingPose(healer, false, 0.5)).toBe('t0');
     expect(tendingPose(healer, false, 1)).toBe('t1');
     expect({ action: healer.action, workedTicks: healer.workedTicks, position: [healer.x, healer.y] }).toEqual(before);
+  });
+});
+
+describe('ponder animation', () => {
+  function fixture() {
+    const person = new Person('Thinker', 4, 4, 0, new RNG('ponder-animation'));
+    person.action = 'ponder'; person.workedTicks = 1;
+    return person;
+  }
+
+  it('cycles the quiet thinking gesture from real work ticks without mutation', () => {
+    const thinker = fixture();
+    const frames = [1, 3, 5, 7].map(ticks => {
+      thinker.workedTicks = ticks;
+      return ponderingPose(thinker, false, 0);
+    });
+    expect(frames).toEqual(['o0', 'o1', 'o2', 'o3']);
+    expect(thinker.action).toBe('ponder');
+    expect(thinker.workedTicks).toBe(7);
+    expect([thinker.x, thinker.y]).toEqual([4, 4]);
+  });
+
+  it('shows no pose while travelling, idle, dead, or before real work', () => {
+    const thinker = fixture();
+    expect(ponderingPose(thinker, true)).toBeNull();
+    thinker.action = 'idle';
+    expect(ponderingPose(thinker, false)).toBeNull();
+    thinker.action = 'ponder'; thinker.workedTicks = 0;
+    expect(ponderingPose(thinker, false)).toBeNull();
+    thinker.workedTicks = 1; thinker.alive = false;
+    expect(ponderingPose(thinker, false)).toBeNull();
+  });
+
+  it('never inspects private ideas or target technology', () => {
+    const thinker = fixture(); thinker.workedTicks = 2;
+    for (const key of ['ideas', 'targetTech', 'knownTech']) {
+      Object.defineProperty(thinker, key, { configurable: true, get() { throw new Error(`read private ${key}`); } });
+    }
+    expect(ponderingPose(thinker, false, 0.5)).toBe('o0');
+    expect(ponderingPose(thinker, false, 1)).toBe('o1');
   });
 });
 

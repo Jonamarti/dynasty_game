@@ -2,7 +2,7 @@
 import type { Simulation } from '../sim/core/Simulation.ts';
 import type { Person } from '../sim/entities/Person.ts';
 import { ARRIVAL_RADIUS } from '../sim/systems/MovementSystem.ts';
-import { ATTEND_POSES, BUILD_POSES, CHOP_POSES, CUT_GRASS_POSES, DIG_POSES, DYE_POSES, EXTRACT_POSES, FARM_POSES, FISH_POSES, GATHER_POSES, HIDE_DRESS_POSES, INSCRIBE_POSES, MAKE_POSES, MEND_POSES, PLANT_POSES, SPREAD_POSES, TEND_POSES, type ArtPose } from './ArtManifest.ts';
+import { ATTEND_POSES, BUILD_POSES, CHOP_POSES, CUT_GRASS_POSES, DIG_POSES, DYE_POSES, EXTRACT_POSES, FARM_POSES, FISH_POSES, GATHER_POSES, HIDE_DRESS_POSES, INSCRIBE_POSES, MAKE_POSES, MEND_POSES, PLANT_POSES, PONDER_POSES, SPREAD_POSES, TEND_POSES, type ArtPose } from './ArtManifest.ts';
 import { RECIPES } from '../sim/entities/Recipe.ts';
 import { isStationFor } from '../sim/entities/Building.ts';
 import { CUT_FLOOR } from '../sim/core/Grass.ts';
@@ -230,6 +230,14 @@ export function tendingPose(person: Person, moving: boolean, alpha = 1): ArtPose
   // knowledge and reach. Do not inspect the patient's private health or body.
   if (moving || !person.alive || person.action !== 'tend' || person.workedTicks <= 0) return null;
   return workFrame(TEND_POSES, person.workedTicks, alpha);
+}
+
+/** Quiet hand-to-chin motion while a real ponder order adds work. */
+export function ponderingPose(person: Person, moving: boolean, alpha = 1): ArtPose | null {
+  // An idea and its target technology are private knowledge. `ponder` plus
+  // workedTicks is the public action marker; never inspect ideas or targetTech.
+  if (moving || !person.alive || person.action !== 'ponder' || person.workedTicks <= 0) return null;
+  return workFrame(PONDER_POSES, person.workedTicks, alpha);
 }
 
 /** Carving is visible only while this person adds work to a reached record. */

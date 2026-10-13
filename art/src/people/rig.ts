@@ -124,7 +124,7 @@ export function geometry(age: ArtAge, sex: ArtSex): Geo {
 }
 
 /** Whole-pixel upper-body dip; gathering keeps its feet planted like idle. */
-export const POSE_BOB: Record<ArtPose, number> = { idle: 0, w0: 0, w1: 1, w2: 0, w3: 1, g0: 0, g1: 1, g2: 2, g3: 1, f0: 0, f1: 0, f2: 0, f3: 0, x0: 0, x1: 0, x2: 0, x3: 0, d0: 0, d1: 0, d2: 0, d3: 0, c0: 0, c1: 0, c2: 0, c3: 0, m0: 1, m1: 2, m2: 1, m3: 0, a0: 1, a1: 2, a2: 1, a3: 0, b0: 0, b1: 1, b2: 0, b3: 1, r0: 0, r1: 0, r2: 0, r3: 0, h0: 0, h1: 0, h2: 0, h3: 0, q0: 0, q1: 1, q2: 1, q3: 0, p0: 0, p1: 0, p2: 0, p3: 0, s0: 1, s1: 2, s2: 1, s3: 0, y0: 0, y1: 1, y2: 1, y3: 0, v0: 0, v1: 1, v2: 1, v3: 0, i0: 1, i1: 2, i2: 1, i3: 0, t0: 0, t1: 0, t2: 1, t3: 0 };
+export const POSE_BOB: Record<ArtPose, number> = { idle: 0, w0: 0, w1: 1, w2: 0, w3: 1, g0: 0, g1: 1, g2: 2, g3: 1, f0: 0, f1: 0, f2: 0, f3: 0, x0: 0, x1: 0, x2: 0, x3: 0, d0: 0, d1: 0, d2: 0, d3: 0, c0: 0, c1: 0, c2: 0, c3: 0, m0: 1, m1: 2, m2: 1, m3: 0, a0: 1, a1: 2, a2: 1, a3: 0, b0: 0, b1: 1, b2: 0, b3: 1, r0: 0, r1: 0, r2: 0, r3: 0, h0: 0, h1: 0, h2: 0, h3: 0, q0: 0, q1: 1, q2: 1, q3: 0, p0: 0, p1: 0, p2: 0, p3: 0, s0: 1, s1: 2, s2: 1, s3: 0, y0: 0, y1: 1, y2: 1, y3: 0, v0: 0, v1: 1, v2: 1, v3: 0, i0: 1, i1: 2, i2: 1, i3: 0, t0: 0, t1: 0, t2: 1, t3: 0, o0: 0, o1: 1, o2: 0, o3: 1 };
 
 const DIG_FRONT: readonly { reach: number; handY: number; elbowY: number }[] = [
   { reach: 0.4, handY: -0.3, elbowY: 0.05 }, { reach: 0.25, handY: -0.6, elbowY: -0.1 },
@@ -236,6 +236,15 @@ const TEND_FRONT: readonly { rightX: number; rightY: number; leftX: number; left
 ];
 const TEND_SIDE_NEAR: readonly (readonly [number, number])[] = [[20, 65], [60, 100], [95, 120], [35, 75]];
 const TEND_SIDE_FAR: readonly (readonly [number, number])[] = [[-20, 20], [-5, 35], [5, 55], [-20, 20]];
+// A generic thinking gesture: hand rises to chin, pauses, then lowers. No prop
+// or pose detail identifies the private idea being considered.
+const PONDER_FRONT: readonly { rightX: number; rightY: number; leftX: number; leftY: number }[] = [
+  { rightX: 6, rightY: 0.08, leftX: 6, leftY: 0.82 },
+  { rightX: 4, rightY: -0.12, leftX: 6, leftY: 0.8 },
+  { rightX: 2, rightY: -0.08, leftX: 5, leftY: 0.86 },
+  { rightX: 5, rightY: 0.14, leftX: 7, leftY: 0.78 },
+];
+const PONDER_SIDE: readonly (readonly [number, number])[] = [[-12, 24], [-48, -28], [-52, -24], [-10, 26]];
 
 function feastSeatFront(cx: number, hipY: number): string {
   const legs = shape(poly([[cx - 14, hipY + 6], [cx - 11, hipY + 6], [cx - 10, hipY + 20], [cx - 13, hipY + 20]]), W.hide, W.hideLine)
@@ -766,7 +775,11 @@ function frontLayers(spec: PersonSpec, back: boolean): PersonOut {
     }
     let hand: Pt = [cx + side * (sh + 1.2 - inward), sY + 2.4 + len];
     let elbow: Pt = [(sh0[0] + hand[0]) / 2 + side * 0.9, (sh0[1] + hand[1]) / 2];
-    if (spec.pose.startsWith('t')) {
+    if (spec.pose.startsWith('o')) {
+      const { rightX, rightY, leftX, leftY } = PONDER_FRONT[Number(spec.pose.slice(1))]!;
+      hand = [cx + side * (isRight ? rightX : leftX), sY + g.arm * (isRight ? rightY : leftY)];
+      elbow = [cx + side * (sh + g.arm * (isRight ? 0.18 : 0.12)), sY + g.arm * (isRight ? 0.42 : 0.62)];
+    } else if (spec.pose.startsWith('t')) {
       const { rightX, rightY, leftX, leftY } = TEND_FRONT[Number(spec.pose.slice(1))]!;
       hand = [cx + side * (isRight ? rightX : leftX), sY + g.arm * (isRight ? rightY : leftY)];
       elbow = [cx + side * (sh + g.arm * (isRight ? 0.14 : 0.12)), sY + g.arm * 0.6];
@@ -903,7 +916,9 @@ function sideLayers(spec: PersonSpec): PersonOut {
     const col = near ? skin : REF.skinFar;
     const Larm = g.arm / 2;
     let a1 = -sw * 24 * (near ? 1 : -1), a2 = a1 + 14;
-    if (spec.pose.startsWith('t')) {
+    if (spec.pose.startsWith('o')) {
+      [a1, a2] = near ? PONDER_SIDE[Number(spec.pose.slice(1))]! : [-8, 28];
+    } else if (spec.pose.startsWith('t')) {
       [a1, a2] = (near ? TEND_SIDE_NEAR : TEND_SIDE_FAR)[Number(spec.pose.slice(1))]!;
     } else if (spec.pose.startsWith('v')) {
       [a1, a2] = ATTEND_SIDE[Number(spec.pose.slice(1))]!;
