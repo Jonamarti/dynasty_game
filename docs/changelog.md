@@ -1,3 +1,11 @@
+## 2026-10-13 — verificación completa E2E de `0.15.129-alpha`
+
+`npm run e2e` pasó 170/170 en 17,7 minutos, con los specs de inscripción y
+curación incluidos. En Windows se inició Vite por separado y Playwright reutilizó
+ese servidor, porque el `webServer` lanzado mediante npm dejaba un proceso
+colgado después del resultado. También se repitió `inscription-animation` con
+este modo: 1/1 pasó. No cambia comportamiento.
+
 ## 2026-10-13 — M15 fase 17: el sanador venda una herida
 
 `tend` anima cuatro poses generadas durante el trabajo real de curación. El

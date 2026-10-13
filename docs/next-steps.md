@@ -5,8 +5,9 @@ autoritativo de sus fases es [m15_plan.md](m15_plan.md); esta página conserva
 el diario de decisiones y entregas históricas debajo de este resumen.
 
 - **Fase 17, arte de trabajo:** el 13 de octubre se entregaron las poses de
-  vestir pieles, teñir, extender compost y atender el banquete. Cada cambio
-  funcional tiene pruebas, contrato, changelog y captura bajo
+  vestir pieles, teñir, extender compost, atender el banquete, tallar
+  inscripciones y vendar heridas. Cada cambio funcional tiene pruebas,
+  contrato, changelog y captura bajo
   `artifacts/screenshots/`. La fase sigue abierta para otras familias de
   trabajo sin gesto propio.
 - **Fase 16, hogares:** la cohorte doméstica ya se ejecutó el 13 de octubre.
@@ -27,6 +28,11 @@ el diario de decisiones y entregas históricas debajo de este resumen.
   consume en invierno de forma suficiente; no se afirma mejora económica.
 - **Documentación de arquitectura:** revisada el 13 de octubre para reflejar
   los contratos vigentes; no cierra por sí sola la calibración de M15.
+- **E2E UI, 2026-10-13:** la matriz de 170 casos pasa completa en
+  `0.15.129-alpha`, incluidos `inscription-animation` y `tend-animation`. Para
+  evitar el Vite huérfano del `webServer` de npm en Windows, la matriz se corrió
+  contra un servidor Vite iniciado de forma separada; el detalle está en el
+  changelog.
 
 El historial siguiente se conserva como registro: sus estados y frases de
 “siguiente fase” corresponden al corte fechado de cada entrada, no al checkout

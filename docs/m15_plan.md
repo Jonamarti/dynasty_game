@@ -44,6 +44,12 @@ quedó colgado tras el caso y se interrumpió (código 1). Capturas en
 [`m15_inscription_animation.md`](m15_inscription_animation.md). La fase 17
 sigue abierta para otras familias sin gesto.
 
+**Verificación E2E del 2026-10-13:** la suite enumerada en `npm run e2e` pasó
+170/170 en `0.15.129-alpha` (17,7 min), con servidor Vite iniciado aparte en
+Windows. La spec individual de `inscribe` también pasó 1/1 de ese modo; su
+primera invocación con el `webServer` de npm informó `ok 1`, pero dejó el
+proceso activo y se interrumpió. La matriz completa es la verificación limpia.
+
 **Avance del 2026-10-13 — fase 17, atender una herida:** `tend` muestra cuatro
 poses generadas (`t0`–`t3`) mientras el sanador suma trabajo real. El selector
 usa solo la acción, `workedTicks` y vida del sanador; no consulta al paciente
