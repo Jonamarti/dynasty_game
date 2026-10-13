@@ -1847,6 +1847,14 @@ propiedad intrabanda en el recuento. El contrato registra también las corridas
 descartadas, el límite de separar día/noche y los resultados: [12f nights](m15_phase12f_nights.md).
 La cota separada de 12e y la adopción poblacional de antorchas siguen abiertas.
 
+**Instrumento 2026-10-13 — adopción observable:** `sim:seeds` ahora muestrea,
+cada 40 ticks nocturnos, qué fracción de observaciones-persona porta una
+antorcha realmente encendida en la mano. No cuenta inventario apagado ni
+hogueras, no altera la simulación y se imprime por semilla y en el agregado.
+La cohorte 20× `lean` ya documentada no contiene este campo; hace falta una
+nueva ejecución para medir adopción. Sigue faltando separar robos por día y
+noche, y la cota independiente de 12e; esto no cierra 12f.
+
 - Escenario **`nights`**: invierno duro, dos bandas que saben `firemaking`.
 - `darkness-hides`: la fracción de hechos con testigo es menor de noche que de
   día. Falla con 12a solo.

@@ -34,6 +34,7 @@ import { observeFrontierCohort } from './frontierFixture.ts';
 import { CohesionWatch, formatCohesion, type Cohesion } from './cohesion.ts';
 import { HistoryWatch, formatHistory, type HistoryReport } from './history.ts';
 import { formatHomeCohort, homeCohortObservations, type HomeCohortObservations } from './homeCohort.ts';
+import { emptyNightTorchCohort, formatNightTorchCohort, observeNightTorchCohort, type NightTorchCohort } from './nightTorchCohort.ts';
 import {
   SCENARIOS, thousands, watchConflict, peoplesApart, apartAroundIncidents, type ConflictWatch,
 } from './simcheck.ts';
@@ -144,6 +145,8 @@ interface SeedResult {
   /** M15 phase 8: why a raid was weighed, approved, raised and joined. */
   raids: { proposed: number; approved: number; rejected: number; called: number; neverRaised: number; joined: number };
   homes: HomeCohortObservations;
+  /** M15 phase 12f: person-samples carrying a physically burning hand torch at night. */
+  nightTorches: NightTorchCohort;
 }
 
 /** Ages at or below this are wholly dependent: they are fed or they die. */
@@ -187,6 +190,7 @@ function runSeed(scenarioName: string, seed: string, steps: number, size: number
   const demography = new DemographyWatch(sim.peopleById.values(), sim.config.time.ticksPerDay);
   const cohesion = new CohesionWatch(sim);
   const history = new HistoryWatch(sim);
+  const nightTorches = emptyNightTorchCohort();
 
   const conflict: ConflictWatch = { blows: 0, blowsNearHome: 0, incidents: 0, apart: [],
     kinAttacks: 0, kinDefended: 0, youngFleeTests: 0, youngFleeCloser: 0, kinPending: [] };
@@ -197,6 +201,11 @@ function runSeed(scenarioName: string, seed: string, steps: number, size: number
     // it out of ordinary cohorts preserves both their runtime and their data.
     if (scenarioName === 'frontier-cohort') observeFrontierCohort(sim);
     if (sim.time.tick % 40 === 0) cohesion.observe();
+    // Read exposure, not ignition events or inventory: an unlit torch and a
+    // fixed hearth cannot count as population adoption of carried light.
+    if (sim.time.tick % 40 === 0 && sim.time.isNight) {
+      observeNightTorchCohort(nightTorches, sim.livingPeople());
+    }
     if (sim.time.tick % sim.config.time.ticksPerDay === 0) history.observe();
     // One census per day is enough for fertility exposure and birth/death
     // cohorts. Scanning the retained dead-person registry on every tick made
@@ -368,6 +377,7 @@ function runSeed(scenarioName: string, seed: string, steps: number, size: number
       joined: counts.raid_joined ?? 0,
     },
     homes: homeCohortObservations(counts, completedHouseholds, livingHouseholds.length),
+    nightTorches,
   };
 }
 
@@ -482,6 +492,7 @@ function main(): void {
       String(r.transmitted).padStart(7)
     );
     console.log(formatHomeCohort(r.seed, r.homes));
+    console.log(formatNightTorchCohort(r.nightTorches));
   }
 
   const sum = (pick: (r: SeedResult) => number) => results.reduce((n, r) => n + pick(r), 0);
@@ -492,6 +503,11 @@ function main(): void {
   console.log(formatDemography(results.map(r => r.demography)));
   console.log(formatCohesion(results.map(r => r.cohesion)));
   console.log(formatHistory(results.map(r => r.history)));
+  console.log(formatNightTorchCohort(results.reduce((total, result) => ({
+    personSamples: total.personSamples + result.nightTorches.personSamples,
+    litCarrierSamples: total.litCarrierSamples + result.nightTorches.litCarrierSamples,
+    nightSamples: total.nightSamples + result.nightTorches.nightSamples,
+  }), emptyNightTorchCohort())));
   console.log('  RECOVERY / FERTILITY BY SEED: seed recovered/episodes censored opportunities spacing partner hunger health no-roof pregnancies losses-h/f/b live-births');
   for (const result of results) {
     const counters = result.history.fertilityCounters;

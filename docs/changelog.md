@@ -16308,3 +16308,14 @@ siendo los mismos; no se crea grasa ni se añaden tiradas. La prueba focal cubre
 el caso positivo, lámpara cargada/ausente y presa fuera de alcance (29/29).
 No se hizo cohorte ni calibración. No hay cambio de UI.
 Versión `0.15.146-alpha`.
+
+
+### 2026-10-13 — fase 12f: medir portadores de antorcha
+
+`sim:seeds` registra cada 40 ticks nocturnos las observaciones-persona que
+llevan una antorcha encendida en una mano, por semilla y en agregado. Inventario
+apagado y hogueras no cuentan; la lectura es pasiva y no cambia comportamiento
+ni RNG. Pruebas focales 2/2, typecheck y `sim:check --scenario nights` (3/3)
+pasan. La cohorte histórica no recogió esta métrica, por lo que adopción
+poblacional y robos separados por día/noche siguen pendientes; no se declara
+12f cerrada.
