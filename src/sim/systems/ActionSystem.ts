@@ -1747,7 +1747,7 @@ export class ActionSystem {
     this.finish(person);
   }
 
-  /** One-tick pigment work: the consumed mineral and exact garment update commit atomically. */
+  /** Eight interruptible strokes make the cloth rubbing visible before pigment commits. */
   private doDyeGarment(person: Person, ctx: ActionContext): void {
     const itemId = person.targetItemId;
     const unitId = person.targetGarmentUnitId;
@@ -1765,6 +1765,13 @@ export class ActionSystem {
       this.stop(person, interrupted, ctx);
       return;
     }
+    const threshold = 8;
+    if (person.actionTotal <= 0) person.actionTimer = threshold;
+    person.workedTicks++;
+    // Keep the shared work bar honest: timer is the remaining strokes, not a
+    // one-tick marker that would make the first frame look 88% complete.
+    person.actionTimer = Math.max(0, threshold - person.workedTicks);
+    if (person.workedTicks < threshold) return;
     try {
       person.inventory.consumeItems([['red_ochre', 1]], () => {
         if (!person.inventory.setGarmentUnitDye(unitId, 'ochre')) {
@@ -1775,7 +1782,6 @@ export class ActionSystem {
       this.abandon(person, garmentDyeReasonText('dyeing_pigment_missing'), ctx);
       return;
     }
-    person.actionTimer = 1;
     telemetry.count('garment_dyed_ochre');
     this.finish(person);
   }

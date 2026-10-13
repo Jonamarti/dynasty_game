@@ -63,6 +63,10 @@ wrong tint, a missing key or a garment that does not sit on a child.
 with tunic/gloves and child/elder samples. They share the normal layered build;
 the runtime chooses work poses in `src/render/WorkAnimation.ts`.
 
+`contact-dye.png` reviews the four `y0`–`y3` dyeing poses from front and side.
+One hand holds the cloth while the other rubs pigment across it; runtime timing
+comes from the validated action's work ticks.
+
 For runtime cache measurements use `npx vite-node tools/art/memory.ts after`.
 It submits 500 distinct appearances across four poses and records pixel bytes,
 hits and misses under `artifacts/verification/m15-art-memory-2026-10-02/`.

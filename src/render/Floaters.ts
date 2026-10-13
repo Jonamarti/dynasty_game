@@ -156,6 +156,7 @@ export const ACTION_LABELS: Record<string, string> = {
   chop: 'felling a tree',
   gather_for_site: 'fetching materials',
   cut_grass: 'cutting grass',
+  dye_garment: 'dyeing garment',
   dig: 'digging',
   dig_mud: 'digging mud',
   pile: 'piling earth',

@@ -2,7 +2,7 @@
 import type { Simulation } from '../sim/core/Simulation.ts';
 import type { Person } from '../sim/entities/Person.ts';
 import { ARRIVAL_RADIUS } from '../sim/systems/MovementSystem.ts';
-import { BUILD_POSES, CHOP_POSES, CUT_GRASS_POSES, DIG_POSES, EXTRACT_POSES, FARM_POSES, FISH_POSES, GATHER_POSES, HIDE_DRESS_POSES, MAKE_POSES, MEND_POSES, PLANT_POSES, SPREAD_POSES, type ArtPose } from './ArtManifest.ts';
+import { BUILD_POSES, CHOP_POSES, CUT_GRASS_POSES, DIG_POSES, DYE_POSES, EXTRACT_POSES, FARM_POSES, FISH_POSES, GATHER_POSES, HIDE_DRESS_POSES, MAKE_POSES, MEND_POSES, PLANT_POSES, SPREAD_POSES, type ArtPose } from './ArtManifest.ts';
 import { RECIPES } from '../sim/entities/Recipe.ts';
 import { isStationFor } from '../sim/entities/Building.ts';
 import { CUT_FLOOR } from '../sim/core/Grass.ts';
@@ -203,4 +203,13 @@ export function spreadingCompostPose(
   const field = sim.buildingsById.get(person.targetBuildingId);
   if (!field?.complete || !field.crop || !field.contains(person.x, person.y)) return null;
   return workFrame(SPREAD_POSES, person.workedTicks, alpha);
+}
+
+/** Dyeing is shown only during the validated, multi-tick pigment work. */
+export function dyeingPose(person: Person, moving: boolean, alpha = 1): ArtPose | null {
+  // ActionSystem sets actionTotal and workedTicks after validating the owned
+  // garment, knowledge and pigment. Presentation observes only that work marker.
+  if (moving || !person.alive || person.action !== 'dye_garment' || person.actionTimer <= 0 ||
+      person.actionTotal <= 0 || person.workedTicks <= 0) return null;
+  return workFrame(DYE_POSES, person.workedTicks, alpha);
 }

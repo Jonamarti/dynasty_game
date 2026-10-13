@@ -7,6 +7,16 @@ navegador; captura en `artifacts/screenshots/m15-spread-animation-2026-10-13/`.
 Contrato: [`m15_compost_animation.md`](m15_compost_animation.md). La fase 17
 sigue abierta para otras familias sin gesto.
 
+**Avance del 2026-10-13 — fase 17, teñir prendas:** `dye_garment` muestra
+cuatro poses generadas `y0`–`y3` durante ocho ticks de trabajo revalidado. El
+ocre y el tinte se comprometen juntos al terminar; el selector lee solo el
+marcador público de trabajo, sin consultar inventario, tecnología privada ni
+la prenda objetivo. El temporizador restante mantiene la barra en el mismo
+progreso y la interrupción se comprueba en cada tick; el trabajo cuesta ocho
+ticks y cabe sin progreso persistente. Pruebas unitarias/E2E y captura en
+`artifacts/screenshots/m15-dyeing-animation-2026-10-13/`. Contrato:
+[`m15_dyeing_animation.md`](m15_dyeing_animation.md).
+
 **Avance del 2026-10-13 — fase 17, engrasado de pieles:** `dress_hide` muestra
 cuatro poses generadas `h0`–`h3` únicamente durante el tratamiento real de una
 unidad de piel ya validado por ActionSystem. El gesto frota la superficie y se

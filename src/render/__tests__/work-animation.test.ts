@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Person } from '../../sim/entities/Person.ts';
 import { RNG } from '../../sim/core/RNG.ts';
-import { buildingPose, cuttingGrassPose, diggingPose, extractionPose, farmingPose, fishingPose, gatheringPose, hideDressingPose, mendingPose, plantingPose, spreadingCompostPose } from '../WorkAnimation.ts';
+import { buildingPose, cuttingGrassPose, diggingPose, dyeingPose, extractionPose, farmingPose, fishingPose, gatheringPose, hideDressingPose, mendingPose, plantingPose, spreadingCompostPose } from '../WorkAnimation.ts';
 import type { Simulation } from '../../sim/core/Simulation.ts';
 
 function fixture() {
@@ -412,6 +412,34 @@ describe('compost spreading animation', () => {
     expect(spreadingCompostPose(person, sim, false, 0.5)).toBe('s0');
     expect(spreadingCompostPose(person, sim, false, 1)).toBe('s1');
     expect(spreadingCompostPose(person, sim, false, 50)).toBe('s1');
+  });
+});
+
+describe('garment dyeing animation', () => {
+  it('cycles four rubbing poses only after validated work starts', () => {
+    const { person } = fixture();
+    person.action = 'dye_garment'; person.actionTimer = 1; person.actionTotal = 8;
+    const frames = [1, 3, 5, 7].map(ticks => {
+      person.workedTicks = ticks;
+      return dyeingPose(person, false, 0);
+    });
+    expect(frames).toEqual(['y0', 'y1', 'y2', 'y3']);
+    expect(person.actionTimer).toBe(1);
+    expect(person.workedTicks).toBe(7);
+  });
+
+  it('does not animate travel, idle, or unstarted work', () => {
+    const { person } = fixture();
+    person.action = 'dye_garment'; person.actionTimer = 1; person.actionTotal = 8; person.workedTicks = 1;
+    expect(dyeingPose(person, true)).toBeNull();
+    person.workedTicks = 0;
+    expect(dyeingPose(person, false)).toBeNull();
+    person.workedTicks = 1; person.actionTotal = 0;
+    expect(dyeingPose(person, false)).toBeNull();
+    person.actionTotal = 8; person.actionTimer = 0;
+    expect(dyeingPose(person, false)).toBeNull();
+    person.actionTimer = 1; person.action = 'idle';
+    expect(dyeingPose(person, false)).toBeNull();
   });
 });
 

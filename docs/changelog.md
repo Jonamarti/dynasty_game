@@ -1,3 +1,13 @@
+## 2026-10-13 — M15 fase 17: teñir una prenda también se ve
+
+El teñido de ocre ahora recorre cuatro gestos de frotar durante ocho ticks de
+trabajo, con interrupción por tick y barra que refleja el trabajo pendiente.
+La prenda y el pigmento cambian juntos al último tick. El selector no lee
+inventario ni estado privado del objetivo. Se añaden pruebas y captura en
+`artifacts/screenshots/m15-dyeing-animation-2026-10-13/`. Contrato:
+[`m15_dyeing_animation.md`](m15_dyeing_animation.md). Versión
+`0.15.126-alpha`.
+
 ## 2026-10-13 — M15 fase 17: extender compost también se ve
 
 `spread` usa cuatro poses generadas de mano baja mientras el trabajo real está

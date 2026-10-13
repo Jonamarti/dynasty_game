@@ -47,7 +47,7 @@ import { Floaters } from './Floaters.ts';
 import { t, tc } from '../i18n/i18n.ts';
 import { ArtAtlas, type PersonAspect } from './ArtAtlas.ts';
 import type { ArtDir, ArtPose } from './ArtManifest.ts';
-import { buildingPose, choppingPose, craftingPose, cuttingGrassPose, diggingPose, extractionPose, farmingPose, fishingPose, gatheringPose, hideDressingPose, mendingPose, plantingPose, spreadingCompostPose } from './WorkAnimation.ts';
+import { buildingPose, choppingPose, craftingPose, cuttingGrassPose, diggingPose, dyeingPose, extractionPose, farmingPose, fishingPose, gatheringPose, hideDressingPose, mendingPose, plantingPose, spreadingCompostPose } from './WorkAnimation.ts';
 import { ADULT_YEARS } from '../sim/entities/Person.ts';
 import { showing } from '../sim/entities/Pregnancy.ts';
 import {
@@ -2176,9 +2176,10 @@ export class Renderer {
     const cuttingGrass = cuttingGrassPose(person, this.sim, moving, this.workAlpha);
     const planting = plantingPose(person, this.sim, moving, this.workAlpha);
     const spreading = spreadingCompostPose(person, this.sim, moving, this.workAlpha);
-    const workPose = gathering ?? fishing ?? extraction ?? digging ?? chopping ?? crafting ?? farming ?? building ?? mending ?? hideDressing ?? cuttingGrass ?? planting ?? spreading;
+    const dyeing = dyeingPose(person, moving, this.workAlpha);
+    const workPose = gathering ?? fishing ?? extraction ?? digging ?? chopping ?? crafting ?? farming ?? building ?? mending ?? hideDressing ?? cuttingGrass ?? planting ?? spreading ?? dyeing;
     const torch = heldTorchFor(person);
-    const otherHeld = gathering || crafting || mending || hideDressing || spreading ? null : heldItemFor(person, this.sim.config.carry.autoEquipTools, true);
+    const otherHeld = gathering || crafting || mending || hideDressing || spreading || dyeing ? null : heldItemFor(person, this.sim.config.carry.autoEquipTools, true);
     const aspect: PersonAspect = {
       age: sizeClass, sex: person.sex === 'male' ? 'm' : 'f', dir,
       pose: moving ? (('w' + frame) as ArtPose) : workPose ?? 'idle',

@@ -37,6 +37,11 @@ describe('physical red-ochre garment dyeing', () => {
     const [untouched, selected] = person.inventory.garmentUnitsOf('fur_coat');
     expect(planGarmentDye(person, 'fur_coat', selected!.unitId)).toEqual({ unitId: selected!.unitId });
     expect(sim.order(person, 'dye_garment', { itemId: 'fur_coat', garmentUnitId: selected!.unitId })).toBe(true);
+    for (let tick = 0; tick < 7; tick++) sim.step();
+    expect(person.workedTicks).toBe(7);
+    expect(person.cycleProgress).toBe(0.875);
+    expect(person.inventory.count('red_ochre')).toBe(1);
+    expect(person.inventory.garmentUnitsOf('fur_coat').find(unit => unit.unitId === selected!.unitId)).not.toHaveProperty('dye');
     sim.step();
 
     expect(person.inventory.count('red_ochre')).toBe(0);
