@@ -5142,3 +5142,11 @@ de seca real y dos comidas conservadas fuera del invierno. Atribución de pérdi
 764/1381 nutrición; se elimina spoilage-is-answered porque también pasa sin ninguna
 receta conservada.21 pruebas del instrumento/mecanismos y typecheck correctos;
 healthcheck1/1 fallido. m15_phase15d_salters.md.15d no cerrado,15c/cohortes diferidas.
+**Avance del 2026-10-13 — fase 17, combate humano:** la orden real `attack`
+muestra cuatro poses generadas (`k0`–`k3`) durante el amago y el golpe, solo
+cuando el atacante está quieto, vivo y dentro del reloj de su acción. El gesto
+no inspecciona el estado del objetivo y no altera daño ni RNG. Prueba unitaria,
+E2E de orden real y cuatro capturas en
+`artifacts/screenshots/m15-fight-animation-2026-10-13/`. Contrato:
+[`m15_fight_animation.md`](m15_fight_animation.md). Versión `0.15.133-alpha`.
+

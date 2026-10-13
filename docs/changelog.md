@@ -16093,3 +16093,12 @@ the focused work-animation suite passes 55/55 and the browser spec passes 1/1.
 Contract: [m15_reflection_animation.md](m15_reflection_animation.md).
 Version `0.15.132-alpha`.
 
+## 2026-10-13 — M15 phase 17: human combat gets a strike cycle
+
+An active, stationary `attack` order now draws four generated guard, wind-up,
+strike and recovery poses. The pose selector reads only the attacker's action,
+life and action clock; it does not inspect the quarry or change combat state.
+Focused unit/E2E coverage and captures are recorded in
+`artifacts/screenshots/m15-fight-animation-2026-10-13/`. The phase contract is
+in `docs/m15_fight_animation.md`.
+

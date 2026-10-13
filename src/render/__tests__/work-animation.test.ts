@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Person } from '../../sim/entities/Person.ts';
 import { RNG } from '../../sim/core/RNG.ts';
-import { attendingFeastPose, buildingPose, cuttingGrassPose, diggingPose, dyeingPose, extractionPose, farmingPose, fishingPose, gatheringPose, hideDressingPose, inscribingPose, mendingPose, ponderingPose, prototypingPose, plantingPose, reflectingPose, spreadingCompostPose, tendingPose } from '../WorkAnimation.ts';
+import { attendingFeastPose, buildingPose, cuttingGrassPose, diggingPose, dyeingPose, extractionPose, farmingPose, fightingPose, fishingPose, gatheringPose, hideDressingPose, inscribingPose, mendingPose, ponderingPose, prototypingPose, plantingPose, reflectingPose, spreadingCompostPose, tendingPose } from '../WorkAnimation.ts';
 import type { Simulation } from '../../sim/core/Simulation.ts';
 
 function fixture() {
@@ -14,6 +14,37 @@ function fixture() {
   const sim = { nodesById: new Map([[1, node]]), treesById: new Map([[2, tree]]) } as unknown as Pick<Simulation, 'nodesById' | 'treesById'>;
   return { person, node, tree, sim };
 }
+
+describe('human combat animation', () => {
+  it('cycles four guarded strike poses from the real attack clock', () => {
+    const person = new Person('Fighter', 4, 4, 0, new RNG('fight-animation'));
+    person.action = 'attack'; person.actionTimer = 4; person.actionTicks = 1;
+    expect([1, 3, 5, 7, 9].map(tick => {
+      person.actionTicks = tick;
+      return fightingPose(person, false, 0);
+    })).toEqual(['k0', 'k1', 'k2', 'k3', 'k0']);
+    expect(person.actionTimer).toBe(4);
+  });
+
+  it('hides the strike while moving, dead, idle, between ordered blows, or before its clock starts', () => {
+    const person = new Person('Fighter', 4, 4, 0, new RNG('fight-animation-guards'));
+    person.action = 'attack'; person.actionTimer = 4; person.actionTicks = 1;
+    expect(fightingPose(person, true)).toBeNull();
+    expect(fightingPose(person, false)).toBe('k0');
+    person.actionTimer = 0; expect(fightingPose(person, false)).toBeNull();
+    person.actionTimer = 4; person.actionTicks = 0; expect(fightingPose(person, false)).toBeNull();
+    person.actionTicks = 1; person.alive = false; expect(fightingPose(person, false)).toBeNull();
+    person.alive = true; person.action = 'idle'; expect(fightingPose(person, false)).toBeNull();
+  });
+
+  it('interpolates only the bounded simulation fraction', () => {
+    const person = new Person('Fighter', 4, 4, 0, new RNG('fight-animation-clock'));
+    person.action = 'attack'; person.actionTimer = 4; person.actionTicks = 2;
+    expect(fightingPose(person, false, 0.5)).toBe('k0');
+    expect(fightingPose(person, false, 1)).toBe('k1');
+    expect(fightingPose(person, false, 50)).toBe('k1');
+  });
+});
 
 describe('gathering animation', () => {
   it('does not mistake a tool change after an earlier pull for gathering work', () => {
