@@ -1,6 +1,8 @@
 /** M15 phase 17: hide treatment work gets generated grease-working poses. */
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, readFileSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
+
+const VERSION = JSON.parse(readFileSync('package.json', 'utf8')).version as string;
 
 test('an active hide-dressing order shows the treatment gesture', async ({ page }) => {
   const errors: string[] = [];
@@ -38,7 +40,7 @@ test('an active hide-dressing order shows the treatment gesture', async ({ page 
   expect(worker.workedTicks).toBeGreaterThan(0);
   expect(worker.timer).toBeGreaterThan(0);
   expect(worker.pose).toBe('h0');
-  await expect(page.locator('.game-version')).toContainText('0.15.124-alpha');
+  await expect(page.locator('.game-version')).toContainText(`v${VERSION}`);
   // Let the renderer observe the deliberate setup, then paint the committed pose.
   await page.waitForTimeout(180);
   await page.evaluate(() => {

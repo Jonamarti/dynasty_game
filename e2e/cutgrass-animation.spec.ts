@@ -1,8 +1,9 @@
 /** M15 phase 17: real cut_grass work uses a generated low sweeping pose. */
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, readFileSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
 
 const SHOTS = process.env.DYNASTY_CAPTURE_DIR ?? 'test-results/m15-cutgrass-animation';
+const VERSION = JSON.parse(readFileSync('package.json', 'utf8')).version as string;
 
 test('an active thatch-cutting order shows the grass-sweeping gesture', async ({ page }) => {
   const errors: string[] = [];
@@ -36,7 +37,7 @@ test('an active thatch-cutting order shows the grass-sweeping gesture', async ({
   expect(cutter.workedTicks).toBeGreaterThan(0);
   expect(cutter.grass).toBeGreaterThan(0.5);
   expect(cutter.pose).toBe('q0');
-  await expect(page.locator('.game-version')).toContainText('0.15.122-alpha');
+  await expect(page.locator('.game-version')).toContainText(`v${VERSION}`);
   mkdirSync(SHOTS, { recursive: true });
   await page.screenshot({ path: `${SHOTS}/00-active-thatch-cutting.png` });
   expect(errors).toEqual([]);

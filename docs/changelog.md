@@ -56,6 +56,14 @@ después del paso. La traza actual muestra reserva elegible y consumo a hambre
 25 con creencia de deterioro. Se documentó la lectura correcta de 1/5 comidas
 sin afirmar una mejora económica; falta observar el objetivo durante el scoring.
 
+## 2026-10-13 — M15: corregir premisas de la E2E visual
+
+Las E2E de poses leen la versión de `package.json`; el mapa de niebla activa
+niebla con `Z` y compara el mismo pixel antes/después, porque la base forestal
+puede ser oscura. El test animal guarda capturas desechables bajo
+`test-results/` para no reemplazar hitos anteriores. Siete casos focales
+pasaron después de los cambios.
+
 ## 2026-10-12 — M15 fase 17: cortar hierba también se ve
 
 `cut_grass` usa cuatro poses generadas de barrido bajo, seleccionadas solo

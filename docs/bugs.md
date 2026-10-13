@@ -5294,3 +5294,16 @@ was interrupted. The screenshot was inspected and shows the stationary work
 pose. `art:sheet` remains unable to finish because its existing `dig` section
 draws an empty canvas (`InvalidStateError`); the failure occurs before the new
 planting contact, so no claim is made that the contact-sheet tour passed.
+
+### 2026-10-13 — M15 E2E rerun on a clean port, 0.15.124-alpha
+
+The full `npm.cmd run e2e` run on port 5410 emitted results for all 165 tests;
+161 were marked `ok` and four failed before the runner was interrupted during
+server shutdown. Their stale premises are corrected and targeted reruns pass:
+the animal pose test no longer writes over the Oct. 12 screenshots; the
+cut-grass, planting and hide-dressing checks read the version dynamically; the
+fog test presses `Z` (its prior `V` key hid roofs) and compares the same ground
+pixel with fog on/off; the Ebro test passed alone. Animal animation passed 2/2,
+and the five remaining focused cases passed 5/5 on separate clean ports. The
+full suite has not been rerun after those E2E maintenance edits. Screenshots
+created during the full tour were restored to their committed versions.

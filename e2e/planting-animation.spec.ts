@@ -1,8 +1,9 @@
 /** M15 phase 17: real fruit-tree planting uses generated hand-to-soil poses. */
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, readFileSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
 
 const SHOTS = process.env.DYNASTY_CAPTURE_DIR ?? 'test-results/m15-planting-animation';
+const VERSION = JSON.parse(readFileSync('package.json', 'utf8')).version as string;
 
 test('an active fruit-tree order shows the planting gesture', async ({ page }) => {
   const errors: string[] = [];
@@ -47,7 +48,7 @@ test('an active fruit-tree order shows the planting gesture', async ({ page }) =
   expect(planter.workedTicks).toBeGreaterThan(0);
   expect(planter.timer).toBeGreaterThan(0);
   expect(planter.pose).toBe('p0');
-  await expect(page.locator('.game-version')).toContainText('0.15.124-alpha');
+  await expect(page.locator('.game-version')).toContainText(`v${VERSION}`);
   // The first render observes the deliberate teleport to the work tile and
   // starts the renderer's short walk-settling window. Let that observation
   // expire, then paint the same active order so the capture shows its gesture.

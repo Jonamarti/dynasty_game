@@ -43,7 +43,9 @@ test('animal events draw four distinct shared frames and freeze while paused', a
     };
     return animal.id;
   });
-  const shots = 'artifacts/screenshots/m15-animal-sleep-2026-10-12';
+  // Test captures are disposable. The reviewed milestone screenshots live in
+  // artifacts/screenshots and must never be overwritten by a rerun.
+  const shots = 'test-results/m15-animal-sleep';
   mkdirSync(shots, { recursive: true });
   const scales = new Set<number>();
   for (const family of ['e', 'r', 'a', 's']) {

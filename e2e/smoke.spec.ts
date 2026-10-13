@@ -359,11 +359,12 @@ test('the observer map hides unvisited ground and prevents selecting its entitie
     const py = Math.floor((y - rect.top) * canvas.height / rect.height);
     return [...canvas.getContext('2d')!.getImageData(px, py, 1, 1).data].slice(0, 3);
   }, unknown!);
-  expect(fogPixel[0]! + fogPixel[1]! + fogPixel[2]!).toBeLessThan(45);
+  const fogBrightness = fogPixel[0]! + fogPixel[1]! + fogPixel[2]!;
+  expect(fogBrightness).toBeLessThan(45);
   await page.mouse.click(unknown!.x, unknown!.y);
   await expect(page.locator('.picker')).toBeHidden();
 
-  await page.keyboard.press('v');
+  await page.keyboard.press('z');
   await page.waitForTimeout(100);
   const clearPixel = await page.evaluate(({ x, y }) => {
     const canvas = document.getElementById('view') as HTMLCanvasElement;
@@ -372,7 +373,16 @@ test('the observer map hides unvisited ground and prevents selecting its entitie
     const py = Math.floor((y - rect.top) * canvas.height / rect.height);
     return [...canvas.getContext('2d')!.getImageData(px, py, 1, 1).data].slice(0, 3);
   }, unknown!);
-  expect(clearPixel[0]! + clearPixel[1]! + clearPixel[2]!).toBeGreaterThan(45);
+  const clearBrightness = clearPixel[0]! + clearPixel[1]! + clearPixel[2]!;
+  const fogDisabled = await page.evaluate(() =>
+    !(window as unknown as { __dynasty: { renderer: { fogEnabled: boolean } } }).__dynasty.renderer.fogEnabled
+  );
+  expect(fogDisabled).toBe(true);
+  // A forest floor can itself be dark (36 on this seed). Compare the same
+  // pixel before and after disabling fog instead of assuming every biome has
+  // an absolute brightness above 45.
+  expect(clearBrightness, `fog-off brightness ${clearBrightness} should reveal ground brighter than fog ${fogBrightness}`)
+    .toBeGreaterThan(fogBrightness + 8);
   await page.mouse.click(unknown!.x, unknown!.y);
   await expect(page.locator('.picker')).toBeVisible();
   await page.reload();

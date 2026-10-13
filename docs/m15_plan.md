@@ -4594,13 +4594,19 @@ tiene que ejercitar, porque llegar desde cero cuesta años.
 
 ## Verificación
 
-**Estado 2026-10-13 en `0.15.123-alpha`:** `typecheck` pasa; la suite completa
+**Estado de simulación 2026-10-13 (`0.15.123-alpha`; arte/UI actual en
+`0.15.124-alpha`):** `typecheck` pasa; la suite completa
 da 2.229 aprobados, 5 fallidos y 1 omitido en 306 archivos. Las cuatro
 premisas obsoletas de configuración, recursos y `diggers` se corrigieron en
 `fb650a6`; quedan fallos de correspondencia compacta, telemetría de comida,
 difusión tecnológica y política, registrados en `bugs.md`. El `sim:check`
 individual tampoco está verde (dieta, ánimo, presupuesto de rendimiento y
 visibilidad de colinas). No se modificaron los límites para hacerlos pasar.
+La E2E completa de `.124` emitió 161 aprobados y cuatro premisas obsoletas;
+las pruebas E2E afectadas pasaron en corridas focales después de corregir
+la versión fija, la tecla de niebla y la ruta de capturas. El runner completo se
+interrumpió al colgar su apagado y no se volvió a ejecutar después de esos
+arreglos; el detalle consta en `bugs.md`.
 
 ```bash
 npm run typecheck
