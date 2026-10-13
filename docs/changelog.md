@@ -1,3 +1,12 @@
+## 2026-10-13 — diagnóstico de violencia admite extinción total
+
+`tools/violence.ts` ya informa `n/a` cuando el escenario termina sin población
+viva, en vez de lanzar al calcular la mediana de una lista vacía. El nuevo
+resumen puro tiene pruebas para población vacía y no vacía. El diagnóstico de
+144.000 pasos de `generations` produjo sus contadores de violencia antes de
+fallar en ese resumen; repetirlo tras la corrección comprobará el CLI completo.
+Cambio de herramienta y documentación; sin versión de juego.
+
 ## 2026-10-13 — verificación final de la UI M15
 
 La suite E2E completa de `0.15.131-alpha` terminó con 172/172 casos aprobados

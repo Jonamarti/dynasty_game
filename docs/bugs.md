@@ -5388,3 +5388,13 @@ demuestra causa ni regresión; la interfaz no modificó la simulación. No se
 ajustaron coeficientes. Fase 41 permanece abierta; seguimiento en
 `m15_calibration.md`.
 
+### 2026-10-13 — `violence` no terminaba tras la extinción de `generations`
+
+La ejecución diagnóstica de fase 41 alcanzó los 144.000 pasos y emitió los
+eventos observados, pero terminó con `TypeError` al calcular la mediana de
+agresión sobre cero supervivientes. El fallo era solo del informe final: la
+cohorte ya documentaba la extinción y sus contadores previos eran legibles.
+`aggressionSummary()` ahora imprime `n/a` para ambos estadísticos si no queda
+población; pruebas cubren ese caso y una muestra poblada. Se repetirá el mismo
+comando para confirmar la salida completa.
+

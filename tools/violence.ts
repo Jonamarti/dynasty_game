@@ -13,6 +13,7 @@
 import { Simulation } from '../src/sim/core/Simulation.ts';
 import { telemetry } from '../src/sim/core/Telemetry.ts';
 import { SCENARIOS } from './simcheck.ts';
+import { aggressionSummary } from './violence-report.ts';
 
 function arg(name: string, fallback: string): string {
   const i = process.argv.indexOf('--' + name);
@@ -143,8 +144,11 @@ console.log('');
 console.log('opinion inside bands:  mean ' + (inSum / Math.max(1, inN)).toFixed(1) + ', ' + inHostile + '/' + inN + ' below -20');
 console.log('opinion between bands: mean ' + (outSum / Math.max(1, outN)).toFixed(1) + ', ' + outHostile + '/' + outN + ' below -20');
 const agg = sim.people.map(p => p.traits.aggression).sort((a, b) => a - b);
-console.log('aggression over everyone who lived: median ' + agg[agg.length >> 1]!.toFixed(2) +
-  ', share above 0.5: ' + (agg.filter(a => a > 0.5).length / agg.length * 100).toFixed(0) + '%');
+// Some long generations runs end in extinction. Keep the diagnostic report
+// complete even when there is no living population to summarize.
+const aggression = aggressionSummary(agg);
+console.log('aggression over everyone who lived: median ' + aggression.median +
+  ', share above 0.5: ' + aggression.aboveHalf);
 for (const trait of ['greed', 'aggression'] as const) {
   const tail = sim.people.filter(p => p.traits[trait] > 0.9);
   console.log(trait + ' past 0.9: ' + tail.length + ' of ' + sim.people.length + ' who lived' +
