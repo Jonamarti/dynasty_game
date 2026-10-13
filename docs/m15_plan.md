@@ -2287,10 +2287,12 @@ dentro del perímetro, y un bono mayor por perímetro cerrado (anillo completo,
 o apoyado en agua o montaña). Diseño, lo que ya existe (`mood.security`, el
 trabajo `guard`, el aviso que ya escala de la palabra al golpe) y lo que
 falta de verdad, en [m15_phase16_defense.md](m15_phase16_defense.md). No
-tocar hasta retomar esta fase; **16b (los muros de casa) hay que
-re-verificarla contra el código antes de nada**, porque el cierre de la fase
-38 encontró que no está implementada a pesar de lo que dice este documento
-más arriba.
+tocar hasta retomar esta fase. La nota de 2026-10-09 que decía que 16b no
+existía describía ese checkout: `25eba60` implementó después los interiores y
+muros físicos de vivienda. La auditoría actual confirma que `World` bloquea
+el perímetro y deja abierta la puerta; `walls-hold` ahora comprueba ese anillo
+real en `homes`, además de vigilar que nadie termine sobre un muro. La muralla
+de `city_walls` sigue siendo un diseño de tierra separado.
 
 ## Fase 17 — El arte: personas pre-renderizadas por capas (nota 6; decisión 9)
 

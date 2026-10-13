@@ -15936,3 +15936,12 @@ fallos en cuatro archivos. Se corrigieron las cuatro premisas E2E observadas y
 se comprobaron focalmente; falta una repetición completa limpia. M15 permanece
 abierto y no se modificó balance. Detalle en `docs/bugs.md` y `docs/next-steps.md`.
 
+## 2026-10-13 — M15 fase 16b: medir los muros físicos de la vivienda
+
+`walls-hold` comprueba el perímetro bloqueado y la puerta abierta en las casas
+terminadas, además de los pasos de personas sobre muros. El control negativo
+anula `World.setHouseWall` y hace fallar la comprobación aunque nadie pise el
+perímetro. `homes` pasa 7/7; 9 pruebas focales y typecheck pasan. Se corrige la
+nota histórica que confundía el hallazgo de un checkout anterior con el estado
+actual de 16b. Sin cambio de comportamiento ni bump de versión.
+

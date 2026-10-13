@@ -48,7 +48,7 @@ import { setupSalters, observeSalters, saltersLosses } from './saltersFixture.ts
 import { setupTailors, observeTailors, tailorsChecks } from './tailorsFixture.ts';
 import { setupNights, observeNights, nightsMeasurements } from './nightsFixture.ts';
 import { createFrontier, setupFrontier, observeFrontier, createFrontierCohort, observeFrontierCohort } from './frontierFixture.ts';
-import { applyHouseWalls, houseInteriorTiles } from '../src/sim/world/HouseInterior.ts';
+import { applyHouseWalls, houseDoor, houseInteriorTiles } from '../src/sim/world/HouseInterior.ts';
 import { MAP_CELL } from '../src/sim/social/BandMaps.ts';
 
 /**
@@ -1625,6 +1625,27 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
     const guard = tel.sleep_safety_guard ?? 0;
     const claimed = tel.sleep_safety_claimed ?? 0;
     const wallSteps = tel.homes_person_on_wall ?? 0;
+    const houses = sim.buildings.filter(building => building.complete && !building.ruined && building.def.interior);
+    const wallTiles = houses.reduce((count, house) => {
+      const band = sim.bands.find(candidate => candidate.id === house.ownerBandId);
+      const door = houseDoor(house, band ?? { homeX: house.centerX, homeY: house.centerY });
+      let checked = 0;
+      for (let dy = 0; dy < house.def.height; dy++) for (let dx = 0; dx < house.def.width; dx++) {
+        const perimeter = dx === 0 || dy === 0 || dx === house.def.width - 1 || dy === house.def.height - 1;
+        if (!perimeter) continue;
+        const x = house.x + dx, y = house.y + dy;
+        const isDoor = x === door.x && y === door.y;
+        if (!isDoor && sim.world.isHouseWallBlocked(x, y)) checked++;
+      }
+      return count + checked;
+    }, 0);
+    const expectedWallTiles = houses.reduce((count, house) =>
+      count + 2 * house.def.width + 2 * house.def.height - 5, 0);
+    const doorsOpen = houses.every(house => {
+      const band = sim.bands.find(candidate => candidate.id === house.ownerBandId);
+      const door = houseDoor(house, band ?? { homeX: house.centerX, homeY: house.centerY });
+      return sim.world.isWalkable(door.x, door.y);
+    });
 
     const interiorSamples = tel.sleep_home_samples ?? 0;
     const furnishedSamples = tel.sleep_home_furnished_samples ?? 0;
@@ -1639,8 +1660,10 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
     const hasEverySecurityTerm = camp > 0 && huddle > 0 && guard > 0 && claimed > 0;
     add('sleep-security-reads-all-terms', hasEverySecurityTerm,
       'camp=' + camp + ', huddle=' + huddle + ', nearby guard=' + guard + ', claimed cell=' + claimed);
-    add('walls-hold', wallSteps === 0,
-      wallSteps + ' person-steps ended on a house wall');
+    add('walls-hold', wallSteps === 0 && houses.length > 0 && wallTiles === expectedWallTiles && doorsOpen,
+      houses.length + ' finished homes, ' + wallTiles + '/' + expectedWallTiles +
+      ' perimeter wall tiles blocked, ' + (doorsOpen ? 'every door open' : 'a door blocked') +
+      ', ' + wallSteps + ' person-steps ended on a house wall');
   }
 
   if (base.scenario === 'salters') {
