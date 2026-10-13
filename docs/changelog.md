@@ -16150,3 +16150,10 @@ swim-order E2E cover the behavior. Captures:
 `artifacts/screenshots/m15-swim-animation-2026-10-13/`. Contract:
 [m15_swim_animation.md](m15_swim_animation.md). Version `0.15.138-alpha`.
 
+## 2026-10-13 — M15 phase 41: long verification recorded
+
+The owner-authorized full unit suite and `sim:check:all` matrix were run and
+their remaining failures recorded in `docs/m15_calibration.md`. Neither the
+matrix nor the unit suite is globally green, so M15 remains open; no thresholds
+or simulation coefficients were changed to force a pass.
+

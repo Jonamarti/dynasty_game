@@ -348,3 +348,32 @@ sin supervivientes (`median n/a`). Un caso no constituye muestra suficiente ni
 se corresponde con el denominador de `answered` (segundos golpes del mismo
 agresor en 40 ticks). El instrumento queda corregido, pero la fase 41 sigue
 sin diagnóstico poblacional de `answered`; no se cambian parámetros.
+
+### Verificación completa del 2026-10-13
+
+Por petición del propietario se ejecutaron las capas largas aunque M15 siga
+abierta. `npm.cmd test -- --maxWorkers=1 --testTimeout=15000` terminó en 659 s:
+306/310 archivos pasaron, con 2.274 pruebas correctas, 5 fallidas y 1 omitida.
+Los fallos se concentran en correspondencia de sed (diferencia 16,90 frente a
+tolerancia 15), el contador `compact_food_nutrition_gather` a cero, difusión
+tecnológica 0,70 frente al límite 0,60 y dos aserciones de tributo/sucesión en
+`polity.test.ts`. No falló ningún test de arte ni de animación. Los focos de
+doma/natación dieron 90/90 y 93/93 respectivamente; cada E2E real pasó 1/1.
+
+`npm.cmd run sim:check:all` se ejecutó secuencialmente y terminó con salida 1.
+Los 15 escenarios de mecanismo —`nights`, `salters`, `tailors`, `homes`, los
+seis escenarios de hierro, `frontier-cohort`, `frontier`, `food-news`,
+`conflicts` y `shallows`— pasaron. Los 26 escenarios base conservaron al menos
+un check fallido; dieta (`cravings-steer-the-diet`) se repite en casi toda la
+matriz y hay fallos adicionales de sueño, supervivencia, conocimiento,
+descubrimiento, domesticación, ecología y política según el escenario. La
+matriz no incluye `perf-budget`; la medición aislada previa de `sim:check`
+marcó 561 pasos/s frente al suelo de 1.678. Esto confirma los gates abiertos,
+no una regresión de las dos animaciones, que solo leen estado durante el
+renderizado. No se cambiaron checks ni coeficientes a partir de estas corridas.
+
+**Estado:** fase 41 continúa abierta. Siguen sin resolverse supervivencia y
+recuperación poblacionales, `answered` (81,8% en la cohorte `generations`, bajo
+90%), `firemaking` (4/20 en la cohorte `century`, bajo 50%), los fallos de
+comportamiento de la matriz y la segunda pasada de protocolo para escenarios
+con mapa. No hay evidencia para declarar cerrado M15.
