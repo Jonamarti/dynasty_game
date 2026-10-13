@@ -16165,3 +16165,9 @@ is visible. The `answered` predicate and simulation decisions remain unchanged.
 The next cohort must collect these counters before any calibration decision.
 Details and limitations are in `docs/m15_calibration.md`.
 
+The instrumented `generations` cohort completed (20 seeds, 3,415.8 s):
+`answered` remained 36/44 (81.8%). All 44 repeat blows had an active assailant
+signal; the eight proxy misses still had `drink`, `give`, `go_home` or `idle` at
+impact. Aggregate counters do not link decisions to individual victims, so no
+cause or coefficient change is justified. M15 remains open.
+

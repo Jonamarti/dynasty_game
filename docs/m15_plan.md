@@ -4637,10 +4637,13 @@ para cada primer golpe adulto y cada repetición del denominador, histogramas de
 acción, orden, commitment, temporizador y detección de agresor. También cuenta
 person-ticks con `underAttack`, interrupciones por ese motivo y acciones que
 Brain elige cuando detecta al agresor. No guarda IDs ni cambia reglas, RNG o el
-predicado del proxy. Pruebas focales 14/14 y typecheck pasan. Falta correr una
-nueva cohorte con el instrumento para separar ocupación, detección y elección;
-no se ajustan coeficientes hasta leerla. Contrato/resultados en
-[`m15_calibration.md`](m15_calibration.md).
+predicado del proxy. Pruebas focales 14/14 y typecheck pasan. En la cohorte
+`generations` (20 semillas), `assailantOf` estaba activo en los 44/44 segundos
+golpes; la acción previa fue `flee` en 36 y `drink`/`give`/`go_home`/`idle` en
+los ocho restantes. Los contadores globales no vinculan decisiones e
+interrupciones a cada víctima, así que aún no atribuyen la causa ni justifican
+un ajuste. `answered` sigue en 81,8% y M15 permanece abierta. Contrato y
+resultados en [`m15_calibration.md`](m15_calibration.md).
 
 - La segunda pasada completa del protocolo de la fase 10 en `generations`,
   `century`, `lean` y los escenarios con mapa, con la tabla en

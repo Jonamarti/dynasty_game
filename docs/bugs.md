@@ -5407,3 +5407,18 @@ de 60 ticks; el mundo termina sin supervivientes. Una muestra no resuelve el
 81,8% de `answered`, cuyo denominador son segundos golpes en 40 ticks. No se
 cambiaron parámetros ni se atribuye causalidad.
 
+### 2026-10-13 — fase 41: nuevo diagnóstico agregado de `answered`
+
+`npm.cmd run sim:seeds -- --scenario generations --seeds 20` en `0.15.138-alpha`
+repitió 6,0% de supervivencia, 10/20 extinciones, 19/20 colapsos y `answered`
+36/44 (81,8%). En los 44 segundos golpes, `assailantOf` encontró al agresor
+44/44 veces. Las ocho víctimas que el proxy no cuenta como respondidas seguían
+en `drink` (1), `give` (2), `go_home` (2) o `idle` (3); los cinco casos de
+`drink`, `give` y `go_home` conservaban commitment coincidente. El Brain eligió
+`flee` 6.509 veces mientras el agresor estaba visible y hubo múltiples interrupciones por
+`under_attack`, pero los histogramas no enlazan decisiones con víctimas ni con
+un golpe concreto. Esto descarta que faltara detección justo en el impacto, no
+explica por qué las víctimas seguían en esas acciones. Haría falta una traza
+temporal por evento para distinguir cadencia de pensamiento y replanificación;
+no se cambian los pesos. Métricas completas en `m15_calibration.md`.
+

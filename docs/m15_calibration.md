@@ -383,9 +383,36 @@ matriz no incluye `perf-budget`; la medición aislada previa de `sim:check`
 marcó 561 pasos/s frente al suelo de 1.678. Esto confirma los gates abiertos,
 no una regresión de las dos animaciones, que solo leen estado durante el
 renderizado. No se cambiaron checks ni coeficientes a partir de estas corridas.
+La suite completa precede al commit del diagnóstico instrumental; después de
+ese cambio pasaron 14 pruebas focales y typecheck.
 
 **Estado:** fase 41 continúa abierta. Siguen sin resolverse supervivencia y
 recuperación poblacionales, `answered` (81,8% en la cohorte `generations`, bajo
 90%), `firemaking` (4/20 en la cohorte `century`, bajo 50%), los fallos de
 comportamiento de la matriz y la segunda pasada de protocolo para escenarios
 con mapa. No hay evidencia para declarar cerrado M15.
+
+### `generations`, cohorte con diagnóstico de fase 41 (2026-10-13)
+
+`npm.cmd run sim:seeds -- --scenario generations --seeds 20` terminó con salida
+0 en 3.415,8 s. La demografía repitió 6,0% de supervivencia, 10/20 extinciones,
+19/20 colapsos bajo un cuarto, 67 nacimientos, 650 muertes y 5 bandas viables.
+`recovered` fue 0/59 (censuradas); `answered` quedó en 81,8% (36/44), con los
+mismos 8 casos (`drink` 1, `give` 2, `go_home` 2, `idle` 3). La repetición no
+cambió las acciones del proxy.
+
+En los 44 impactos repetidos, `assailantOf` devolvió un agresor activo en los
+44; el contador acumuló 9.857 person-ticks con detección. La acción al impacto
+fue `flee` 36 veces (respuesta) y, en las 8 restantes, `give` 2, `go_home` 2,
+`idle` 3 y `drink` 1. Los cinco casos de `drink`, `give` y `go_home` tuvieron
+commitment coincidente; los tres
+casos `idle` no tenían commitment de acción. Las lecturas del Brain registraron
+6.509 decisiones `flee` mientras `assailantOf` estaba activo, pero son
+histogramas globales, no se pueden asociar a cada víctima o repetición. Hubo
+interrupciones por `under_attack` en 129 acciones `give`, 42 `drink`, 152
+`rest` y otras acciones; tampoco están enlazadas a esos 44 casos. La detección
+estaba viva en el impacto, así que la ausencia de señal de peligro en ese
+instante no explica los ocho casos. La instrumentación agregada no separa aún
+cuándo pensó cada víctima ni qué decisión precedió a cada golpe; no justifica
+ajustar pesos. `answered` y recuperación permanecen bajo objetivo, y la fase
+41 sigue abierta.
