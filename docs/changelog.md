@@ -1,3 +1,13 @@
+## 2026-10-13 — docs: corregir lectura del proxy `answered`
+
+La fila de 42 golpes lista acciones totales de las víctimas, no el subconjunto
+no respondido. `ActionSystem` clasifica `flee` como respuesta; los 35 `flee`
+no son los siete casos no respondidos. Los siete pertenecen a otras acciones,
+pero el proxy solo mide la acción al instante del segundo golpe y no prueba una
+huida física. Se añaden invariantes para proteger esta interpretación.
+Pruebas focales de historial y golpes reales validan las dos sumas de
+contadores y `flee`/`give` (13/13); no cambia comportamiento.
+
 ## 2026-10-13 — docs: reconciliar el estado vigente de M15
 
 `next-steps.md` ahora separa un resumen actual del diario histórico y corrige

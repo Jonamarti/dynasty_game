@@ -39,6 +39,39 @@ describe('historical measurement', () => {
     telemetry.disable();
     telemetry.reset();
   });
+  it('keeps both answered action histograms aligned with their denominators', () => {
+    const sim = new Simulation({ seed: 'history-answered-invariants', world: { width: 48, height: 48 }, population: { bands: 1, peoplePerBand: 4 } });
+    telemetry.reset();
+    telemetry.enable();
+    telemetry.count('blow_repeat', 42);
+    telemetry.count('blow_repeat_action_flee', 35);
+    telemetry.count('blow_repeat_action_give', 2);
+    telemetry.count('blow_repeat_action_go_home');
+    telemetry.count('blow_repeat_action_drink');
+    telemetry.count('blow_repeat_action_idle', 3);
+    telemetry.count('blow_repeat_unanswered', 7);
+    telemetry.count('blow_repeat_unanswered_action_give', 2);
+    telemetry.count('blow_repeat_unanswered_action_go_home');
+    telemetry.count('blow_repeat_unanswered_action_drink');
+    telemetry.count('blow_repeat_unanswered_action_idle', 3);
+
+    const snapshot = telemetry.snapshot();
+    const actionTotal = Object.entries(snapshot)
+      .filter(([key]) => key.startsWith('blow_repeat_action_'))
+      .reduce((total, [, count]) => total + count, 0);
+    const unansweredActionTotal = Object.entries(snapshot)
+      .filter(([key]) => key.startsWith('blow_repeat_unanswered_action_'))
+      .reduce((total, [, count]) => total + count, 0);
+
+    expect(actionTotal).toBe(snapshot.blow_repeat);
+    expect(unansweredActionTotal).toBe(snapshot.blow_repeat_unanswered);
+    expect(snapshot.blow_repeat_unanswered_action_flee ?? 0).toBe(0);
+    expect(formatHistory([new HistoryWatch(sim).finish()])).toContain(
+      'answered 0.833 (7/42 unanswered; actions drink:1,flee:35,give:2,go_home:1,idle:3; unanswered drink:1,give:2,go_home:1,idle:3)'
+    );
+    telemetry.disable();
+    telemetry.reset();
+  });
   it('leaves the simulated world and RNG bit-identical with observation enabled', () => {
     const run = (observed: boolean) => {
       const sim = new Simulation({ seed: 'history-neutral', world: { width: 48, height: 48 }, population: { bands: 1, peoplePerBand: 6 } });

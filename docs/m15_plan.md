@@ -4526,9 +4526,12 @@ cifras: `m15_calibration.md` y `bugs.md`.
 supervivencia, 1/20 extinciones y 2/20 colapsos bajo un cuarto. `recovered`
 sigue 0/42 (todas censuradas), `answered` 83,3% (35/42, objetivo ≥90%) y
 `firemaking` 4/20 (20%, objetivo ≥50%). Los siete golpes sin respuesta tuvieron
-víctimas en `flee`, pero el proxy no establece causa. No se calibró ningún
-parámetro: fase 41 sigue abierta junto con los otros gates de M15. Resultados
-en `m15_calibration.md` y `bugs.md`.
+víctimas en acciones distintas de `flee`, que el contador clasifica como
+respuesta. Las pruebas de `history` y `respond` fijan las sumas de histogramas
+y verifican con golpes reales que `flee` cuenta como respuesta y `give` como
+no respondido (13/13). Este proxy no mide si la víctima logró escapar. No se
+calibró ningún parámetro: fase 41 sigue abierta junto con los otros gates de
+M15. Resultados en `m15_calibration.md` y `bugs.md`.
 
 - La segunda pasada completa del protocolo de la fase 10 en `generations`,
   `century`, `lean` y los escenarios con mapa, con la tabla en

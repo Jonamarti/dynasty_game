@@ -5340,10 +5340,15 @@ semilla, 1.726,9 s) terminó con supervivencia media 45,6%, 1/20 mundos
 extintos, 2/20 colapsados bajo un cuarto y 40 nacimientos. De 42 caídas
 medidas, 0 recuperaron antes del final; las 42 quedaron censuradas. `answered`
 fue 83,3% (35/42, objetivo ≥90%) y `firemaking` se conoció en 4/20 semillas
-(20%, objetivo ≥50%). El renglón del instrumento atribuye los siete golpes no
-respondidos a víctimas que ejecutaban `flee`, pero no identifica si se trata de
-un defecto de respuesta, del proxy o de la secuencia de agresiones. Esta
-cohorte no está emparejada con una build anterior; no se ajusta ningún
+(20%, objetivo ≥50%). La distribución completa de las 42 víctimas es `flee` 35,
+`give` 2, `go_home` 1, `drink` 1, `idle` 3. El código cuenta `flee` como
+respuesta al segundo golpe; por tanto, las siete no respuestas corresponden a
+las otras acciones, no a `flee`. `answered` sigue siendo un proxy del estado de
+acción al instante del golpe: no comprueba que la víctima escapara físicamente.
+Las pruebas focales fijan las sumas de ambas distribuciones y simulan golpes
+reales para comprobar `flee` como respuesta y `give` como no respondido
+(`history.test.ts` y `respond.test.ts`, 13/13). Esta cohorte no está emparejada
+con una build anterior; no se ajusta ningún
 coeficiente ni se infiere una regresión. Ver `m15_calibration.md`.
 
 ### 2026-10-13 — verificación actual en `0.15.127-alpha`

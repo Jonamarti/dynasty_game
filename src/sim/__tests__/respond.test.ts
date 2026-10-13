@@ -12,6 +12,7 @@ import { describe, it, expect } from 'vitest';
 import { RNG } from '../core/RNG.ts';
 import { Person } from '../entities/Person.ts';
 import { Simulation } from '../core/Simulation.ts';
+import { telemetry } from '../core/Telemetry.ts';
 import { assailantOf, FRESH_BLOW, UNDER_ATTACK_TICKS } from '../social/Defence.ts';
 
 const SMALL = {
@@ -125,6 +126,75 @@ describe('a blow reaches somebody committed to something', () => {
 });
 
 describe('somebody set upon', () => {
+  function expectRepeatHistogramInvariants(snapshot: Record<string, number>): void {
+    const sum = (prefix: string) => Object.entries(snapshot)
+      .filter(([key]) => key.startsWith(prefix))
+      .reduce((total, [, count]) => total + count, 0);
+    expect(sum('blow_repeat_action_')).toBe(snapshot.blow_repeat);
+    expect(sum('blow_repeat_unanswered_action_')).toBe(snapshot.blow_repeat_unanswered ?? 0);
+    expect(snapshot.blow_repeat_unanswered_action_flee ?? 0).toBe(0);
+  }
+
+  function secondBlowTelemetry(action: 'flee' | 'give'): Record<string, number> {
+    const sim = new Simulation(SMALL);
+    for (let i = 0; i < 5; i++) sim.step();
+    // The attacker is in the first band and therefore acts before the victim.
+    // That lets this fixture sample the victim's chosen action at impact,
+    // before the victim's own turn can respond to or interrupt it.
+    const striker = sim.livingPeople().find(p => p.bandId === 0 && !p.isChild)!;
+    const victim = sim.livingPeople().find(p => p.bandId === 1 && !p.isChild)!;
+    for (const person of [striker, victim]) {
+      settled(person);
+      person.health = 1000;
+    }
+    striker.x = 31;
+    striker.y = 32;
+    victim.x = 32;
+    victim.y = 32;
+    sim.peopleHash.rebuild(sim.livingPeople());
+
+    striker.lastHarmedBy = null;
+    striker.action = 'attack';
+    striker.order = 'attack';
+    striker.targetPersonId = victim.id;
+    striker.actionTimer = 1;
+    striker.pursuitFrom = null;
+    victim.lastHarmedBy = striker.id;
+    victim.lastHarmedTick = sim.time.tick;
+    victim.action = action;
+    victim.actionTimer = 20;
+    victim.order = null;
+    if (action === 'flee') {
+      victim.fleeFromId = striker.id;
+      victim.targetX = 40;
+      victim.targetY = 32;
+    }
+
+    telemetry.reset();
+    telemetry.enable();
+    sim.step();
+    const snapshot = telemetry.snapshot();
+    telemetry.disable();
+    telemetry.reset();
+    return snapshot;
+  }
+
+  it('counts fleeing as an answer and a committed gift as unanswered at impact', () => {
+    const fleeing = secondBlowTelemetry('flee');
+    expectRepeatHistogramInvariants(fleeing);
+    expect(fleeing.blow_repeat).toBe(1);
+    expect(fleeing.blow_repeat_action_flee).toBe(1);
+    expect(fleeing.blow_repeat_unanswered ?? 0).toBe(0);
+    expect(fleeing.blow_repeat_unanswered_action_flee ?? 0).toBe(0);
+
+    const gifting = secondBlowTelemetry('give');
+    expectRepeatHistogramInvariants(gifting);
+    expect(gifting.blow_repeat).toBe(1);
+    expect(gifting.blow_repeat_action_give).toBe(1);
+    expect(gifting.blow_repeat_unanswered).toBe(1);
+    expect(gifting.blow_repeat_unanswered_action_give).toBe(1);
+  });
+
   it('runs or hits back, rather than going on with the day', () => {
     const sim = new Simulation(SMALL);
     for (let i = 0; i < 5; i++) sim.step();

@@ -306,10 +306,12 @@ en 1.726,9 s de herramienta (20 × 40.000 pasos), con el código de la versión
 `0.15.126-alpha`. Supervivencia media 45,6%; extinción 1/20; colapso bajo un
 cuarto 2/20; 40 nacimientos; 374 muertes y 126 muertes adultas por hambre.
 `recovered` fue 0/42: los 42 episodios seguían censurados al terminar. El
-proxy `answered` fue 83,3% (35/42), por debajo del objetivo ≥90%; todos los
-siete casos no respondidos fueron de agresiones cuya víctima ejecutaba `flee`,
-sin que esto demuestre causalidad ni permita inferir por qué no respondió el
-contador. `firemaking` llegó a 4/20 (20%, objetivo ≥50%). La cohorte no cambia
-parámetros y no tiene una comparación emparejada con otra versión; no atribuye
-la diferencia respecto a cohortes anteriores a una funcionalidad. Ver
-[hallazgo de fase 41](bugs.md).
+proxy `answered` fue 83,3% (35/42), por debajo del objetivo ≥90%. El informe
+desglosa 35 víctimas en `flee`, 2 en `give`, 1 en `go_home`, 1 en `drink` y 3
+en `idle`; la instrumentación cuenta `flee` como respuesta, así que las siete
+acciones restantes coinciden con los siete casos no respondidos. Esto describe
+el proxy en el instante del golpe, no prueba que la víctima escapara ni explica
+la secuencia de agresiones. `firemaking` llegó a 4/20 (20%, objetivo ≥50%). La
+cohorte no cambia parámetros y no tiene una comparación emparejada con otra
+versión; no atribuye la diferencia respecto a cohortes anteriores a una
+funcionalidad. Ver [hallazgo de fase 41](bugs.md).
