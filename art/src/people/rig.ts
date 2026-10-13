@@ -124,7 +124,7 @@ export function geometry(age: ArtAge, sex: ArtSex): Geo {
 }
 
 /** Whole-pixel upper-body dip; gathering keeps its feet planted like idle. */
-export const POSE_BOB: Record<ArtPose, number> = { idle: 0, w0: 0, w1: 1, w2: 0, w3: 1, g0: 0, g1: 1, g2: 2, g3: 1, f0: 0, f1: 0, f2: 0, f3: 0, x0: 0, x1: 0, x2: 0, x3: 0, d0: 0, d1: 0, d2: 0, d3: 0, c0: 0, c1: 0, c2: 0, c3: 0, m0: 1, m1: 2, m2: 1, m3: 0, a0: 1, a1: 2, a2: 1, a3: 0, b0: 0, b1: 1, b2: 0, b3: 1, r0: 0, r1: 0, r2: 0, r3: 0, h0: 0, h1: 0, h2: 0, h3: 0, q0: 0, q1: 1, q2: 1, q3: 0, p0: 0, p1: 0, p2: 0, p3: 0, s0: 1, s1: 2, s2: 1, s3: 0, y0: 0, y1: 1, y2: 1, y3: 0, v0: 0, v1: 1, v2: 1, v3: 0, i0: 1, i1: 2, i2: 1, i3: 0, t0: 0, t1: 0, t2: 1, t3: 0, o0: 0, o1: 1, o2: 0, o3: 1, u0: 0, u1: 1, u2: 0, u3: 1, k0: 0, k1: 0, k2: 1, k3: 0, l0: 0, l1: 1, l2: 1, l3: 0, z0: 0, z1: 1, z2: 1, z3: 0, n0: 0, n1: 1, n2: 0, n3: 1 };
+export const POSE_BOB: Record<ArtPose, number> = { idle: 0, w0: 0, w1: 1, w2: 0, w3: 1, g0: 0, g1: 1, g2: 2, g3: 1, f0: 0, f1: 0, f2: 0, f3: 0, x0: 0, x1: 0, x2: 0, x3: 0, d0: 0, d1: 0, d2: 0, d3: 0, c0: 0, c1: 0, c2: 0, c3: 0, m0: 1, m1: 2, m2: 1, m3: 0, a0: 1, a1: 2, a2: 1, a3: 0, b0: 0, b1: 1, b2: 0, b3: 1, r0: 0, r1: 0, r2: 0, r3: 0, h0: 0, h1: 0, h2: 0, h3: 0, q0: 0, q1: 1, q2: 1, q3: 0, p0: 0, p1: 0, p2: 0, p3: 0, s0: 1, s1: 2, s2: 1, s3: 0, y0: 0, y1: 1, y2: 1, y3: 0, v0: 0, v1: 1, v2: 1, v3: 0, i0: 1, i1: 2, i2: 1, i3: 0, t0: 0, t1: 0, t2: 1, t3: 0, o0: 0, o1: 1, o2: 0, o3: 1, u0: 0, u1: 1, u2: 0, u3: 1, k0: 0, k1: 0, k2: 1, k3: 0, l0: 0, l1: 1, l2: 1, l3: 0, z0: 0, z1: 1, z2: 1, z3: 0, n0: 0, n1: 1, n2: 0, n3: 1, e0: 0, e1: 0, e2: 0, e3: 0 };
 
 const DIG_FRONT: readonly { reach: number; handY: number; elbowY: number }[] = [
   { reach: 0.4, handY: -0.3, elbowY: 0.05 }, { reach: 0.25, handY: -0.6, elbowY: -0.1 },
@@ -706,7 +706,25 @@ const rotatePt = (p: Pt, deg: number, c: Pt): Pt => {
 
 /** Draw one person once, as layers. Pure: the same spec gives the same text. */
 export function personLayers(spec: PersonSpec): PersonOut {
-  return spec.dir === 'E' ? sideLayers(spec) : frontLayers(spec, spec.dir === 'N');
+  const out = spec.dir === 'E' ? sideLayers(spec) : frontLayers(spec, spec.dir === 'N');
+  if (!spec.pose.startsWith('e')) return out;
+
+  // The simulation's sleep order is long and stationary once it reaches its
+  // surface. Rotate the generated layers as one body so the same clothing,
+  // carried items and colour layers lie together without a second art rig.
+  // Tiny angle changes make the four clock frames breathe without moving the
+  // person's world position or changing the picking radius.
+  const angle = [88.5, 89.5, 90.5, 91.5][Number(spec.pose.slice(1))]!;
+  const radians = angle * Math.PI / 180;
+  const rotate = (p: readonly [number, number]): readonly [number, number] => {
+    const dx = p[0] - 48, dy = p[1] - 48;
+    return [48 + dx * Math.cos(radians) - dy * Math.sin(radians),
+      48 + dx * Math.sin(radians) + dy * Math.cos(radians)];
+  };
+  return {
+    layers: out.layers.map(layer => ({ ...layer, svg: `<g transform="rotate(${angle} 48 48)">${layer.svg}</g>` })),
+    anchors: { ...out.anchors, hr: rotate(out.anchors.hr), hl: rotate(out.anchors.hl) },
+  };
 }
 
 function frontLayers(spec: PersonSpec, back: boolean): PersonOut {

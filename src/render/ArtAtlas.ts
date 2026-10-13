@@ -162,7 +162,14 @@ export class ArtAtlas {
     const tintOf = this.people.meta['tint'] as Record<string, ArtTint>;
     const carrySlots = new Set(this.people.meta['carrySlots'] as string[]);
     const anchors = (this.people.meta['anchors'] as Record<string, PersonAnchors>);
-    const anchor = anchors[anchorKey(a.age, a.sex, dir, a.pose, a.carryBaby)] ?? anchors[anchorKey(a.age, a.sex, dir, a.pose, false)]!;
+    // Source code and generated sheets can be reloaded in separate steps by
+    // Vite. Until `art:build` publishes a new pose, keep drawing the idle cell
+    // instead of dereferencing a missing anchor and crashing the whole frame.
+    const requestedAnchor = anchors[anchorKey(a.age, a.sex, dir, a.pose, a.carryBaby)] ??
+      anchors[anchorKey(a.age, a.sex, dir, a.pose, false)];
+    const pose = requestedAnchor ? a.pose : 'idle';
+    const anchor = requestedAnchor ?? anchors[anchorKey(a.age, a.sex, dir, 'idle', a.carryBaby)] ??
+      anchors[anchorKey(a.age, a.sex, dir, 'idle', false)]!;
     const w = a.wear;
     const covers = !!w.legs || w.torso === 'tunic' || w.torso === 'linen_tunic' || w.torso === 'longtunic' || w.torso === 'hide_armour' || w.torso === 'fur_coat' || w.torso === 'toggled_coat';
     const bandCovered = w.torso === 'tunic' || w.torso === 'linen_tunic' || w.torso === 'longtunic' || w.torso === 'wrap' || w.torso === 'hide_armour' || w.torso === 'fur_coat' || w.torso === 'toggled_coat';
@@ -210,7 +217,7 @@ export class ArtAtlas {
       const glove = (base === 'hands' || base === 'hand') && w.hands;
       const materialColour = glove || (base === 'loincloth' && w.hips);
       const colour = garmentTint ?? (materialColour ? null : tintSlot === 'skin' ? a.skin : tintSlot === 'hair' ? a.hair : tintSlot === 'band' ? a.band : null);
-      layers.push({ manifest: this.people, key: personKey(slot, variant, a.age, a.sex, dir, a.pose), tint: colour, dx: 0, dy });
+      layers.push({ manifest: this.people, key: personKey(slot, variant, a.age, a.sex, dir, pose), tint: colour, dx: 0, dy });
     }
 
     // Bounds come from the already trimmed manifest cells, not a GPU readback

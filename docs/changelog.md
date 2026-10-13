@@ -16247,3 +16247,13 @@ prueba y establece rencor explícito antes de evaluar la facción. Las tres
 pruebas de `plots against the king` pasan sin cambiar las aserciones. El caso de
 tributo sigue en investigación: su fixture focal falla en entrega con contador
 cero y no hay todavía una causa confirmada; detalle en [`docs/bugs.md`](bugs.md).
+## 2026-10-13 — M15 phase 17: human sleeping pose
+
+Added four generated lying poses for a person whose real `sleep` action has
+reached its recovery phase. The selector follows the action clock and never
+infers sleep from stillness; drawing does not change simulation state. The
+atlas safely shows idle art during a hot reload before rebuilt sheets arrive.
+Typecheck, focused unit/art tests and the real-order E2E passed. Four captures
+are preserved in `artifacts/screenshots/m15-sleep-animation-2026-10-13/`.
+Contract and verification limits: [`m15_sleep_animation.md`](m15_sleep_animation.md).
+

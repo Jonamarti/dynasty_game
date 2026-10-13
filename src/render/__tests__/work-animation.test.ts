@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Person } from '../../sim/entities/Person.ts';
 import { RNG } from '../../sim/core/RNG.ts';
-import { attendingFeastPose, buildingPose, cuttingGrassPose, diggingPose, dyeingPose, extractionPose, farmingPose, fightingPose, fishingPose, gatheringPose, hideDressingPose, inscribingPose, mendingPose, ponderingPose, prototypingPose, plantingPose, reflectingPose, spreadingCompostPose, swimmingPose, tamingPose, tendingPose } from '../WorkAnimation.ts';
+import { attendingFeastPose, buildingPose, cuttingGrassPose, diggingPose, dyeingPose, extractionPose, farmingPose, fightingPose, fishingPose, gatheringPose, hideDressingPose, inscribingPose, mendingPose, ponderingPose, prototypingPose, plantingPose, reflectingPose, sleepingPose, spreadingCompostPose, swimmingPose, tamingPose, tendingPose } from '../WorkAnimation.ts';
 import type { Simulation } from '../../sim/core/Simulation.ts';
 
 function fixture() {
@@ -14,6 +14,37 @@ function fixture() {
   const sim = { nodesById: new Map([[1, node]]), treesById: new Map([[2, tree]]) } as unknown as Pick<Simulation, 'nodesById' | 'treesById'>;
   return { person, node, tree, sim };
 }
+
+describe('human sleep animation', () => {
+  it('cycles from the sleeper’s own simulation clock without inferring sleep from stillness', () => {
+    const person = new Person('Sleeper', 4, 4, 0, new RNG('sleep-animation'));
+    person.action = 'sleep'; person.actionTicks = 1;
+    expect([1, 3, 5, 7, 9].map(tick => {
+      person.actionTicks = tick;
+      return sleepingPose(person, false, 0);
+    })).toEqual(['e0', 'e1', 'e2', 'e3', 'e0']);
+    expect(person.action).toBe('sleep');
+  });
+
+  it('hides the lying pose while travelling, dead, idle or before the action clock starts', () => {
+    const person = new Person('Sleeper', 4, 4, 0, new RNG('sleep-animation-guards'));
+    person.action = 'sleep'; person.actionTicks = 1;
+    expect(sleepingPose(person, true)).toBeNull();
+    expect(sleepingPose(person, false)).toBe('e0');
+    person.actionTicks = 0; expect(sleepingPose(person, false)).toBeNull();
+    person.actionTicks = 1; person.alive = false; expect(sleepingPose(person, false)).toBeNull();
+    person.alive = true; person.action = 'idle'; expect(sleepingPose(person, false)).toBeNull();
+  });
+
+  it('interpolates only the bounded simulation fraction', () => {
+    const person = new Person('Sleeper', 4, 4, 0, new RNG('sleep-animation-clock'));
+    person.action = 'sleep'; person.actionTicks = 2;
+    expect(sleepingPose(person, false, 0.5)).toBe('e0');
+    expect(sleepingPose(person, false, 1)).toBe('e1');
+    expect(sleepingPose(person, false, 50)).toBe('e1');
+    expect(person.actionTicks).toBe(2);
+  });
+});
 
 describe('human combat animation', () => {
   it('cycles four guarded strike poses from the real attack clock', () => {

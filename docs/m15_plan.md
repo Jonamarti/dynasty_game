@@ -5234,3 +5234,14 @@ capturas en `artifacts/screenshots/m15-conversation-animation-2026-10-13/`.
 Contrato: [`m15_conversation_animation.md`](m15_conversation_animation.md).
 Versión `0.15.136-alpha`.
 
+**Avance del 2026-10-13 — fase 17, dormir:** la acción real `sleep` muestra
+cuatro poses tumbadas generadas (`e0`–`e3`) una vez que la persona llega y
+empieza a recuperar fatiga. El selector usa su reloj de acción y el estado de
+vida, nunca deduce sueño de la quietud; el renderer no toca necesidades ni
+progreso. El atlas usa las celdas idle solo durante una recarga incompleta; las
+hojas y el manifiesto generados incluyen las cuatro poses. Pruebas unitarias,
+de arte y E2E con recuperación real, y capturas en
+`artifacts/screenshots/m15-sleep-animation-2026-10-13/`. Contrato:
+[`m15_sleep_animation.md`](m15_sleep_animation.md). Versión
+`0.15.141-alpha`.
+
