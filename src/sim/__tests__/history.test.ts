@@ -24,6 +24,10 @@ describe('historical measurement', () => {
     telemetry.count('blow_repeat_action_give', 2);
     telemetry.count('blow_repeat_action_flee', 1);
     telemetry.count('blow_repeat_unanswered_action_give', 2);
+    telemetry.count('answered_repeat_action_give', 2);
+    telemetry.count('answered_repeat_timer_20', 2);
+    telemetry.count('answered_under_attack_detected_tick', 5);
+    telemetry.count('answered_brain_decision_flee', 1);
     telemetry.count('conception_opportunity', 3);
     telemetry.count('conception_block_spacing', 1);
     telemetry.count('conception_block_partner', 1);
@@ -32,6 +36,9 @@ describe('historical measurement', () => {
     telemetry.count('conception_roll_miss', 1);
     expect(formatHistory([new HistoryWatch(sim).finish()])).toContain(
       'answered 0.333 (2/3 unanswered; actions flee:1,give:2; unanswered give:2)'
+    );
+    expect(formatHistory([new HistoryWatch(sim).finish()])).toContain(
+      'answered diagnostics brain_decision_flee:1,repeat_action_give:2,repeat_timer_20:2,under_attack_detected_tick:5'
     );
     expect(formatHistory([new HistoryWatch(sim).finish()])).toContain(
       'fertility funnel opportunities 3; blocked spacing/partner/hunger/health 1/1/0/0; attempts 1; expected rolls 0.500; roll misses 1'

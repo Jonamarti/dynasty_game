@@ -16157,3 +16157,11 @@ their remaining failures recorded in `docs/m15_calibration.md`. Neither the
 matrix nor the unit suite is globally green, so M15 remains open; no thresholds
 or simulation coefficients were changed to force a pass.
 
+## 2026-10-13 — M15 phase 41: instrument unanswered assaults
+
+Added opt-in histograms for victim state at adult initial and repeat blows,
+under-attack detection and interruption, and Brain choices while an assailant
+is visible. The `answered` predicate and simulation decisions remain unchanged.
+The next cohort must collect these counters before any calibration decision.
+Details and limitations are in `docs/m15_calibration.md`.
+

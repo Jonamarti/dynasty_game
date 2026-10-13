@@ -11,6 +11,7 @@ export interface HistoryReport {
   bandLost: Record<string, number>; worldLost: boolean; selfDestroyed: number; inBandKills: number;
   violentAdultDeaths: number; adultDeaths: number; blowRepeat: number; blowRepeatUnanswered: number; warPairs: WarPair[];
   blowRepeatActions: Record<string, number>; blowRepeatUnansweredActions: Record<string, number>;
+  answeredDiagnostics: Record<string, number>;
   fertilityCounters: Record<string, number>;
   fireBy: number | null; adoptionDays: number[]; adoptionNotReached: number; malnutrition: number;
   proteinNutrition: number; totalNutrition: number;
@@ -153,6 +154,9 @@ export class HistoryWatch {
     const unansweredActions = Object.fromEntries(Object.entries(telemetrySnapshot)
       .filter(([key]) => key.startsWith('blow_repeat_unanswered_action_'))
       .map(([key, value]) => [key.slice('blow_repeat_unanswered_action_'.length), value]));
+    const answeredDiagnostics = Object.fromEntries(Object.entries(telemetrySnapshot)
+      .filter(([key]) => key.startsWith('answered_'))
+      .map(([key, value]) => [key.slice('answered_'.length), value]));
     const fertilityCounters = Object.fromEntries(Object.entries(telemetrySnapshot)
       .filter(([key]) => key.startsWith('conception_') || key.startsWith('pregnancy_loss_') || key === 'pregnancy_live_birth')
       .map(([key, value]) => [key, value]));
@@ -166,6 +170,7 @@ export class HistoryWatch {
       inBandKills: ownKills, violentAdultDeaths: this.violentAdultDeaths, adultDeaths: this.adultDeaths,
       blowRepeat: repeat, blowRepeatUnanswered: telemetrySnapshot.blow_repeat_unanswered ?? 0,
       blowRepeatActions: repeatActions, blowRepeatUnansweredActions: unansweredActions,
+      answeredDiagnostics,
       fertilityCounters,
       warPairs: [...this.warDays.values()], fireBy: this.fireBy, adoptionDays: this.adoptionDays,
       adoptionNotReached: this.adoptionNotReached,
@@ -212,6 +217,10 @@ export function formatHistory(rows: HistoryReport[]): string {
     }
     return [...counts].sort(([a], [b]) => a.localeCompare(b)).map(([action, count]) => action + ':' + count).join(',') || 'none';
   };
+  const answeredDiagnostics = new Map<string, number>();
+  for (const row of rows) for (const [key, count] of Object.entries(row.answeredDiagnostics)) {
+    answeredDiagnostics.set(key, (answeredDiagnostics.get(key) ?? 0) + count);
+  }
   const fertility = new Map<string, number>();
   for (const row of rows) for (const [key, count] of Object.entries(row.fertilityCounters)) {
     fertility.set(key, (fertility.get(key) ?? 0) + count);
@@ -231,6 +240,8 @@ export function formatHistory(rows: HistoryReport[]): string {
     ' · answered ' + ratio(sum(r => r.blowRepeat - r.blowRepeatUnanswered), sum(r => r.blowRepeat)) +
     ' (' + sum(r => r.blowRepeatUnanswered) + '/' + sum(r => r.blowRepeat) + ' unanswered; actions ' +
     actionCounts('blowRepeatActions') + '; unanswered ' + actionCounts('blowRepeatUnansweredActions') + ')' +
+    ' · answered diagnostics ' + ([...answeredDiagnostics].sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, count]) => key + ':' + number(count)).join(',') || 'none') +
     ' · fertility funnel ' + (fertileDays === 0 ? 'n/a (no opportunities)' :
       'opportunities ' + number(fertileDays) + '; blocked spacing/partner/hunger/health ' +
       ['conception_block_spacing', 'conception_block_partner', 'conception_block_hunger', 'conception_block_health']

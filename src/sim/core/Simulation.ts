@@ -75,7 +75,7 @@ import { fieldSeasonGrowth } from '../entities/Irrigation.ts';
 import { accrueUnits } from './Progress.ts';
 import { decayMood } from './Mood.ts';
 import { appealOf, bestFoodFor, consumeFood, decayMacroBalance, decayMacroTarget, hydrationOf } from './Macros.ts';
-import { assailantOf, isHeld } from '../social/Defence.ts';
+import { assailantOf, isHeld, UNDER_ATTACK_TICKS } from '../social/Defence.ts';
 import { wouldInvestigate, noticeBloodied, INVESTIGATION_DAYS } from '../social/Investigation.ts';
 import { knowledgeOfPerson, corpseIdentity } from '../social/Knowledge.ts';
 import { averageRenownByBand, Household } from '../entities/Household.ts';
@@ -6513,6 +6513,11 @@ export class Simulation {
       if (person.knockedOutUntil >= this.time.tick) continue;
 
       const underAttack = assailantOf(person, id => this.peopleById.get(id), this.time.tick) !== null;
+      if (underAttack && this.time.tick - person.lastHarmedTick <= UNDER_ATTACK_TICKS) {
+        // Count observed person-ticks, not unique assaults. This shows whether
+        // the shared danger read stayed live while the victim's next turn ran.
+        telemetry.count('answered_under_attack_detected_tick');
+      }
       // A crying baby no longer seizes the woman here (owner, 2026-10-01): its
       // cry interrupts her work through `cryReaches`, and the brain weighs it
       // against her own needs. A feed she has begun is carried to the end.

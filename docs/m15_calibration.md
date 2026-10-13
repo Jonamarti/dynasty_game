@@ -160,13 +160,25 @@ violencia (13 huidas, 1 agresor desaparecido) miden todos los golpes, mientras
 Una muestra de un solo evento no explica el 79,5% de century; la causa sigue
 abierta y no se ajusta el umbral ni los coeficientes.
 
-La instrumentación de fase 41 ahora desglosa cada segundo golpe por la acción
-que ejecutaba la víctima y, dentro de ellos, los que el proxy clasifica como
-sin respuesta. `sim:seeds` agrega esos contadores al renglón `HISTORY answered`
-sin cambiar la definición, los draws ni las decisiones de IA. Si no hay
-segundos golpes, el cociente continúa como `n/a` y las listas se muestran como
-`none`; el detalle es evidencia diagnóstica, no una atribución causal. Hay que
-recogerlo en la siguiente cohorte antes de valorar un ajuste.
+La instrumentación de fase 41 mantiene el desglose del proxy y añade histogramas
+del estado de la víctima justo antes de cada primer golpe adulto y cada segundo
+golpe que entra en el denominador: acción, orden, acción y drive del commitment,
+temporizador restante en ticks y resultado de `assailantOf` en ese
+instante. `answered_under_attack_detected_tick` cuenta person-ticks en los que
+Simulation leyó un agresor; `answered_interrupted_under_attack_action_*` cuenta
+acciones que ActionSystem interrumpió por esa causa. Brain registra la acción
+elegida cuando también encuentra un agresor mediante esa lectura compartida.
+`sim:seeds` agrega las familias `answered_*` al renglón `HISTORY answered`.
+
+Son histogramas agregados, no trazas con IDs ni parejas de eventos. La lectura
+de detección cuenta ticks, no asaltos únicos; un caso sin contador de decisión
+puede ser una acción que seguía comprometida o una oportunidad de pensamiento
+que aún no llegó. Esto no altera el predicado, los sorteos ni las decisiones de
+IA. La cohorte `generations` actual (20 semillas) aún solo tiene el desglose
+anterior (`answered` 36/44, 81,8%; no respondidas `drink` 1, `give` 2,
+`go_home` 2, `idle` 3); falta recoger los nuevos histogramas en una cohorte
+para distinguir ocupación, detección y selección del scorer. Sin esa lectura no
+se ajustan pesos ni se atribuye causa.
 
 ### Recuperación: embudo falsable de concepción
 

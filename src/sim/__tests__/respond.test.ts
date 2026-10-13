@@ -135,7 +135,7 @@ describe('somebody set upon', () => {
     expect(snapshot.blow_repeat_unanswered_action_flee ?? 0).toBe(0);
   }
 
-  function secondBlowTelemetry(action: 'flee' | 'give'): Record<string, number> {
+  function secondBlowTelemetry(action: 'flee' | 'give', repeat = true): Record<string, number> {
     const sim = new Simulation(SMALL);
     for (let i = 0; i < 5; i++) sim.step();
     // The attacker is in the first band and therefore acts before the victim.
@@ -159,8 +159,8 @@ describe('somebody set upon', () => {
     striker.targetPersonId = victim.id;
     striker.actionTimer = 1;
     striker.pursuitFrom = null;
-    victim.lastHarmedBy = striker.id;
-    victim.lastHarmedTick = sim.time.tick;
+    victim.lastHarmedBy = repeat ? striker.id : null;
+    victim.lastHarmedTick = repeat ? sim.time.tick : -100;
     victim.action = action;
     victim.actionTimer = 20;
     victim.order = null;
@@ -184,6 +184,11 @@ describe('somebody set upon', () => {
     expectRepeatHistogramInvariants(fleeing);
     expect(fleeing.blow_repeat).toBe(1);
     expect(fleeing.blow_repeat_action_flee).toBe(1);
+    expect(fleeing.answered_repeat_action_flee).toBe(1);
+    expect(fleeing.answered_repeat_order_none).toBe(1);
+    expect(fleeing.answered_repeat_commitment_action_none).toBe(1);
+    expect(fleeing.answered_repeat_timer_20).toBe(1);
+    expect(fleeing.answered_repeat_under_attack_yes).toBe(1);
     expect(fleeing.blow_repeat_unanswered ?? 0).toBe(0);
     expect(fleeing.blow_repeat_unanswered_action_flee ?? 0).toBe(0);
 
@@ -191,8 +196,27 @@ describe('somebody set upon', () => {
     expectRepeatHistogramInvariants(gifting);
     expect(gifting.blow_repeat).toBe(1);
     expect(gifting.blow_repeat_action_give).toBe(1);
+    expect(gifting.answered_repeat_action_give).toBe(1);
+    expect(gifting.answered_repeat_order_none).toBe(1);
+    expect(gifting.answered_repeat_commitment_action_none).toBe(1);
+    expect(gifting.answered_repeat_timer_20).toBe(1);
+    expect(gifting.answered_repeat_under_attack_yes).toBe(1);
+    expect(gifting.answered_under_attack_detected_tick).toBeGreaterThan(0);
+    expect(gifting.answered_interrupted_under_attack_action_give).toBe(1);
     expect(gifting.blow_repeat_unanswered).toBe(1);
     expect(gifting.blow_repeat_unanswered_action_give).toBe(1);
+  });
+
+  it('records the first adult blow separately from a repeat', () => {
+    const first = secondBlowTelemetry('give', false);
+    expect(first.answered_initial_action_give).toBe(1);
+    expect(first.answered_initial_order_none).toBe(1);
+    expect(first.answered_initial_commitment_action_none).toBe(1);
+    expect(first.answered_initial_timer_20).toBe(1);
+    expect(first.answered_initial_under_attack_no).toBe(1);
+    expect(first.answered_under_attack_detected_tick).toBeGreaterThan(0);
+    expect(first.answered_interrupted_under_attack_action_give).toBe(1);
+    expect(first.blow_repeat ?? 0).toBe(0);
   });
 
   it('runs or hits back, rather than going on with the day', () => {

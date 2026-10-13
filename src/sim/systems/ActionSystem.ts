@@ -70,6 +70,7 @@ import {
 } from '../entities/Inscription.ts';
 import type { CarryConfig, ChildhoodConfig, MotivationConfig, NeedsConfig } from '../core/Config.ts';
 import { telemetry } from '../core/Telemetry.ts';
+import { recordBlowVictimState } from '../social/ViolenceDiagnostics.ts';
 import { bestFoodFor, consumeFood, consumeFoodAtSource, knowsPoisonous } from '../core/Macros.ts';
 import { expectedFood } from '../ai/Beliefs.ts';
 import {
@@ -1099,6 +1100,9 @@ export class ActionSystem {
     ctx: ActionContext,
     prefix = 'work_ended_'
   ): void {
+    if (reason === 'under_attack') {
+      telemetry.count('answered_interrupted_under_attack_action_' + person.action);
+    }
     telemetry.count(prefix + reason);
     ctx.onStopped(person, person.action, reason);
     person.noteSaw(reason);
@@ -7098,6 +7102,21 @@ export class ActionSystem {
     }
     person.actionTimer--;
     if (person.actionTimer > 0) return;
+
+    // Phase 41: snapshot the victim before this blow mutates health, action or
+    // harm history. The initial/repeat split mirrors the public `answered`
+    // denominator, while the state counters reveal whether the victim was
+    // committed and whether the shared assailant query already saw danger.
+    if (!other.isChild) {
+      const repeat = other.lastHarmedBy === person.id &&
+        ctx.tick - other.lastHarmedTick <= UNDER_ATTACK_TICKS &&
+        !isHeld(other, ctx.tick) && other.captiveOf === null;
+      recordBlowVictimState(
+        repeat ? 'repeat' : 'initial',
+        other,
+        assailantOf(other, id => ctx.peopleById.get(id), ctx.tick) !== null,
+      );
+    }
 
     // Until phase 5 this line had **no item term at all**: a man with a spear hit
     // exactly as hard as a man with his hands, which made every weapon in the

@@ -87,6 +87,7 @@ import {
   PATROL_LINGER, assailantOf, UNDER_ATTACK_TICKS, RESPOND,
   CAUGHT_WARN, CAUGHT_MEMORY, CAUGHT_RESTRAIN, RESTRAIN_NERVE, CALL_MEMORY, CALL_FOR_HELP, ANSWER_CALL,
 } from '../social/Defence.ts';
+import { recordUnderAttackDecision } from '../social/ViolenceDiagnostics.ts';
 import { offerFor, OFFER_AT_LEAST, REFUSAL_COOLDOWN, AMENDS } from '../social/Amends.ts';
 import { COMPLAIN, COMPLAIN_AFTER, PARLEY } from '../social/Justice.ts';
 import {
@@ -899,6 +900,13 @@ export class Brain {
    * them, and the caller is the one that knows what to say about it.
    */
   think(person: Person, ctx: BrainContext, allowed?: ReadonlySet<string>): string | null {
+    const answeringAssailant = telemetry.isEnabled() && assailantOf(
+      person, id => ctx.peopleById?.get(id), ctx.time.tick,
+    ) !== null;
+    const recordDecision = (action: string | null): string | null => {
+      if (answeringAssailant) recordUnderAttackDecision(action);
+      return action;
+    };
     const { scores, found } = this.score(person, ctx);
     // `score` sorts descending and only keeps positive scores, so the best
     // thing this person is inclined to do is at the front of whichever list
@@ -982,7 +990,7 @@ export class Brain {
       const chosen = urgentDrink ? 'drink' : person.action;
       this.setup(person, chosen, ctx, found);
       saveCommitment(chosen);
-      return chosen;
+      return recordDecision(chosen);
     }
     // At `choiceSpread: 0` this is `pool[0]` and takes no draw, which is why
     // the commit that introduced it was bit-identical. Above 0 it picks among
@@ -991,10 +999,10 @@ export class Brain {
     // rather than in `score`.
     const chosen = chooseAmongBest(decisionPool, ctx.choiceRng, ctx.choiceSpread)?.id
       ?? (allowed ? null : 'wander');
-    if (chosen === null) return null;
+    if (chosen === null) return recordDecision(null);
     this.setup(person, chosen, ctx, found);
     saveCommitment(chosen);
-    return chosen;
+    return recordDecision(chosen);
   }
 
   /**

@@ -4632,6 +4632,16 @@ no respondido (13/13). Este proxy no mide si la víctima logró escapar. No se
 calibró ningún parámetro: fase 41 sigue abierta junto con los otros gates de
 M15. Resultados en `m15_calibration.md` y `bugs.md`.
 
+**Instrumento de diagnóstico del 2026-10-13:** `answered` registra ahora,
+para cada primer golpe adulto y cada repetición del denominador, histogramas de
+acción, orden, commitment, temporizador y detección de agresor. También cuenta
+person-ticks con `underAttack`, interrupciones por ese motivo y acciones que
+Brain elige cuando detecta al agresor. No guarda IDs ni cambia reglas, RNG o el
+predicado del proxy. Pruebas focales 14/14 y typecheck pasan. Falta correr una
+nueva cohorte con el instrumento para separar ocupación, detección y elección;
+no se ajustan coeficientes hasta leerla. Contrato/resultados en
+[`m15_calibration.md`](m15_calibration.md).
+
 - La segunda pasada completa del protocolo de la fase 10 en `generations`,
   `century`, `lean` y los escenarios con mapa, con la tabla en
   `m15_calibration.md`.
