@@ -16064,3 +16064,14 @@ perímetro. `homes` pasa 7/7; 9 pruebas focales y typecheck pasan. Se corrige la
 nota histórica que confundía el hallazgo de un checkout anterior con el estado
 actual de 16b. Sin cambio de comportamiento ni bump de versión.
 
+## 2026-10-13 — M15 phase 17: reflection gets a thought gesture
+
+`reflect` now uses the generated hand-to-chin thought cycle while its real work
+ticks accrue. The animation shares pondering's generic poses; its selector reads
+no target or knowledge state and changes no conception, cooldown, mechanics or
+RNG. Unit and real-order browser coverage were added, with four captures in
+`artifacts/screenshots/m15-reflection-animation-2026-10-13/`. Typecheck passes;
+the focused work-animation suite passes 55/55 and the browser spec passes 1/1.
+Contract: [m15_reflection_animation.md](m15_reflection_animation.md).
+Version `0.15.132-alpha`.
+

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Person } from '../../sim/entities/Person.ts';
 import { RNG } from '../../sim/core/RNG.ts';
-import { attendingFeastPose, buildingPose, cuttingGrassPose, diggingPose, dyeingPose, extractionPose, farmingPose, fishingPose, gatheringPose, hideDressingPose, inscribingPose, mendingPose, ponderingPose, prototypingPose, plantingPose, spreadingCompostPose, tendingPose } from '../WorkAnimation.ts';
+import { attendingFeastPose, buildingPose, cuttingGrassPose, diggingPose, dyeingPose, extractionPose, farmingPose, fishingPose, gatheringPose, hideDressingPose, inscribingPose, mendingPose, ponderingPose, prototypingPose, plantingPose, reflectingPose, spreadingCompostPose, tendingPose } from '../WorkAnimation.ts';
 import type { Simulation } from '../../sim/core/Simulation.ts';
 
 function fixture() {
@@ -93,6 +93,30 @@ describe('gathering animation', () => {
     expect(gatheringPose(person, sim, false, 1)).toBe('g1');
     expect(gatheringPose(person, sim, false, 50)).toBe('g1');
     expect(gatheringPose(person, sim, false, -50)).toBe('g0');
+  });
+});
+
+describe('reflection animation', () => {
+  it('cycles the generic thought gesture on real reflection ticks without needing an idea', () => {
+    const person = new Person('Reflector', 4, 4, 0, new RNG('reflection-animation'));
+    person.action = 'reflect';
+    expect([1, 3, 5, 7, 9].map(ticks => {
+      person.workedTicks = ticks;
+      return reflectingPose(person, false, 0);
+    })).toEqual(['o0', 'o1', 'o2', 'o3', 'o0']);
+    expect(person.ideas).toHaveLength(0);
+  });
+
+  it('hides the gesture while moving, inactive, dead or without work', () => {
+    const person = new Person('Reflector', 4, 4, 0, new RNG('reflection-animation-inactive'));
+    person.action = 'reflect'; person.workedTicks = 1;
+    expect(reflectingPose(person, true)).toBeNull();
+    person.workedTicks = 0;
+    expect(reflectingPose(person, false)).toBeNull();
+    person.workedTicks = 1; person.alive = false;
+    expect(reflectingPose(person, false)).toBeNull();
+    person.alive = true; person.action = 'idle';
+    expect(reflectingPose(person, false)).toBeNull();
   });
 });
 

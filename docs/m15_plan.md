@@ -21,6 +21,15 @@ no cambian. Pruebas focales y E2E de una orden real; capturas en
 `artifacts/screenshots/m15-ponder-animation-2026-10-13/`. Contrato:
 [`m15_ponder_animation.md`](m15_ponder_animation.md). Versión `0.15.130-alpha`.
 
+**Avance del 2026-10-13 — fase 17, reflexionar:** `reflect` comparte las cuatro
+poses genéricas de pensamiento (`o0`–`o3`) durante trabajo real sin objetivo.
+El selector observa acción, ticks y vida del propio personaje; no consulta ni
+crea ideas, destinos tecnológicos, cooldown ni conocimiento privado. La
+concepción, duración, mecánica y RNG no cambian. Pruebas unitarias y E2E de orden
+real; cuatro capturas en `artifacts/screenshots/m15-reflection-animation-2026-10-13/`.
+Contrato: [`m15_reflection_animation.md`](m15_reflection_animation.md). Versión
+`0.15.132-alpha`.
+
 **Avance del 2026-10-13 — fase 17, asistir al banquete:** una persona con la
 orden `attend` muestra cuatro poses generadas sentada (`v0`–`v3`) tras alcanzar
 su punto objetivo, con el reloj de simulación de la acción. El renderer no lee

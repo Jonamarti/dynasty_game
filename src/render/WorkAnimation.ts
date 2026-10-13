@@ -240,6 +240,14 @@ export function ponderingPose(person: Person, moving: boolean, alpha = 1): ArtPo
   return workFrame(PONDER_POSES, person.workedTicks, alpha);
 }
 
+/** Open-ended reflection uses the same quiet hand-to-chin gesture as pondering. */
+export function reflectingPose(person: Person, moving: boolean, alpha = 1): ArtPose | null {
+  // Reflection has no target or partner by design. Its own action and work
+  // ticks are sufficient; the renderer must not infer a thought or idea.
+  if (moving || !person.alive || person.action !== 'reflect' || person.workedTicks <= 0) return null;
+  return workFrame(PONDER_POSES, person.workedTicks, alpha);
+}
+
 /** Generic assembly motion during validated work on any prototype. */
 export function prototypingPose(person: Person, moving: boolean, alpha = 1): ArtPose | null {
   // A prototype's design and materials are private. The public action marker
