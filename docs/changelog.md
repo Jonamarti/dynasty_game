@@ -15907,3 +15907,14 @@ personas-día con antorcha encendida; siguen sin medirse la cuota de robo
 nocturno y la adopción poblacional de antorchas. La cota independiente de 12e
 también sigue abierta. Dos corridas previas que cruzaron versiones se
 descartaron. Agregados y límites: `docs/m15_phase12f_nights.md`.
+## 2026-10-13 — M15: resultado de verificación integral
+
+Se ejecutó `sim:check:all` por autorización expresa del propietario: los
+escenarios de mecanismo de noches, conservas, sastrería, hogares, hierro,
+frontera, noticias, conflictos y bajíos pasan; numerosas puertas generales de
+supervivencia, necesidades, vida social, descubrimiento y reproducción siguen
+fallando. La suite unitaria completa registró 2.229 aprobadas, 1 omitida y cinco
+fallos en cuatro archivos. Se corrigieron las cuatro premisas E2E observadas y
+se comprobaron focalmente; falta una repetición completa limpia. M15 permanece
+abierto y no se modificó balance. Detalle en `docs/bugs.md` y `docs/next-steps.md`.
+

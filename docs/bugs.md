@@ -5307,3 +5307,17 @@ pixel with fog on/off; the Ebro test passed alone. Animal animation passed 2/2,
 and the five remaining focused cases passed 5/5 on separate clean ports. The
 full suite has not been rerun after those E2E maintenance edits. Screenshots
 created during the full tour were restored to their committed versions.
+## 2026-10-13 — M15, matriz completa todavía roja
+
+`npm.cmd run sim:check:all` terminó con salida 1. Los escenarios de mecanismo
+de noches (3/3), salters (1/1), tailors (3/3), homes (7/7), producción de hierro,
+frontera, noticias de alimentos, conflictos y bajíos pasaron. En los escenarios
+generales siguen fallando combinaciones de `cravings-steer-the-diet`, sueño,
+ánimo, supervivencia/persistencia, cotilleo, proyectos, descubrimiento, familias,
+bandas y propagación de rebaños/tecnologías. La distribución varía por escenario;
+no se cambió ningún umbral ni balance para forzar verde. La suite unitaria
+completa dio 2.229 aprobadas, 1 omitida y cinco fallos en cuatro archivos
+(compact-correspondence, determinism telemetry, people-knowledge y polity).
+La E2E completa no se repitió después de reparar cuatro premisas detectadas;
+los casos afectados pasaron en ejecuciones focales. M15 continúa abierto.
+

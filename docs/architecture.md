@@ -1,6 +1,6 @@
 # Architecture
 
-Current as of 2026-10-12 (M15 per-unit garment work and phase-41 diagnostics).
+Current as of 2026-10-13 (M15 phase-17 work poses and phase-41 verification).
 No runtime dependencies, Vite + a 2D canvas.
 
 ## Layout
@@ -48,17 +48,21 @@ Preservation recipes produce physical foods with item-specific durability.
 Winter-meal telemetry reads actual `eatenToday` increments and classifies the
 food against the live recipe catalog. The focused test proves both attribution
 of a real winter meal and its removal when preservation recipes are absent.
-The autonomous `salters` world still records zero preserved winter meals in
-its latest single-seed run; `needs.spoilRate` remains at its default and phase
-15c is not activated. This is a mechanism-test result, not an economy claim;
-see [`m15_phase15d_salters.md`](m15_phase15d_salters.md) and
+The autonomous `salters` check now passes its single applicable mechanism
+check and records one preserved winter meal in five sampled meals. The
+ordinary-appeal telemetry still records zero preserved choices because it
+does not include the winter-reserve scorer; this is not evidence of an economy
+improvement. `needs.spoilRate` remains at its default and phase 15c is not
+activated. See [`m15_phase15d_salters.md`](m15_phase15d_salters.md) and
 [`m15_calibration.md`](m15_calibration.md).
 
-Phase 41 currently records completed 20-seed `century`, `lean`,
-`generations`, and `frontier-cohort` runs plus paired `lean` ablations. No
-balance parameters were changed: persistence, recovery, the `answered` proxy,
-and the autonomous winter-preservation outcome remain open. Calibration
-figures and inherited verification failures are tracked in
+Phase 41 has completed the requested single-seed `sim:check:all` matrix as
+well as earlier 20-seed cohorts. Mechanism scenarios for nights, salters,
+tailors, homes, iron production, frontier, food news, conflicts and shallows
+pass; many general survival, needs, social and discovery checks still fail
+across the calibrated scenarios. No balance parameters were changed from this
+matrix. M15 remains open; calibration figures and verification failures are
+tracked in
 [`m15_calibration.md`](m15_calibration.md) and [`bugs.md`](bugs.md).
 
 ## Simulation LOD — revised owner decision, 2026-10-08

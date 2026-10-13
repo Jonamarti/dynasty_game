@@ -1780,3 +1780,22 @@ para afirmar mejora económica. docs/m15_phase15d_salters.md conserva evidencia.
 2026-10-10: mocasines de14c entregados con reemplazo de envolturas en pies; m15_phase14c_moccasins.md. Pendientes otras prendas y sistemas de ropa.
 
 2026-10-10: gorro de piel de14c entregado; m15_phase14c_fur_hat.md. Pendientes resto de catálogo/red y lectores de bolsillos, creencias, retirada con calor y desgaste/remiendo. Suite fija38: seis fallos en cinco archivos, ver bugs/changelog; no verde.
+## Estado vigente — 2026-10-13
+
+M15 sigue abierto. La matriz `sim:check:all` se ejecutó tras las fases visuales
+17 y terminó con múltiples fallos heredados o aún sin resolver en supervivencia,
+necesidades, sueño, relaciones, descubrimiento y reproducción. Los escenarios
+de mecanismo de noches, conservas, sastrería, hogares, producción de hierro,
+frontera, noticias de alimentos, conflictos y bajíos sí pasaron. No se ajustó
+ningún balance por esta matriz. La suite de unidad completa registró 2.229
+aprobadas, 1 omitida y cinco fallos en cuatro archivos; los fallos restantes
+están listados en `docs/bugs.md`. La E2E completa no se volvió a ejecutar tras
+corregir sus cuatro premisas; los casos afectados sí pasaron en ejecuciones
+focales. La verificación y sus límites están documentados en el changelog.
+
+Siguiente trabajo de M15: resolver o aceptar explícitamente las puertas de
+calibración de fase 41, cerrar los fallos funcionales pendientes y repetir la
+verificación que corresponda. No se debe declarar completado el hito mientras
+esas puertas sigan abiertas. Los bloques siguientes conservan el registro
+histórico de entregas y mediciones.
+
