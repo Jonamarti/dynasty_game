@@ -1,3 +1,13 @@
+## 2026-10-13 — M15 phase 17: people gesture during conversations
+
+Real `talk` orders now cycle through four generated open-handed poses while
+the speaker's conversation clock is active. The render observes only that
+person's public action and clock; it leaves relationships, social outcomes
+and RNG unchanged. Typecheck, focused selector/art tests and real-order E2E
+passed. Captures: `artifacts/screenshots/m15-conversation-animation-2026-10-13/`.
+Contract: [m15_conversation_animation.md](m15_conversation_animation.md).
+Version `0.15.136-alpha`.
+
 ## 2026-10-13 — M15 phase 31d: `TribeGraph` readable on mobile
 
 The tribe graph now keeps its reference layout independent of phone width and

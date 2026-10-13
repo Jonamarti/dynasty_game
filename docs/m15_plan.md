@@ -5170,3 +5170,12 @@ E2E de orden real y cuatro capturas en
 `artifacts/screenshots/m15-fight-animation-2026-10-13/`. Contrato:
 [`m15_fight_animation.md`](m15_fight_animation.md). Versión `0.15.133-alpha`.
 
+**Avance del 2026-10-13 — fase 17, conversar:** una orden real `talk` muestra
+cuatro gestos abiertos (`l0`–`l3`) durante la conversación iniciada. El selector
+consulta solo acción, reloj y vida de quien habla; no revela a quién habla, su
+vínculo, el modo ni el tema. El render no añade tiempo ni cambia relaciones,
+eventos o RNG. Prueba unitaria, arte frontal/lateral y E2E con saludo real;
+capturas en `artifacts/screenshots/m15-conversation-animation-2026-10-13/`.
+Contrato: [`m15_conversation_animation.md`](m15_conversation_animation.md).
+Versión `0.15.136-alpha`.
+

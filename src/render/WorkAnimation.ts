@@ -2,7 +2,7 @@
 import type { Simulation } from '../sim/core/Simulation.ts';
 import type { Person } from '../sim/entities/Person.ts';
 import { ARRIVAL_RADIUS } from '../sim/systems/MovementSystem.ts';
-import { ATTEND_POSES, BUILD_POSES, CHOP_POSES, CUT_GRASS_POSES, DIG_POSES, DYE_POSES, EXTRACT_POSES, FARM_POSES, FIGHT_POSES, FISH_POSES, GATHER_POSES, HIDE_DRESS_POSES, INSCRIBE_POSES, MAKE_POSES, MEND_POSES, PLANT_POSES, PONDER_POSES, PROTOTYPE_POSES, SPREAD_POSES, TEND_POSES, type ArtPose } from './ArtManifest.ts';
+import { ATTEND_POSES, BUILD_POSES, CHOP_POSES, CUT_GRASS_POSES, DIG_POSES, DYE_POSES, EXTRACT_POSES, FARM_POSES, FIGHT_POSES, FISH_POSES, GATHER_POSES, HIDE_DRESS_POSES, INSCRIBE_POSES, MAKE_POSES, MEND_POSES, PLANT_POSES, PONDER_POSES, PROTOTYPE_POSES, SPREAD_POSES, TALK_POSES, TEND_POSES, type ArtPose } from './ArtManifest.ts';
 import { RECIPES } from '../sim/entities/Recipe.ts';
 import { isStationFor } from '../sim/entities/Building.ts';
 import { CUT_FLOOR } from '../sim/core/Grass.ts';
@@ -262,6 +262,13 @@ export function fightingPose(person: Person, moving: boolean, alpha = 1): ArtPos
   // quarry's condition or infer whether a blow will land.
   if (moving || !person.alive || person.action !== 'attack' || person.actionTimer <= 0 || person.actionTicks <= 0) return null;
   return workFrame(FIGHT_POSES, person.actionTicks, alpha);
+}
+
+/** Open-handed conversational gestures use only the speaker's active clock. */
+export function talkingPose(person: Person, moving: boolean, alpha = 1): ArtPose | null {
+  // Do not expose who they speak to, the topic, or the private relationship rung.
+  if (moving || !person.alive || person.action !== 'talk' || person.actionTimer <= 0 || person.actionTicks <= 0) return null;
+  return workFrame(TALK_POSES, person.actionTicks, alpha);
 }
 
 /** Carving is visible only while this person adds work to a reached record. */
