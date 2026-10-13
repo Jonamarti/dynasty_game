@@ -72,6 +72,9 @@ export function uniting(env: UnionEnv = {}, report?: (e: UnionEvent) => void): S
 function chooseUnion(rel: PeopleRelation, x: People, y: People, step: number, stepsPerSeason: number):
     { kind: 'assimilated' | 'allied'; host: number; rate: number } | null {
   if (rel.stance === 'tributary' && rel.overlord !== null) {
+    // Keep the guard here as well as in snapshot loading: a caller may have assembled an
+    // in-memory relation directly, and an unrelated id must never receive the vassal.
+    if (rel.overlord !== x.id && rel.overlord !== y.id) return null;
     const seasons = (step - (rel.since ?? step)) / stepsPerSeason;
     if (seasons >= ASSIMILATION_SEASONS && rel.contact >= ASSIMILATION_CONTACT) return { kind: 'assimilated', host: rel.overlord, rate: ASSIMILATION_RATE };
     return null;

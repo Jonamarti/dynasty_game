@@ -59,6 +59,17 @@ describe('PeopleSim.absorb: one call owns every consequence', () => {
     sim.absorb(gone.id, host.id);
     expect(() => PeopleSim.fromSnapshot(JSON.parse(JSON.stringify(sim.snapshot())))).not.toThrow();
   });
+  it('rejects a saved tributary whose overlord is not on its relation', () => {
+    const { sim, host, gone } = three();
+    const stranger = sim.found({ cohorts: adults(16), comarcas: 1 });
+    const rel = sim.relation(host.id, gone.id);
+    rel.stance = 'tributary'; rel.overlord = host.id; rel.since = 0;
+    expect(() => PeopleSim.fromSnapshot(sim.snapshot())).not.toThrow();
+    const record = sim.snapshot();
+    const tributary = record.relations.find(r => r.a === host.id && r.b === gone.id)!;
+    tributary.overlord = stranger.id;
+    expect(() => PeopleSim.fromSnapshot(record)).toThrow('bad tributary overlord');
+  });
 });
 
 describe('uniting', () => {
@@ -87,6 +98,26 @@ describe('uniting', () => {
     expect(w.events[0]!.kind).toBe('assimilated');
     expect(w.events[0]!.hostId).toBe(w.a.id);
     expect(w.sim.peoples.size).toBe(1);
+  });
+  it('ignores an in-memory tribute edge pointing at a third people without drawing or changing either side', () => {
+    const w = pair({ stance: 'tributary', ageSeasons: ASSIMILATION_SEASONS + 5 });
+    const stranger = w.sim.found({ cohorts: adults(24), comarcas: 2, techs: closeUnderRequires(['pottery']) });
+    w.rel.overlord = stranger.id;
+    const before = w.sim.snapshot();
+    const populations = new Map([...w.sim.peoples].map(([id, person]) => [id, populationOf(person)]));
+    const technologies = new Map([...w.sim.peoples].map(([id, person]) => [id, person.techs.list()]));
+
+    w.sim.advanceTo(SEASON * 2);
+
+    expect(w.sim.peoples.size).toBe(3);
+    expect(w.events).toEqual([]);
+    for (const [id, person] of w.sim.peoples) {
+      expect(populationOf(person)).toBe(populations.get(id));
+      expect(person.techs.list()).toEqual(technologies.get(id));
+    }
+    const after = w.sim.snapshot();
+    expect(after.peoples.map(p => p.rng)).toEqual(before.peoples.map(p => p.rng));
+    expect(after.relations).toEqual(before.relations);
   });
   it('an alliance needs high standing and high contact, and the larger absorbs the smaller', () => {
     expect(merged(k => pair({ seed: `uni-a-${k}`, standing: ALLIANCE_STANDING }), 60)).toBeGreaterThan(20);

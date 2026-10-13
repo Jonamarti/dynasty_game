@@ -538,6 +538,9 @@ export class PeopleSim {
     }
     for (const rel of r.relations) {
       if (!sim.peoples.has(rel.a) || !sim.peoples.has(rel.b) || rel.a >= rel.b) throw new RangeError('bad relation');
+      // A stale or unrelated overlord makes `uniting` fold a vassal into a third people. Reject the
+      // save at the boundary: a tributary's authority is the edge itself, not an arbitrary id.
+      if (rel.stance === 'tributary' && rel.overlord !== rel.a && rel.overlord !== rel.b) throw new RangeError('bad tributary overlord');
       const key = `${rel.a}:${rel.b}`;
       if (sim.relations.has(key)) throw new RangeError('duplicate relation');
       const copy = { ...rel };

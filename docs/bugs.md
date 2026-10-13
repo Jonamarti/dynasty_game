@@ -5550,3 +5550,12 @@ caso `diggers` (14,85 s observados) y el wrapper dejó de emitir salida durante
 varios minutos, sin procesos Vitest activos. Se interrumpió esa sesión; no se
 conoce el resumen final ni se declara la suite aprobada. Los tests focales del
 selector (7/7) y typecheck sí pasaron.
+
+### 2026-10-13 — relación tributaria con señor fuera de la pareja
+
+`PeopleSim.fromSnapshot` aceptaba `stance: "tributary"` con un `overlord` que
+no era ninguno de los extremos de la relación. `uniting` podía interpretar ese
+id como anfitrión y absorber el vasallo en un tercer pueblo. Se cierra en la
+carga y con una guarda defensiva para relaciones en memoria. Pruebas en
+`people-union.test.ts` comprueban el rechazo y que el caso en memoria no consume
+RNG ni cambia población, técnicas o relaciones.

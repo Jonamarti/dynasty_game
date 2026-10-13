@@ -425,6 +425,8 @@ se quedan las del absorbente: una elección, no un hallazgo); las relaciones del
 
 **No hace:** conquista directa sin pasar por tributo; los ids de los absorbidos no se reutilizan; sin partición de la hegemonía ni rebeliones. Tasas y umbrales = suposiciones de diseño.
 
+**Integridad del tributo al cargar y unir.** Una relación `tributary` solo puede nombrar como `overlord` a uno de sus dos extremos: la unión usa esa autoridad para elegir quién absorbe al vasallo. `PeopleSim.fromSnapshot` rechaza registros con un señor ausente o ajeno a la relación, y `uniting` vuelve a comprobarlo para relaciones montadas en memoria. El caso inválido se ignora sin consumir el stream de ningún pueblo ni cambiar cohortes, técnicas o relaciones; no añade umbrales ni altera el resultado de tributos válidos.
+
 
 ## Materializar y fundir (`PeopleMaterialize.ts`, 32c-12)
 

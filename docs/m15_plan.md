@@ -4102,7 +4102,7 @@ paz, materializar/fundir, y las puertas. [Detalle](m15_phase32c_peoples.md).
 **Avance del 2026-10-07 (32c-10, guerra y paz):** `PeopleWar.ts`: rivalidad por comida, declaración por standing + ventaja + ambición, estaciones de guerra con bajas solo en varones combatientes, armas sufridas al libro de conocimiento, paz por cansancio, tributo si 3 a 1.
 Constantes = suposiciones. [Detalle](m15_phase32c_peoples.md).
 
-**Avance del 2026-10-07 (32c-11, unirse):** `PeopleUnion.ts` y `PeopleSim.absorb`: tributo largo o alianza estrecha acaban en un solo pueblo si cabe bajo el techo de su organización. [Detalle](m15_phase32c_peoples.md).
+**Avance del 2026-10-07 (32c-11, unirse):** `PeopleUnion.ts` y `PeopleSim.absorb`: tributo largo o alianza estrecha acaban en un solo pueblo si cabe bajo el techo de su organización. La carga valida que el señor de un tributario sea uno de los extremos de su relación, y la unión aplica la misma guarda a relaciones construidas en memoria; así un dato corrupto no entrega el vasallo a un tercer pueblo ni consume su stream. [Detalle](m15_phase32c_peoples.md).
 
 **Avance del 2026-10-07 (32c-12, materializar y fundir):** `PeopleMaterialize.ts`: personas con edad, sexo y técnicas sacadas de las cohortes y devueltas sin perder ni inventar cabezas; `People.away`. [Detalle](m15_phase32c_peoples.md).
 

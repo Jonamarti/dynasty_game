@@ -16266,6 +16266,16 @@ Typecheck, focused unit/art tests and the real-order E2E passed. Four captures
 are preserved in `artifacts/screenshots/m15-sleep-animation-2026-10-13/`.
 Contract and verification limits: [`m15_sleep_animation.md`](m15_sleep_animation.md).
 
+
+### 2026-10-13 — M15 fase 32c: validar el señor del tributario
+
+`PeopleSim.fromSnapshot` ahora rechaza una relación tributaria cuyo `overlord`
+no sea ninguno de sus extremos. `uniting` aplica la misma guarda a relaciones
+creadas en memoria: un id ajeno ya no puede recibir por error al vasallo. Las
+pruebas cubren el rechazo al cargar y la no mutación del caso en memoria,
+incluido el estado del stream; los caminos válidos de tributo siguen intactos.
+No hay cambios de interfaz ni de coeficientes. Versión `0.15.145-alpha`.
+
 ## 2026-10-13 — M15 phase 17: human bench-rest pose
 
 Added four generated seated frames for a living person resting on a reached,
