@@ -1,3 +1,14 @@
+## 2026-10-13 — M15 phase 17: prototype gets a generic assembly gesture
+
+`prototype` now cycles four generated assembly poses while a real order adds
+banked work. The selector reads only the prototyper’s public action, work ticks
+and alive state; it does not inspect the design, technology, materials or work
+bank. Mechanics, action duration and RNG streams are unchanged. Typecheck,
+focused tests, people art build/sheet and manual E2E pass; four reviewed
+captures are in `artifacts/screenshots/m15-prototype-animation-2026-10-13/`.
+Contract: [m15_prototype_animation.md](m15_prototype_animation.md). Version
+`0.15.131-alpha`.
+
 ## 2026-10-13 — M15 phase 17: ponder gets a generic thinking gesture
 
 `ponder` now cycles four generated hand-to-chin poses while a real order adds

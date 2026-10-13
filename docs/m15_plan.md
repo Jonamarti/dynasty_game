@@ -1,3 +1,12 @@
+**Avance del 2026-10-13 — fase 17, prototipar:** `prototype` muestra cuatro
+poses generadas (`u0`–`u3`) con un ensamblaje genérico durante trabajo real. El
+selector lee solo `action`, `workedTicks` y `alive` del propio personaje; no
+consulta idea, tecnología, materiales ni progreso bancado. No cambia la duración,
+la mecánica ni RNG; `doPrototype` ya conserva su avance al interrumpirse.
+Unit tests y E2E de orden real con progreso bancado; capturas en
+`artifacts/screenshots/m15-prototype-animation-2026-10-13/`. Contrato:
+[`m15_prototype_animation.md`](m15_prototype_animation.md). Versión `0.15.131-alpha`.
+
 **Avance del 2026-10-13 — fase 17, pensar:** `ponder` muestra cuatro poses
 generadas (`o0`–`o3`) durante trabajo real sobre una idea. El gesto es genérico;
 el selector solo observa la acción, los ticks trabajados y la vida del propio

@@ -2,7 +2,7 @@
 import type { Simulation } from '../sim/core/Simulation.ts';
 import type { Person } from '../sim/entities/Person.ts';
 import { ARRIVAL_RADIUS } from '../sim/systems/MovementSystem.ts';
-import { ATTEND_POSES, BUILD_POSES, CHOP_POSES, CUT_GRASS_POSES, DIG_POSES, DYE_POSES, EXTRACT_POSES, FARM_POSES, FISH_POSES, GATHER_POSES, HIDE_DRESS_POSES, INSCRIBE_POSES, MAKE_POSES, MEND_POSES, PLANT_POSES, PONDER_POSES, SPREAD_POSES, TEND_POSES, type ArtPose } from './ArtManifest.ts';
+import { ATTEND_POSES, BUILD_POSES, CHOP_POSES, CUT_GRASS_POSES, DIG_POSES, DYE_POSES, EXTRACT_POSES, FARM_POSES, FISH_POSES, GATHER_POSES, HIDE_DRESS_POSES, INSCRIBE_POSES, MAKE_POSES, MEND_POSES, PLANT_POSES, PONDER_POSES, PROTOTYPE_POSES, SPREAD_POSES, TEND_POSES, type ArtPose } from './ArtManifest.ts';
 import { RECIPES } from '../sim/entities/Recipe.ts';
 import { isStationFor } from '../sim/entities/Building.ts';
 import { CUT_FLOOR } from '../sim/core/Grass.ts';
@@ -238,6 +238,14 @@ export function ponderingPose(person: Person, moving: boolean, alpha = 1): ArtPo
   // workedTicks is the public action marker; never inspect ideas or targetTech.
   if (moving || !person.alive || person.action !== 'ponder' || person.workedTicks <= 0) return null;
   return workFrame(PONDER_POSES, person.workedTicks, alpha);
+}
+
+/** Generic assembly motion during validated work on any prototype. */
+export function prototypingPose(person: Person, moving: boolean, alpha = 1): ArtPose | null {
+  // A prototype's design and materials are private. The public action marker
+  // and work ticks are enough; do not inspect ideas, inventory or work banks.
+  if (moving || !person.alive || person.action !== 'prototype' || person.workedTicks <= 0) return null;
+  return workFrame(PROTOTYPE_POSES, person.workedTicks, alpha);
 }
 
 /** Carving is visible only while this person adds work to a reached record. */

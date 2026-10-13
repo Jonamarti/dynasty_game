@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Person } from '../../sim/entities/Person.ts';
 import { RNG } from '../../sim/core/RNG.ts';
-import { attendingFeastPose, buildingPose, cuttingGrassPose, diggingPose, dyeingPose, extractionPose, farmingPose, fishingPose, gatheringPose, hideDressingPose, inscribingPose, mendingPose, ponderingPose, plantingPose, spreadingCompostPose, tendingPose } from '../WorkAnimation.ts';
+import { attendingFeastPose, buildingPose, cuttingGrassPose, diggingPose, dyeingPose, extractionPose, farmingPose, fishingPose, gatheringPose, hideDressingPose, inscribingPose, mendingPose, ponderingPose, prototypingPose, plantingPose, spreadingCompostPose, tendingPose } from '../WorkAnimation.ts';
 import type { Simulation } from '../../sim/core/Simulation.ts';
 
 function fixture() {
@@ -215,6 +215,46 @@ describe('ponder animation', () => {
     }
     expect(ponderingPose(thinker, false, 0.5)).toBe('o0');
     expect(ponderingPose(thinker, false, 1)).toBe('o1');
+  });
+});
+
+describe('prototype animation', () => {
+  function fixture() {
+    const person = new Person('Prototyper', 4, 4, 0, new RNG('prototype-animation'));
+    person.action = 'prototype'; person.workedTicks = 1;
+    return person;
+  }
+
+  it('cycles the generic assembly gesture from work ticks without mutation', () => {
+    const person = fixture();
+    const frames = [1, 3, 5, 7].map(ticks => {
+      person.workedTicks = ticks;
+      return prototypingPose(person, false, 0);
+    });
+    expect(frames).toEqual(['u0', 'u1', 'u2', 'u3']);
+    expect(person.action).toBe('prototype');
+    expect(person.workedTicks).toBe(7);
+    expect([person.x, person.y]).toEqual([4, 4]);
+  });
+
+  it('shows no assembly while travelling, idle, dead, or before real work', () => {
+    const person = fixture();
+    expect(prototypingPose(person, true)).toBeNull();
+    person.action = 'idle';
+    expect(prototypingPose(person, false)).toBeNull();
+    person.action = 'prototype'; person.workedTicks = 0;
+    expect(prototypingPose(person, false)).toBeNull();
+    person.workedTicks = 1; person.alive = false;
+    expect(prototypingPose(person, false)).toBeNull();
+  });
+
+  it('does not inspect the private design, materials, or banked progress', () => {
+    const person = fixture(); person.workedTicks = 2;
+    for (const key of ['ideas', 'targetTech', 'knownTech', 'inventory', 'workBankKey', 'workBankTicks']) {
+      Object.defineProperty(person, key, { configurable: true, get() { throw new Error(`read private ${key}`); } });
+    }
+    expect(prototypingPose(person, false, 0.5)).toBe('u0');
+    expect(prototypingPose(person, false, 1)).toBe('u1');
   });
 });
 
