@@ -1,3 +1,13 @@
+## 2026-10-13 — M15 fase 15c sigue diferida tras pareja no discriminante
+
+La comparación emparejada de 20 semillas a 3.000 ticks dio supervivencia
+97,6% con tasa cero y 97,4% con `spoilRate=0.35`, pero no midió pérdidas ni
+comidas conservadas y duró solo 12,5 días. El escenario `salters` aporta
+pérdidas atribuidas y un control negativo de recetas en tests, pero no una
+comparación de tasa ni un beneficio autónomo. Se documenta el límite; la tasa
+por defecto sigue en cero y no cambia el comportamiento. Ver
+[`m15_phase15c_gate_20261013.md`](m15_phase15c_gate_20261013.md).
+
 ## 2026-10-13 — M15 fase 11d: equipar bolsa y hatillo desde el Kit
 
 El menú de acciones del inventario ya permitía equipar herramientas en las

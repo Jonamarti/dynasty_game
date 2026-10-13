@@ -2269,8 +2269,18 @@ está.
   preservación y también pasa al retirar las recetas.
 - **Coste declarado:** ≤ 4 puntos, todavía sin medir. 15c (activar `spoilRate`
   por defecto) sigue diferida hasta una comparación económica pareada y
-  discriminante; no se activa por esta sola semilla. La cohorte queda pendiente
-  hasta que no interfiera con la comparación fase 12f en curso.
+  discriminante; no se activa por esta sola semilla. La comparación actual de
+  20 semillas es demasiado corta y no informa pérdidas/beneficio; ver la nota
+  de comprobación del gate abajo.
+
+**Comprobación del gate, 2026-10-13:** la pareja actual `band` (20 semillas,
+3.000 ticks; 0 frente a `spoilRate=0.35`) dio 97,6% frente a 97,4% de
+supervivencia, pero solo cubrió 12,5 días y `sim:seeds` no publica pérdidas ni
+comidas conservadas. `salters` mide 2.400 ticks a tasa 1 en una sola fixture
+asimétrica, sin brazo de tasa cero. Ninguna cifra demuestra el coste y el
+beneficio de 15c; la tasa por defecto sigue en cero. El informe y el control
+negativo existente están descritos en
+[`m15_phase15c_gate_20261013.md`](m15_phase15c_gate_20261013.md).
 
 **Commits:** `m15: medir la comida que se pierde`; `m15: secar y ahumar`;
 `m15: la sal`; `m15: la comida se estropea`; `m15: el escenario salters`.

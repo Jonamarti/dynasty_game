@@ -556,6 +556,24 @@ de salida válido y no se declara la suite aprobada. El test focal de selección
 El log completo de la matriz quedó en el temporal
 `%TEMP%/m15-simcheck-all-20261013-rerun.log` de esa ejecución.
 
+### Gate 15c — pareja breve no discriminante (2026-10-13)
+
+En el build `0.15.146-alpha`, `band` con 20 semillas y 3.000 ticks produjo
+97,6% de supervivencia a `spoilRate=0` y 97,4% a `0.35`; ambos brazos tuvieron
+0/20 colapsos (una muerte adulta frente a cero). Cada brazo tomó 91,8 s. Son
+12,5 días, insuficientes para observar un ciclo largo de reservas, y
+`sim:seeds` no imprime telemetría de pérdida real ni consumo conservado. No pasa ni falla el límite
+de cuatro puntos: no mide el coste/beneficio requerido.
+
+El escenario `salters` sí imprime pérdidas atribuibles y comidas invernales,
+pero su única ejecución tiene 2.400 ticks, tasa fija 1 y bandas asimétricas;
+no hay brazo de tasa cero ni control causal. El control negativo de
+`salters-checks.test.ts` sí retira las recetas y preserva el conteo de comida
+real mientras elimina su atribución como conserva; valida clasificación, no
+beneficio autónomo. Los detalles y la salida están en
+[`m15_phase15c_gate_20261013.md`](m15_phase15c_gate_20261013.md). 15c sigue
+apagada; no se cambió tasa ni parámetro.
+
 ### Suite unitaria completa — actualización 2026-10-13
 
 Una segunda ejecución completa, con `--maxWorkers=1 --testTimeout=30000 --reporter=dot`, sí terminó tras 714 s: 2.298 tests pasaron, uno falló y uno se omitió (313 archivos; 312 pasaron, uno falló). El único fallo fue `earthwork-checks.test.ts > earthworks-are-dug`; el gate observó 0/2 obras concluidas, con 22 levantamientos y ninguna obra restante. No se declara verde la suite. La investigación de causa sigue en `docs/bugs.md`; los otros dos ajustes de fixtures incluidos en esa corrida pasaron.
