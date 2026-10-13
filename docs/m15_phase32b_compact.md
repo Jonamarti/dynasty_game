@@ -25,9 +25,16 @@ segunda aplicación de un mismo id (la defensa contra «duplicar una transferenc
 §3/§4). Snapshot JSON de pendientes y transacciones, con restauración.
 Sin RNG, sin FPS, sin reloj de pared.
 
+El `data` de cada evento es un objeto JSON estricto. `schedule` clona y valida
+antes de insertar; rechaza valores como `undefined`, números no finitos,
+prototipos de clase, accesores, arrays dispersos y ciclos, que `JSON.stringify`
+habría omitido o convertido silenciosamente. Así el snapshot guarda el mismo
+payload que recibió el scheduler, o falla antes de cambiar su cola.
+
 Controles negativos en `compact-scheduler.test.ts`: id de evento duplicado,
 transacción repetida, snapshot que pierde eventos (distinto del original),
-transacciones duplicadas en el snapshot, tick negativo, programar en el pasado.
+transacciones duplicadas en el snapshot, tick negativo, programar en el pasado
+y payloads que JSON cambiaría o descartaría.
 
 ## 2. `CompactPerson`, `CompactAuthority` y la conversión (commit «persona compacta»)
 

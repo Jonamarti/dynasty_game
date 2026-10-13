@@ -23,6 +23,15 @@ instalado antes de procesar tráfico. Una prueba reproduce una ruta de ocho
 ticks avanzada hasta el nueve y verifica el reloj, el guardado y la identidad
 del jugador. Versión `0.15.139-alpha`; no cambia la UI.
 
+## 2026-10-13 — M15 fase 32b: validar payloads del scheduler compacto
+
+`CompactScheduler` clonaba los eventos con `JSON.stringify/parse`, que eliminaba
+campos `undefined` y cambiaba `NaN`/infinito a `null`. Ahora valida y clona datos
+JSON recursivamente antes de encolar; payloads cíclicos, valores no JSON,
+prototipos, accesores y arrays dispersos se rechazan sin alterar la cola. La
+prueba fija estas negativas. No activa LOD ni cambia la UI.
+Versión `0.15.142-alpha`.
+
 ## 2026-10-13 — verificación M15 completa con dos puertas unitarias abiertas
 
 La suite unitaria completa dio 2.280 aprobadas, 2 fallidas y 1 omitida; la

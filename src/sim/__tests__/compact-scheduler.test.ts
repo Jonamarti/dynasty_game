@@ -58,4 +58,24 @@ describe('compact scheduler', () => {
     s.schedule(events[0]!);
     expect(s.size).toBe(1);
   });
+
+  it('rejects event payloads that JSON would silently change or omit', () => {
+    const s = new CompactScheduler();
+    const invalidData = [
+      { optional: undefined },
+      { measurement: Number.NaN },
+      { measurement: Number.POSITIVE_INFINITY },
+      { value: new Date(0) },
+      { value: () => 1 },
+      Array(1),
+    ];
+    for (const data of invalidData) {
+      expect(() => s.schedule({ ...events[0]!, data: data as Record<string, unknown> })).toThrow(/Invalid compact scheduler/);
+      expect(s.size).toBe(0);
+    }
+    const cyclic: Record<string, unknown> = {};
+    cyclic.self = cyclic;
+    expect(() => s.schedule({ ...events[0]!, data: cyclic })).toThrow(/cycle/);
+    expect(s.size).toBe(0);
+  });
 });

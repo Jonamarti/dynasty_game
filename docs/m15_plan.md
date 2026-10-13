@@ -3969,6 +3969,10 @@ Entregado: `CompactScheduler` (eventos por tick/fase/sujeto/id y ledger de
 transacciones idempotentes); `CompactPerson`/`CompactAuthority` (misma instancia,
 stream derivado, dueño único con epoch y rechazos nombrados); `CompactBody.advance`
 (cuerpo cerrado a una fecha con el mismo `NeedsSystem`, sin ingesta ni producción).
+Corrección del 2026-10-13: `CompactScheduler` ahora rechaza payloads que JSON
+perdería o modificaría en vez de persistir una representación distinta del
+evento; test negativo para `undefined`, no finitos, objetos no planos, ciclos y
+arrays dispersos. No activa ni cambia el LOD.
 **Avance 32b-2 (tasas, 2026-10-06):** `RateWatch` + `tools/compact-rates.ts` miden en
 el detallado alivio de hambre/sed por persona-día condicionado a la necesidad,
 agenda, natalidad y mortalidad por edad (`lean`/`craft`, 3 semillas); tabla en la

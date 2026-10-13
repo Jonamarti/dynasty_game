@@ -43,6 +43,51 @@ export function compareCompactEvents(a: CompactEvent, b: CompactEvent): number {
 }
 
 function fail(message: string): never { throw new TypeError(`Invalid compact scheduler: ${message}`); }
+
+/** JSON.stringify silently drops undefined object fields and changes non-finite
+ * numbers to null. Reject those payloads instead of persisting a different event. */
+function cloneJsonValue(value: unknown, ancestors: WeakSet<object>, path: string): unknown {
+  if (value === null || typeof value === 'string' || typeof value === 'boolean') return value;
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value)) fail(`${path} must be a finite JSON number`);
+    return value;
+  }
+  if (typeof value !== 'object') fail(`${path} is not a JSON value`);
+  if (ancestors.has(value)) fail(`${path} contains a cycle`);
+  ancestors.add(value);
+  try {
+    if (Array.isArray(value)) {
+      if (Object.getPrototypeOf(value) !== Array.prototype) fail(`${path} has a non-JSON array prototype`);
+      const ownKeys = Reflect.ownKeys(value);
+      if (ownKeys.length !== value.length + 1 || ownKeys[ownKeys.length - 1] !== 'length') fail(`${path} has non-JSON array properties`);
+      const copy: unknown[] = [];
+      for (let i = 0; i < value.length; i++) {
+        const descriptor = Object.getOwnPropertyDescriptor(value, String(i));
+        if (!descriptor || !descriptor.enumerable || !('value' in descriptor)) fail(`${path}[${i}] is missing or is not data`);
+        copy.push(cloneJsonValue(descriptor.value, ancestors, `${path}[${i}]`));
+      }
+      return copy;
+    }
+    const prototype = Object.getPrototypeOf(value);
+    if (prototype !== Object.prototype && prototype !== null) fail(`${path} has a non-JSON object prototype`);
+    const copy: Record<string, unknown> = {};
+    for (const key of Reflect.ownKeys(value)) {
+      if (typeof key !== 'string') fail(`${path} has a non-JSON key`);
+      const descriptor = Object.getOwnPropertyDescriptor(value, key);
+      if (!descriptor || !descriptor.enumerable || !('value' in descriptor)) fail(`${path}.${key} is not JSON data`);
+      Object.defineProperty(copy, key, { value: cloneJsonValue(descriptor.value, ancestors, `${path}.${key}`), enumerable: true, writable: true, configurable: true });
+    }
+    return copy;
+  } finally {
+    ancestors.delete(value);
+  }
+}
+
+function cloneJsonData(data: unknown): Readonly<Record<string, unknown>> {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) fail('event data must be a JSON object');
+  return cloneJsonValue(data, new WeakSet(), 'event data') as Readonly<Record<string, unknown>>;
+}
+
 function validEvent(event: CompactEvent): void {
   if (!Number.isSafeInteger(event.id) || event.id < 0) fail('event id');
   if (!Number.isSafeInteger(event.tick) || event.tick < 0) fail('event tick');
@@ -67,12 +112,13 @@ export class CompactScheduler {
     validEvent(event);
     if (event.tick <= this.drainedThrough) fail(`event ${event.id} is behind the drained tick ${this.drainedThrough}`);
     if (this.ids.has(event.id)) fail(`duplicate event id ${event.id}`);
+    const data = cloneJsonData(event.data);
     let lo = 0, hi = this.pending.length;
     while (lo < hi) {
       const mid = (lo + hi) >> 1;
       if (compareCompactEvents(this.pending[mid]!, event) < 0) lo = mid + 1; else hi = mid;
     }
-    this.pending.splice(lo, 0, { ...event, data: JSON.parse(JSON.stringify(event.data)) });
+    this.pending.splice(lo, 0, { ...event, data });
     this.ids.add(event.id);
   }
 
@@ -112,7 +158,7 @@ export class CompactScheduler {
   snapshot(): CompactSchedulerSnapshot {
     return {
       version: 1,
-      pending: this.pending.map(event => ({ ...event, data: JSON.parse(JSON.stringify(event.data)) })),
+      pending: this.pending.map(event => ({ ...event, data: cloneJsonData(event.data) })),
       committed: [...this.committed].sort((a, b) => a - b),
     };
   }
