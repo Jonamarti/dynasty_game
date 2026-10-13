@@ -4644,11 +4644,15 @@ tiene que ejercitar, porque llegar desde cero cuesta años.
 telemetría `compact_food_nutrition_gather` a cero, dispersión tecnológica 0,70
 frente a 0,60, tributo sin entrega y el jefe de un golpe de Estado. El escenario
 `homes` pasó sus 7/7 checks en 2.400 pasos. No se modificaron límites para
-hacerlos pasar. La E2E completa de `.124` emitió 161 aprobados y cuatro
-premisas obsoletas; se corrigieron y las pruebas afectadas pasan focalmente,
-incluida la E2E de `attend` en servidor aislado `.127`. Su caso aprobó, pero
-Playwright se interrumpió durante teardown; no se afirma un exit 0 del runner
-ni una nueva pasada E2E completa.
+hacerlos pasar. La matriz actual `sim:check:all` de `.127` terminó con salida
+1: pasan los escenarios aislados de noches (3/3), salters (1/1), tailors
+(3/3), homes (7/7), hierro, frontera, noticias, conflictos y shallows (6/6);
+los escenarios generales aún fallan en dieta, sueño, ánimo, supervivencia,
+descubrimiento, familias, bandas y otros mecanismos. La E2E completa de `.124`
+emitió 161 aprobados y cuatro premisas obsoletas; se corrigieron y las pruebas
+afectadas pasan focalmente, incluida la E2E de `attend` en servidor aislado
+`.127`. Su caso aprobó, pero Playwright se interrumpió durante teardown; no se
+afirma un exit 0 del runner ni una nueva pasada E2E completa.
 
 ```bash
 npm run typecheck

@@ -1,3 +1,11 @@
+## 2026-10-13 — docs: registrar matriz M15 en `.127`
+
+`sim:check:all` volvió a terminar con salida 1 en la versión `.127`. Los
+escenarios de mecanismo de noches, salters, tailors, hogares, hierro, frontera,
+noticias, conflictos y bajíos pasan; se mantienen fallos generales de dieta,
+sueño, ánimo, supervivencia, relaciones, descubrimiento, bandas, tecnologías y
+fauna. Se conservan los umbrales y la configuración.
+
 ## 2026-10-13 — docs: corregir lectura del proxy `answered`
 
 La fila de 42 golpes lista acciones totales de las víctimas, no el subconjunto

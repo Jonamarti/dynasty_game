@@ -65,6 +65,12 @@ matrix. M15 remains open; calibration figures and verification failures are
 tracked in
 [`m15_calibration.md`](m15_calibration.md) and [`bugs.md`](bugs.md).
 
+The 2026-10-13 rerun on `0.15.127-alpha` also exited 1: nights, salters,
+tailors, homes, all six iron scenarios, frontier, food news, conflicts and
+shallows passed; the broader scenarios still report diet, sleep, mood,
+survival, social, discovery, band, technology and wildlife failures. The
+scenario-by-scenario record is in [`bugs.md`](bugs.md).
+
 The 2026-10-13 `century` cohort (20 seeds × 40,000 steps, `0.15.126-alpha`)
 measured 45.6% mean survival, `recovered` 0/42 censored episodes, `answered`
 83.3% (35/42), and `firemaking` in 4/20 seeds. This is an unpaired diagnostic

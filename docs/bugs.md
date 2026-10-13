@@ -5363,3 +5363,15 @@ golpe de Estado. El escenario `homes` pasó 7/7 checks en 2.400 pasos.
 Ninguno de estos resultados se atribuye al cambio de renderer de fase 17 y no
 se relajaron umbrales.
 
+### 2026-10-13 — matriz completa en `0.15.127-alpha`
+
+`npm.cmd run sim:check:all` terminó con salida 1. Pasaron los escenarios de
+mecanismo `nights` (3/3), `salters` (1/1), `tailors` (3/3), `homes` (7/7), los
+seis escenarios de hierro (1/1 cada uno), `frontier-cohort` (3/3), `frontier`
+(2/2), `food-news` (1/1), `conflicts` (1/1) y `shallows` (6/6). Los escenarios
+generales conservaron fallos de dieta (`cravings-steer-the-diet`), sueño,
+ánimo, supervivencia/persistencia, cotilleo, proyectos, descubrimiento,
+familias, bandas, tecnología y fauna; la tabla por escenario figura en el
+resultado del comando de esta sesión y no debe tratarse como regresión del
+renderer. No se cambiaron parámetros ni umbrales. M15 permanece abierto.
+
