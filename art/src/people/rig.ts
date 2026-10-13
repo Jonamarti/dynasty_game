@@ -124,7 +124,7 @@ export function geometry(age: ArtAge, sex: ArtSex): Geo {
 }
 
 /** Whole-pixel upper-body dip; gathering keeps its feet planted like idle. */
-export const POSE_BOB: Record<ArtPose, number> = { idle: 0, w0: 0, w1: 1, w2: 0, w3: 1, g0: 0, g1: 1, g2: 2, g3: 1, f0: 0, f1: 0, f2: 0, f3: 0, x0: 0, x1: 0, x2: 0, x3: 0, d0: 0, d1: 0, d2: 0, d3: 0, c0: 0, c1: 0, c2: 0, c3: 0, m0: 1, m1: 2, m2: 1, m3: 0, a0: 1, a1: 2, a2: 1, a3: 0, b0: 0, b1: 1, b2: 0, b3: 1, r0: 0, r1: 0, r2: 0, r3: 0, h0: 0, h1: 0, h2: 0, h3: 0, q0: 0, q1: 1, q2: 1, q3: 0, p0: 0, p1: 0, p2: 0, p3: 0, s0: 1, s1: 2, s2: 1, s3: 0, y0: 0, y1: 1, y2: 1, y3: 0, v0: 0, v1: 1, v2: 1, v3: 0, i0: 1, i1: 2, i2: 1, i3: 0, t0: 0, t1: 0, t2: 1, t3: 0, o0: 0, o1: 1, o2: 0, o3: 1, u0: 0, u1: 1, u2: 0, u3: 1, k0: 0, k1: 0, k2: 1, k3: 0, l0: 0, l1: 1, l2: 1, l3: 0, z0: 0, z1: 1, z2: 1, z3: 0, n0: 0, n1: 1, n2: 0, n3: 1, e0: 0, e1: 0, e2: 0, e3: 0 };
+export const POSE_BOB: Record<ArtPose, number> = { idle: 0, w0: 0, w1: 1, w2: 0, w3: 1, g0: 0, g1: 1, g2: 2, g3: 1, f0: 0, f1: 0, f2: 0, f3: 0, x0: 0, x1: 0, x2: 0, x3: 0, d0: 0, d1: 0, d2: 0, d3: 0, c0: 0, c1: 0, c2: 0, c3: 0, m0: 1, m1: 2, m2: 1, m3: 0, a0: 1, a1: 2, a2: 1, a3: 0, b0: 0, b1: 1, b2: 0, b3: 1, r0: 0, r1: 0, r2: 0, r3: 0, h0: 0, h1: 0, h2: 0, h3: 0, q0: 0, q1: 1, q2: 1, q3: 0, p0: 0, p1: 0, p2: 0, p3: 0, s0: 1, s1: 2, s2: 1, s3: 0, y0: 0, y1: 1, y2: 1, y3: 0, v0: 0, v1: 1, v2: 1, v3: 0, i0: 1, i1: 2, i2: 1, i3: 0, t0: 0, t1: 0, t2: 1, t3: 0, o0: 0, o1: 1, o2: 0, o3: 1, u0: 0, u1: 1, u2: 0, u3: 1, k0: 0, k1: 0, k2: 1, k3: 0, l0: 0, l1: 1, l2: 1, l3: 0, z0: 0, z1: 1, z2: 1, z3: 0, n0: 0, n1: 1, n2: 0, n3: 1, e0: 0, e1: 0, e2: 0, e3: 0, j0: 0, j1: 0, j2: 0, j3: 0 };
 
 const DIG_FRONT: readonly { reach: number; handY: number; elbowY: number }[] = [
   { reach: 0.4, handY: -0.3, elbowY: 0.05 }, { reach: 0.25, handY: -0.6, elbowY: -0.1 },
@@ -224,6 +224,14 @@ const ATTEND_FRONT: readonly { rightX: number; rightY: number; leftX: number; le
   { rightX: 5, rightY: 0.78, leftX: 2, leftY: 0.88 },
   { rightX: 3, rightY: 0.84, leftX: 5, leftY: 0.78 },
   { rightX: 2, rightY: 0.86, leftX: 3, leftY: 0.86 },
+];
+// The fourth feast frame intentionally returns to its first pose. Bench rest
+// needs four visibly distinct frames, including when the person faces south.
+const BENCH_REST_FRONT: readonly { rightX: number; rightY: number; leftX: number; leftY: number }[] = [
+  { rightX: 2, rightY: 0.86, leftX: 3, leftY: 0.86 },
+  { rightX: 5, rightY: 0.78, leftX: 2, leftY: 0.88 },
+  { rightX: 3, rightY: 0.84, leftX: 5, leftY: 0.78 },
+  { rightX: 0, rightY: 0.9, leftX: 5, leftY: 0.82 },
 ];
 const ATTEND_SIDE: readonly (readonly [number, number])[] = [[24, 64], [38, 82], [18, 52], [30, 70]];
 // One hand steadies an injured arm while the other wraps the dressing around it.
@@ -736,10 +744,10 @@ function frontLayers(spec: PersonSpec, back: boolean): PersonOut {
   const P: Pieces = {};
   const woman = isWoman(spec.age, spec.sex);
   const skin = REF.skin, line = REF.skinLine;
-  const sitting = spec.pose.startsWith('v');
+  const sitting = spec.pose.startsWith('v') || spec.pose.startsWith('j');
 
   add(P, 'shadow', ell(cx, g.foot + 0.6, g.sh + 1.5, 3, 'rgba(0,0,0,0.26)'));
-  if (sitting) add(P, 'seat', feastSeatFront(cx, hipY));
+  if (spec.pose.startsWith('v')) add(P, 'seat', feastSeatFront(cx, hipY));
   const T = g.torso, sh = g.sh, wa = g.wa, hp = g.hp;
   const G: FrontG = { cx, sY, hipY, sh, wa, hp, T, g };
   if (w.cloak) add(P, 'cloak_back', cloakPanelFront(G, w.cloak === 'wool_cloak'));
@@ -868,6 +876,10 @@ function frontLayers(spec: PersonSpec, back: boolean): PersonOut {
       const { rightX, rightY, leftX, leftY } = TEND_FRONT[Number(spec.pose.slice(1))]!;
       hand = [cx + side * (isRight ? rightX : leftX), sY + g.arm * (isRight ? rightY : leftY)];
       elbow = [cx + side * (sh + g.arm * (isRight ? 0.14 : 0.12)), sY + g.arm * 0.6];
+    } else if (spec.pose.startsWith('j')) {
+      const { rightX, rightY, leftX, leftY } = BENCH_REST_FRONT[Number(spec.pose.slice(1))]!;
+      hand = [cx + side * (isRight ? rightX : leftX), sY + g.arm * (isRight ? rightY : leftY)];
+      elbow = [cx + side * (sh + g.arm * 0.14), sY + g.arm * (isRight ? 0.6 : 0.62)];
     } else if (spec.pose.startsWith('v')) {
       const { rightX, rightY, leftX, leftY } = ATTEND_FRONT[Number(spec.pose.slice(1))]!;
       hand = [cx + side * (isRight ? rightX : leftX), sY + g.arm * (isRight ? rightY : leftY)];
@@ -970,11 +982,11 @@ function sideLayers(spec: PersonSpec): PersonOut {
   const skin = REF.skin, line = REF.skinLine;
   const stoop = g.stoop ?? 0;
   const pivot: Pt = [cx, hipY];
-  const sitting = spec.pose.startsWith('v');
+  const sitting = spec.pose.startsWith('v') || spec.pose.startsWith('j');
   const rot = (svg: string): string => (svg && stoop ? `<g transform="rotate(${stoop} ${cx} ${hipY})">${svg}</g>` : svg);
 
   add(P, 'shadow', ell(cx + 1, g.foot + 0.6, d * 0.9, 3, 'rgba(0,0,0,0.26)'));
-  if (sitting) add(P, 'seat', feastSeatSide(cx, hipY));
+  if (spec.pose.startsWith('v')) add(P, 'seat', feastSeatSide(cx, hipY));
 
   const hip: Pt = [cx, hipY - 1];
   for (const near of [false, true]) {
@@ -1015,6 +1027,8 @@ function sideLayers(spec: PersonSpec): PersonOut {
       [a1, a2] = near ? PONDER_SIDE[Number(spec.pose.slice(1))]! : [-8, 28];
     } else if (spec.pose.startsWith('t')) {
       [a1, a2] = (near ? TEND_SIDE_NEAR : TEND_SIDE_FAR)[Number(spec.pose.slice(1))]!;
+    } else if (spec.pose.startsWith('j')) {
+      [a1, a2] = ATTEND_SIDE[Number(spec.pose.slice(1))]!;
     } else if (spec.pose.startsWith('v')) {
       [a1, a2] = ATTEND_SIDE[Number(spec.pose.slice(1))]!;
     } else if (spec.pose.startsWith('h')) {

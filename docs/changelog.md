@@ -16266,6 +16266,15 @@ Typecheck, focused unit/art tests and the real-order E2E passed. Four captures
 are preserved in `artifacts/screenshots/m15-sleep-animation-2026-10-13/`.
 Contract and verification limits: [`m15_sleep_animation.md`](m15_sleep_animation.md).
 
+## 2026-10-13 — M15 phase 17: human bench-rest pose
+
+Added four generated seated frames for a living person resting on a reached,
+complete household bench. The selector reuses the public `seatedOnBench`
+reader and the simulation action clock; it does not read another person's
+needs or draw a duplicate seat. Unit, art, and real-order E2E checks cover the
+pose and fatigue recovery. Four new screenshots are recorded at
+`artifacts/screenshots/m15-bench-rest-animation-2026-10-13/`.
+Contract: [`m15_bench_rest_animation.md`](m15_bench_rest_animation.md).
 ### 2026-10-13 — M15 fase 41: elegir proteína cuando está al alcance
 
 `chooseCravingFood` recibe ahora la alternativa proteica alcanzable y la

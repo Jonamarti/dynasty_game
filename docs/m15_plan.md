@@ -5249,6 +5249,17 @@ de arte y E2E con recuperación real, y capturas en
 [`m15_sleep_animation.md`](m15_sleep_animation.md). Versión
 `0.15.141-alpha`.
 
+
+**Avance del 2026-10-13 — fase 17, sentarse en banco:** la orden real `rest`
+muestra cuatro poses sentadas (`j0`–`j3`) solo en un banco completo, intacto y
+del hogar, al que la persona ya llegó. Reutiliza el lector público
+`seatedOnBench`, el reloj de acción y el banco real bajo el personaje; no pinta
+un segundo asiento ni consulta necesidades privadas. Pruebas de selector/arte y
+E2E con recuperación de fatiga real. Capturas en
+`artifacts/screenshots/m15-bench-rest-animation-2026-10-13/`. Contrato:
+[`m15_bench_rest_animation.md`](m15_bench_rest_animation.md). Versión
+`0.15.144-alpha`.
+
 **Avance del 2026-10-13 — fase 41, elección de proteína disponible:** la
 medición inicial mostró que, con antojo fuerte y proteína dentro del alcance,
 `Brain` elegía otra comida en 736/1.039 oportunidades (70,8%). El selector

@@ -47,7 +47,7 @@ import { Floaters } from './Floaters.ts';
 import { t, tc } from '../i18n/i18n.ts';
 import { ArtAtlas, type PersonAspect } from './ArtAtlas.ts';
 import type { ArtDir, ArtPose } from './ArtManifest.ts';
-import { attendingFeastPose, buildingPose, choppingPose, craftingPose, cuttingGrassPose, diggingPose, dyeingPose, extractionPose, farmingPose, fightingPose, fishingPose, gatheringPose, hideDressingPose, inscribingPose, mendingPose, ponderingPose, prototypingPose, plantingPose, reflectingPose, sleepingPose, spreadingCompostPose, swimmingPose, talkingPose, tamingPose, tendingPose } from './WorkAnimation.ts';
+import { attendingFeastPose, benchRestPose, buildingPose, choppingPose, craftingPose, cuttingGrassPose, diggingPose, dyeingPose, extractionPose, farmingPose, fightingPose, fishingPose, gatheringPose, hideDressingPose, inscribingPose, mendingPose, ponderingPose, prototypingPose, plantingPose, reflectingPose, sleepingPose, spreadingCompostPose, swimmingPose, talkingPose, tamingPose, tendingPose } from './WorkAnimation.ts';
 import { ADULT_YEARS } from '../sim/entities/Person.ts';
 import { showing } from '../sim/entities/Pregnancy.ts';
 import {
@@ -2188,9 +2188,10 @@ export class Renderer {
     const taming = tamingPose(person, this.workAlpha);
     const swimming = swimmingPose(person, this.sim, moving, this.workAlpha);
     const sleeping = sleepingPose(person, moving, this.workAlpha);
-    const workPose = gathering ?? fishing ?? extraction ?? digging ?? chopping ?? crafting ?? farming ?? building ?? mending ?? hideDressing ?? cuttingGrass ?? planting ?? spreading ?? dyeing ?? attending ?? inscribing ?? tending ?? pondering ?? reflecting ?? prototyping ?? fighting ?? talking ?? taming ?? sleeping;
+    const benchResting = benchRestPose(person, this.sim.buildingsById, moving, this.workAlpha);
+    const workPose = gathering ?? fishing ?? extraction ?? digging ?? chopping ?? crafting ?? farming ?? building ?? mending ?? hideDressing ?? cuttingGrass ?? planting ?? spreading ?? dyeing ?? attending ?? inscribing ?? tending ?? pondering ?? reflecting ?? prototyping ?? fighting ?? talking ?? taming ?? sleeping ?? benchResting;
     const torch = heldTorchFor(person);
-    const otherHeld = gathering || crafting || mending || hideDressing || spreading || dyeing || attending || inscribing || tending || pondering || prototyping || taming || swimming ? null : heldItemFor(person, this.sim.config.carry.autoEquipTools, true);
+    const otherHeld = gathering || crafting || mending || hideDressing || spreading || dyeing || attending || benchResting || inscribing || tending || pondering || prototyping || taming || swimming ? null : heldItemFor(person, this.sim.config.carry.autoEquipTools, true);
     const aspect: PersonAspect = {
       age: sizeClass, sex: person.sex === 'male' ? 'm' : 'f', dir,
       pose: swimming ?? taming ?? (moving ? (('w' + frame) as ArtPose) : workPose ?? 'idle'),

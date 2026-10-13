@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Person } from '../../sim/entities/Person.ts';
 import { RNG } from '../../sim/core/RNG.ts';
-import { attendingFeastPose, buildingPose, cuttingGrassPose, diggingPose, dyeingPose, extractionPose, farmingPose, fightingPose, fishingPose, gatheringPose, hideDressingPose, inscribingPose, mendingPose, ponderingPose, prototypingPose, plantingPose, reflectingPose, sleepingPose, spreadingCompostPose, swimmingPose, tamingPose, tendingPose } from '../WorkAnimation.ts';
+import { attendingFeastPose, benchRestPose, buildingPose, cuttingGrassPose, diggingPose, dyeingPose, extractionPose, farmingPose, fightingPose, fishingPose, gatheringPose, hideDressingPose, inscribingPose, mendingPose, ponderingPose, prototypingPose, plantingPose, reflectingPose, sleepingPose, spreadingCompostPose, swimmingPose, tamingPose, tendingPose } from '../WorkAnimation.ts';
 import type { Simulation } from '../../sim/core/Simulation.ts';
 
 function fixture() {
@@ -14,6 +14,39 @@ function fixture() {
   const sim = { nodesById: new Map([[1, node]]), treesById: new Map([[2, tree]]) } as unknown as Pick<Simulation, 'nodesById' | 'treesById'>;
   return { person, node, tree, sim };
 }
+
+describe('bench rest animation', () => {
+  function benchFixture() {
+    const person = new Person('Bench sitter', 4, 4, 0, new RNG('bench-rest-animation'));
+    person.action = 'rest'; person.actionTicks = 1; person.targetBuildingId = 2;
+    const bench: { x: number; y: number; def: { id: string; furniture: boolean }; complete: boolean; ruined: boolean; hostId: number | null } =
+      { x: 4, y: 4, def: { id: 'bench', furniture: true }, complete: true, ruined: false, hostId: 1 };
+    const buildingsById = new Map([[2, bench]]) as unknown as Map<number, import('../../sim/entities/Building.ts').Building>;
+    return { person, bench, buildingsById };
+  }
+
+  it('cycles four seated frames only during a reached rest action on a hosted bench', () => {
+    const { person, buildingsById } = benchFixture();
+    expect([1, 3, 5, 7, 9].map(ticks => {
+      person.actionTicks = ticks;
+      return benchRestPose(person, buildingsById, false, 0);
+    })).toEqual(['j0', 'j1', 'j2', 'j3', 'j0']);
+    expect(person.action).toBe('rest');
+  });
+
+  it('hides the seat while travelling, dead, inactive, unhosted or targeting other furniture', () => {
+    const { person, bench, buildingsById } = benchFixture();
+    expect(benchRestPose(person, buildingsById, true)).toBeNull();
+    expect(benchRestPose(person, buildingsById, false)).toBe('j0');
+    person.actionTicks = 0; expect(benchRestPose(person, buildingsById, false)).toBeNull();
+    person.actionTicks = 1; person.alive = false; expect(benchRestPose(person, buildingsById, false)).toBeNull();
+    person.alive = true; person.action = 'idle'; expect(benchRestPose(person, buildingsById, false)).toBeNull();
+    person.action = 'rest'; person.targetBuildingId = null; expect(benchRestPose(person, buildingsById, false)).toBeNull();
+    person.targetBuildingId = 2; bench.hostId = null; expect(benchRestPose(person, buildingsById, false)).toBeNull();
+    bench.hostId = 1; bench.def = { id: 'bed', furniture: true };
+    expect(benchRestPose(person, buildingsById, false)).toBeNull();
+  });
+});
 
 describe('human sleep animation', () => {
   it('cycles from the sleeper’s own simulation clock without inferring sleep from stillness', () => {
