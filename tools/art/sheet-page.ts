@@ -4,7 +4,7 @@
  * tint or a missing key is visible here before it is visible in play.
  */
 import { ArtAtlas, type PersonAspect, type WornGarments } from '../../src/render/ArtAtlas.ts';
-import { CHOP_POSES, CUT_GRASS_POSES, DIG_POSES, GATHER_POSES, MAKE_POSES, PLANT_POSES, type ArtAge, type ArtDir, type ArtPose, type ArtSex } from '../../src/render/ArtManifest.ts';
+import { CHOP_POSES, CUT_GRASS_POSES, DIG_POSES, GATHER_POSES, MAKE_POSES, PLANT_POSES, SPREAD_POSES, type ArtAge, type ArtDir, type ArtPose, type ArtSex } from '../../src/render/ArtManifest.ts';
 import { ANIMAL_KINDS, ANIMAL_POSES } from '../../art/src/animals/animals.ts';
 
 const BANDS = ['#3b6ea8', '#a83b52', '#7a4ea8', '#a8843b', '#3ba88a', '#a83b8f', '#6f9a3b', '#a8603b', '#7d7d7d'];
@@ -143,6 +143,13 @@ function person(over: AspectOver, label: string, row: HTMLElement): void {
     for (const pose of PLANT_POSES) person({ pose, dir, sex: 'f', hairStyle: 'long', wear: { torso: 'tunic', hands: 'gloves' } }, `${dir} ${pose}`, row);
   }
   for (const pose of PLANT_POSES) person({ pose, dir: 'E', age: 'elder', wear: { torso: 'wrap' } }, `elder ${pose}`, row);
+}
+{
+  const row = section('spread', 'Spread compost: scoop low, fan it across the soil, draw back');
+  for (const dir of ['S', 'E', 'N', 'W'] as ArtDir[]) {
+    for (const pose of SPREAD_POSES) person({ pose, dir, sex: 'f', hairStyle: 'long', wear: { torso: 'tunic', hands: 'gloves' } }, `${dir} ${pose}`, row);
+  }
+  for (const pose of SPREAD_POSES) person({ pose, dir: 'E', age: 'elder', wear: { torso: 'wrap' } }, `elder ${pose}`, row);
 }
 {
   const row = section('dig', 'Dig: raise, strike, recover (feet planted; tool follows hand)');

@@ -2,7 +2,7 @@
 import type { Simulation } from '../sim/core/Simulation.ts';
 import type { Person } from '../sim/entities/Person.ts';
 import { ARRIVAL_RADIUS } from '../sim/systems/MovementSystem.ts';
-import { BUILD_POSES, CHOP_POSES, CUT_GRASS_POSES, DIG_POSES, EXTRACT_POSES, FARM_POSES, FISH_POSES, GATHER_POSES, HIDE_DRESS_POSES, MAKE_POSES, MEND_POSES, PLANT_POSES, type ArtPose } from './ArtManifest.ts';
+import { BUILD_POSES, CHOP_POSES, CUT_GRASS_POSES, DIG_POSES, EXTRACT_POSES, FARM_POSES, FISH_POSES, GATHER_POSES, HIDE_DRESS_POSES, MAKE_POSES, MEND_POSES, PLANT_POSES, SPREAD_POSES, type ArtPose } from './ArtManifest.ts';
 import { RECIPES } from '../sim/entities/Recipe.ts';
 import { isStationFor } from '../sim/entities/Building.ts';
 import { CUT_FLOOR } from '../sim/core/Grass.ts';
@@ -191,4 +191,16 @@ export function plantingPose(
   const biome = sim.world.biomeAt(tx, ty);
   if ((biome !== 'grass' && biome !== 'forest') || sim.world.depthDug(tx, ty) !== 0) return null;
   return workFrame(PLANT_POSES, person.workedTicks, alpha);
+}
+
+/** Spreading is shown only once real compost work has started on its field. */
+export function spreadingCompostPose(
+  person: Person, sim: Pick<Simulation, 'buildingsById'>,
+  moving: boolean, alpha = 1,
+): ArtPose | null {
+  if (moving || !person.alive || person.action !== 'spread' || person.actionTimer <= 0 ||
+      person.workedTicks <= 0 || person.targetBuildingId === null) return null;
+  const field = sim.buildingsById.get(person.targetBuildingId);
+  if (!field?.complete || !field.crop || !field.contains(person.x, person.y)) return null;
+  return workFrame(SPREAD_POSES, person.workedTicks, alpha);
 }

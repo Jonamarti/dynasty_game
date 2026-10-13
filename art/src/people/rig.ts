@@ -124,7 +124,7 @@ export function geometry(age: ArtAge, sex: ArtSex): Geo {
 }
 
 /** Whole-pixel upper-body dip; gathering keeps its feet planted like idle. */
-export const POSE_BOB: Record<ArtPose, number> = { idle: 0, w0: 0, w1: 1, w2: 0, w3: 1, g0: 0, g1: 1, g2: 2, g3: 1, f0: 0, f1: 0, f2: 0, f3: 0, x0: 0, x1: 0, x2: 0, x3: 0, d0: 0, d1: 0, d2: 0, d3: 0, c0: 0, c1: 0, c2: 0, c3: 0, m0: 1, m1: 2, m2: 1, m3: 0, a0: 1, a1: 2, a2: 1, a3: 0, b0: 0, b1: 1, b2: 0, b3: 1, r0: 0, r1: 0, r2: 0, r3: 0, h0: 0, h1: 0, h2: 0, h3: 0, q0: 0, q1: 0, q2: 0, q3: 0, p0: 0, p1: 0, p2: 0, p3: 0 };
+export const POSE_BOB: Record<ArtPose, number> = { idle: 0, w0: 0, w1: 1, w2: 0, w3: 1, g0: 0, g1: 1, g2: 2, g3: 1, f0: 0, f1: 0, f2: 0, f3: 0, x0: 0, x1: 0, x2: 0, x3: 0, d0: 0, d1: 0, d2: 0, d3: 0, c0: 0, c1: 0, c2: 0, c3: 0, m0: 1, m1: 2, m2: 1, m3: 0, a0: 1, a1: 2, a2: 1, a3: 0, b0: 0, b1: 1, b2: 0, b3: 1, r0: 0, r1: 0, r2: 0, r3: 0, h0: 0, h1: 0, h2: 0, h3: 0, q0: 0, q1: 0, q2: 0, q3: 0, p0: 0, p1: 0, p2: 0, p3: 0, s0: 1, s1: 2, s2: 1, s3: 0 };
 
 const DIG_FRONT: readonly { reach: number; handY: number; elbowY: number }[] = [
   { reach: 0.4, handY: -0.3, elbowY: 0.05 }, { reach: 0.25, handY: -0.6, elbowY: -0.1 },
@@ -171,6 +171,12 @@ const PLANT_FRONT: readonly { reach: number; handY: number; elbowY: number }[] =
   { reach: 0.62, handY: 2.2, elbowY: 1.2 }, { reach: 0.28, handY: 1.85, elbowY: 0.98 },
 ];
 const PLANT_SIDE: readonly (readonly [number, number])[] = [[58, 58], [76, 74], [66, 42], [42, 24]];
+// Scoop compost low, fan it across the soil, then draw the hand back to load.
+const SPREAD_FRONT: readonly { reach: number; handY: number; elbowY: number }[] = [
+  { reach: 0.18, handY: 3.4, elbowY: 1.8 }, { reach: 1.1, handY: 4.4, elbowY: 2.3 },
+  { reach: 1.5, handY: 4.8, elbowY: 2.5 }, { reach: 0.35, handY: 3.2, elbowY: 1.7 },
+];
+const SPREAD_SIDE: readonly (readonly [number, number])[] = [[15, 5], [20, 70], [42, 88], [12, 4]];
 // Raise, strike the frame, drive the next blow and recover. Held tools follow
 // the right-hand anchor so a mallet remains aligned through the whole cycle.
 const BUILD_FRONT: readonly { reach: number; handY: number; elbowY: number }[] = [
@@ -747,6 +753,10 @@ function frontLayers(spec: PersonSpec, back: boolean): PersonOut {
       const { reach, handY, elbowY } = PLANT_FRONT[Number(spec.pose.slice(1))]!;
       hand = [cx + side * (sh + g.arm * 0.3 * reach), sY + g.arm * handY];
       elbow = [cx + side * (sh + g.arm * 0.18), sY + g.arm * elbowY];
+    } else if (spec.pose.startsWith('s') && isRight) {
+      const { reach, handY, elbowY } = SPREAD_FRONT[Number(spec.pose.slice(1))]!;
+      hand = [cx + side * (sh + g.arm * 0.3 * reach), sY + g.arm * handY];
+      elbow = [cx + side * (sh + g.arm * 0.18), sY + g.arm * elbowY];
     } else if (spec.pose.startsWith('g') && isRight) {
       const reach = [0.25, 0.8, 1, 0.45][Number(spec.pose.slice(1))]!;
       hand = [cx + side * (sh + g.arm * 0.35 * reach), sY + g.arm * (0.7 - 0.38 * reach)];
@@ -840,6 +850,8 @@ function sideLayers(spec: PersonSpec): PersonOut {
       [a1, a2] = CUT_GRASS_SIDE[Number(spec.pose.slice(1))]!;
     } else if (spec.pose.startsWith('p') && near) {
       [a1, a2] = PLANT_SIDE[Number(spec.pose.slice(1))]!;
+    } else if (spec.pose.startsWith('s') && near) {
+      [a1, a2] = SPREAD_SIDE[Number(spec.pose.slice(1))]!;
     } else if (spec.pose.startsWith('g') && near) {
       const phase = Number(spec.pose.slice(1));
       a1 = [20, 48, 62, 28][phase]!;

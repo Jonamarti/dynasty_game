@@ -1,3 +1,12 @@
+**Avance del 2026-10-13 — fase 17, extender compost:** `spread` usa cuatro
+poses generadas `s0`–`s3` durante el trabajo real en un campo completo y
+alcanzado. El gesto recorre el suelo con la mano; la recogida, el viaje y la
+espera permanecen sin pose. El selector usa `workedTicks` y el campo público,
+sin consultar inventario ni fertilidad. Prueba de selector y orden real en
+navegador; captura en `artifacts/screenshots/m15-spread-animation-2026-10-13/`.
+Contrato: [`m15_compost_animation.md`](m15_compost_animation.md). La fase 17
+sigue abierta para otras familias sin gesto.
+
 **Avance del 2026-10-13 — fase 17, engrasado de pieles:** `dress_hide` muestra
 cuatro poses generadas `h0`–`h3` únicamente durante el tratamiento real de una
 unidad de piel ya validado por ActionSystem. El gesto frota la superficie y se

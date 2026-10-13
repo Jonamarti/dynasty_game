@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Person } from '../../sim/entities/Person.ts';
 import { RNG } from '../../sim/core/RNG.ts';
-import { buildingPose, cuttingGrassPose, diggingPose, extractionPose, farmingPose, fishingPose, gatheringPose, hideDressingPose, mendingPose, plantingPose } from '../WorkAnimation.ts';
+import { buildingPose, cuttingGrassPose, diggingPose, extractionPose, farmingPose, fishingPose, gatheringPose, hideDressingPose, mendingPose, plantingPose, spreadingCompostPose } from '../WorkAnimation.ts';
 import type { Simulation } from '../../sim/core/Simulation.ts';
 
 function fixture() {
@@ -363,6 +363,55 @@ describe('tree planting animation', () => {
     expect(plantingPose(person, sim, false, 0.5)).toBe('p0');
     expect(plantingPose(person, sim, false, 1)).toBe('p1');
     expect(plantingPose(person, sim, false, 50)).toBe('p1');
+  });
+});
+
+describe('compost spreading animation', () => {
+  function spreadingFixture() {
+    const person = new Person('Steward', 4.5, 4.5, 0, new RNG('spread-animation'));
+    person.action = 'spread'; person.targetBuildingId = 1;
+    person.actionTimer = 6; person.workedTicks = 1;
+    let complete = true, contains = true, crop: object | null = {};
+    const field = { get complete() { return complete; }, get crop() { return crop; }, contains: () => contains };
+    const sim = { buildingsById: new Map([[1, field]]) } as unknown as Pick<Simulation, 'buildingsById'>;
+    return { person, sim, setField(next: { complete?: boolean; contains?: boolean; crop?: object | null }) {
+      if (next.complete !== undefined) complete = next.complete;
+      if (next.contains !== undefined) contains = next.contains;
+      if (next.crop !== undefined) crop = next.crop;
+    } };
+  }
+
+  it('cycles four low hand-spreading poses only after work starts on the field', () => {
+    const { person, sim } = spreadingFixture();
+    expect([1, 3, 5, 7, 9].map(ticks => { person.workedTicks = ticks; return spreadingCompostPose(person, sim, false, 0); }))
+      .toEqual(['s0', 's1', 's2', 's3', 's0']);
+    expect(person.actionTimer).toBe(6);
+    expect(person.workedTicks).toBe(9);
+  });
+
+  it('hides the gesture during travel, outside the field, before work, or without a valid crop field', () => {
+    const { person, sim, setField } = spreadingFixture();
+    expect(spreadingCompostPose(person, sim, true)).toBeNull();
+    setField({ contains: false });
+    expect(spreadingCompostPose(person, sim, false)).toBeNull();
+    setField({ contains: true }); person.workedTicks = 0;
+    expect(spreadingCompostPose(person, sim, false)).toBeNull();
+    person.workedTicks = 1; person.actionTimer = 0;
+    expect(spreadingCompostPose(person, sim, false)).toBeNull();
+    person.actionTimer = 6; setField({ complete: false });
+    expect(spreadingCompostPose(person, sim, false)).toBeNull();
+    setField({ complete: true, crop: null });
+    expect(spreadingCompostPose(person, sim, false)).toBeNull();
+    setField({ crop: {} }); person.alive = false;
+    expect(spreadingCompostPose(person, sim, false)).toBeNull();
+  });
+
+  it('advances only by the bounded simulation fraction', () => {
+    const { person, sim } = spreadingFixture();
+    person.workedTicks = 2;
+    expect(spreadingCompostPose(person, sim, false, 0.5)).toBe('s0');
+    expect(spreadingCompostPose(person, sim, false, 1)).toBe('s1');
+    expect(spreadingCompostPose(person, sim, false, 50)).toBe('s1');
   });
 });
 

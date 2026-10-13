@@ -1,3 +1,12 @@
+## 2026-10-13 — M15 fase 17: extender compost también se ve
+
+`spread` usa cuatro poses generadas de mano baja mientras el trabajo real está
+activo en un campo alcanzado. Viajar, recoger compost, esperar e interrumpir no
+muestran el gesto; el renderer no inspecciona inventario ni fertilidad. Pruebas
+del selector y orden real en navegador; captura en
+`artifacts/screenshots/m15-spread-animation-2026-10-13/`. Versión
+`0.15.125-alpha`.
+
 ## 2026-10-13 — M15 fase 15d: controlar el objetivo del scorer
 
 Se añadió una prueba directa de `Brain.score()` para la elección de reserva
