@@ -12,14 +12,27 @@ import { CORD, STONE, STONE_D, WOOD, WOOD_D } from './items.ts';
 /** Where the grip is inside a held object's cell. */
 export const HAND: readonly [number, number] = [48, 48];
 
-/** What the sim can put in a hand today, plus the torch phase 12 adds. */
-export const HELD_KINDS = ['spear', 'bow', 'atlatl', 'sling', 'bone_point', 'copper_dagger', 'bronze_sword', 'handaxe', 'net', 'basket', 'torch', 'torch_unlit', 'antler_pick', 'spade', 'bronze_spade', 'iron_spade', 'iron_plough', 'digging_stick'] as const;
+/** World-held props and presentation tools composed onto hands. */
+export const HELD_KINDS = ['spear', 'bow', 'atlatl', 'sling', 'bone_point', 'copper_dagger', 'bronze_sword', 'handaxe', 'net', 'basket', 'torch', 'torch_unlit', 'antler_pick', 'spade', 'bronze_spade', 'iron_spade', 'iron_plough', 'digging_stick', 'chisel'] as const;
 export type HeldKind = (typeof HELD_KINDS)[number];
 
 /** `side` is true when seen from the east or west. */
 export function heldSvg(kind: HeldKind, side: boolean): string {
   const [x, y] = HAND;
   switch (kind) {
+    case 'chisel':
+      // A narrow stone blade in a short wooden grip, shown only by the
+      // inscription work pose; it is art, not a simulation item.
+      if (!side) {
+        // From the front the long diagonal keeps the pale stone tip outside
+        // the tunic silhouette; a vertical tool vanished into the torso.
+        return limb([[x - 8, y + 10], [x + 1, y - 7]], 3, WOOD, WOOD_D)
+          + shape(poly([[x - 1, y - 7], [x + 3, y - 5], [x + 11, y - 20], [x + 12, y - 26], [x + 8, y - 23]]), STONE, STONE_D)
+          + stroke(`M${x + 6},${y - 17}L${x + 9},${y - 15}`, '#d3d0c8', 0.8);
+      }
+      return limb([[x - 1, y + 10], [x + 1, y - 10]], 3, WOOD, WOOD_D)
+        + shape(poly([[x - 1.5, y - 10], [x + 1.5, y - 10], [x + 1, y - 24], [x, y - 29], [x - 1, y - 24]]), STONE, STONE_D)
+        + stroke(`M${x - 1},${y - 20}L${x + 1},${y - 20}`, '#d3d0c8', 0.8);
     case 'digging_stick':
       return limb([[x - 1, y + 14], [x + 1, y - 18]], 2.4, WOOD, WOOD_D)
         + shape(`M${x - 1},${y - 18}L${x + 1},${y - 26}L${x + 4},${y - 20}Z`, WOOD_D, WOOD_D);

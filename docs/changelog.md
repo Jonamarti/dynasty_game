@@ -1,3 +1,16 @@
+## 2026-10-13 — M15 fase 17: tallar una inscripción también se ve
+
+La orden real `inscribe` anima cuatro poses de talla y un cincel visible al
+trabajar una inscripción alcanzada e inacabada con progreso bancado. El selector
+lee solo datos públicos de la acción y del registro; no cambia el motor, el
+registro ni los flujos RNG. Regenerados los sprites de persona y herramienta.
+Typecheck y 73 pruebas focales pasan. El caso E2E reportó `ok 1` y generó cuatro
+capturas, pero Playwright quedó colgado tras el test y se interrumpió; el comando
+terminó con código 1, así que no se registra como ejecución exitosa completa.
+Capturas: `artifacts/screenshots/m15-inscription-animation-2026-10-13/`.
+Contrato: [m15_inscription_animation.md](m15_inscription_animation.md). Versión
+`0.15.128-alpha`.
+
 ## 2026-10-13 — docs: registrar matriz M15 en `.127`
 
 `sim:check:all` volvió a terminar con salida 1 en la versión `.127`. Los

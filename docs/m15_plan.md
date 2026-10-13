@@ -32,6 +32,18 @@ progreso material. Pruebas de selector/E2E y captura en
 `artifacts/screenshots/m15-hide-dressing-animation-2026-10-13/`. Contrato:
 [`m15_hide_dressing_animation.md`](m15_hide_dressing_animation.md).
 
+**Avance del 2026-10-13 — fase 17, tallar una inscripción:** `inscribe` muestra
+cuatro poses generadas `i0`–`i3` y un cincel visible mientras la persona trabaja
+en una inscripción inacabada alcanzada y con progreso bancado. El gesto apoya
+la superficie con una mano y talla con la otra. El selector usa acción,
+`workedTicks`, posición y progreso público; no consulta el contenido privado de
+la inscripción y el renderer no modifica su progreso. Pruebas unitarias y E2E
+del orden real; Playwright notificó `ok 1` y produjo capturas, pero el proceso
+quedó colgado tras el caso y se interrumpió (código 1). Capturas en
+`artifacts/screenshots/m15-inscription-animation-2026-10-13/`. Contrato:
+[`m15_inscription_animation.md`](m15_inscription_animation.md). La fase 17
+sigue abierta para otras familias sin gesto.
+
 **Medición del 2026-10-13 — fase 16, cohorte doméstica:** después del cierre de
 12f, tres brazos pareados de 20 semillas century (HEAD idéntico, 40.000 pasos):
 baseline, comfortDriveEnabled=false y sleepQualityEffectsEnabled=false.

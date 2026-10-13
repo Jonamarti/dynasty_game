@@ -2,7 +2,7 @@
 import type { Simulation } from '../sim/core/Simulation.ts';
 import type { Person } from '../sim/entities/Person.ts';
 import { ARRIVAL_RADIUS } from '../sim/systems/MovementSystem.ts';
-import { ATTEND_POSES, BUILD_POSES, CHOP_POSES, CUT_GRASS_POSES, DIG_POSES, DYE_POSES, EXTRACT_POSES, FARM_POSES, FISH_POSES, GATHER_POSES, HIDE_DRESS_POSES, MAKE_POSES, MEND_POSES, PLANT_POSES, SPREAD_POSES, type ArtPose } from './ArtManifest.ts';
+import { ATTEND_POSES, BUILD_POSES, CHOP_POSES, CUT_GRASS_POSES, DIG_POSES, DYE_POSES, EXTRACT_POSES, FARM_POSES, FISH_POSES, GATHER_POSES, HIDE_DRESS_POSES, INSCRIBE_POSES, MAKE_POSES, MEND_POSES, PLANT_POSES, SPREAD_POSES, type ArtPose } from './ArtManifest.ts';
 import { RECIPES } from '../sim/entities/Recipe.ts';
 import { isStationFor } from '../sim/entities/Building.ts';
 import { CUT_FLOOR } from '../sim/core/Grass.ts';
@@ -222,4 +222,17 @@ export function attendingFeastPose(person: Person, moving: boolean, alpha = 1): 
   if (Math.hypot(person.x - person.targetX, person.y - person.targetY) > FEAST_SEAT) return null;
   // `actionTicks` is the simulation clock for this wait. No host state is read.
   return workFrame(ATTEND_POSES, person.actionTicks, alpha);
+}
+
+/** Carving is visible only while this person adds work to a reached record. */
+export function inscribingPose(
+  person: Person, sim: Pick<Simulation, 'inscriptionsById'>,
+  moving: boolean, alpha = 1,
+): ArtPose | null {
+  if (moving || !person.alive || person.action !== 'inscribe' || person.workedTicks <= 0 ||
+      person.targetInscriptionId === null) return null;
+  const record = sim.inscriptionsById.get(person.targetInscriptionId);
+  if (!record || !record.unfinished || record.pending === null || record.progress <= 0) return null;
+  if (person.distanceTo(record) >= ARRIVAL_RADIUS) return null;
+  return workFrame(INSCRIBE_POSES, person.workedTicks, alpha);
 }

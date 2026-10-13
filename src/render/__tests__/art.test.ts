@@ -79,6 +79,19 @@ describe('art coverage', () => {
     }
   });
 
+  it('bakes a dedicated chisel prop and four distinct carving strokes', () => {
+    expect(props.keys['held/chisel/S']).toBeDefined();
+    expect(props.keys['held/chisel/E']).toBeDefined();
+    const svg = ['i0', 'i1', 'i2', 'i3'].map(pose => {
+      const arm = personLayers({ age: 'adult', sex: 'm', dir: 'S', pose: pose as PersonSpec['pose'],
+        wear: {}, carry: false, hair: 'short', beard: false, expr: 'neutral' })
+        .layers.find(layer => layer.slot === 'arms')?.svg;
+      return arm;
+    });
+    expect(svg.every(Boolean)).toBe(true);
+    expect(new Set(svg).size).toBe(4);
+  });
+
   it('draws an inventory icon for the sling', () => {
     expect(props.keys['item/sling']).toBeDefined();
   });

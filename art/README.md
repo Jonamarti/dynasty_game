@@ -71,6 +71,10 @@ comes from the validated action's work ticks.
 wooden stool, bent legs and lap-resting hands distinguish a seated guest from
 someone standing nearby.
 
+`contact-inscribe.png` reviews the four `i0`–`i3` carving poses from front and
+side. The left hand braces the work while a generated stone chisel follows the
+right-hand anchor; it is a presentation prop, not an inventory item.
+
 For runtime cache measurements use `npx vite-node tools/art/memory.ts after`.
 It submits 500 distinct appearances across four poses and records pixel bytes,
 hits and misses under `artifacts/verification/m15-art-memory-2026-10-02/`.

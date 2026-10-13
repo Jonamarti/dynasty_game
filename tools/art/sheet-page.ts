@@ -4,7 +4,7 @@
  * tint or a missing key is visible here before it is visible in play.
  */
 import { ArtAtlas, type PersonAspect, type WornGarments } from '../../src/render/ArtAtlas.ts';
-import { ATTEND_POSES, CHOP_POSES, CUT_GRASS_POSES, DIG_POSES, DYE_POSES, GATHER_POSES, MAKE_POSES, PLANT_POSES, SPREAD_POSES, type ArtAge, type ArtDir, type ArtPose, type ArtSex } from '../../src/render/ArtManifest.ts';
+import { ATTEND_POSES, CHOP_POSES, CUT_GRASS_POSES, DIG_POSES, DYE_POSES, GATHER_POSES, INSCRIBE_POSES, MAKE_POSES, PLANT_POSES, SPREAD_POSES, type ArtAge, type ArtDir, type ArtPose, type ArtSex } from '../../src/render/ArtManifest.ts';
 import { ANIMAL_KINDS, ANIMAL_POSES } from '../../art/src/animals/animals.ts';
 
 const BANDS = ['#3b6ea8', '#a83b52', '#7a4ea8', '#a8843b', '#3ba88a', '#a83b8f', '#6f9a3b', '#a8603b', '#7d7d7d'];
@@ -96,7 +96,7 @@ function person(over: AspectOver, label: string, row: HTMLElement): void {
 }
 {
   const row = section('hands', 'Holding things, and babies in arms');
-  for (const held of ['spear', 'bow', 'atlatl', 'sling', 'bone_point', 'handaxe', 'net', 'basket', 'torch', 'antler_pick', 'spade', 'digging_stick']) {
+  for (const held of ['spear', 'bow', 'atlatl', 'sling', 'bone_point', 'handaxe', 'net', 'basket', 'torch', 'antler_pick', 'spade', 'digging_stick', 'chisel']) {
     for (const dir of ['S', 'E'] as ArtDir[]) person({ held, dir, wear: { torso: 'wrap' } }, `${held} ${dir}`, row);
   }
   for (const dir of ['S', 'E', 'N', 'W'] as ArtDir[]) person({ sex: 'f', hairStyle: 'long', carryBaby: true, dir }, `baby ${dir}`, row);
@@ -164,6 +164,13 @@ function person(over: AspectOver, label: string, row: HTMLElement): void {
     for (const pose of ATTEND_POSES) person({ pose, dir, sex, hairStyle: sex === 'f' ? 'long' : 'short', wear: { torso: 'tunic' } }, `${sex} ${dir} ${pose}`, row);
   }
   for (const pose of ATTEND_POSES) person({ pose, dir: 'E', age: 'elder', wear: { torso: 'wrap' } }, `elder ${pose}`, row);
+}
+{
+  const row = section('inscribe', 'Inscribe: brace the record and tap with a stone chisel');
+  for (const dir of ['S', 'E', 'N', 'W'] as ArtDir[]) {
+    for (const pose of INSCRIBE_POSES) person({ pose, dir, held: 'chisel', sex: 'f', hairStyle: 'long', wear: { torso: 'tunic', hands: 'gloves' } }, `${dir} ${pose}`, row);
+  }
+  for (const pose of INSCRIBE_POSES) person({ pose, dir: 'E', held: 'chisel', age: 'elder', wear: { torso: 'wrap' } }, `elder ${pose}`, row);
 }
 {
   const row = section('dig', 'Dig: raise, strike, recover (feet planted; tool follows hand)');

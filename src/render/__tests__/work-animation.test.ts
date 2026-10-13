@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Person } from '../../sim/entities/Person.ts';
 import { RNG } from '../../sim/core/RNG.ts';
-import { attendingFeastPose, buildingPose, cuttingGrassPose, diggingPose, dyeingPose, extractionPose, farmingPose, fishingPose, gatheringPose, hideDressingPose, mendingPose, plantingPose, spreadingCompostPose } from '../WorkAnimation.ts';
+import { attendingFeastPose, buildingPose, cuttingGrassPose, diggingPose, dyeingPose, extractionPose, farmingPose, fishingPose, gatheringPose, hideDressingPose, inscribingPose, mendingPose, plantingPose, spreadingCompostPose } from '../WorkAnimation.ts';
 import type { Simulation } from '../../sim/core/Simulation.ts';
 
 function fixture() {
@@ -93,6 +93,48 @@ describe('gathering animation', () => {
     expect(gatheringPose(person, sim, false, 1)).toBe('g1');
     expect(gatheringPose(person, sim, false, 50)).toBe('g1');
     expect(gatheringPose(person, sim, false, -50)).toBe('g0');
+  });
+});
+
+describe('inscription animation', () => {
+  function fixture() {
+    const person = new Person('Carver', 4, 4, 0, new RNG('inscription-animation'));
+    person.action = 'inscribe'; person.targetInscriptionId = 7; person.workedTicks = 1;
+    const record: { x: number; y: number; pending: string | null; progress: number; unfinished: boolean } =
+      { x: 4.2, y: 4, pending: 'firemaking', progress: 12, unfinished: true };
+    const sim = { inscriptionsById: new Map([[7, record]]) } as unknown as Pick<Simulation, 'inscriptionsById'>;
+    return { person, record, sim };
+  }
+
+  it('cycles four chisel strokes from the carver’s work ticks without changing banked work', () => {
+    const { person, record, sim } = fixture();
+    const frames = [1, 3, 5, 7].map(ticks => {
+      person.workedTicks = ticks;
+      return inscribingPose(person, sim, false, 0);
+    });
+    expect(frames).toEqual(['i0', 'i1', 'i2', 'i3']);
+    expect(record.progress).toBe(12);
+    expect(person.action).toBe('inscribe');
+  });
+
+  it('keeps the chisel down while travelling, idle, dead, or without unfinished banked work', () => {
+    const { person, record, sim } = fixture();
+    expect(inscribingPose(person, sim, true)).toBeNull();
+    person.x = 8;
+    expect(inscribingPose(person, sim, false)).toBeNull();
+    person.x = 4;
+    person.workedTicks = 0;
+    expect(inscribingPose(person, sim, false)).toBeNull();
+    person.workedTicks = 1; person.action = 'read';
+    expect(inscribingPose(person, sim, false)).toBeNull();
+    person.action = 'inscribe'; person.alive = false;
+    expect(inscribingPose(person, sim, false)).toBeNull();
+    person.alive = true; record.progress = 0;
+    expect(inscribingPose(person, sim, false)).toBeNull();
+    record.progress = 12; record.pending = null; record.unfinished = false;
+    expect(inscribingPose(person, sim, false)).toBeNull();
+    record.pending = 'firemaking'; record.unfinished = true; sim.inscriptionsById.clear();
+    expect(inscribingPose(person, sim, false)).toBeNull();
   });
 });
 

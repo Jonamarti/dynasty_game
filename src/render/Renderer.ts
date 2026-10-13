@@ -47,7 +47,7 @@ import { Floaters } from './Floaters.ts';
 import { t, tc } from '../i18n/i18n.ts';
 import { ArtAtlas, type PersonAspect } from './ArtAtlas.ts';
 import type { ArtDir, ArtPose } from './ArtManifest.ts';
-import { attendingFeastPose, buildingPose, choppingPose, craftingPose, cuttingGrassPose, diggingPose, dyeingPose, extractionPose, farmingPose, fishingPose, gatheringPose, hideDressingPose, mendingPose, plantingPose, spreadingCompostPose } from './WorkAnimation.ts';
+import { attendingFeastPose, buildingPose, choppingPose, craftingPose, cuttingGrassPose, diggingPose, dyeingPose, extractionPose, farmingPose, fishingPose, gatheringPose, hideDressingPose, inscribingPose, mendingPose, plantingPose, spreadingCompostPose } from './WorkAnimation.ts';
 import { ADULT_YEARS } from '../sim/entities/Person.ts';
 import { showing } from '../sim/entities/Pregnancy.ts';
 import {
@@ -2178,9 +2178,10 @@ export class Renderer {
     const spreading = spreadingCompostPose(person, this.sim, moving, this.workAlpha);
     const dyeing = dyeingPose(person, moving, this.workAlpha);
     const attending = attendingFeastPose(person, moving, this.workAlpha);
-    const workPose = gathering ?? fishing ?? extraction ?? digging ?? chopping ?? crafting ?? farming ?? building ?? mending ?? hideDressing ?? cuttingGrass ?? planting ?? spreading ?? dyeing ?? attending;
+    const inscribing = inscribingPose(person, this.sim, moving, this.workAlpha);
+    const workPose = gathering ?? fishing ?? extraction ?? digging ?? chopping ?? crafting ?? farming ?? building ?? mending ?? hideDressing ?? cuttingGrass ?? planting ?? spreading ?? dyeing ?? attending ?? inscribing;
     const torch = heldTorchFor(person);
-    const otherHeld = gathering || crafting || mending || hideDressing || spreading || dyeing || attending ? null : heldItemFor(person, this.sim.config.carry.autoEquipTools, true);
+    const otherHeld = gathering || crafting || mending || hideDressing || spreading || dyeing || attending || inscribing ? null : heldItemFor(person, this.sim.config.carry.autoEquipTools, true);
     const aspect: PersonAspect = {
       age: sizeClass, sex: person.sex === 'male' ? 'm' : 'f', dir,
       pose: moving ? (('w' + frame) as ArtPose) : workPose ?? 'idle',
@@ -2193,8 +2194,8 @@ export class Renderer {
       // being worn.
       wear: wornGarmentsOf(person),
       carryBaby: false,
-      held: torch?.slot === 'right' ? torch.kind : otherHeld,
-      heldLeft: torch?.slot === 'left' ? torch.kind : torch ? otherHeld : null,
+      held: inscribing ? 'chisel' : torch?.slot === 'right' ? torch.kind : otherHeld,
+      heldLeft: inscribing ? (torch?.slot === 'left' ? torch.kind : null) : torch?.slot === 'left' ? torch.kind : torch ? otherHeld : null,
       // M15 phase 19c: the belly of the last third, which anybody can see
       // (`Pregnancy.showing`); the earlier thirds are not on the sprite.
       belly: showing(person),
