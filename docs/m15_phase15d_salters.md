@@ -161,3 +161,17 @@ The next useful instrument change is to observe the actual scored food target
 and count reserve eligibility at scoring time, then retain `eatenToday` as the
 execution outcome. No runtime behavior or default spoilage rate changes from
 this diagnosis; 15c remains deferred pending a paired, discriminating cohort.
+
+## 2026-10-13 scorer-target control
+
+`preserving.test.ts` now captures `FoundTargets.foodToEat` from the real
+`Brain.score()` call with a fixed winter date, inventory, hunger and belief.
+With roast meat (higher ordinary appeal) plus dried meat, hunger 28 and a
+positive `spoils:meat` belief, the scorer selects the reserve. Three negative
+controls remove one eligibility condition at a time: no spoilage belief,
+hunger below 25, or a non-winter date; each keeps roast meat as the target.
+This confirms the existing threshold/season/belief gates and observes the
+target before execution, unlike the fixture's post-step action and ordinary
+`bestFoodFor()` counters. The control found no scorer defect, so no runtime
+change was warranted. It does not resolve the autonomous `salters` rate or
+provide economy evidence; 15c remains deferred.

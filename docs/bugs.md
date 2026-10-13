@@ -1,3 +1,15 @@
+## 2026-10-13 — M15 fase 15d: objetivo del scorer observado en focal
+
+Una prueba ahora observa `FoundTargets.foodToEat` dentro de la llamada real a
+`Brain.score()`. El control positivo (reserva, hambre ≥25, invierno y
+`spoils:meat`) escoge `dried_meat`; controles sin esa creencia, bajo el umbral
+o fuera de invierno escogen el roast de mayor atractivo ordinario. No se
+reproduce un defecto del scorer, por lo que no se cambió su comportamiento.
+Esto corrige la brecha de observación del test focal, pero no del escenario
+`salters`: su resultado autónomo sigue siendo una sola semilla y no calibra la
+economía. 15c permanece desactivada hasta una comparación pareada y
+discriminante.
+
 ### 2026-10-12 — partial hunt fat can reach a lamp shelf; upkeep does not source it
 
 **Mechanism shipped in 0.15.74-alpha:** an adult carrying partial fat routes it

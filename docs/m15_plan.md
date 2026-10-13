@@ -2117,8 +2117,11 @@ está.
   el scoring, así que no prueba que la reserva no se eligiera. El scorer ahora
   puede dar prioridad a una conserva en invierno con hambre ≥25, stock y una
   creencia positiva `spoils:<input>`; el escenario focal registra 1/5 comidas
-  invernales conservadas. La fixture sigue necesitando observar el objetivo en
-  el momento de scoring para separar elegibilidad, selección y consumo.
+  invernales conservadas. Una prueba focal adicional captura
+  `FoundTargets.foodToEat` directamente en `Brain.score()` con control positivo
+  y negativos para creencia, umbral de hambre y estación. La métrica de la
+  cohorte `salters` continúa sin observar la elección y no demuestra una
+  mejora económica.
 - `spoilage-is-answered` se retiró: la pérdida nutritiva por banda no discrimina
   preservación y también pasa al retirar las recetas.
 - **Coste declarado:** ≤ 4 puntos, todavía sin medir. 15c (activar `spoilRate`

@@ -1,3 +1,12 @@
+## 2026-10-13 — M15 fase 15d: controlar el objetivo del scorer
+
+Se añadió una prueba directa de `Brain.score()` para la elección de reserva
+invernal, con un positivo (hambre suficiente, invierno y creencia de deterioro)
+y controles negativos por falta de creencia, hambre insuficiente o verano. El
+scorer eligió la conserva solo en el caso elegible; no se encontró un defecto y
+no cambió el comportamiento ni la versión. La medición autónoma de `salters`
+sigue abierta. Ver [contrato](m15_phase15d_salters.md).
+
 ## 2026-10-13 — M15 fase 17: gesto de engrasado de piel
 
 `dress_hide` ahora se representa con cuatro poses generadas `h0`–`h3` durante

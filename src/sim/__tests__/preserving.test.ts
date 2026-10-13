@@ -72,6 +72,47 @@ describe('drying on a physical rack', () => {
     expect(person.eatenToday.has('roast_meat')).toBe(false);
   });
 
+  it('scores the winter reserve only when hunger and spoilage belief make it eligible', () => {
+    const scoreTarget = (options: { knowsSpoilage: boolean; hunger?: number; winter?: boolean }): string | null | undefined => {
+      const { sim, person } = fixture();
+      person.isPlayer = false; person.action = 'idle'; person.order = null;
+      person.needs.hunger = options.hunger ?? 28;
+      person.inventory.add('roast_meat', 1);
+      person.inventory.add('dried_meat', 1);
+      if (options.knowsSpoilage) person.beliefs.learn('spoils:meat', 1, 1, 'seen', sim.time.tick);
+      if (options.winter) {
+        const winterStartDay = sim.config.time.daysPerSeason * 3;
+        sim.time.tick = (winterStartDay - sim.config.time.startDay) * sim.config.time.ticksPerDay +
+          Math.floor(sim.config.time.ticksPerDay / 2);
+      }
+      expect(sim.time.season === 'winter').toBe(options.winter ?? false);
+
+      const brain = (sim as unknown as { brain: Brain }).brain;
+      const score = brain.score.bind(brain);
+      let foodAtScoring: string | null | undefined;
+      const spy = vi.spyOn(brain, 'score').mockImplementation((actor, ctx) => {
+        const result = score(actor, ctx);
+        if (actor === person && foodAtScoring === undefined) foodAtScoring = result.found.foodToEat;
+        return result;
+      });
+      try {
+        for (let tick = 0; tick < 12 && foodAtScoring === undefined; tick++) sim.step();
+        return foodAtScoring;
+      } finally { spy.mockRestore(); }
+    };
+
+    // Roast meat has higher ordinary appeal, so the positive case proves the
+    // winter reserve overrides the ordinary ranking in the actual scorer.
+    expect(scoreTarget({ knowsSpoilage: true, winter: true })).toBe('dried_meat');
+    // Without the learned reason to save food, the ordinary scorer keeps its
+    // better fresh meal instead of treating every preserved stack as urgent.
+    expect(scoreTarget({ knowsSpoilage: false, winter: true })).toBe('roast_meat');
+    // A belief alone is not enough: the reserve is spent only after the hunger
+    // threshold and only in winter.
+    expect(scoreTarget({ knowsSpoilage: true, hunger: 20, winter: true })).toBe('roast_meat');
+    expect(scoreTarget({ knowsSpoilage: true, winter: false })).toBe('roast_meat');
+  });
+
   it('dries meat and fish at the rack, consumes each input once and persists the station', () => {
     const { sim, person, rack } = fixture();
     for (const [raw, dried] of [['meat', 'dried_meat'], ['fish', 'dried_fish']] as const) {
