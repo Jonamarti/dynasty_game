@@ -1,3 +1,13 @@
+## 2026-10-13 — M15 fase 17: el invitado se sienta al asistir
+
+Una orden `attend` activa ahora cuatro poses generadas de espera sentada cuando
+el invitado alcanza el punto del banquete. La pose usa `actionTicks` y datos
+públicos del propio invitado; el renderer no consulta el anfitrión. Se añade
+asiento visible, pruebas unitarias/E2E y captura en
+`artifacts/screenshots/m15-attend-feast-animation-2026-10-13/`. Contrato:
+[m15_feast_attendance_animation.md](m15_feast_attendance_animation.md). Versión
+`0.15.127-alpha`.
+
 ## 2026-10-13 — M15 fase 17: teñir una prenda también se ve
 
 El teñido de ocre ahora recorre cuatro gestos de frotar durante ocho ticks de

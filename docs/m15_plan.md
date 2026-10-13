@@ -1,3 +1,10 @@
+**Avance del 2026-10-13 — fase 17, asistir al banquete:** una persona con la
+orden `attend` muestra cuatro poses generadas sentada (`v0`–`v3`) tras alcanzar
+su punto objetivo, con el reloj de simulación de la acción. El renderer no lee
+el estado del anfitrión y la lógica del banquete no cambia. Prueba unitaria,
+E2E real y captura en `artifacts/screenshots/m15-attend-feast-animation-2026-10-13/`.
+Contrato: [`m15_feast_attendance_animation.md`](m15_feast_attendance_animation.md).
+
 **Avance del 2026-10-13 — fase 17, extender compost:** `spread` usa cuatro
 poses generadas `s0`–`s3` durante el trabajo real en un campo completo y
 alcanzado. El gesto recorre el suelo con la mano; la recogida, el viaje y la

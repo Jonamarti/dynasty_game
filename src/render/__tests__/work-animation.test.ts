@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Person } from '../../sim/entities/Person.ts';
 import { RNG } from '../../sim/core/RNG.ts';
-import { buildingPose, cuttingGrassPose, diggingPose, dyeingPose, extractionPose, farmingPose, fishingPose, gatheringPose, hideDressingPose, mendingPose, plantingPose, spreadingCompostPose } from '../WorkAnimation.ts';
+import { attendingFeastPose, buildingPose, cuttingGrassPose, diggingPose, dyeingPose, extractionPose, farmingPose, fishingPose, gatheringPose, hideDressingPose, mendingPose, plantingPose, spreadingCompostPose } from '../WorkAnimation.ts';
 import type { Simulation } from '../../sim/core/Simulation.ts';
 
 function fixture() {
@@ -440,6 +440,40 @@ describe('garment dyeing animation', () => {
     expect(dyeingPose(person, false)).toBeNull();
     person.actionTimer = 1; person.action = 'idle';
     expect(dyeingPose(person, false)).toBeNull();
+  });
+});
+
+describe('feast attendance animation', () => {
+  it('cycles four seated poses on reached attend orders using action ticks', () => {
+    const { person } = fixture();
+    person.action = 'attend'; person.targetX = person.x + 2; person.targetY = person.y;
+    const frames = [1, 3, 5, 7].map(tick => {
+      person.actionTicks = tick;
+      return attendingFeastPose(person, false, 0);
+    });
+    expect(frames).toEqual(['v0', 'v1', 'v2', 'v3']);
+  });
+
+  it('stays standing while travelling, outside the seat radius, idle, dead or before the clock starts', () => {
+    const { person } = fixture();
+    person.action = 'attend'; person.targetX = person.x + 2; person.targetY = person.y; person.actionTicks = 1;
+    expect(attendingFeastPose(person, true)).toBeNull();
+    person.targetX = person.x + 5;
+    expect(attendingFeastPose(person, false)).toBeNull();
+    person.targetX = person.x + 2; person.actionTicks = 0;
+    expect(attendingFeastPose(person, false)).toBeNull();
+    person.actionTicks = 1; person.action = 'idle';
+    expect(attendingFeastPose(person, false)).toBeNull();
+    person.action = 'attend'; person.alive = false;
+    expect(attendingFeastPose(person, false)).toBeNull();
+  });
+
+  it('uses the bounded render fraction and does not need a host object', () => {
+    const { person } = fixture();
+    person.action = 'attend'; person.targetX = person.x; person.targetY = person.y; person.actionTicks = 2;
+    expect(attendingFeastPose(person, false, 0)).toBe('v0');
+    expect(attendingFeastPose(person, false, 1)).toBe('v1');
+    expect(attendingFeastPose(person, false, 50)).toBe('v1');
   });
 });
 

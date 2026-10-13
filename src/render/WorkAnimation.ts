@@ -2,10 +2,11 @@
 import type { Simulation } from '../sim/core/Simulation.ts';
 import type { Person } from '../sim/entities/Person.ts';
 import { ARRIVAL_RADIUS } from '../sim/systems/MovementSystem.ts';
-import { BUILD_POSES, CHOP_POSES, CUT_GRASS_POSES, DIG_POSES, DYE_POSES, EXTRACT_POSES, FARM_POSES, FISH_POSES, GATHER_POSES, HIDE_DRESS_POSES, MAKE_POSES, MEND_POSES, PLANT_POSES, SPREAD_POSES, type ArtPose } from './ArtManifest.ts';
+import { ATTEND_POSES, BUILD_POSES, CHOP_POSES, CUT_GRASS_POSES, DIG_POSES, DYE_POSES, EXTRACT_POSES, FARM_POSES, FISH_POSES, GATHER_POSES, HIDE_DRESS_POSES, MAKE_POSES, MEND_POSES, PLANT_POSES, SPREAD_POSES, type ArtPose } from './ArtManifest.ts';
 import { RECIPES } from '../sim/entities/Recipe.ts';
 import { isStationFor } from '../sim/entities/Building.ts';
 import { CUT_FLOOR } from '../sim/core/Grass.ts';
+import { FEAST_SEAT } from '../sim/social/Feast.ts';
 
 /** Shared clock contract: two work ticks per frame, with a bounded accumulator. */
 function workFrame(poses: readonly ArtPose[], workedTicks: number, alpha: number): ArtPose {
@@ -212,4 +213,13 @@ export function dyeingPose(person: Person, moving: boolean, alpha = 1): ArtPose 
   if (moving || !person.alive || person.action !== 'dye_garment' || person.actionTimer <= 0 ||
       person.actionTotal <= 0 || person.workedTicks <= 0) return null;
   return workFrame(DYE_POSES, person.workedTicks, alpha);
+}
+
+/** A guest sits only after reaching the public target point for the feast. */
+export function attendingFeastPose(person: Person, moving: boolean, alpha = 1): ArtPose | null {
+  if (moving || !person.alive || person.action !== 'attend' || person.actionTicks <= 0 ||
+      person.targetX === null || person.targetY === null) return null;
+  if (Math.hypot(person.x - person.targetX, person.y - person.targetY) > FEAST_SEAT) return null;
+  // `actionTicks` is the simulation clock for this wait. No host state is read.
+  return workFrame(ATTEND_POSES, person.actionTicks, alpha);
 }

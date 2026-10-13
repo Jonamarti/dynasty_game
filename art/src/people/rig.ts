@@ -59,11 +59,11 @@ export interface PersonOut { layers: Layer[]; anchors: PersonAnchors; }
 
 /** Bottom to top, per facing. West is east flipped by the renderer. */
 export const SLOT_ORDER: Record<FacingDir, readonly string[]> = {
-  S: ['shadow', 'cloak_back', 'hair_back', 'legs', 'trousers', 'feet', 'torso', 'loincloth', 'chestband', 'belly', 'torso_wear', 'belly_wear', 'cloak_front', 'baby', 'baby_skin',
+  S: ['shadow', 'seat', 'cloak_back', 'hair_back', 'legs', 'trousers', 'feet', 'torso', 'loincloth', 'chestband', 'belly', 'torso_wear', 'belly_wear', 'cloak_front', 'baby', 'baby_skin',
     'arms', 'sleeves', 'held', 'hands', 'head_back', 'head', 'beard', 'face', 'hair', 'shine', 'head_wear'],
-  N: ['shadow', 'cloak_back', 'legs', 'trousers', 'feet', 'torso', 'loincloth', 'chestband', 'torso_wear', 'cloak_front',
+  N: ['shadow', 'seat', 'cloak_back', 'legs', 'trousers', 'feet', 'torso', 'loincloth', 'chestband', 'torso_wear', 'cloak_front',
     'arms', 'sleeves', 'held', 'hands', 'head_back', 'head', 'hair', 'shine', 'head_wear'],
-  E: ['shadow', 'arm_far', 'sleeve_far', 'hand_far', 'legs_far', 'trousers_far', 'feet_far', 'legs_near', 'trousers_near', 'feet_near',
+  E: ['shadow', 'seat', 'arm_far', 'sleeve_far', 'hand_far', 'legs_far', 'trousers_far', 'feet_far', 'legs_near', 'trousers_near', 'feet_near',
     'cloak_back', 'hair_back', 'torso', 'loincloth', 'chestband', 'belly', 'torso_wear', 'belly_wear', 'cloak_front', 'baby', 'baby_skin',
     'arm_near', 'sleeve_near', 'held', 'hand_near', 'head_back', 'head', 'beard', 'face', 'hair', 'shine', 'head_wear'],
 };
@@ -124,7 +124,7 @@ export function geometry(age: ArtAge, sex: ArtSex): Geo {
 }
 
 /** Whole-pixel upper-body dip; gathering keeps its feet planted like idle. */
-export const POSE_BOB: Record<ArtPose, number> = { idle: 0, w0: 0, w1: 1, w2: 0, w3: 1, g0: 0, g1: 1, g2: 2, g3: 1, f0: 0, f1: 0, f2: 0, f3: 0, x0: 0, x1: 0, x2: 0, x3: 0, d0: 0, d1: 0, d2: 0, d3: 0, c0: 0, c1: 0, c2: 0, c3: 0, m0: 1, m1: 2, m2: 1, m3: 0, a0: 1, a1: 2, a2: 1, a3: 0, b0: 0, b1: 1, b2: 0, b3: 1, r0: 0, r1: 0, r2: 0, r3: 0, h0: 0, h1: 0, h2: 0, h3: 0, q0: 0, q1: 1, q2: 1, q3: 0, p0: 0, p1: 0, p2: 0, p3: 0, s0: 1, s1: 2, s2: 1, s3: 0, y0: 0, y1: 1, y2: 1, y3: 0 };
+export const POSE_BOB: Record<ArtPose, number> = { idle: 0, w0: 0, w1: 1, w2: 0, w3: 1, g0: 0, g1: 1, g2: 2, g3: 1, f0: 0, f1: 0, f2: 0, f3: 0, x0: 0, x1: 0, x2: 0, x3: 0, d0: 0, d1: 0, d2: 0, d3: 0, c0: 0, c1: 0, c2: 0, c3: 0, m0: 1, m1: 2, m2: 1, m3: 0, a0: 1, a1: 2, a2: 1, a3: 0, b0: 0, b1: 1, b2: 0, b3: 1, r0: 0, r1: 0, r2: 0, r3: 0, h0: 0, h1: 0, h2: 0, h3: 0, q0: 0, q1: 1, q2: 1, q3: 0, p0: 0, p1: 0, p2: 0, p3: 0, s0: 1, s1: 2, s2: 1, s3: 0, y0: 0, y1: 1, y2: 1, y3: 0, v0: 0, v1: 1, v2: 1, v3: 0 };
 
 const DIG_FRONT: readonly { reach: number; handY: number; elbowY: number }[] = [
   { reach: 0.4, handY: -0.3, elbowY: 0.05 }, { reach: 0.25, handY: -0.6, elbowY: -0.1 },
@@ -210,6 +210,26 @@ const DYE_FRONT: readonly { rightX: number; rightY: number; leftX: number; leftY
   { rightX: 0, rightY: 0.83, leftX: 4, leftY: 0.82 },
 ];
 const DYE_SIDE: readonly (readonly [number, number])[] = [[30, 72], [52, 104], [14, 48], [38, 88]];
+// Guests sit with bent knees and hands resting together through a quiet feast cycle.
+const ATTEND_FRONT: readonly { rightX: number; rightY: number; leftX: number; leftY: number }[] = [
+  { rightX: 2, rightY: 0.86, leftX: 3, leftY: 0.86 },
+  { rightX: 5, rightY: 0.78, leftX: 2, leftY: 0.88 },
+  { rightX: 3, rightY: 0.84, leftX: 5, leftY: 0.78 },
+  { rightX: 2, rightY: 0.86, leftX: 3, leftY: 0.86 },
+];
+const ATTEND_SIDE: readonly (readonly [number, number])[] = [[24, 64], [38, 82], [18, 52], [30, 70]];
+
+function feastSeatFront(cx: number, hipY: number): string {
+  const legs = shape(poly([[cx - 14, hipY + 6], [cx - 11, hipY + 6], [cx - 10, hipY + 20], [cx - 13, hipY + 20]]), W.hide, W.hideLine)
+    + shape(poly([[cx + 11, hipY + 6], [cx + 14, hipY + 6], [cx + 13, hipY + 20], [cx + 10, hipY + 20]]), W.hide, W.hideLine);
+  return legs + shape(poly([[cx - 17, hipY + 3], [cx + 17, hipY + 3], [cx + 15, hipY + 7], [cx - 15, hipY + 7]]), W.fur, W.hideLine);
+}
+
+function feastSeatSide(cx: number, hipY: number): string {
+  return shape(poly([[cx - 13, hipY + 2], [cx + 9, hipY + 2], [cx + 9, hipY + 6], [cx - 13, hipY + 6]]), W.fur, W.hideLine)
+    + shape(poly([[cx - 10, hipY + 5], [cx - 7, hipY + 5], [cx - 6, hipY + 19], [cx - 9, hipY + 19]]), W.hide, W.hideLine)
+    + shape(poly([[cx + 5, hipY + 5], [cx + 8, hipY + 5], [cx + 7, hipY + 19], [cx + 4, hipY + 19]]), W.hide, W.hideLine);
+}
 
 function poseSwing(pose: ArtPose): { walk: boolean; f: number; sw: number } {
   if (!pose.startsWith('w')) return { walk: false, f: 0, sw: 0 };
@@ -624,8 +644,10 @@ function frontLayers(spec: PersonSpec, back: boolean): PersonOut {
   const P: Pieces = {};
   const woman = isWoman(spec.age, spec.sex);
   const skin = REF.skin, line = REF.skinLine;
+  const sitting = spec.pose.startsWith('v');
 
   add(P, 'shadow', ell(cx, g.foot + 0.6, g.sh + 1.5, 3, 'rgba(0,0,0,0.26)'));
+  if (sitting) add(P, 'seat', feastSeatFront(cx, hipY));
   const T = g.torso, sh = g.sh, wa = g.wa, hp = g.hp;
   const G: FrontG = { cx, sY, hipY, sh, wa, hp, T, g };
   if (w.cloak) add(P, 'cloak_back', cloakPanelFront(G, w.cloak === 'wool_cloak'));
@@ -634,11 +656,17 @@ function frontLayers(spec: PersonSpec, back: boolean): PersonOut {
   // Legs.
   const lx = cx - g.gap, rx = cx + g.gap;
   let lf = g.foot - 0.4, rf = g.foot - 0.4, lxo = 0, rxo = 0;
+  if (sitting) { lf = rf = g.foot - 8; lxo = -3; rxo = 3; }
   if (sw === 1) { lf += 0.6; rf -= 2.6; lxo = -0.6; }
   if (sw === -1) { rf += 0.6; lf -= 2.6; rxo = 0.6; }
   if (walk && sw === 0) { if (f === 0) lf -= 1.4; else rf -= 1.4; }
-  add(P, 'legs', limb([[lx, hipY - 2], [lx + lxo - 0.3, lf]], g.limb, skin, line));
-  add(P, 'legs', limb([[rx, hipY - 2], [rx + rxo + 0.3, rf]], g.limb, skin, line));
+  if (sitting) {
+    add(P, 'legs', limb([[lx, hipY - 2], [lx - 4, hipY + 5], [lx + lxo - 0.3, lf]], g.limb, skin, line));
+    add(P, 'legs', limb([[rx, hipY - 2], [rx + 4, hipY + 5], [rx + rxo + 0.3, rf]], g.limb, skin, line));
+  } else {
+    add(P, 'legs', limb([[lx, hipY - 2], [lx + lxo - 0.3, lf]], g.limb, skin, line));
+    add(P, 'legs', limb([[rx, hipY - 2], [rx + rxo + 0.3, rf]], g.limb, skin, line));
+  }
   add(P, 'legs', ell(lx + lxo - 0.5, lf + 0.4, g.limb * 0.62, g.limb * 0.34, REF.skinD, line));
   add(P, 'legs', ell(rx + rxo + 0.5, rf + 0.4, g.limb * 0.62, g.limb * 0.34, REF.skinD, line));
   for (const [x0, xo, ft, dx] of [[lx, lxo, lf, -0.3], [rx, rxo, rf, 0.3]] as const) {
@@ -720,7 +748,11 @@ function frontLayers(spec: PersonSpec, back: boolean): PersonOut {
     }
     let hand: Pt = [cx + side * (sh + 1.2 - inward), sY + 2.4 + len];
     let elbow: Pt = [(sh0[0] + hand[0]) / 2 + side * 0.9, (sh0[1] + hand[1]) / 2];
-    if (spec.pose.startsWith('h')) {
+    if (spec.pose.startsWith('v')) {
+      const { rightX, rightY, leftX, leftY } = ATTEND_FRONT[Number(spec.pose.slice(1))]!;
+      hand = [cx + side * (isRight ? rightX : leftX), sY + g.arm * (isRight ? rightY : leftY)];
+      elbow = [cx + side * (sh + g.arm * (isRight ? 0.14 : 0.12)), sY + g.arm * 0.6];
+    } else if (spec.pose.startsWith('h')) {
       const { rightX, rightY, leftX, leftY } = HIDE_DRESS_FRONT[Number(spec.pose.slice(1))]!;
       hand = [cx + side * (isRight ? rightX : leftX), sY + g.arm * (isRight ? rightY : leftY)];
       elbow = [cx + side * (sh + g.arm * (isRight ? 0.2 : 0.16)), sY + g.arm * 0.62];
@@ -814,9 +846,11 @@ function sideLayers(spec: PersonSpec): PersonOut {
   const skin = REF.skin, line = REF.skinLine;
   const stoop = g.stoop ?? 0;
   const pivot: Pt = [cx, hipY];
+  const sitting = spec.pose.startsWith('v');
   const rot = (svg: string): string => (svg && stoop ? `<g transform="rotate(${stoop} ${cx} ${hipY})">${svg}</g>` : svg);
 
   add(P, 'shadow', ell(cx + 1, g.foot + 0.6, d * 0.9, 3, 'rgba(0,0,0,0.26)'));
+  if (sitting) add(P, 'seat', feastSeatSide(cx, hipY));
 
   const hip: Pt = [cx, hipY - 1];
   for (const near of [false, true]) {
@@ -824,7 +858,8 @@ function sideLayers(spec: PersonSpec): PersonOut {
     let a1 = sw * 20 * (near ? 1 : -1), a2 = a1;
     if (walk && sw === 0 && ((f === 2) === near)) { a1 = 20; a2 = -12; }
     const L = (g.leg + 0.6) / 2;
-    const knee = at(hip, a1, L), ank = at(knee, a2, L);
+    const knee: Pt = sitting ? [hip[0] + (near ? 12 : 8), hipY + 7] : at(hip, a1, L);
+    const ank: Pt = sitting ? [knee[0] + 1, g.foot - 8] : at(knee, a2, L);
     const s = near ? 'near' : 'far';
     add(P, 'legs_' + s, limb([hip, knee, ank], g.limb, col, line) + ell(ank[0] + g.limb * 0.4, ank[1] + 0.3, g.limb * 0.72, g.limb * 0.36, near ? REF.skinD : shade(REF.skinD, 0.9), line));
     const lw = legWear(w, hip, knee, ank, g, near, g.limb * 0.4);
@@ -842,7 +877,9 @@ function sideLayers(spec: PersonSpec): PersonOut {
     const col = near ? skin : REF.skinFar;
     const Larm = g.arm / 2;
     let a1 = -sw * 24 * (near ? 1 : -1), a2 = a1 + 14;
-    if (spec.pose.startsWith('h')) {
+    if (spec.pose.startsWith('v')) {
+      [a1, a2] = ATTEND_SIDE[Number(spec.pose.slice(1))]!;
+    } else if (spec.pose.startsWith('h')) {
       [a1, a2] = HIDE_DRESS_SIDE[Number(spec.pose.slice(1))]!;
     } else if (spec.pose.startsWith('y')) {
       [a1, a2] = DYE_SIDE[Number(spec.pose.slice(1))]!;

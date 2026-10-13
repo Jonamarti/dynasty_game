@@ -67,6 +67,10 @@ the runtime chooses work poses in `src/render/WorkAnimation.ts`.
 One hand holds the cloth while the other rubs pigment across it; runtime timing
 comes from the validated action's work ticks.
 
+`contact-attend.png` reviews the four `v0`–`v3` feast-wait poses. The generated
+wooden stool, bent legs and lap-resting hands distinguish a seated guest from
+someone standing nearby.
+
 For runtime cache measurements use `npx vite-node tools/art/memory.ts after`.
 It submits 500 distinct appearances across four poses and records pixel bytes,
 hits and misses under `artifacts/verification/m15-art-memory-2026-10-02/`.
