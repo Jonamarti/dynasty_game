@@ -1,3 +1,12 @@
+## 2026-10-13 — instrumento de violencia separa asaltos humanos de mordiscos
+
+El diagnóstico abría ventanas al ver `lastHarmedTick`, que también cambia con
+ataques animales aunque `lastHarmedBy` conserve al agresor humano anterior.
+Ahora las ventanas de respuesta nacen del evento social `assault` contra un
+adulto. Una prueba fija el filtro; la repetición de `generations` registra 1
+asalto adulto y 1 huida en 60 ticks. Esa muestra no explica `answered`.
+Herramienta de medición; no cambia el juego.
+
 ## 2026-10-13 — diagnóstico de violencia admite extinción total
 
 `tools/violence.ts` ya informa `n/a` cuando el escenario termina sin población

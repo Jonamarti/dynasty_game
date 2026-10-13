@@ -5398,3 +5398,16 @@ cohorte ya documentaba la extinción y sus contadores previos eran legibles.
 población; pruebas cubren ese caso y una muestra poblada. Se repetirá el mismo
 comando para confirmar la salida completa.
 
+### 2026-10-13 — el contador de respuestas de `violence` podía atribuir mordiscos a un humano
+
+La ventana de respuesta del CLI observaba cualquier cambio de `lastHarmedTick`.
+`AnimalAttack` también cambia ese tick, pero no reemplaza `lastHarmedBy`, así
+que una mordida posterior a un asalto podía parecer otra agresión del atacante
+humano anterior. El CLI ahora toma sus ventanas del evento social `assault` y
+del adulto objetivo. Esto corrige el denominador del instrumento; no corrige
+`answered` ni permite comparar todavía las dos métricas. La repetición de
+`generations` (144.000 pasos) ahora registra 1 asalto adulto y 1 huida dentro
+de 60 ticks; el mundo termina sin supervivientes. Una muestra no resuelve el
+81,8% de `answered`, cuyo denominador son segundos golpes en 40 ticks. No se
+cambiaron parámetros ni se atribuye causalidad.
+

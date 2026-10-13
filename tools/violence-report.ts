@@ -6,3 +6,7 @@ export function aggressionSummary(values: readonly number[]): { median: string; 
     aboveHalf: (sorted.filter(value => value > 0.5).length / sorted.length * 100).toFixed(0) + '%',
   };
 }
+
+export function opensAdultAssaultWindow(type: string, isChild: boolean): boolean {
+  return type === 'assault' && !isChild;
+}

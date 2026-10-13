@@ -13,7 +13,7 @@
 import { Simulation } from '../src/sim/core/Simulation.ts';
 import { telemetry } from '../src/sim/core/Telemetry.ts';
 import { SCENARIOS } from './simcheck.ts';
-import { aggressionSummary } from './violence-report.ts';
+import { aggressionSummary, opensAdultAssaultWindow } from './violence-report.ts';
 
 function arg(name: string, fallback: string): string {
   const i = process.argv.indexOf('--' + name);
@@ -68,12 +68,18 @@ sim.social.emit = ((...args: Parameters<typeof emit>) => {
         target.chronicle.filter(c => c.kind === 'did').map(c => c.deed?.type ?? c.text).join(',') +
         ' | attacker remembers: ' + actor.memory.all().filter(m => m.actorId === target.id).map(m => m.type + (m.firsthand ? '' : '(told)')).join(','));
     }
+    // `lastHarmedTick` also advances on animal blows, while `lastHarmedBy`
+    // retains the last human attacker. Open this response window from the
+    // social event itself so a bite cannot be attributed to a stale assailant.
+    if (opensAdultAssaultWindow(type, target.isChild)) {
+      watching.set(target.id, { by: actor.id, tick: sim.time.tick, actions: new Set([target.action]) });
+    }
   }
   return emit(...args);
 }) as typeof emit;
 
 // M12 phase 2c, the owner's note 4: "some NPCs neither defend themselves nor
-// run when attacked". Every blow that lands on an adult opens a window; within
+// run when attacked". Every human assault on an adult opens a window; within
 // `RESPONSE_WINDOW` ticks the victim either strikes back at whoever hit them,
 // runs, dies, or does none of those — and for the last, what they were doing
 // instead is the answer to why.
@@ -83,18 +89,9 @@ const watching = new Map<number, Watch>();
 const responses = new Map<string, number>();
 const inert = new Map<string, number>();
 const tally = (m: Map<string, number>, k: string): void => { m.set(k, (m.get(k) ?? 0) + 1); };
-const lastSeenHarm = new Map<number, number>();
 for (let i = 0; i < steps; i++) {
   sim.step();
   const tick = sim.time.tick;
-  for (const p of sim.people) {
-    if (p.lastHarmedBy !== null && p.lastHarmedTick !== (lastSeenHarm.get(p.id) ?? -9999)) {
-      lastSeenHarm.set(p.id, p.lastHarmedTick);
-      if (!p.isChild && !watching.has(p.id)) {
-        watching.set(p.id, { by: p.lastHarmedBy, tick: p.lastHarmedTick, actions: new Set([p.action]) });
-      }
-    }
-  }
   for (const [id, w] of watching) {
     const p = sim.peopleById.get(id)!;
     const by = sim.peopleById.get(w.by);

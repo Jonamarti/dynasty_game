@@ -1,7 +1,9 @@
 **Avance del 2026-10-13 — fase 41, nueva cohorte `generations`:** 20 semillas
 mostraron supervivencia media 6,0%, extinción 10/20, colapso <25% 19/20,
 `recovered` 0/59 (censuradas) y `answered` 81,8% (36/44). No es una medición
-emparejada y no justifica ajustar parámetros. La calibración sigue pendiente;
+emparejada y no justifica ajustar parámetros. El CLI de violencia se corrigió
+para filtrar mordiscos, pero la repetición de `generations` solo observó un
+asalto adulto y una huida; no resuelve `answered`. La calibración sigue pendiente;
 ver detalle en [m15_calibration.md](m15_calibration.md) y [bugs.md](bugs.md).
 
 **Avance del 2026-10-13 — fase 17, prototipar:** `prototype` muestra cuatro

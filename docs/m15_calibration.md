@@ -329,3 +329,22 @@ de 50%. Es una nueva medición sin control emparejado: no se atribuye el
 resultado a cambios de interfaz ni se eligen parámetros a partir de esta
 muestra. La recuperación, respuesta y adopción siguen bloqueando el cierre de
 fase 41. Ver el registro en `bugs.md`.
+
+### Diagnóstico de fase 41: límite corregido del CLI de violencia
+
+La primera ejecución de `npm.cmd run violence -- --scenario generations --steps
+144000 --cases` imprimió 1 evento social `assault` y 8 huidas observadas en
+ventanas de 60 ticks, pero esos denominadores no concordaban. La causa está en
+el instrumento: usaba `lastHarmedTick`, que también actualiza `AnimalAttack`,
+mientras `lastHarmedBy` puede conservar al último agresor humano. Además, el
+resumen final fallaba si la cohorte terminaba con cero supervivientes. Ambos
+fallos del informe están corregidos y tienen pruebas focales. La corrida inicial
+terminó con salida completa después de corregir el resumen; la segunda medición
+se está repitiendo con ventanas iniciadas solo por eventos `assault` contra
+adultos. Hasta recibir ese resultado, la salida anterior no sirve para estimar
+una tasa de respuesta. Con el filtro corregido, la repetición determinista
+registra 1 `assault` adulto y 1 huida en la ventana de 60 ticks; el mundo acaba
+sin supervivientes (`median n/a`). Un caso no constituye muestra suficiente ni
+se corresponde con el denominador de `answered` (segundos golpes del mismo
+agresor en 40 ticks). El instrumento queda corregido, pero la fase 41 sigue
+sin diagnóstico poblacional de `answered`; no se cambian parámetros.
