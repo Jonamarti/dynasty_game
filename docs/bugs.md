@@ -5375,3 +5375,16 @@ familias, bandas, tecnología y fauna; la tabla por escenario figura en el
 resultado del comando de esta sesión y no debe tratarse como regresión del
 renderer. No se cambiaron parámetros ni umbrales. M15 permanece abierto.
 
+### 2026-10-13 — fase 41: cohorte nueva `generations` aún no recupera
+
+`npm.cmd run sim:seeds -- --scenario generations --seeds 20` terminó sin
+error, con supervivencia media 6,0%, 10/20 extinciones y 19/20 colapsos bajo
+25%. Hubo 67 nacimientos, 650 muertes y 5 bandas viables; 155 adultos, 24
+niños y 65 lactantes murieron de hambre. `recovered` fue 0/59 (todas
+censuradas); `answered`, 36/44 (81,8%), bajo el objetivo de 90%, con `drink` 1,
+`give` 2, `go_home` 2 e `idle` 3 sin respuesta. `firemaking` no alcanzó el
+objetivo de 50%. Esta cohorte no está emparejada con una build anterior y no
+demuestra causa ni regresión; la interfaz no modificó la simulación. No se
+ajustaron coeficientes. Fase 41 permanece abierta; seguimiento en
+`m15_calibration.md`.
+

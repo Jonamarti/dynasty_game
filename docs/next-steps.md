@@ -6,10 +6,10 @@ el diario de decisiones y entregas históricas debajo de este resumen.
 
 - **Fase 17, arte de trabajo:** el 13 de octubre se entregaron las poses de
   vestir pieles, teñir, extender compost, atender el banquete, tallar
-  inscripciones, vendar heridas y pensar una idea. Cada cambio funcional tiene
-  pruebas, contrato, changelog y captura bajo
-  `artifacts/screenshots/`. La fase sigue abierta para otras familias de
-  trabajo sin gesto propio.
+  inscripciones, vendar heridas, pensar una idea y prototipar. Cada cambio
+  funcional tiene pruebas, contrato, changelog y captura bajo
+  `artifacts/screenshots/`. La fase sigue abierta para otras familias de trabajo
+  sin gesto propio.
 - **Fase 16, hogares:** la cohorte doméstica ya se ejecutó el 13 de octubre.
   Las tres builds comparadas dieron 45,6%, 45,4% y 45,7% de supervivencia;
   las diferencias por seed fueron mixtas y casi ningún NPC colocó muebles.
@@ -22,14 +22,18 @@ el diario de decisiones y entregas históricas debajo de este resumen.
   recuperación insuficiente y del proxy `answered` sigue abierta; la matriz
   `sim:check:all` y la suite unitaria también conservan fallos heredados.
   Véanse [calibración](m15_calibration.md) y [bugs](bugs.md).
+- **Fase 41, nueva cohorte `generations` (2026-10-13):** supervivencia 6,0%,
+  extinciones 10/20, colapso 19/20, `recovered` 0/59 censuradas y `answered`
+  81,8%. Sin comparación emparejada ni ajuste de parámetros; M15 sigue abierto.
 - **Conservación:** 15c continúa apagada hasta tener una comparación económica
   emparejada que mida una mejora real. El test del scorer de 15d confirma la
   elección de conserva bajo sus condiciones, pero el selector autónomo no la
   consume en invierno de forma suficiente; no se afirma mejora económica.
 - **Documentación de arquitectura:** revisada el 13 de octubre para reflejar
   los contratos vigentes; no cierra por sí sola la calibración de M15.
-- **E2E UI, 2026-10-13:** la matriz de 170 casos pasa completa en
-  `0.15.129-alpha`, incluidos `inscription-animation` y `tend-animation`. Para
+- **E2E UI, 2026-10-13:** la matriz de 172 casos pasa completa en
+  `0.15.131-alpha`, incluidos `inscription-animation`, `tend-animation`,
+  `ponder-animation` y `prototype-animation`. Para
   evitar el Vite huérfano del `webServer` de npm en Windows, la matriz se corrió
   contra un servidor Vite iniciado de forma separada; el detalle está en el
   changelog.

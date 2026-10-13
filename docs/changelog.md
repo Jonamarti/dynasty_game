@@ -1,3 +1,12 @@
+## 2026-10-13 — verificación final de la UI M15
+
+La suite E2E completa de `0.15.131-alpha` terminó con 172/172 casos aprobados
+en 17,5 minutos, ejecutada contra Vite iniciado por separado para evitar el
+proceso huérfano de `webServer` en Windows. Esta pasada también regeneró
+capturas de specs históricos; las capturas de hito comprometidas se
+restauraron después. La cohorte nueva de `generations` (20 semillas) se
+documenta en `m15_calibration.md`; no es emparejada y no cierra fase 41.
+
 ## 2026-10-13 — M15 phase 17: prototype gets a generic assembly gesture
 
 `prototype` now cycles four generated assembly poses while a real order adds

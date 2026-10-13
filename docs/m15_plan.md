@@ -1,3 +1,9 @@
+**Avance del 2026-10-13 — fase 41, nueva cohorte `generations`:** 20 semillas
+mostraron supervivencia media 6,0%, extinción 10/20, colapso <25% 19/20,
+`recovered` 0/59 (censuradas) y `answered` 81,8% (36/44). No es una medición
+emparejada y no justifica ajustar parámetros. La calibración sigue pendiente;
+ver detalle en [m15_calibration.md](m15_calibration.md) y [bugs.md](bugs.md).
+
 **Avance del 2026-10-13 — fase 17, prototipar:** `prototype` muestra cuatro
 poses generadas (`u0`–`u3`) con un ensamblaje genérico durante trabajo real. El
 selector lee solo `action`, `workedTicks` y `alive` del propio personaje; no

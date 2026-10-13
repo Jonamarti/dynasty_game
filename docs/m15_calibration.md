@@ -315,3 +315,17 @@ la secuencia de agresiones. `firemaking` llegó a 4/20 (20%, objetivo ≥50%). L
 cohorte no cambia parámetros y no tiene una comparación emparejada con otra
 versión; no atribuye la diferencia respecto a cohortes anteriores a una
 funcionalidad. Ver [hallazgo de fase 41](bugs.md).
+
+### `generations`, nueva cohorte de 20 semillas (2026-10-13)
+
+`npm.cmd run sim:seeds -- --scenario generations --seeds 20` terminó con
+supervivencia media 6,0%; 10/20 mundos extintos y 19/20 colapsados bajo un
+cuarto de su población. Hubo 67 nacimientos y 650 muertes (155 adultas, 24 de
+niños y 65 de lactantes por hambre). Solo 2/20 mundos acabaron por encima de
+su mínimo poblacional y hubo 5 bandas viables. `recovered` fue 0/59, las 59
+episodios censurados; `answered` 81,8% (36/44), con 8 acciones sin respuesta:
+`drink` 1, `give` 2, `go_home` 2 e `idle` 3. `firemaking` no alcanzó el umbral
+de 50%. Es una nueva medición sin control emparejado: no se atribuye el
+resultado a cambios de interfaz ni se eligen parámetros a partir de esta
+muestra. La recuperación, respuesta y adopción siguen bloqueando el cierre de
+fase 41. Ver el registro en `bugs.md`.
