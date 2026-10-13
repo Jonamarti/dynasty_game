@@ -74,6 +74,8 @@ export const ES_ACTIONS: Record<string, string> = {
   "Left hand": "Mano izquierda",
   "Right hand": "Mano derecha",
   "Back slot": "Espalda",
+  "Belt slot": "Cinturón",
+  "Shoulder slot": "Hombro",
   "changing equipment": "cambiando el equipo",
   "could not equip that item": "no pudo equiparse ese objeto",
   "equipping an item": "equipándose un objeto",

@@ -6,6 +6,7 @@ import { RNG } from '../core/RNG.ts';
 import { Person } from '../entities/Person.ts';
 import { axeFactor } from '../knowledge/Tech.ts';
 import { fromPersonRecord, toPersonRecord } from '../persistence/EntityRecords.ts';
+import { itemActions } from '../ai/ActionCatalog.ts';
 
 function person(): Person {
   const result = new Person('Tool user', 8, 8, 0, new RNG('tool-equipment'));
@@ -285,6 +286,33 @@ describe('manual equipment orders', () => {
     expect(worker.carrying).toBeLessThanOrEqual(worker.carryCapacity);
     expect(worker.inventory.count('berries') + sim.piles.reduce((sum, pile) =>
       sum + pile.contents.count('berries'), 0)).toBe(20);
+  });
+
+  it('allows a hide bag on the belt and a bundle on the shoulder, while rejecting mismatched slots', () => {
+    const sim = smallSimulation();
+    const worker = sim.livingPeople()[0]!;
+    worker.isPlayer = true;
+    worker.inventory.add('hide_bag', 1);
+    worker.inventory.add('bundle', 1);
+
+    expect(itemActions(worker, 'hide_bag', 0, null, null).find(option => option.id === 'equip_belt'))
+      .toMatchObject({ enabled: true, label: 'Belt slot' });
+    expect(itemActions(worker, 'bundle', 0, null, null).find(option => option.id === 'equip_shoulder'))
+      .toMatchObject({ enabled: true, label: 'Shoulder slot' });
+
+    expect(sim.order(worker, 'equip_belt', { itemId: 'hide_bag' })).toBe(true);
+    for (let i = 0; i < DEFAULT_CONFIG.carry.equipTicks; i++) sim.step();
+    expect(worker.equipment.belt?.item).toBe('hide_bag');
+    expect(worker.carryContainerCapacity).toBeGreaterThan(0);
+
+    worker.clearTarget(); worker.action = 'idle'; worker.order = null;
+    expect(sim.order(worker, 'equip_shoulder', { itemId: 'bundle' })).toBe(true);
+    for (let i = 0; i < DEFAULT_CONFIG.carry.equipTicks; i++) sim.step();
+    expect(worker.equipment.shoulder?.item).toBe('bundle');
+
+    worker.clearTarget(); worker.action = 'idle'; worker.order = null;
+    expect(sim.order(worker, 'equip_shoulder', { itemId: 'hide_bag' })).toBe(false);
+    expect(sim.lastRefusal).toBe('That item does not fit there');
   });
 
   it('shares the same atomic fitting helper and refuses an incompatible back slot without mutations', () => {

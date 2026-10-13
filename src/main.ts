@@ -920,7 +920,9 @@ function handleItemAction(
     }
     case 'equip_left':
     case 'equip_right':
-    case 'equip_back': {
+    case 'equip_back':
+    case 'equip_belt':
+    case 'equip_shoulder': {
       const ordered = sim.order(person, verb, { itemId });
       const reason = ordered ? null : sim.lastRefusal;
       if (!ordered) sim.lastRefusal = null;

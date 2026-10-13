@@ -344,6 +344,16 @@ export function itemActions(
       enabled: def?.container?.slot === 'back',
       reason: def?.container?.slot === 'back' ? undefined : t('That item does not fit there'),
     },
+    {
+      id: 'equip_belt', label: t('Belt slot'), icon: '\u{1F9F7}',
+      enabled: def?.container?.slot === 'belt',
+      reason: def?.container?.slot === 'belt' ? undefined : t('That item does not fit there'),
+    },
+    {
+      id: 'equip_shoulder', label: t('Shoulder slot'), icon: '\u{1F4AA}',
+      enabled: def?.container?.slot === 'shoulder',
+      reason: def?.container?.slot === 'shoulder' ? undefined : t('That item does not fit there'),
+    },
   ];
   if (garmentVerb) options.push({
     id: garmentVerb,

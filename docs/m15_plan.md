@@ -1633,6 +1633,15 @@ autónomo recoge, equipa y caza; 14 focales pasan y TypeScript limpio.
 [Contrato](m15_npc_tool_pickup.md). Quedan controles manuales de huecos;
 cohortes aplazadas, sin afirmación de mejora económica.
 
+**Avance 2026-10-13 — controles manuales de contenedores.** El kit ahora ofrece
+acciones explícitas para equipar la bolsa de piel en el cinturón y el hatillo
+en el hombro, además de manos y espalda. Las órdenes reutilizan el tiempo de
+equipamiento, validan que cada objeto corresponda a su hueco y reconcilian la
+capacidad de carga con el mismo flujo que los demás contenedores. Tests focales
+cubren ambos slots y el rechazo de un hueco incorrecto; la captura E2E muestra
+los tres contenedores equipados en el Kit. Recogida de herramientas de oficio
+y controles manuales queda cubierta; la calibración de 11c/11e sigue abierta.
+
 - **Avance 2026-10-03 — preparar herramienta:** hacha efectiva para talar,
   arma para cazar y manos vacías para recolectar. La preparación cuesta tres
   ticks en un contador propio y vuelve a comprobar posesión y brazos; un bebé

@@ -1,3 +1,18 @@
+## 2026-10-13 — M15 fase 11d: equipar bolsa y hatillo desde el Kit
+
+El menú de acciones del inventario ya permitía equipar herramientas en las
+manos y la cesta en la espalda, pero no ofrecía ninguna orden para la bolsa de
+piel (cinturón) ni para el hatillo (hombro). Se añadieron `equip_belt` y
+`equip_shoulder` al mismo flujo validado y temporizado, con rechazo visible si
+el objeto no corresponde al hueco y reconciliación normal de la capacidad.
+Tests focales y E2E cubren ambos slots; la captura es
+`artifacts/screenshots/m15-11d-container-slots-2026-10-13/03-container-slots-in-kit.png`.
+Los 24 tests focales de equipo e i18n y typecheck pasan. El caso E2E emitió
+`ok 1` y guardó las capturas, aunque Playwright se quedó en teardown y no dio
+exit limpio. `porters` conserva tres fallos generales conocidos (dieta,
+pertenencia y presupuesto de rendimiento); no se cambió ningún coeficiente ni
+se afirma efecto demográfico. Versión `0.15.140-alpha`.
+
 ## 2026-10-13 — M15 fase 35: alinear el destino tras llegada en un lote
 
 Un host que acumulaba varios `step` antes de llamar a `advancePeoples` podía

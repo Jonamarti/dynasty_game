@@ -8,7 +8,7 @@ import type { CarryConfig } from './Config.ts';
 import { reconcileCarry } from './Carry.ts';
 import { t } from '../../i18n/i18n.ts';
 
-export type ManualEquipmentSlot = 'left' | 'right' | 'back';
+export type ManualEquipmentSlot = 'left' | 'right' | 'back' | 'belt' | 'shoulder';
 export type ManualEquipReason =
   | 'item_not_owned' | 'unknown_item' | 'wrong_slot' | 'hands_full' | 'baby_uses_hand'
   | 'already_equipped';
@@ -17,6 +17,8 @@ export function manualEquipSlot(action: string): ManualEquipmentSlot | null {
   if (action === 'equip_left') return 'left';
   if (action === 'equip_right') return 'right';
   if (action === 'equip_back') return 'back';
+  if (action === 'equip_belt') return 'belt';
+  if (action === 'equip_shoulder') return 'shoulder';
   return null;
 }
 
@@ -219,8 +221,9 @@ export function manualEquipRefusal(
   if (!def) return 'unknown_item';
   if (person.inventory.count(itemId) <= 0) return 'item_not_owned';
   if (def.garment) return 'wrong_slot';
-  if (slot === 'back' && def.container?.slot !== 'back') return 'wrong_slot';
-  if (slot !== 'back') {
+  if (slot === 'back' || slot === 'belt' || slot === 'shoulder') {
+    if (def.container?.slot !== slot) return 'wrong_slot';
+  } else {
     if (person.armsTaken >= 2 || def.hand.hands > 2 - person.armsTaken) return 'hands_full';
     // Babies take the same left-to-right hand assignment the kit shows. A
     // manual equip never moves one to make room for an object.
@@ -235,7 +238,7 @@ export function manualEquipRefusal(
       (person.equipment[target]?.lit ?? 0) > 0)) return 'hands_full';
   }
   if (person.equipment[slot]?.item === itemId &&
-    (slot === 'back' || def.hand.hands === 1 || person.equipment.left?.item === itemId &&
+    (slot === 'back' || slot === 'belt' || slot === 'shoulder' || def.hand.hands === 1 || person.equipment.left?.item === itemId &&
       person.equipment.right?.item === itemId)) return 'already_equipped';
   return null;
 }
@@ -270,7 +273,7 @@ export function equipItemInSlot(
   const desired = ITEMS[itemId]!;
   const wasEquipped = Object.values(person.equipment).some(entry => entry?.item === itemId);
   const prior = Object.values(person.equipment).find(entry => entry?.item === itemId);
-  const targets: ManualEquipmentSlot[] = slot === 'back' || desired.hand.hands === 1
+  const targets: ManualEquipmentSlot[] = slot === 'back' || slot === 'belt' || slot === 'shoulder' || desired.hand.hands === 1
     ? [slot] : ['left', 'right'];
   const displaced = new Set<string>();
 

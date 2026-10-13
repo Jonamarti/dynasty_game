@@ -808,7 +808,9 @@ export class ActionSystem {
       case 'pickup': this.doPickup(person, ctx); break;
       case 'equip_left':
       case 'equip_right':
-      case 'equip_back': this.doManualEquip(person, ctx); break;
+      case 'equip_back':
+      case 'equip_belt':
+      case 'equip_shoulder': this.doManualEquip(person, ctx); break;
       case 'wear_garment':
       case 'take_off_garment': this.doChangeGarment(person, ctx); break;
       case 'mend_garment': this.doMendGarment(person, ctx); break;

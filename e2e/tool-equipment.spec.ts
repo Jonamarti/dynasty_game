@@ -32,6 +32,8 @@ test('a real chop order renders the fitted axe and keeps the packed spear out of
     person.knownTech.add('hafting');
     person.inventory.add('spear', 1);
     person.inventory.add('handaxe', 1);
+    person.inventory.add('hide_bag', 1);
+    person.inventory.add('bundle', 1);
     if (!d.sim.order(person, 'chop', { treeId: target.id })) throw new Error('Simulation refused chop fixture order');
     for (let tick = 0; tick < 24 && person.equipment.right?.item !== 'handaxe' && person.equipment.left?.item !== 'handaxe'; tick++) d.sim.step();
     if (person.action !== 'chop' || (person.equipment.right?.item !== 'handaxe' && person.equipment.left?.item !== 'handaxe')) {
@@ -93,6 +95,30 @@ test('a real chop order renders the fitted axe and keeps the packed spear out of
   });
   expect(manuallyEquipped).toEqual({ action: 'idle', right: 'spear', spearStillOwned: 1, displacedOnGround: true });
   await page.screenshot({ path: `${shots}/02-fitted-hand-in-kit.png` });
+
+  for (const [item, slot] of [['hide_bag', 'equip_belt'], ['bundle', 'equip_shoulder']]) {
+    const equip = page.locator(`.hud-item-verbs [data-item="${item}"][data-verb="${slot}"]`);
+    await expect(equip).toBeVisible();
+    await equip.click();
+    await page.evaluate(() => {
+      const d = (window as any).__dynasty;
+      for (let tick = 0; tick < d.sim.config.carry.equipTicks; tick++) d.sim.step();
+      d.renderer.render(null, 0);
+    });
+  }
+  const fittedContainers = await page.evaluate(() => {
+    const p = (window as any).__dynasty.sim.player;
+    return { belt: p.equipment.belt?.item, shoulder: p.equipment.shoulder?.item };
+  });
+  expect(fittedContainers).toEqual({ belt: 'hide_bag', shoulder: 'bundle' });
+  // Force the panel to rebuild from the completed orders; direct harness steps
+  // bypass the normal frame that invalidates the player's cached Kit tab.
+  await page.locator('.hud-tab[data-tab="self"]').click();
+  await page.locator('.hud-tab[data-tab="kit"]').click();
+  await expect(page.locator('.hud-panel')).toContainText('belt: Hide bag ×1');
+  await expect(page.locator('.hud-panel')).toContainText('shoulder: Bundle ×1');
+  await page.evaluate(() => (window as any).__dynasty.renderer.floaters.clear());
+  await page.screenshot({ path: `${shots}/03-container-slots-in-kit.png` });
 
   const ablation = await page.evaluate(() => {
     const d = (window as any).__dynasty;

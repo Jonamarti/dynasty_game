@@ -63,4 +63,18 @@ worker and Kit's actual right-hand slot; both were reviewed:
 `artifacts/screenshots/m15-tools-2026-10-03-final-pass4/`.
 The selector uses visible fitted slots and static item kinds, not private
 inventory or techniques; a throwing getter detects the former reads.
-Occupation-tool pickup and the manual slot controls remain phase 11d work.
+Occupation-tool pickup is covered by the later phase 11d work. This contract's
+manual hand/back actions originally left the hide bag's belt and bundle's
+shoulder slots without an explicit player order. The 2026-10-13 follow-up adds
+`equip_belt` and `equip_shoulder` through the same validated order path; the
+focused Kit capture is recorded in `docs/changelog.md`. Population calibration
+remains a separate phase 11c/11e gate.
+
+The 2026-10-13 focused verification passes typecheck and 24 unit/i18n tests.
+The tool-equipment E2E case emitted `ok 1` and captured the Kit after both
+orders; Playwright then stalled in teardown and was interrupted, so the runner
+did not return a clean exit code. The related `porters` health scenario reports
+the existing `cravings-steer-the-diet`, `moods-move-choices` and
+machine-sensitive `perf-budget` failures; no behavior or threshold was changed
+to address them. The UI capture is
+`artifacts/screenshots/m15-11d-container-slots-2026-10-13/03-container-slots-in-kit.png`.
