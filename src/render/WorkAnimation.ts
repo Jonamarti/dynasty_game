@@ -3,8 +3,9 @@ import type { Simulation } from '../sim/core/Simulation.ts';
 import type { Person } from '../sim/entities/Person.ts';
 import type { Building } from '../sim/entities/Building.ts';
 import { ARRIVAL_RADIUS } from '../sim/systems/MovementSystem.ts';
-import { ATTEND_POSES, BENCH_REST_POSES, BUILD_POSES, CHOP_POSES, CUT_GRASS_POSES, DIG_POSES, DYE_POSES, EXTRACT_POSES, FARM_POSES, FIGHT_POSES, FISH_POSES, GATHER_POSES, HIDE_DRESS_POSES, INSCRIBE_POSES, MAKE_POSES, MEND_POSES, PLANT_POSES, PONDER_POSES, PROTOTYPE_POSES, SLEEP_POSES, SPREAD_POSES, SWIM_POSES, TAME_POSES, TALK_POSES, TEND_POSES, type ArtPose } from './ArtManifest.ts';
+import { ATTEND_POSES, BENCH_REST_POSES, BUILD_POSES, CHOP_POSES, CUT_GRASS_POSES, DIG_POSES, DYE_POSES, EXTRACT_POSES, FARM_POSES, FIGHT_POSES, FISH_POSES, GATHER_POSES, HIDE_DRESS_POSES, HUNT_POSES, INSCRIBE_POSES, MAKE_POSES, MEND_POSES, PLANT_POSES, PONDER_POSES, PROTOTYPE_POSES, SLEEP_POSES, SPREAD_POSES, SWIM_POSES, TAME_POSES, TALK_POSES, TEND_POSES, type ArtPose } from './ArtManifest.ts';
 import { RECIPES } from '../sim/entities/Recipe.ts';
+import { ITEMS } from '../sim/entities/Item.ts';
 import { isStationFor } from '../sim/entities/Building.ts';
 import { CUT_FLOOR } from '../sim/core/Grass.ts';
 import { FEAST_SEAT } from '../sim/social/Feast.ts';
@@ -14,6 +15,21 @@ import { seatedOnBench } from '../sim/world/HouseInterior.ts';
 function workFrame(poses: readonly ArtPose[], workedTicks: number, alpha: number): ArtPose {
   const phase = Math.floor((workedTicks - 1 + Math.max(0, Math.min(1, alpha))) / 2) % poses.length;
   return poses[phase]!;
+}
+
+// The action's base reach is 1.6; the longest hunting weapon adds another
+// 1.6. This upper bound only culls a pose if the quarry is too far away; the
+// action system remains the authority on which weapon can actually strike.
+const MAX_HUNT_POSE_RANGE = 1.6 + Math.max(...Object.values(ITEMS).map(item => item.weapon?.reach ?? 0));
+
+/** A hunter steadies a weapon only during a real, reached hunting work tick. */
+export function huntingPose(
+  person: Person, sim: Pick<Simulation, 'animalsById'>, moving: boolean, alpha = 1,
+): ArtPose | null {
+  if (moving || !person.alive || person.action !== 'hunt' || person.workedTicks <= 0 || person.targetAnimalId === null) return null;
+  const quarry = sim.animalsById.get(person.targetAnimalId);
+  if (!quarry?.alive || person.distanceTo(quarry) > MAX_HUNT_POSE_RANGE) return null;
+  return workFrame(HUNT_POSES, person.workedTicks, alpha);
 }
 
 /** Sleeping uses its own action clock; stillness alone never implies sleep. */

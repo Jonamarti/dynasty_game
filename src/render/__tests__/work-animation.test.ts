@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Person } from '../../sim/entities/Person.ts';
 import { RNG } from '../../sim/core/RNG.ts';
-import { attendingFeastPose, benchRestPose, buildingPose, cuttingGrassPose, diggingPose, dyeingPose, extractionPose, farmingPose, fightingPose, fishingPose, gatheringPose, hideDressingPose, inscribingPose, mendingPose, ponderingPose, prototypingPose, plantingPose, reflectingPose, sleepingPose, spreadingCompostPose, swimmingPose, tamingPose, tendingPose } from '../WorkAnimation.ts';
+import { attendingFeastPose, benchRestPose, buildingPose, cuttingGrassPose, diggingPose, dyeingPose, extractionPose, farmingPose, fightingPose, fishingPose, gatheringPose, hideDressingPose, huntingPose, inscribingPose, mendingPose, ponderingPose, prototypingPose, plantingPose, reflectingPose, sleepingPose, spreadingCompostPose, swimmingPose, tamingPose, tendingPose } from '../WorkAnimation.ts';
 import type { Simulation } from '../../sim/core/Simulation.ts';
 
 function fixture() {
@@ -107,6 +107,46 @@ describe('human combat animation', () => {
     expect(fightingPose(person, false, 0.5)).toBe('k0');
     expect(fightingPose(person, false, 1)).toBe('k1');
     expect(fightingPose(person, false, 50)).toBe('k1');
+  });
+});
+
+describe('human hunting animation', () => {
+  function huntFixture() {
+    const person = new Person('Hunter', 4, 4, 0, new RNG('hunt-animation'));
+    person.action = 'hunt'; person.targetAnimalId = 3; person.workedTicks = 1;
+    const quarry = { x: 6.4, y: 4, alive: true };
+    const sim = { animalsById: new Map([[3, quarry]]) } as unknown as Pick<Simulation, 'animalsById'>;
+    return { person, quarry, sim };
+  }
+
+  it('cycles through four poses on the hunter clock only while the living quarry is in range', () => {
+    const { person, sim } = huntFixture();
+    expect([1, 3, 5, 7, 9].map(ticks => {
+      person.workedTicks = ticks;
+      return huntingPose(person, sim, false, 0);
+    })).toEqual(['H0', 'H1', 'H2', 'H3', 'H0']);
+    expect(person.action).toBe('hunt');
+  });
+
+  it('hides the gesture while chasing, before work, without a live target, or while dead', () => {
+    const { person, quarry, sim } = huntFixture();
+    expect(huntingPose(person, sim, false)).toBe('H0');
+    expect(huntingPose(person, sim, true)).toBeNull();
+    person.workedTicks = 0; expect(huntingPose(person, sim, false)).toBeNull();
+    person.workedTicks = 1; quarry.x = 8; expect(huntingPose(person, sim, false)).toBeNull();
+    quarry.x = 6.4; quarry.alive = false; expect(huntingPose(person, sim, false)).toBeNull();
+    quarry.alive = true; person.targetAnimalId = null; expect(huntingPose(person, sim, false)).toBeNull();
+    person.targetAnimalId = 3; person.alive = false; expect(huntingPose(person, sim, false)).toBeNull();
+  });
+
+  it('uses only the bounded simulation fraction and leaves the action untouched', () => {
+    const { person, sim } = huntFixture();
+    person.workedTicks = 2;
+    expect(huntingPose(person, sim, false, 0.5)).toBe('H0');
+    expect(huntingPose(person, sim, false, 1)).toBe('H1');
+    expect(huntingPose(person, sim, false, 50)).toBe('H1');
+    expect(person.workedTicks).toBe(2);
+    expect(person.action).toBe('hunt');
   });
 });
 

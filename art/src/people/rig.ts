@@ -124,7 +124,7 @@ export function geometry(age: ArtAge, sex: ArtSex): Geo {
 }
 
 /** Whole-pixel upper-body dip; gathering keeps its feet planted like idle. */
-export const POSE_BOB: Record<ArtPose, number> = { idle: 0, w0: 0, w1: 1, w2: 0, w3: 1, g0: 0, g1: 1, g2: 2, g3: 1, f0: 0, f1: 0, f2: 0, f3: 0, x0: 0, x1: 0, x2: 0, x3: 0, d0: 0, d1: 0, d2: 0, d3: 0, c0: 0, c1: 0, c2: 0, c3: 0, m0: 1, m1: 2, m2: 1, m3: 0, a0: 1, a1: 2, a2: 1, a3: 0, b0: 0, b1: 1, b2: 0, b3: 1, r0: 0, r1: 0, r2: 0, r3: 0, h0: 0, h1: 0, h2: 0, h3: 0, q0: 0, q1: 1, q2: 1, q3: 0, p0: 0, p1: 0, p2: 0, p3: 0, s0: 1, s1: 2, s2: 1, s3: 0, y0: 0, y1: 1, y2: 1, y3: 0, v0: 0, v1: 1, v2: 1, v3: 0, i0: 1, i1: 2, i2: 1, i3: 0, t0: 0, t1: 0, t2: 1, t3: 0, o0: 0, o1: 1, o2: 0, o3: 1, u0: 0, u1: 1, u2: 0, u3: 1, k0: 0, k1: 0, k2: 1, k3: 0, l0: 0, l1: 1, l2: 1, l3: 0, z0: 0, z1: 1, z2: 1, z3: 0, n0: 0, n1: 1, n2: 0, n3: 1, e0: 0, e1: 0, e2: 0, e3: 0, j0: 0, j1: 0, j2: 0, j3: 0 };
+export const POSE_BOB: Record<ArtPose, number> = { idle: 0, w0: 0, w1: 1, w2: 0, w3: 1, g0: 0, g1: 1, g2: 2, g3: 1, f0: 0, f1: 0, f2: 0, f3: 0, x0: 0, x1: 0, x2: 0, x3: 0, d0: 0, d1: 0, d2: 0, d3: 0, c0: 0, c1: 0, c2: 0, c3: 0, m0: 1, m1: 2, m2: 1, m3: 0, a0: 1, a1: 2, a2: 1, a3: 0, b0: 0, b1: 1, b2: 0, b3: 1, r0: 0, r1: 0, r2: 0, r3: 0, h0: 0, h1: 0, h2: 0, h3: 0, q0: 0, q1: 1, q2: 1, q3: 0, p0: 0, p1: 0, p2: 0, p3: 0, s0: 1, s1: 2, s2: 1, s3: 0, y0: 0, y1: 1, y2: 1, y3: 0, v0: 0, v1: 1, v2: 1, v3: 0, i0: 1, i1: 2, i2: 1, i3: 0, t0: 0, t1: 0, t2: 1, t3: 0, o0: 0, o1: 1, o2: 0, o3: 1, u0: 0, u1: 1, u2: 0, u3: 1, k0: 0, k1: 0, k2: 1, k3: 0, l0: 0, l1: 1, l2: 1, l3: 0, z0: 0, z1: 1, z2: 1, z3: 0, n0: 0, n1: 1, n2: 0, n3: 1, e0: 0, e1: 0, e2: 0, e3: 0, j0: 0, j1: 0, j2: 0, j3: 0, H0: 0, H1: 1, H2: 0, H3: 0 };
 
 const DIG_FRONT: readonly { reach: number; handY: number; elbowY: number }[] = [
   { reach: 0.4, handY: -0.3, elbowY: 0.05 }, { reach: 0.25, handY: -0.6, elbowY: -0.1 },
@@ -271,6 +271,15 @@ const FIGHT_FRONT: readonly { rightX: number; rightY: number; leftX: number; lef
   { rightX: 7, rightY: 0.3, leftX: 5, leftY: 0.42 },
 ];
 const FIGHT_SIDE: readonly (readonly [number, number])[] = [[-18, 28], [-42, -8], [28, 52], [-8, 35]];
+// A hunter raises and steadies a weapon, takes aim, releases, and resets.
+// The cycle stays generic across bows, spears and other carried hunting tools.
+const HUNT_FRONT: readonly { rightX: number; rightY: number; leftX: number; leftY: number }[] = [
+  { rightX: 6, rightY: 0.72, leftX: 5, leftY: 0.76 },
+  { rightX: 7, rightY: 0.48, leftX: 9, leftY: 0.56 },
+  { rightX: 8, rightY: 0.5, leftX: 10, leftY: 0.52 },
+  { rightX: 7, rightY: 0.86, leftX: 4, leftY: 0.8 },
+];
+const HUNT_SIDE: readonly (readonly [number, number])[] = [[18, 54], [-24, 10], [-12, 32], [22, 58]];
 // Open hands carry a conversation outward, then return to a listening pose.
 // All four gestures are generic and reveal no private relationship or topic.
 const TALK_FRONT = [
@@ -864,6 +873,10 @@ function frontLayers(spec: PersonSpec, back: boolean): PersonOut {
       const { rightX, rightY, leftX, leftY } = FIGHT_FRONT[Number(spec.pose.slice(1))]!;
       hand = [cx + side * (isRight ? rightX : leftX), sY + g.arm * (isRight ? rightY : leftY)];
       elbow = [cx + side * (sh + g.arm * 0.18), sY + g.arm * 0.48];
+    } else if (spec.pose.startsWith('H')) {
+      const { rightX, rightY, leftX, leftY } = HUNT_FRONT[Number(spec.pose.slice(1))]!;
+      hand = [cx + side * (isRight ? rightX : leftX), sY + g.arm * (isRight ? rightY : leftY)];
+      elbow = [cx + side * (sh + g.arm * 0.16), sY + g.arm * 0.55];
     } else if (spec.pose.startsWith('u')) {
       const { rightX, rightY, leftX, leftY } = PROTOTYPE_FRONT[Number(spec.pose.slice(1))]!;
       hand = [cx + side * (isRight ? rightX : leftX), sY + g.arm * (isRight ? rightY : leftY)];
@@ -1021,6 +1034,8 @@ function sideLayers(spec: PersonSpec): PersonOut {
       [a1, a2] = (near ? TALK_SIDE : [[-18, 34], [-10, 24], [-24, 38], [-20, 32]])[Number(spec.pose.slice(1))]!;
     } else if (spec.pose.startsWith('k')) {
       [a1, a2] = near ? FIGHT_SIDE[Number(spec.pose.slice(1))]! : [18, 62];
+    } else if (spec.pose.startsWith('H')) {
+      [a1, a2] = near ? HUNT_SIDE[Number(spec.pose.slice(1))]! : [18, 56];
     } else if (spec.pose.startsWith('u')) {
       [a1, a2] = near ? PROTOTYPE_SIDE[Number(spec.pose.slice(1))]! : [36, 76];
     } else if (spec.pose.startsWith('o')) {

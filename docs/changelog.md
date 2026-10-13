@@ -1,3 +1,16 @@
+## 2026-10-14 — M15 fase 17: el cazador anima el trabajo a alcance
+
+Una orden `hunt` activa cuatro poses humanas generadas cuando el cazador ha
+sumado trabajo y la presa viva está dentro del alcance máximo del catálogo de
+armas. La persecución conserva la locomoción habitual. El selector es visual:
+no decide impactos ni modifica objetivos, daño, consumibles o RNG. Incluye arte,
+pruebas focales y E2E de orden real; capturas en
+`artifacts/screenshots/m15-hunt-animation-2026-10-14/`. Se incrementa a
+`0.15.147-alpha` porque añade comportamiento visual observable del juego, según
+la regla de versión de M15.
+
+Contrato y límites: [`m15_hunt_animation.md`](m15_hunt_animation.md).
+
 ## 2026-10-13 — M15 fase 15c sigue diferida tras pareja no discriminante
 
 La comparación emparejada de 20 semillas a 3.000 ticks dio supervivencia

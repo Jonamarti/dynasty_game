@@ -18,6 +18,15 @@ para filtrar mordiscos, pero la repetición de `generations` solo observó un
 asalto adulto y una huida; no resuelve `answered`. La calibración sigue pendiente;
 ver detalle en [m15_calibration.md](m15_calibration.md) y [bugs.md](bugs.md).
 
+**Avance del 2026-10-14 — fase 17, cazar:** `hunt` muestra cuatro poses
+generadas (`H0`–`H3`) cuando el cazador vivo suma trabajo real y la presa viva
+está dentro del alcance máximo de caza. La pose desaparece durante la
+persecución; el selector lee la acción y los ticks de trabajo del cazador, más
+la posición pública de su presa, sin inferir aciertos ni cambiar las reglas del
+arma. La captura se guarda en
+`artifacts/screenshots/m15-hunt-animation-2026-10-14/`. Contrato:
+[`m15_hunt_animation.md`](m15_hunt_animation.md). Versión `0.15.147-alpha`.
+
 **Avance del 2026-10-13 — fase 17, prototipar:** `prototype` muestra cuatro
 poses generadas (`u0`–`u3`) con un ensamblaje genérico durante trabajo real. El
 selector lee solo `action`, `workedTicks` y `alive` del propio personaje; no
