@@ -4521,6 +4521,15 @@ Faltan resolver persistencia/recuperación y
 `architecture.md` y reescribir `next-steps.md` para cerrar M15. Evidencia y
 cifras: `m15_calibration.md` y `bugs.md`.
 
+**Avance del 2026-10-13:** una segunda cohorte `century` de 20 semillas
+(40.000 pasos cada una, versión `0.15.126-alpha`) terminó con 45,6% de
+supervivencia, 1/20 extinciones y 2/20 colapsos bajo un cuarto. `recovered`
+sigue 0/42 (todas censuradas), `answered` 83,3% (35/42, objetivo ≥90%) y
+`firemaking` 4/20 (20%, objetivo ≥50%). Los siete golpes sin respuesta tuvieron
+víctimas en `flee`, pero el proxy no establece causa. No se calibró ningún
+parámetro: fase 41 sigue abierta junto con los otros gates de M15. Resultados
+en `m15_calibration.md` y `bugs.md`.
+
 - La segunda pasada completa del protocolo de la fase 10 en `generations`,
   `century`, `lean` y los escenarios con mapa, con la tabla en
   `m15_calibration.md`.

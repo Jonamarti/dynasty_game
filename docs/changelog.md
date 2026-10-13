@@ -1,3 +1,11 @@
+## 2026-10-13 — docs: actualizar diagnóstico de fase 41
+
+Una nueva cohorte `century` de 20 semillas con `0.15.126-alpha` dio 45,6% de
+supervivencia, `recovered` 0/42 censuradas, `answered` 83,3% (35/42) y
+`firemaking` 4/20. Se registran el comando, límites y causas aún desconocidas
+en `m15_calibration.md` y `bugs.md`; no se cambió calibración y M15 sigue
+abierto.
+
 ## 2026-10-13 — M15 fase 17: el invitado se sienta al asistir
 
 Una orden `attend` activa ahora cuatro poses generadas de espera sentada cuando

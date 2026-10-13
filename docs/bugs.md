@@ -5333,3 +5333,16 @@ completa dio 2.229 aprobadas, 1 omitida y cinco fallos en cuatro archivos
 La E2E completa no se repitió después de reparar cuatro premisas detectadas;
 los casos afectados pasaron en ejecuciones focales. M15 continúa abierto.
 
+### 2026-10-13 — fase 41: cohorte repetida `century`
+
+`npm.cmd run sim:seeds -- --scenario century --seeds 20` (40.000 pasos por
+semilla, 1.726,9 s) terminó con supervivencia media 45,6%, 1/20 mundos
+extintos, 2/20 colapsados bajo un cuarto y 40 nacimientos. De 42 caídas
+medidas, 0 recuperaron antes del final; las 42 quedaron censuradas. `answered`
+fue 83,3% (35/42, objetivo ≥90%) y `firemaking` se conoció en 4/20 semillas
+(20%, objetivo ≥50%). El renglón del instrumento atribuye los siete golpes no
+respondidos a víctimas que ejecutaban `flee`, pero no identifica si se trata de
+un defecto de respuesta, del proxy o de la secuencia de agresiones. Esta
+cohorte no está emparejada con una build anterior; no se ajusta ningún
+coeficiente ni se infiere una regresión. Ver `m15_calibration.md`.
+
