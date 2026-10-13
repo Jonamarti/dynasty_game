@@ -1,3 +1,12 @@
+## 2026-10-13 — M15 phase 31d: `TribeGraph` readable on mobile
+
+The tribe graph now keeps its reference layout independent of phone width and
+opens centered on the selected person in a clipped, touch-enabled viewport.
+Pointer pan, pinch and wheel zoom preserve readable names without changing the
+layout or simulation. A 17-person browser fixture covers mobile navigation;
+captures are in `artifacts/screenshots/m15-tribegraph-mobile-zoom-2026-10-13/`.
+Version: `0.15.135-alpha`.
+
 ## 2026-10-13 — M15 phase 31: make large family trees readable on mobile
 
 `FamilyTreeLayout` now keeps natural-scale coordinates, and the overlay offers

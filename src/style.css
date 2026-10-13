@@ -1575,7 +1575,22 @@ html, body, #app {
   line-height: 1.5;
 }
 
-.tribegraph-canvas { position: relative; flex: none; }
+.tribegraph-viewport {
+  position: relative;
+  flex: none;
+  overflow: hidden;
+  touch-action: none;
+  cursor: grab;
+  background: rgba(0, 0, 0, 0.12);
+}
+.tribegraph-viewport.is-panning { cursor: grabbing; }
+.tribegraph-canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
 .tribegraph-edges { position: absolute; inset: 0; overflow: visible; }
 .tribegraph-edge.is-pos { stroke: rgba(92, 201, 138, 0.45); }
 .tribegraph-edge.is-neg { stroke: rgba(224, 112, 92, 0.45); }

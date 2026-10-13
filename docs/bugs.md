@@ -2386,15 +2386,15 @@ retuning `MAX_PUSH`, `heat` or `AT_REST` still moves a web the next time it is
 first laid out. Pinning it across builds would need the positions persisted, which
 13c did not invent. See `m15_phase13_subwebs.md`.
 
-### `TribeGraph` still has no mobile pan-and-zoom viewport
+### Resolved 2026-10-13: `TribeGraph` had no mobile pan-and-zoom viewport
 
-The matching `FamilyTree` issue is fixed: its layout now keeps natural-scale
-coordinates, and the overlay centres on the selected person while supporting
-pointer drag, touch pinch and wheel zoom. A 16-person mobile browser fixture
-checks that the canvas remains wider than the viewport and labels open at a
-readable scale. The tribe graph still fits its rows into the panel and can
-shrink names on a narrow screen; it needs its own pan-and-zoom viewport.
-See `m15_familytree_mobile_zoom.md`.
+`TribeGraph` now opens with the selected person centred in a touch viewport and
+keeps the same 1000×760 layout reference at every screen width. Pointer drag,
+touch pinch and wheel zoom change only the canvas transform, so the graph can be
+explored without compressing its rows on a phone. A 17-person mobile browser
+fixture checks the readable opening scale, wheel zoom and pan. See
+`m15_tribegraph_mobile_zoom.md`; captures:
+`artifacts/screenshots/m15-tribegraph-mobile-zoom-2026-10-13/`.
 
 ## Found shipping M11 phase 10, sixth commit, 2026-09-21
 

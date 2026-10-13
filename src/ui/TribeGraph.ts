@@ -47,6 +47,19 @@ export class TribeGraphOverlay {
   private subject: Person | null = null;
   private sim: Simulation | null = null;
   private signature = '';
+  private viewportEl: HTMLElement | null = null;
+  private canvasEl: HTMLElement | null = null;
+  private panX = 0;
+  private panY = 0;
+  private zoom = 1;
+  private fitted = false;
+  private pointers = new Map<number, { x: number; y: number }>();
+  private pointerStart = { x: 0, y: 0 };
+  private panStart = { x: 0, y: 0 };
+  private pinchStartGap = 0;
+  private pinchStartZoom = 1;
+  private pinchStartPan = { x: 0, y: 0 };
+  private dragMoved = false;
   /**
    * Where the layout left everybody last frame, so the next one can carry on
    * from it rather than re-deriving the whole picture.
@@ -76,6 +89,10 @@ export class TribeGraphOverlay {
     container.appendChild(this.root);
 
     this.root.addEventListener('click', event => {
+      if (this.dragMoved) {
+        this.dragMoved = false;
+        return;
+      }
       const target = event.target as HTMLElement;
       if (target.closest('[data-close]')) {
         this.close();
@@ -86,12 +103,75 @@ export class TribeGraphOverlay {
         // A different membership is a different graph; easing into it from
         // the old arrangement would drag the survivors across the screen.
         this.settled = null;
+        this.fitted = false;
         this.signature = '';
         this.render();
         return;
       }
       if (target === this.root) this.close();
     });
+
+    // Gestures change only the canvas transform. Rebuilding the graph while
+    // the pointer is over a name would detach it and make touch exploration
+    // frustrating on the small-screen view.
+    this.root.addEventListener('pointerdown', event => {
+      if (!this.viewportEl?.contains(event.target as Node)) return;
+      this.viewportEl.setPointerCapture(event.pointerId);
+      this.pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      if (this.pointers.size === 1) {
+        this.pointerStart = { x: event.clientX, y: event.clientY };
+        this.panStart = { x: this.panX, y: this.panY };
+        this.dragMoved = false;
+        this.viewportEl.classList.add('is-panning');
+      } else if (this.pointers.size === 2) {
+        this.dragMoved = true;
+        this.pinchStartGap = this.pointerGap();
+        this.pinchStartZoom = this.zoom;
+        this.pinchStartPan = { x: this.panX, y: this.panY };
+      }
+      event.preventDefault();
+    });
+    this.root.addEventListener('pointermove', event => {
+      if (!this.pointers.has(event.pointerId)) return;
+      this.pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      if (this.pointers.size >= 2) {
+        const gap = this.pointerGap();
+        if (this.pinchStartGap > 0 && gap > 0) {
+          const points = [...this.pointers.values()];
+          this.zoomAt((points[0]!.x + points[1]!.x) / 2,
+            (points[0]!.y + points[1]!.y) / 2, gap / this.pinchStartGap,
+            this.pinchStartZoom, this.pinchStartPan);
+        }
+        this.dragMoved = true;
+      } else {
+        const dx = event.clientX - this.pointerStart.x;
+        const dy = event.clientY - this.pointerStart.y;
+        if (Math.abs(dx) > 4 || Math.abs(dy) > 4) this.dragMoved = true;
+        this.panX = this.panStart.x + dx;
+        this.panY = this.panStart.y + dy;
+        this.applyTransform();
+      }
+      event.preventDefault();
+    });
+    const endPointer = (event: PointerEvent) => {
+      this.pointers.delete(event.pointerId);
+      if (this.pointers.size === 1) {
+        const remaining = [...this.pointers.values()][0]!;
+        this.pointerStart = { x: remaining.x, y: remaining.y };
+        this.panStart = { x: this.panX, y: this.panY };
+        this.pinchStartGap = 0;
+      } else if (this.pointers.size === 0) {
+        this.pinchStartGap = 0;
+      }
+      if (this.pointers.size === 0) this.viewportEl?.classList.remove('is-panning');
+    };
+    this.root.addEventListener('pointerup', endPointer);
+    this.root.addEventListener('pointercancel', endPointer);
+    this.root.addEventListener('wheel', event => {
+      if (!this.viewportEl?.contains(event.target as Node)) return;
+      event.preventDefault();
+      this.zoomAt(event.clientX, event.clientY, event.deltaY < 0 ? 1.12 : 1 / 1.12);
+    }, { passive: false });
 
     // The digest says nothing about language, so a switch would leave the old
     // words up until something else changed.
@@ -123,6 +203,10 @@ export class TribeGraphOverlay {
     this.subject = subject;
     this.signature = '';
     this.settled = null;
+    this.panX = this.panY = 0;
+    this.zoom = 1;
+    this.fitted = false;
+    this.pointers.clear();
     this.render();
     this.root.hidden = false;
   }
@@ -134,6 +218,9 @@ export class TribeGraphOverlay {
     this.sim = null;
     this.signature = '';
     this.settled = null;
+    this.viewportEl = null;
+    this.canvasEl = null;
+    this.pointers.clear();
   }
 
   update(sim: Simulation): void {
@@ -170,7 +257,15 @@ export class TribeGraphOverlay {
       return;
     }
 
-    const box = this.boxSize();
+    const viewport = this.boxSize();
+    if (this.viewportEl) {
+      this.viewportEl.style.width = viewport.width + 'px';
+      this.viewportEl.style.height = viewport.height + 'px';
+    }
+    // Keep layout coordinates on the same 1000×760 reference box at every
+    // screen size. `panelBox` describes the visible window; using its mobile
+    // width for layout compressed a whole tribe into a narrow strip.
+    const box = { width: 1000, height: 760 };
     // The sticky set and the layout must be given the *same* membership, or the
     // ranks handed in cover a different set of people from the ones drawn —
     // `tribeMembers` exists for that reason and now takes who is already on
@@ -228,6 +323,8 @@ export class TribeGraphOverlay {
           '</button>' +
         '<button class="tribegraph-close" data-close="1">' + t('close') + '</button>' +
       '</div>' +
+      '<div class="tribegraph-viewport" style="width:' + viewport.width +
+        'px;height:' + viewport.height + 'px">' +
       '<div class="tribegraph-canvas" style="width:' + layout.width +
         'px;height:' + layout.height + 'px">' +
         '<svg class="tribegraph-edges" width="' + layout.width + '" height="' +
@@ -235,7 +332,11 @@ export class TribeGraphOverlay {
         rows +
         nodes +
       '</div>' +
-      '</div>';
+      '</div></div>';
+    this.viewportEl = this.root.querySelector('.tribegraph-viewport');
+    this.canvasEl = this.root.querySelector('.tribegraph-canvas');
+    if (!this.fitted) this.fitToView(layout, viewport);
+    this.applyTransform();
   }
 
   /**
@@ -342,6 +443,46 @@ export class TribeGraphOverlay {
   /** See `PanelBox.ts` — shared, because all three of these panels had it wrong. */
   private boxSize(): { width: number; height: number } {
     return panelBox(240, 1000, 760);
+  }
+
+  private fitToView(layout: TribeLayout, viewport: { width: number; height: number }): void {
+    this.fitted = true;
+    const whole = Math.min(1.1, viewport.width / layout.width, viewport.height / layout.height);
+    // Keep names readable on a phone; open on the selected person and let the
+    // player pan to the rest of a wide tribe.
+    this.zoom = Math.max(0.85, whole);
+    const subject = layout.nodes.find(node => node.isSubject);
+    this.panX = viewport.width / 2 - (subject?.x ?? layout.width / 2) * this.zoom;
+    this.panY = viewport.height / 2 - (subject?.y ?? layout.height / 2) * this.zoom;
+  }
+
+  private pointerGap(): number {
+    const points = [...this.pointers.values()];
+    if (points.length < 2) return 0;
+    return Math.hypot(points[1]!.x - points[0]!.x, points[1]!.y - points[0]!.y);
+  }
+
+  private zoomAt(
+    clientX: number, clientY: number, factor: number,
+    fromZoom = this.zoom, fromPan = { x: this.panX, y: this.panY }
+  ): void {
+    if (!this.viewportEl) return;
+    const rect = this.viewportEl.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    const worldX = (x - fromPan.x) / fromZoom;
+    const worldY = (y - fromPan.y) / fromZoom;
+    this.zoom = Math.max(0.35, Math.min(2.5, fromZoom * factor));
+    this.panX = x - worldX * this.zoom;
+    this.panY = y - worldY * this.zoom;
+    this.applyTransform();
+  }
+
+  private applyTransform(): void {
+    if (!this.canvasEl) return;
+    this.canvasEl.style.transform = 'translate(' + this.panX.toFixed(1) + 'px,' +
+      this.panY.toFixed(1) + 'px) scale(' + this.zoom.toFixed(3) + ')';
+    this.canvasEl.dataset.zoom = this.zoom.toFixed(3);
   }
 }
 

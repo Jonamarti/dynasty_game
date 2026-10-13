@@ -561,7 +561,7 @@ Cada cosa que algún documento dio por planeada y que ninguna fase terminó:
 | `m14_plan.md` fases 18-21 | Comercio y caravanas; Bronce; Estado | **36-39** |
 | `m8_plan_the_ages.md` M8.4 | Hierro: `bog_iron`, `bloomery`, `forging`, `carburising`, `iron_tools`, `ploughshare` | **40** |
 | `next-steps.md` «What M11 leaves out» | La fiesta de `brewing`; otros lectores de `conspiracyAgainst`; la velocidad de `the_wheel` | **38a**, **39c**, **35** |
-| `next-steps.md` «What M11 leaves out» | El zoom de `FamilyTree` en el móvil | **31** |
+| `next-steps.md` «What M11 leaves out» | El zoom de `FamilyTree` y `TribeGraph` en el móvil | **31** |
 | `next-steps.md` §1 | Frenar la natalidad bajo presión | **20c** (la amenorrea de la lactancia) |
 | `m9_6_plan.md` fase 4 | El canal de ánimo `comfort` | **16d** (lo escribe dónde se duerme); `belonging` y `purpose`, en la **5** |
 | `bugs.md`, «Nobody carries a spare, so `gift` barely fires» | Nadie lleva excedente | **38a**; con las manos es aún más cierto, y el banquete es la salida |
@@ -3843,11 +3843,12 @@ conocidos, de oídas y desconocidos, todo por `Knowledge.ts`, y
   hablaron es «de oídas», con el día en que la vio quien te lo contó. Los
   pueblos y civilizaciones que tu personaje conoce se pintan con su nombre y
   lo último que se supo de ellos.
-- Fijar el trazado del árbol ya se hizo en la fase 13c. El árbol familiar ahora
-  conserva su escala natural y permite arrastrar, ampliar y reducir en móvil;
-  la prueba de 31c está en [`m15_familytree_mobile_zoom.md`](m15_familytree_mobile_zoom.md).
-  El zoom de `TribeGraph` sigue pendiente (`bugs.md`). El globo se diseña táctil
-  desde el principio.
+- Fijar el trazado del árbol ya se hizo en la fase 13c. `FamilyTree` y
+  `TribeGraph` conservan una escala legible y permiten arrastrar, ampliar y
+  reducir en móvil. Sus pruebas 31c y 31d constan en
+  [`m15_familytree_mobile_zoom.md`](m15_familytree_mobile_zoom.md) y
+  [`m15_tribegraph_mobile_zoom.md`](m15_tribegraph_mobile_zoom.md). El globo se
+  diseñó táctil desde el principio.
 
 **Avance del 2026-10-06 (31a):** `WorldKnowledge` hecho (`m15: WorldKnowledge`):
 por persona, comarcas vistas y de oídas, con los pueblos encontrados; se escribe
@@ -3863,8 +3864,17 @@ centrado en la persona seleccionada y permite pan por puntero, pinza táctil y
 zoom por rueda. En móvil, los árboles más anchos que el viewport muestran
 etiquetas legibles y se recorren; la prueba de navegador fabrica una familia de
 16 personas sin añadir estado ni tiradas a la simulación. Capturas en
-`artifacts/screenshots/m15-familytree-mobile-zoom-2026-10-13/`. El grafo tribal
-aún no tiene este viewport y la fase 31 continúa abierta. [Contrato](m15_familytree_mobile_zoom.md).
+`artifacts/screenshots/m15-familytree-mobile-zoom-2026-10-13/`.
+[Contrato](m15_familytree_mobile_zoom.md).
+
+**Avance del 2026-10-13 (31d):** `TribeGraph` conserva un lienzo de referencia
+independiente del ancho del teléfono, abre centrado en el sujeto y permite
+desplazamiento por puntero, pinza táctil y rueda. En una pantalla de 390 px el
+grafo queda recortado dentro de un viewport táctil, con nombres a escala
+legible; la prueba de navegador añade diecisiete conocidos sin tocar la
+simulación. Capturas en
+`artifacts/screenshots/m15-tribegraph-mobile-zoom-2026-10-13/`.
+[Contrato](m15_tribegraph_mobile_zoom.md).
 
 ## Fase 32 — Simulación por visión y modelos compactos de bandas y pueblos
 
