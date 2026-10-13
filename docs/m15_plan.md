@@ -15,6 +15,16 @@ Unit tests y E2E de orden real con progreso bancado; capturas en
 `artifacts/screenshots/m15-prototype-animation-2026-10-13/`. Contrato:
 [`m15_prototype_animation.md`](m15_prototype_animation.md). Versión `0.15.131-alpha`.
 
+**Avance del 2026-10-13 — fase 17, domesticar:** una orden real `tame` muestra
+cuatro poses generadas de coaxing (`z0`–`z3`) durante el acercamiento y en el
+instante de llegada, antes de que el siguiente tick entregue la comida. El selector sólo observa la acción,
+el reloj y los ticks trabajados del propio personaje; no consulta al animal, su
+objetivo, temperamento, hambre, comida ni conocimiento. El bucle es genérico y
+usa el reloj de simulación, sin alterar la mecánica de alimentación ni RNG.
+Pruebas focales y E2E/capturas en
+`artifacts/screenshots/m15-tame-animation-2026-10-13/`. Contrato:
+[`m15_tame_animation.md`](m15_tame_animation.md). Versión `0.15.137-alpha`.
+
 **Avance del 2026-10-13 — fase 17, pensar:** `ponder` muestra cuatro poses
 generadas (`o0`–`o3`) durante trabajo real sobre una idea. El gesto es genérico;
 el selector solo observa la acción, los ticks trabajados y la vida del propio

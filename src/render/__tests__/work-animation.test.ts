@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Person } from '../../sim/entities/Person.ts';
 import { RNG } from '../../sim/core/RNG.ts';
-import { attendingFeastPose, buildingPose, cuttingGrassPose, diggingPose, dyeingPose, extractionPose, farmingPose, fightingPose, fishingPose, gatheringPose, hideDressingPose, inscribingPose, mendingPose, ponderingPose, prototypingPose, plantingPose, reflectingPose, spreadingCompostPose, tendingPose } from '../WorkAnimation.ts';
+import { attendingFeastPose, buildingPose, cuttingGrassPose, diggingPose, dyeingPose, extractionPose, farmingPose, fightingPose, fishingPose, gatheringPose, hideDressingPose, inscribingPose, mendingPose, ponderingPose, prototypingPose, plantingPose, reflectingPose, spreadingCompostPose, tamingPose, tendingPose } from '../WorkAnimation.ts';
 import type { Simulation } from '../../sim/core/Simulation.ts';
 
 function fixture() {
@@ -43,6 +43,38 @@ describe('human combat animation', () => {
     expect(fightingPose(person, false, 0.5)).toBe('k0');
     expect(fightingPose(person, false, 1)).toBe('k1');
     expect(fightingPose(person, false, 50)).toBe('k1');
+  });
+});
+
+describe('taming animation', () => {
+  it('cycles from the tamer’s own simulation clock after a real tame tick', () => {
+    const person = new Person('Tamer', 4, 4, 0, new RNG('taming-animation'));
+    person.action = 'tame'; person.actionTicks = 1; person.workedTicks = 1;
+    expect([1, 3, 5, 7, 9].map(tick => {
+      person.actionTicks = tick;
+      return tamingPose(person, 0);
+    })).toEqual(['z0', 'z1', 'z2', 'z3', 'z0']);
+    expect(person.action).toBe('tame');
+    expect(person.workedTicks).toBe(1);
+  });
+
+  it('requires a real tame work marker, active clock, and living tamer', () => {
+    const person = new Person('Tamer', 4, 4, 0, new RNG('taming-animation-guards'));
+    person.action = 'tame'; person.actionTicks = 1; person.workedTicks = 1;
+    expect(tamingPose(person)).toBe('z0');
+    person.workedTicks = 0; expect(tamingPose(person)).toBeNull();
+    person.workedTicks = 1; person.actionTicks = 0; expect(tamingPose(person)).toBeNull();
+    person.actionTicks = 1; person.alive = false; expect(tamingPose(person)).toBeNull();
+    person.alive = true; person.action = 'idle'; expect(tamingPose(person)).toBeNull();
+  });
+
+  it('clamps the fractional simulation clock and does not advance it', () => {
+    const person = new Person('Tamer', 4, 4, 0, new RNG('taming-animation-clock'));
+    person.action = 'tame'; person.actionTicks = 2; person.workedTicks = 1;
+    expect(tamingPose(person, 0.5)).toBe('z0');
+    expect(tamingPose(person, 1)).toBe('z1');
+    expect(tamingPose(person, 50)).toBe('z1');
+    expect(person.actionTicks).toBe(2);
   });
 });
 

@@ -149,9 +149,11 @@ rule (and the key), and the two pictures stay.
   hammer pose; grass cutting has a four-frame low sweep, and planting sets,
   presses and covers fruit in the soil. The same hand gesture
   is used for bush and tree fruit; different reaching heights remain a possible
-  visual refinement. Dressing hides, dyeing, tending, taming and spreading
-  compost still have no dedicated work pose. The procedural fallback
-  has no work gesture.
+  visual refinement. Dressing hides, dyeing, tending, taming, spreading
+  compost, attending a feast, inscribing, pondering, prototyping, reflecting,
+  fighting and talking now have their own generated cycles. Swimming and the
+  procedural fallback still have no work gesture; other actions outside these
+  families remain open.
 - **Trees, resource nodes and terrain** are still drawn in code.
 
 ## Gathering cost measured on 2026-10-02

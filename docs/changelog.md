@@ -1,3 +1,14 @@
+## 2026-10-13 — M15 phase 17: tame gets an open-palm gesture
+
+The renderer now shows four generated coaxing poses throughout a real `tame`
+order's approach and arrival. The selector reads only the tamer's own action, work
+marker and simulation clock; it never reads the animal, its target, temperament,
+meals, food or private knowledge. Feeding and action timing are unchanged. The
+art coverage test includes all poses; focused tests and E2E exercise the real
+order and its delivered meal. Captures: `artifacts/screenshots/m15-tame-animation-2026-10-13/`.
+Contract: [m15_tame_animation.md](m15_tame_animation.md). Version
+`0.15.137-alpha`.
+
 ## 2026-10-13 — M15 phase 17: people gesture during conversations
 
 Real `talk` orders now cycle through four generated open-handed poses while
