@@ -25,6 +25,15 @@ Pruebas focales y E2E/capturas en
 `artifacts/screenshots/m15-tame-animation-2026-10-13/`. Contrato:
 [`m15_tame_animation.md`](m15_tame_animation.md). Versión `0.15.137-alpha`.
 
+**Avance del 2026-10-13 — fase 17, nadar:** la acción real `swim` muestra
+cuatro brazadas generadas (`n0`–`n3`) cuando la persona se desplaza por agua de
+profundidad nadable. El selector observa la acción, posición y reloj públicos
+del propio nadador y la clasificación de profundidad del mundo; movimiento,
+transiciones, fatiga y aprendizaje siguen bajo la mecánica existente. Pruebas
+focales y E2E con orden real; capturas en
+`artifacts/screenshots/m15-swim-animation-2026-10-13/`. Contrato:
+[`m15_swim_animation.md`](m15_swim_animation.md). Versión `0.15.138-alpha`.
+
 **Avance del 2026-10-13 — fase 17, pensar:** `ponder` muestra cuatro poses
 generadas (`o0`–`o3`) durante trabajo real sobre una idea. El gesto es genérico;
 el selector solo observa la acción, los ticks trabajados y la vida del propio

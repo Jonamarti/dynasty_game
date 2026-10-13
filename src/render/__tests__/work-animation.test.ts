@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Person } from '../../sim/entities/Person.ts';
 import { RNG } from '../../sim/core/RNG.ts';
-import { attendingFeastPose, buildingPose, cuttingGrassPose, diggingPose, dyeingPose, extractionPose, farmingPose, fightingPose, fishingPose, gatheringPose, hideDressingPose, inscribingPose, mendingPose, ponderingPose, prototypingPose, plantingPose, reflectingPose, spreadingCompostPose, tamingPose, tendingPose } from '../WorkAnimation.ts';
+import { attendingFeastPose, buildingPose, cuttingGrassPose, diggingPose, dyeingPose, extractionPose, farmingPose, fightingPose, fishingPose, gatheringPose, hideDressingPose, inscribingPose, mendingPose, ponderingPose, prototypingPose, plantingPose, reflectingPose, spreadingCompostPose, swimmingPose, tamingPose, tendingPose } from '../WorkAnimation.ts';
 import type { Simulation } from '../../sim/core/Simulation.ts';
 
 function fixture() {
@@ -74,6 +74,44 @@ describe('taming animation', () => {
     expect(tamingPose(person, 0.5)).toBe('z0');
     expect(tamingPose(person, 1)).toBe('z1');
     expect(tamingPose(person, 50)).toBe('z1');
+    expect(person.actionTicks).toBe(2);
+  });
+});
+
+describe('swimming animation', () => {
+  const makeSwimmer = () => {
+    const person = new Person('Swimmer', 4, 4, 0, new RNG('swimming-animation'));
+    person.action = 'swim'; person.actionTicks = 1;
+    const sim = { world: { isSwimTile: (x: number, y: number) => x === 4 && y === 4 } } as unknown as Pick<Simulation, 'world'>;
+    return { person, sim };
+  };
+
+  it('cycles four strokes from the active swimmer’s simulation clock', () => {
+    const { person, sim } = makeSwimmer();
+    expect([1, 3, 5, 7, 9].map(tick => {
+      person.actionTicks = tick;
+      return swimmingPose(person, sim, true, 0);
+    })).toEqual(['n0', 'n1', 'n2', 'n3', 'n0']);
+    expect(person.actionTicks).toBe(9);
+    expect(person.action).toBe('swim');
+  });
+
+  it('requires actual movement through swim water and an active living swimmer', () => {
+    const { person, sim } = makeSwimmer();
+    expect(swimmingPose(person, sim, false)).toBeNull();
+    expect(swimmingPose(person, sim, true)).toBe('n0');
+    person.x = 5; expect(swimmingPose(person, sim, true)).toBeNull();
+    person.x = 4; person.actionTicks = 0; expect(swimmingPose(person, sim, true)).toBeNull();
+    person.actionTicks = 1; person.alive = false; expect(swimmingPose(person, sim, true)).toBeNull();
+    person.alive = true; person.action = 'idle'; expect(swimmingPose(person, sim, true)).toBeNull();
+  });
+
+  it('uses only a bounded interpolation fraction', () => {
+    const { person, sim } = makeSwimmer();
+    person.actionTicks = 2;
+    expect(swimmingPose(person, sim, true, 0.5)).toBe('n0');
+    expect(swimmingPose(person, sim, true, 1)).toBe('n1');
+    expect(swimmingPose(person, sim, true, 50)).toBe('n1');
     expect(person.actionTicks).toBe(2);
   });
 });

@@ -2,7 +2,7 @@
 import type { Simulation } from '../sim/core/Simulation.ts';
 import type { Person } from '../sim/entities/Person.ts';
 import { ARRIVAL_RADIUS } from '../sim/systems/MovementSystem.ts';
-import { ATTEND_POSES, BUILD_POSES, CHOP_POSES, CUT_GRASS_POSES, DIG_POSES, DYE_POSES, EXTRACT_POSES, FARM_POSES, FIGHT_POSES, FISH_POSES, GATHER_POSES, HIDE_DRESS_POSES, INSCRIBE_POSES, MAKE_POSES, MEND_POSES, PLANT_POSES, PONDER_POSES, PROTOTYPE_POSES, SPREAD_POSES, TAME_POSES, TALK_POSES, TEND_POSES, type ArtPose } from './ArtManifest.ts';
+import { ATTEND_POSES, BUILD_POSES, CHOP_POSES, CUT_GRASS_POSES, DIG_POSES, DYE_POSES, EXTRACT_POSES, FARM_POSES, FIGHT_POSES, FISH_POSES, GATHER_POSES, HIDE_DRESS_POSES, INSCRIBE_POSES, MAKE_POSES, MEND_POSES, PLANT_POSES, PONDER_POSES, PROTOTYPE_POSES, SPREAD_POSES, SWIM_POSES, TAME_POSES, TALK_POSES, TEND_POSES, type ArtPose } from './ArtManifest.ts';
 import { RECIPES } from '../sim/entities/Recipe.ts';
 import { isStationFor } from '../sim/entities/Building.ts';
 import { CUT_FLOOR } from '../sim/core/Grass.ts';
@@ -279,6 +279,18 @@ export function tamingPose(person: Person, alpha = 1): ArtPose | null {
   // knowledge, or private animal state.
   if (!person.alive || person.action !== 'tame' || person.workedTicks <= 0 || person.actionTicks <= 0) return null;
   return workFrame(TAME_POSES, person.actionTicks, alpha);
+}
+
+/** A crawl stroke only while the real swimmer is moving through swim water. */
+export function swimmingPose(
+  person: Person, sim: Pick<Simulation, 'world'>, moving: boolean, alpha = 1,
+): ArtPose | null {
+  // MovementSystem remains the authority on whether they are swimming. This
+  // observes only the public action, position and clock; it adds no route,
+  // fatigue, skill or water transition of its own.
+  if (!moving || !person.alive || person.action !== 'swim' || person.actionTicks <= 0 ||
+      !sim.world.isSwimTile(person.x, person.y)) return null;
+  return workFrame(SWIM_POSES, person.actionTicks, alpha);
 }
 
 /** Carving is visible only while this person adds work to a reached record. */

@@ -140,8 +140,8 @@ rule (and the key), and the two pictures stay.
 - **Garments are not in the sim yet**: `PersonAspect.wear` is always empty until
   phase 14. The layers exist, are drawn for every age, sex and facing, and are on
   `npm run art:sheet`.
-- **Other work outside the named work families, sleep and sit poses**, and the
-  swimming pose (phase 27) are not drawn.
+- **Other work outside the named work families, sleep and sit poses** are not
+  drawn.
   Gathering uses four poses for berries, sticks, reeds, wild grain and tree
   fruit; shallow-water fishing has its own four-frame low reach. The extraction
   gesture covers flint, clay and copper/tin/iron ores. Garment mending has its
@@ -151,9 +151,8 @@ rule (and the key), and the two pictures stay.
   is used for bush and tree fruit; different reaching heights remain a possible
   visual refinement. Dressing hides, dyeing, tending, taming, spreading
   compost, attending a feast, inscribing, pondering, prototyping, reflecting,
-  fighting and talking now have their own generated cycles. Swimming and the
-  procedural fallback still have no work gesture; other actions outside these
-  families remain open.
+  fighting, talking and swimming now have their own generated cycles; the
+  procedural fallback and other actions outside these families remain open.
 - **Trees, resource nodes and terrain** are still drawn in code.
 
 ## Gathering cost measured on 2026-10-02

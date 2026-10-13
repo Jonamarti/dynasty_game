@@ -16140,3 +16140,13 @@ Focused unit/E2E coverage and captures are recorded in
 `artifacts/screenshots/m15-fight-animation-2026-10-13/`. The phase contract is
 in `docs/m15_fight_animation.md`.
 
+## 2026-10-13 — M15 phase 17: swimming gets generated strokes
+
+The real `swim` action now cycles four generated crawl poses while its actor
+moves through swim-depth water. Selection uses the swimmer's public action,
+position and simulation clock; it leaves MovementSystem, water transitions,
+fatigue, skill gains and RNG unchanged. Focused selector/art tests and a real
+swim-order E2E cover the behavior. Captures:
+`artifacts/screenshots/m15-swim-animation-2026-10-13/`. Contract:
+[m15_swim_animation.md](m15_swim_animation.md). Version `0.15.138-alpha`.
+
