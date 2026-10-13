@@ -16331,3 +16331,15 @@ excavación, entrega y trabajo; `earthworks-are-dug` pasa con 1/2 obras y 41
 lifts. Los gates no cambian. Test focal 3/3 y typecheck pasan; `diggers` sigue
 con cinco checks ajenos fallidos, que se registran como baseline en `bugs.md`.
 No cambia la UI ni el comportamiento de juego.
+
+
+### 2026-10-13 — corregir fixtures de calibración M15
+
+La prueba compacta agrupa tres semillas en `lean` y `craft`, conserva sus
+márgenes originales y el control negativo sin ingesta; el tamaño de una sola
+semilla hacía que el ruido de población excediera la tolerancia de necesidades.
+La fixture de tributo establece el vínculo social para obedecer y usa carne
+seca, de modo que verifica la entrega y no rechazo o deterioro durante el viaje.
+Son correcciones de medición, sin cambios de simulación ni afirmaciones de
+calibración global. La suite unitaria completa terminó: 2.298 tests pasan, uno
+falla en `earthworks-are-dug`, uno se omite; ver `m15_calibration.md` y `bugs.md`.

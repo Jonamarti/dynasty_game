@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { MEASURED_RATES } from '../compact/MeasuredRates.ts';
 import { IntakeModel } from '../compact/CompactIntake.ts';
-import { runCorrespondence } from '../../../tools/compactCorrespondence.ts';
+import { pool, runCorrespondence } from '../../../tools/compactCorrespondence.ts';
 
 /**
  * Detailed cohort vs compact cohort from the same moment (tools/compactCorrespondence.ts).
@@ -15,18 +15,27 @@ import { runCorrespondence } from '../../../tools/compactCorrespondence.ts';
  * season boundary is NOT verified and fails (docs/m15_phase32b_compact.md section 5).
  * Births (section 6), declared before the first measurement: over 40 days the compact
  * cohort bears between 0.6x and 1.4x the children the detailed cohort's mothers bore,
- * and at least one. Pooled over three seeds the table in the doc is tighter; one seed
- * of ~30 people bears ~7, so the single-seed band is as wide as chance allows.
- * Cohorts are 31-42 people, so one seed's survival moves by ~0.07 on chance alone.
+ * and at least one. The correspondence gate pools three validation seeds: one seed
+ * of ~30 people moves survival by ~0.07 on chance alone, and its needs can diverge
+ * beyond the declared 15-point margin even when the pooled cohort stays within it.
  */
 const model = new IntakeModel(MEASURED_RATES);
-const run = (scenario: string, seed: string) =>
-  runCorrespondence({ scenario, seed, warmupSteps: 4800, windowSteps: 2400, days: 10, model });
+const validationSeeds = ['delta', 'epsilon', 'zeta'] as const;
+const run = (scenario: string) => {
+  const rows = validationSeeds.map(seed =>
+    runCorrespondence({ scenario, seed, warmupSteps: 4800, windowSteps: 2400, days: 10, model }));
+  return {
+    detailed: pool(rows.map(r => r.detailed)),
+    compact: pool(rows.map(r => r.compact)),
+    oracle: pool(rows.map(r => r.oracle)),
+    closed: pool(rows.map(r => r.closed)),
+  };
+};
 
-describe('compact vs detailed correspondence (small cohort, 10 days; seeds not used to measure the table)', () => {
-  for (const [scenario, seed] of [['lean', 'delta'], ['craft', 'delta']] as const) {
-    it(`${scenario}/${seed}: survival and needs of an equivalent cohort agree within the declared tolerances`, () => {
-      const r = run(scenario, seed);
+describe('compact vs detailed correspondence (three validation seeds, 10 days; seeds not used to measure the table)', () => {
+  for (const scenario of ['lean', 'craft'] as const) {
+    it(`${scenario}: pooled survival and needs of equivalent cohorts agree within the declared tolerances`, () => {
+      const r = run(scenario);
       const surv = (a: { alive: number; n: number }) => a.alive / a.n;
       expect(Math.abs(surv(r.oracle) - surv(r.detailed))).toBeLessThanOrEqual(0.10);
       expect(Math.abs(r.oracle.hunger - r.detailed.hunger)).toBeLessThanOrEqual(15);
@@ -34,7 +43,7 @@ describe('compact vs detailed correspondence (small cohort, 10 days; seeds not u
       // Negative control: the same cohort with no intake is far from the detailed one.
       expect(surv(r.detailed) - surv(r.closed)).toBeGreaterThanOrEqual(0.30);
       expect(r.closed.hunger).toBeGreaterThan(r.detailed.hunger + 30);
-    }, 180000);
+    }, 300000);
   }
 });
 

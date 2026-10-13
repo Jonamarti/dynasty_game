@@ -3995,6 +3995,12 @@ Corrección del 2026-10-13: `CompactScheduler` ahora rechaza payloads que JSON
 perdería o modificaría en vez de persistir una representación distinta del
 evento; test negativo para `undefined`, no finitos, objetos no planos, ciclos y
 arrays dispersos. No activa ni cambia el LOD.
+**Corrección de calibración del harness (2026-10-13):** la puerta de
+correspondencia compacta agrupa `delta`, `epsilon` y `zeta` para los escenarios
+`lean` y `craft`; los márgenes originales y el control negativo sin ingesta no
+cambian. Una población de ~30 personas mueve supervivencia ~0,07 por semilla y
+una semilla de `lean/delta` excedía la tolerancia de sed/hambre aunque el pool
+medido quedaba dentro. No se presenta este arreglo como calibración del LOD.
 **Avance 32b-2 (tasas, 2026-10-06):** `RateWatch` + `tools/compact-rates.ts` miden en
 el detallado alivio de hambre/sed por persona-día condicionado a la necesidad,
 agenda, natalidad y mortalidad por edad (`lean`/`craft`, 3 semillas); tabla en la

@@ -429,12 +429,21 @@ describe('tribute: carried to the overlord', () => {
     sim.buildingHash.insert(store);
     sim.bandRelations.setStance(ours!.id, theirs!.id, 'tributary', sim.time.day, ours!.id);
     // A chief without the nerve to throw the yoke off: as strong as their
-    // overlord, one with it would refuse the tribute on the first day.
-    sim.peopleById.get(theirs!.chiefId!)!.traits.aggression = 0.2;
+    // overlord, one with it would refuse the tribute on the first day. The
+    // delivery test needs the payer's chief to be obeyed, so give the chosen
+    // bearers settled regard for them instead of sampling social refusal.
+    const payerChief = sim.peopleById.get(theirs!.chiefId!)!;
+    payerChief.traits.aggression = 0.2;
+    for (const member of sim.livingPeople().filter(person => person.bandId === theirs!.id)) {
+      sim.relationships.addDeed(member.id, payerChief.id, 100, sim.time.tick);
+    }
     // The tributary's own larder, well stocked, beside its camp.
     const theirStore = granaryFor(sim, theirs!.id, Math.round(theirs!.homeX), Math.round(theirs!.homeY));
     sim.buildingHash.insert(theirStore);
-    theirStore.store.add('berries', 60);
+    // Tribute can take several days to cross the map. Raw berries spoil before
+    // this fixture's bearer arrives, so use preserved food to test delivery,
+    // not the unrelated race between travel and spoilage.
+    theirStore.store.add('dried_meat', 60);
 
     // Counted by the delivery itself: the overlord's own people store food in
     // that granary too, so its total alone would pass without any tribute.

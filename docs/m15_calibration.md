@@ -555,3 +555,7 @@ de salida válido y no se declara la suite aprobada. El test focal de selección
 (7/7), typecheck y `sim:check -- --scenario band` sí terminaron correctamente.
 El log completo de la matriz quedó en el temporal
 `%TEMP%/m15-simcheck-all-20261013-rerun.log` de esa ejecución.
+
+### Suite unitaria completa — actualización 2026-10-13
+
+Una segunda ejecución completa, con `--maxWorkers=1 --testTimeout=30000 --reporter=dot`, sí terminó tras 714 s: 2.298 tests pasaron, uno falló y uno se omitió (313 archivos; 312 pasaron, uno falló). El único fallo fue `earthwork-checks.test.ts > earthworks-are-dug`; el gate observó 0/2 obras concluidas, con 22 levantamientos y ninguna obra restante. No se declara verde la suite. La investigación de causa sigue en `docs/bugs.md`; los otros dos ajustes de fixtures incluidos en esa corrida pasaron.
