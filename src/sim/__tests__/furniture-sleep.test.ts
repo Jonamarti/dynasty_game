@@ -4,6 +4,7 @@ import { availableActions } from '../ai/ActionCatalog.ts';
 import { Simulation } from '../core/Simulation.ts';
 import { toCheckpointRecord } from '../persistence/CheckpointRecords.ts';
 import { Building, BUILDINGS } from '../entities/Building.ts';
+import { Animal } from '../entities/Animal.ts';
 import { Inventory } from '../entities/Item.ts';
 import { ResourceNode } from '../entities/ResourceNode.ts';
 import { RNG } from '../core/RNG.ts';
@@ -372,6 +373,50 @@ describe('bedding and beds', () => {
     expect(brain.think(person, scored.context, new Set(['pickup']))).toBe('pickup');
     expect(person.targetPileId).toBe(fatPile.id);
     expect(person.targetItemId).toBe('fat');
+  });
+
+  it('hunts reachable prey for an empty household lamp when ordinary hunger is calm', () => {
+    const { sim, person, house } = fixture();
+    person.isPlayer = true;
+    sim.autonomy = 'manual';
+    person.needs.hunger = person.needs.thirst = person.needs.cold = 0;
+    for (const animal of sim.animals) animal.alive = false;
+    sim.animalHash.rebuild(sim.animals);
+    const quarry = new Animal('deer', person.x + 1, person.y, 0, new RNG('lamp-maintenance-quarry'), sim.ids);
+    sim.animals.push(quarry);
+    sim.animalsById.set(quarry.id, quarry);
+    sim.animalHash.insert(quarry);
+    const lamp = new Building(BUILDINGS.fat_lamp!, house.centerX, house.centerY, person.bandId, sim.ids);
+    lamp.hostId = house.id; lamp.complete = true; lamp.fuelRemaining = 0;
+    sim.buildings.push(lamp); sim.buildingsById.set(lamp.id, lamp); sim.buildingHash.insert(lamp);
+
+    const upkeep = scoreOneBrainTick(sim, person);
+    expect(upkeep.found.lampToRefuel).toBe(lamp);
+    expect(upkeep.found.quarry).toBe(quarry);
+    expect(upkeep.scores.find(row => row.id === 'hunt')?.score).toBeGreaterThan(0);
+
+    lamp.fuelRemaining = 50;
+    person.needs.hunger = person.needs.thirst = person.needs.cold = 0;
+    const noUpkeep = scoreOneBrainTick(sim, person);
+    expect(noUpkeep.found.lampToRefuel).toBeNull();
+    expect(upkeep.scores.find(row => row.id === 'hunt')?.score ?? 0)
+      .toBeGreaterThan(noUpkeep.scores.find(row => row.id === 'hunt')?.score ?? 0);
+
+    lamp.fuelRemaining = 0;
+    lamp.hostId = null;
+    person.needs.hunger = person.needs.thirst = person.needs.cold = 0;
+    const withoutHouseholdLamp = scoreOneBrainTick(sim, person);
+    expect(withoutHouseholdLamp.found.lampToRefuel).toBeNull();
+    expect(withoutHouseholdLamp.scores.find(row => row.id === 'hunt')?.score ?? 0)
+      .toBeLessThan(upkeep.scores.find(row => row.id === 'hunt')?.score ?? 0);
+
+    lamp.hostId = house.id;
+    quarry.x = person.x + 30;
+    sim.animalHash.rebuild(sim.animals);
+    person.needs.hunger = person.needs.thirst = person.needs.cold = 0;
+    const unreachable = scoreOneBrainTick(sim, person);
+    expect(unreachable.found.quarry).toBeNull();
+    expect(unreachable.scores.find(row => row.id === 'hunt')?.score ?? 0).toBe(0);
   });
 
   it('does not route partial fat to a player lamp, charged lamp or full home shelf', () => {

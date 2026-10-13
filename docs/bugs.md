@@ -45,7 +45,13 @@ store preserves the rest of the pack. This closes the carry-to-storage gap,
 not active sourcing: NPCs do not hunt for lamp upkeep or collect dropped fat
 from piles, and no rendering recipe exists. Those paths need real quarry/carcass
 and pile ownership/proximity behavior before they can provide the lamp's supply.
-Focused mechanism tests pass; no calibration/cohorts were run.
+Resolved in `0.15.146-alpha`: reachable prey adds a small maintenance motive
+to the existing hunt scorer for an empty NPC-owned household lamp, even when
+hunger is calm. Ordinary prey, need gates, interruptions, and real hunting
+yield still govern the action; no fat is created. Nearby dropped fat remains
+available through normal pickup. Focused tests cover the calm-hunger trigger
+and charged-lamp/absent-lamp/out-of-reach controls. This does not guarantee
+hunting in every world and is not a calibration/cohort result.
 
 ## 2026-10-12 — Lector de comodidad aún sin calibrar
 

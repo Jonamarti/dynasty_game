@@ -331,3 +331,13 @@ player-placed lamp or a different household's lamp. The focused regression
 checks that the fat pile wins over an unrelated food pile and that the pickup
 target names `fat`. No UI or saved state changed. No calibration or cohort
 result is claimed.
+
+## 2026-10-13: lamp upkeep can initiate a real hunt
+
+When a completed household has an empty NPC-owned lamp and an adult carries
+less than the two-fat refill charge, reachable prey adds a small term to the
+existing hunt score even when hunger is calm. The normal quarry search,
+thirst/cold gates, interruption checks and physical animal yield remain in
+force. No fat is created and no new stream or saved field is added. The focal
+test checks the calm-hunger positive case plus charged-lamp, absent-lamp and
+out-of-reach-prey controls; this is not a cohort or calibration result.

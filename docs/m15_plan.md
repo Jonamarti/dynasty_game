@@ -194,6 +194,15 @@ genera grasa. La comprobación focal cubre el objetivo y el filtro de objeto.
 Sin UI, RNG ni calibración/cohortes. Contrato:
 [`m15_phase16d_bedding.md`](m15_phase16d_bedding.md).
 
+**Avance del 2026-10-13 — 16d, caza motivada por la lámpara:** si un adulto tiene
+una lámpara NPC vacía en su hogar y no lleva la carga completa, una presa
+alcanzable añade una motivación pequeña al score de caza incluso con hambre
+calmada. La caza mantiene sus gates de presa, sed/frío e interrupción, y solo
+el rendimiento físico real de ciervo/jabalí puede aportar grasa. No crea grasa,
+busca fauna fuera del alcance ni cambia streams. Prueba focal positiva y
+controles con lámpara cargada/ausente y presa fuera de alcance; sin UI ni
+cohortes/calibración.
+
 **Avance del 2026-10-12 — 14c, engrasado por unidad:** el nodo hide_dressing
 requiere leatherwork; la receta hide_dressing consume una grasa y trabaja sobre
 una unidad concreta de piel, fuera del cuerpo. El progreso interrumpible y el

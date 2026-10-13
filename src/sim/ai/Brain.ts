@@ -3555,7 +3555,13 @@ export class Brain {
         const meatMacros = ITEMS.meat!.macros!;
         const payoff = quarry.def.meat / 20 * (1 + VARIETY_WEIGHT *
           (craving.protein * meatMacros.protein + craving.fat * meatMacros.fat));
-        add('hunt', hunger * HUNT_APPETITE * odds * payoff
+        // A household's empty, NPC-owned lamp is a small additional reason to
+        // hunt when the usual food need is calm. The hunt still has to find
+        // reachable prey and pass the ordinary thirst/cold gates; its actual
+        // fat yield remains the existing physical deer/boar drop.
+        const lampFatNeed = lampToRefuel && person.inventory.count('fat') < FAT_LAMP_REFILL_FAT
+          ? 0.9 : 0;
+        add('hunt', (hunger * HUNT_APPETITE + lampFatNeed) * odds * payoff
           * (ctx.motivation.beliefChoice ? expectationRatio(person, 'yield:hunt') : 1)
           * this.proximityBonus(person, quarry, ctx.sightRadius));
       }

@@ -16298,3 +16298,13 @@ investigación. Test focal 7/7, typecheck y `sim:check --scenario band` pasan;
 la matriz de 43 escenarios terminó con fallos en otros checks. La suite unitaria
 completa quedó inconclusa tras un timeout ajeno y un wrapper colgado. Sin UI.
 Análisis: [`m15_calibration.md`](m15_calibration.md).
+
+## 2026-10-13 — M15 fase 16d: la lámpara puede motivar una caza real
+
+Una lámpara NPC vacía en el hogar de un adulto añade una motivación pequeña a
+la caza cuando hay presa alcanzable, incluso con hambre calmada. La presa, los
+gates de necesidad, las interrupciones y el rendimiento físico existente siguen
+siendo los mismos; no se crea grasa ni se añaden tiradas. La prueba focal cubre
+el caso positivo, lámpara cargada/ausente y presa fuera de alcance (29/29).
+No se hizo cohorte ni calibración. No hay cambio de UI.
+Versión `0.15.146-alpha`.
