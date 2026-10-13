@@ -1,3 +1,13 @@
+## 2026-10-13 — M15 fase 35: alinear el destino tras llegada en un lote
+
+Un host que acumulaba varios `step` antes de llamar a `advancePeoples` podía
+cruzar la llegada y dejar al destino en un tick anterior al root. El siguiente
+procesamiento de caravanas fallaba por reloj incoherente y el guardado no era
+válido. El coordinador ahora ejecuta el resto de pasos sobre el destino recién
+instalado antes de procesar tráfico. Una prueba reproduce una ruta de ocho
+ticks avanzada hasta el nueve y verifica el reloj, el guardado y la identidad
+del jugador. Versión `0.15.139-alpha`; no cambia la UI.
+
 ## 2026-10-13 — verificación M15 completa con dos puertas unitarias abiertas
 
 La suite unitaria completa dio 2.280 aprobadas, 2 fallidas y 1 omitida; la

@@ -461,6 +461,12 @@ export class WorldState {
   advancePeoples(): void {
     const tick = this.current.time.tick;
     this.advanceJourney(tick);
+    // A caller may advance the detailed source for several ticks before
+    // updating the world root. If arrival happened inside that batch, the
+    // destination was installed at its arrival tick; continue its detailed
+    // clock through the already elapsed remainder before any world-level
+    // systems inspect ownership or dates.
+    while (this.current.time.tick < tick) this.current.step();
     this.traffic.processCamps(this,tick);
     for(const arrival of this.traffic.advance(this,tick)) {
       if(arrival.event.kind==='raid-opportunity') this.resolveTrafficInterception(arrival.caravanId,arrival.at,arrival.actorId);

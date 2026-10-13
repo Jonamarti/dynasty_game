@@ -225,9 +225,9 @@ El tráfico conserva personas y mercancías físicas entre propietarios detallad
 
 El tránsito de tráfico usa el mismo avance de necesidades de fase 35; siguen pendientes sus límites de ciclo reproductivo y ecología en viaje. La fusión de enemistades al regresar usa el máximo para no duplicar historia compartida y no establece un nuevo modelo de reconciliación o decadencia.
 
-## M15 fase 35: avance de origen en bloque cruza el reloj de llegada — 2026-10-09
+## M15 fase 35: avance por lotes al cruzar la llegada — resuelto 2026-10-13
 
-Reproducción corta: ruta de ocho ticks, nueve step de origen y un único advancePeoples instalan el destino en tick 8 con el ledger del origen en tick 9; serializeSave rechaza la fecha. Mientras se viaja, advancePeoples debe ejecutarse después de cada tick, como hace main. Sigue pendiente admitir lotes que crucen la llegada sin retroceder el reloj ni simular dos propietarios. Se difiere a M16 según la prioridad de cierre de M15; la prueba de reanudación cubre el flujo por tick del juego, no este uso en bloque.
+La reproducción original (nueve pasos del origen para una ruta de ocho y una llamada a `advancePeoples`) confirmaba que el destino se instalaba en tick 8 aunque el root ya estaba en tick 9; `processCamps` detectaba el reloj incoherente y abortaba antes de guardar. `advancePeoples` ahora avanza el propietario recién instalado hasta el tick del lote antes de procesar el tráfico. La regresión confirma que el viaje se liquida, el jugador conserva su identidad y `serializeSave` acepta el root. Esto no cambia el contrato de los pases compactos de residentes/ecología, que continúa pendiente.
 
 ## M15 fase 35: límites del tránsito abstracto — 2026-10-09
 

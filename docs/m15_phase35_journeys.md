@@ -15,7 +15,7 @@ Transit advances the shared destination checkpoint clock. Needs, food use, spoil
 The default global spoilage rate is zero, so journey ticks apply a journey-only baseline spoilage rate of 1 when no positive configured rate exists; ordinary simulation spoilage remains unchanged. The shelf-stable count is therefore a meaningful comparison with perishable berries over the route.
 
 
-**Cadencia del coordinador.** Mientras haya un viaje pendiente, el consumidor debe llamar WorldState.advancePeoples después de cada step; el navegador ya lo hace. El avance de origen en bloque cruzando la llegada aún no se admite: una reproducción de nueve steps para una ruta de ocho instala tick 8, dejando un ledger de origen en tick 9 que no vuelve a cargar. Se registra en bugs y M16; no se presenta como reanudación válida de cualquier salto temporal.
+**Cadencia del coordinador.** Mientras haya un viaje pendiente, el navegador llama `WorldState.advancePeoples` después de cada `step`. El coordinador también tolera lotes: si varios `step` del origen cruzan el tick de llegada, avanza el nuevo destino por el resto del lote antes de procesar otros sistemas de mundo. Una regresión fija el caso de una ruta de ocho ticks avanzada hasta tick 9 y comprueba que el checkpoint activo se guarda con los relojes alineados. Esto no convierte el tránsito en una simulación de residentes o ecología del destino.
 
 Encounter coverage also drives the real coordinator per tick: storm delays, five health points of wildlife damage, settlement observations without delay, and encounter stream parity after save/load. Date/transport tampering is rejected. Final browser captures are in artifacts/screenshots/m15-phase35-final-2026-10-09T-02/.
 

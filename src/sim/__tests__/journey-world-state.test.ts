@@ -43,6 +43,24 @@ function tick(state: WorldState): void { state.current.step(); state.advancePeop
     expect(toWorldStateRecord(loaded)).toEqual(toWorldStateRecord(state));
   });
 
+  it('catches the installed destination up when a host advances across the arrival tick in one batch', () => {
+    const { state, destination } = journeyWorld();
+    const actor = state.current.possessFirst()!;
+    expect(state.startJourney(destination, { requireKnowledge: false })).toBeNull();
+    const arrivalTick = state.frontier.pendingJourney!.arrivalTick;
+    const targetTick = arrivalTick + 1;
+
+    // Some harnesses and offline callers step several times before updating
+    // the world root. Arrival must still install a checkpoint at that root tick.
+    while (state.current.time.tick < targetTick) state.current.step();
+    state.advancePeoples();
+
+    expect(state.frontier.pendingJourney).toBeNull();
+    expect(state.current.time.tick).toBe(targetTick);
+    expect(() => serializeSave(state, 10)).not.toThrow();
+    expect(state.current.player?.id).toBe(actor.id);
+  });
+
   it('rejects a saved transport range that cannot cover its recorded route', () => {
     const { state, destination } = journeyWorld();
     const actor = state.current.possessFirst()!;
