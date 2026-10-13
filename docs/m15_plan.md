@@ -3128,7 +3128,12 @@ de `Simulation.step()` ni modifica el mundo. **Hechos (2026-10-04):**
 se actualizó la fixture: ahora concede `earthworks` antes de colocar las obras,
 falla si no consigue los dos sitios y comprueba que el control de progreso
 roto no quede como check omitido. `earthwork-checks.test.ts` ya discrimina el
-fallo real en vez de aceptar un escenario que no alcanzó ninguna obra.
+fallo real en vez de aceptar un escenario que no alcanzó ninguna obra. El
+2026-10-13 se corrigió otra interferencia de la fixture: sin despensa, la banda
+planificaba un silo orgánico (`storage_pit`) antes de las dos obras y el jefe
+dirigía allí a los voluntarios. La despensa inicial ahora se materializa como
+obra completa mediante las transiciones normales de excavación, entrega y
+construcción; el escenario vuelve a medir las zanjas y montículos marcados.
 
 - Escenario **`diggers`**: una banda que cultiva, con `earthworks`,
   `basketry` y `carpentry`.

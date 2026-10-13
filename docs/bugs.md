@@ -5565,3 +5565,26 @@ id como anfitrión y absorber el vasallo en un tercer pueblo. Se cierra en la
 carga y con una guarda defensiva para relaciones en memoria. Pruebas en
 `people-union.test.ts` comprueban el rechazo y que el caso en memoria no consume
 RNG ni cambia población, técnicas o relaciones.
+
+### 2026-10-13 — fixture `diggers` y checks de referencia
+
+Resuelto en la fixture: la banda planificaba un `storage_pit` vacío antes de
+empezar las dos earthworks del escenario. El jefe dirigía trabajadores al silo;
+la zanja no recibía lifts y el montículo se detenía en 17/30 antes de que ambos
+sitios fueran abandonados por la regla normal de seis días sin progreso. Una
+despensa ya completada antes del primer tick evita que el planificador cree esa
+competencia. El contraejemplo sin despensa reproduce 0/2 terminadas; con ella,
+el montículo acaba con 41 lifts. No se cambió el scorer, el timeout ni el check.
+
+En `diggers` siguen rojos como baseline seis checks ajenos a esta fixture:
+`nights-are-slept`, `moods-move-choices`, `needs-not-pinned`, `gossip-is-aimed`,
+`research-is-social` y `perf-budget`. La suite final reportó 312 archivos y
+2.298 tests aprobados, un test fallido (`earthworks-are-dug`) y uno omitido;
+esta corrección apunta solo al fallo de earthworks.
+
+Tras esta corrección, la corrida focal pasa `earthworks-are-dug`; termina aún
+con cinco checks rojos ajenos: `nights-are-slept`, `moods-move-choices`,
+`gossip-is-aimed`, `spatial-hash-spreads` y `perf-budget`. `needs-not-pinned` y
+`research-is-social` ya no salen rojos en esta variante de la fixture. La nueva
+lectura de `spatial-hash-spreads` no se atribuyó a una causa confirmada ni se
+ajustó su límite.

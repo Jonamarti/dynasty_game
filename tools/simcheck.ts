@@ -154,6 +154,28 @@ function setupDiggers(sim: Simulation): void {
     }
     if (placed !== wanted) throw new Error(`diggers fixture could only place ${placed} ${design} sites`);
   }
+
+  // The band planner otherwise starts its first storage pit on day one. That
+  // site sorts ahead of these player-marked earthworks and takes the chief's
+  // orders; after its digging starts, the original scenario has no crew left
+  // assigned to finish the two works this run exists to measure. Give the
+  // founders one completed pit as a starting condition, using the same earth,
+  // delivery and work transitions as a real build, so this scenario measures
+  // the earthworks rather than competition with the first pantry.
+  let pantry: Building | null = null;
+  for (let r = 4; r < 24 && !pantry; r++) {
+    for (let a = 0; a < 24 && !pantry; a++) {
+      const x = Math.round(band.homeX + Math.cos(a * Math.PI / 12) * r);
+      const y = Math.round(band.homeY + Math.sin(a * Math.PI / 12) * r);
+      if (!sim.canPlace(BUILDINGS.storage_pit!, x, y)) continue;
+      pantry = sim.place('storage_pit', x, y, band.id, sponsor, false);
+    }
+  }
+  if (!pantry) throw new Error('diggers fixture could not place its starting storage pit');
+  for (const tile of pantry.earth ?? []) pantry.addEarth(tile, tile.goal);
+  for (const [item, count] of Object.entries(pantry.def.materials)) pantry.delivered.add(item, count);
+  pantry.addWork(pantry.def.workTicks);
+  if (!pantry.complete) throw new Error('diggers fixture could not finish its starting storage pit');
 }
 
 /** Give the shallows fixture one real crossing with both feet on land. */

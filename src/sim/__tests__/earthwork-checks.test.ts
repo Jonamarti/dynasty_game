@@ -20,7 +20,11 @@ describe('earthworks-are-dug', () => {
     // what can be broken is the thing the check exists to see: that a lift
     // reaches the tile. With `addEarth` doing nothing no earthwork is ever finished.
     const real = Building.prototype.addEarth;
-    Building.prototype.addEarth = () => false;
+    Building.prototype.addEarth = function (tile, items) {
+      // The starting pantry is fixture state; preserve its normal construction
+      // while disabling progress only on the earthworks under test.
+      return this.def.earthwork ? false : real.call(this, tile, items);
+    };
     try {
       const report = runScenario(SCENARIOS.diggers!, 4000);
       expect(find(report)).toMatchObject({ ok: false });
@@ -34,6 +38,9 @@ describe('earthworks-are-dug', () => {
     const report = runScenario(SCENARIOS.diggers!);
     expect(find(report)).toMatchObject({ ok: true });
     expect(find(report)?.skipped).not.toBe(true);
+    // A completed starting pantry keeps the band planner from diverting the
+    // chief to its first storage pit before the marked earthworks are done.
+    expect(report.telemetry.band_planned_storage_pit ?? 0).toBe(0);
     // The other invariants hold with earth being moved.
     expect(report.checks.find(c => c.id === 'regions-stay-true')).toMatchObject({ ok: true });
     expect(report.checks.find(c => c.id === 'water-follows-the-trench')).toMatchObject({ ok: true });

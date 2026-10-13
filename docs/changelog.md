@@ -16319,3 +16319,15 @@ ni RNG. Pruebas focales 2/2, typecheck y `sim:check --scenario nights` (3/3)
 pasan. La cohorte histórica no recogió esta métrica, por lo que adopción
 poblacional y robos separados por día/noche siguen pendientes; no se declara
 12f cerrada.
+
+
+### 2026-10-13 — aislar la fixture `diggers` del primer silo orgánico
+
+La banda planificaba un `storage_pit` vacío antes de las dos obras marcadas y
+el jefe enviaba allí a los voluntarios. Sin despensa, la zanja quedaba en 0/36
+lifts y el montículo en 17/30 antes de que ambos sitios caducaran. La fixture
+ahora empieza con la despensa terminada por las transiciones normales de
+excavación, entrega y trabajo; `earthworks-are-dug` pasa con 1/2 obras y 41
+lifts. Los gates no cambian. Test focal 3/3 y typecheck pasan; `diggers` sigue
+con cinco checks ajenos fallidos, que se registran como baseline en `bugs.md`.
+No cambia la UI ni el comportamiento de juego.
