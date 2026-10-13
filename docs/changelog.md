@@ -16266,3 +16266,16 @@ Typecheck, focused unit/art tests and the real-order E2E passed. Four captures
 are preserved in `artifacts/screenshots/m15-sleep-animation-2026-10-13/`.
 Contract and verification limits: [`m15_sleep_animation.md`](m15_sleep_animation.md).
 
+### 2026-10-13 — M15 fase 41: elegir proteína cuando está al alcance
+
+`chooseCravingFood` recibe ahora la alternativa proteica alcanzable y la
+prefiere a comida ordinaria menos proteica durante un antojo fuerte. El check
+condiciona la selección a oportunidades reales (mínimo 20; al menos 90% de
+selección), y conserva la proporción global de comidas solo como diagnóstico.
+En `band`, la build previa elegía 303/1.039 alternativas (29,2%) y falla; la
+nueva eligió 840/840 (100%) y pasa. En 20 semillas, eligió 31.999/31.999; la
+mezcla de comidas global sigue débil (0,41× frente a calma), pendiente de otra
+investigación. Test focal 7/7, typecheck y `sim:check --scenario band` pasan;
+la matriz de 43 escenarios terminó con fallos en otros checks. La suite unitaria
+completa quedó inconclusa tras un timeout ajeno y un wrapper colgado. Sin UI.
+Análisis: [`m15_calibration.md`](m15_calibration.md).

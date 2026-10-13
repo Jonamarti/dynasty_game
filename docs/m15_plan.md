@@ -5249,3 +5249,16 @@ de arte y E2E con recuperación real, y capturas en
 [`m15_sleep_animation.md`](m15_sleep_animation.md). Versión
 `0.15.141-alpha`.
 
+**Avance del 2026-10-13 — fase 41, elección de proteína disponible:** la
+medición inicial mostró que, con antojo fuerte y proteína dentro del alcance,
+`Brain` elegía otra comida en 736/1.039 oportunidades (70,8%). El selector
+ahora recibe el nodo proteico alcanzable y lo prefiere a comida ordinaria menos
+proteica. `cravings-steer-the-diet` mide esa decisión condicionada (n≥20,
+selección ≥90%); conserva la cuota global de comidas como diagnóstico. El
+control anterior falla (29,2%) y el cambio pasa (100% focal; 100% en 20
+semillas). La cuota global sigue 0,41× frente a calma en la cohorte, así que no
+se declara calibrada la dieta consumida. Tests, calibración y límites en
+[`m15_calibration.md`](m15_calibration.md). La matriz completa (43 escenarios)
+falló en checks ajenos a dieta; en `band` pasó el gate nuevo y falló solo
+`hills-see-farther`. La suite unitaria completa quedó inconclusa por timeout de
+terreno y wrapper colgado, no se declara aprobada. Versión `0.15.143-alpha`.

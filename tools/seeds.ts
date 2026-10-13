@@ -131,6 +131,12 @@ interface SeedResult {
   cravingProteinAbsent: number;
   cravingProteinMasked: number;
   cravingProteinOverrideSelected: number;
+  cravingProteinReachableSelected: number;
+  cravingProteinReachableIgnored: number;
+  cravingMeals: number;
+  cravingRichMeals: number;
+  calmMeals: number;
+  calmRichMeals: number;
   /** M15 phase 4: conceptions whose chosen spark included a chronic want. */
   wantingSparkRoutes: Record<string, number>;
   /** M15 phase 7: per-verb outcomes of ordinary authority rolls. */
@@ -342,6 +348,12 @@ function runSeed(scenarioName: string, seed: string, steps: number, size: number
     cravingProteinAbsent: counts.craving_protein_absent ?? 0,
     cravingProteinMasked: counts.craving_protein_masked_by_reachable_food ?? 0,
     cravingProteinOverrideSelected: counts.craving_protein_override_selected ?? 0,
+    cravingProteinReachableSelected: counts.craving_protein_reachable_selected ?? 0,
+    cravingProteinReachableIgnored: counts.craving_protein_reachable_ignored ?? 0,
+    cravingMeals: counts.eat_craving_protein ?? 0,
+    cravingRichMeals: counts.eat_craving_protein_rich ?? 0,
+    calmMeals: counts.eat_calm_protein ?? 0,
+    calmRichMeals: counts.eat_calm_protein_rich ?? 0,
     wantingSparkRoutes: Object.fromEntries(Object.entries(counts)
       .filter(([key]) => key.startsWith('spark_wanting_') && (counts[key] ?? 0) > 0)
       .map(([key, value]) => [key.slice('spark_wanting_'.length), value])),
@@ -545,6 +557,15 @@ function main(): void {
     sum(r => r.cravingProteinMasked) + ' masked by another reachable food node · ' +
     sum(r => r.cravingProteinOverrideSelected) + ' selected by the out-of-reach override · ' +
     sum(r => r.cravingProteinAbsent) + ' absent from the forage search');
+  const cravingMeals = sum(r => r.cravingMeals);
+  const calmMeals = sum(r => r.calmMeals);
+  const cravingRich = cravingMeals > 0 ? sum(r => r.cravingRichMeals) / cravingMeals : 0;
+  const calmRich = calmMeals > 0 ? sum(r => r.calmRichMeals) / calmMeals : 0;
+  console.log('  PROTEIN CHOICE ' + sum(r => r.cravingProteinReachableSelected) + ' reachable-rich selections · ' +
+    sum(r => r.cravingProteinReachableIgnored) + ' reachable-rich alternatives ignored · ' +
+    sum(r => r.cravingRichMeals) + '/' + cravingMeals + ' rich meals while craving vs ' +
+    sum(r => r.calmRichMeals) + '/' + calmMeals + ' while calm (' +
+    (calmRich > 0 ? (cravingRich / calmRich).toFixed(2) + 'x' : 'n/a') + ')');
 
   console.log('='.repeat(78));
   // The owner's measure since 2026-10-01: not how many survive, but whether

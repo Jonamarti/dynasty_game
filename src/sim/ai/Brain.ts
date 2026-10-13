@@ -1283,7 +1283,7 @@ export class Brain {
       ? rememberedFood(reachableProteinIndex) : null;
     const proteinInSearch = strongProteinCraving && !reachableProtein
       ? rememberedFood(proteinSearchIndex) : null;
-    const foodNode = chooseCravingFood(ordinaryFoodNode, proteinInSearch, !!reachableProtein,
+    const foodNode = chooseCravingFood(ordinaryFoodNode, reachableProtein ?? proteinInSearch,
       strongProteinCraving, n => this.nodeProteinFraction(person, n));
     if (telemetry.isEnabled()) {
       if (foodNode) telemetry.count('food_accessible_at_think');
@@ -1301,7 +1301,14 @@ export class Brain {
     // keep the audit out of ordinary play where telemetry is disabled.
     if (telemetry.isEnabled() && strongProteinCraving) {
       telemetry.count('craving_protein_search');
-      if (reachableProtein) telemetry.count('craving_protein_reachable');
+      if (reachableProtein) {
+        telemetry.count('craving_protein_reachable');
+        if (foodNode && this.nodeProteinFraction(person, foodNode) >= 0.3) {
+          telemetry.count('craving_protein_reachable_selected');
+        } else if (foodNode) {
+          telemetry.count('craving_protein_reachable_ignored');
+        }
+      }
       else if (proteinInSearch) {
         telemetry.count('craving_protein_outside_reach');
         if (inReachFood) {

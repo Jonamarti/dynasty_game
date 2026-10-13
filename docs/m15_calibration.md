@@ -103,11 +103,10 @@ las cohortes más cortas y merecen seguimiento, no ajuste:
 `npm.cmd run sim:check -- --scenario band` volvió a dar `cravings-steer-the-diet`
 y `moods-move-choices` en rojo. Hubo 228 comidas durante antojo proteico fuerte,
 6 ricas en proteína (2,6%); en calma hubo 117, 12 ricas (10,3%). En las
-decisiones con antojo, la búsqueda halló proteína accesible 1.039 veces y no
-halló proteína 2.952 veces, de 4.777. La medida de comidas no condiciona por
-disponibilidad al escoger cada comida, así que no identifica una elección
-contraria al antojo. Se deja el fallo como pendiente de instrumentación, sin
-ajustar coeficientes ni umbral.
+decisiones con antojo, la búsqueda halló proteína alcanzable 1.039 veces y no
+halló proteína en la búsqueda 2.952 veces, de 4.777. Esta medida de comidas no
+condicionaba por disponibilidad. El diagnóstico posterior, y el cambio del gate
+condicional, figuran en «Oportunidad proteica durante el antojo» más abajo.
 
 El observador de `moods-move-choices` se corrigió para emparejar la acción del
 paso con pertenencia capturada antes del paso; anteriormente una conversación
@@ -465,3 +464,94 @@ instante no explica los ocho casos. La instrumentación agregada no separa aún
 cuándo pensó cada víctima ni qué decisión precedió a cada golpe; no justifica
 ajustar pesos. `answered` y recuperación permanecen bajo objetivo, y la fase
 41 sigue abierta.
+
+### Oportunidad proteica durante el antojo — 2026-10-13
+
+La medición condicional aisló un fallo del selector: en `band`, antes del
+cambio, había proteína rica alcanzable en 1.039 búsquedas con antojo, pero se
+eligió en solo 303 (29,2%); en 736 oportunidades (70,8%) ganó otra comida. El
+scorer recibía la existencia de proteína alcanzable como booleano y seguía con
+la comida ordinaria. `chooseCravingFood` ahora recibe esa alternativa y la
+elige si la comida ordinaria no cubre proteína. En la repetición corta se
+eligió proteína en 840/840 búsquedas alcanzables (100%).
+
+El gate `cravings-steer-the-diet` ahora exige al menos 20 oportunidades y una
+selección proteica en ≥90% de ellas. El límite expresa el contrato del selector
+con una tolerancia de 10%; se fija sobre oportunidades, no sobre comidas ni
+sobre el resultado de la nueva build. El caso previo de 303/1.039 (29,2%) falla
+y el nuevo 840/840 pasa. Las cuotas agregadas de comidas siguen impresas como
+diagnóstico; en `band` fueron 10,8% ricas durante antojo frente a 14,2% en
+calma (0,76×), por lo que no se presenta el cambio como dieta global ya
+calibrada.
+
+La cohorte `npm.cmd run sim:seeds -- --scenario band --seeds 20 --steps 3000`
+terminó sin colapsos: 97,6% de supervivencia media, proteína alcanzable elegida
+en 31.999/31.999 búsquedas, y 452/3.334 comidas ricas durante antojo frente a
+1.189/3.634 en calma (0,41×). Es una cohorte corta del escenario `band`, no
+demuestra el resultado nutricional a largo plazo; conserva el gate condicional
+y deja la cuota global como diagnóstico para la siguiente calibración. No se
+tocaron RNG, economía de recursos ni umbrales de supervivencia.
+
+### Matriz completa tras el cambio condicional — 2026-10-13
+
+`npm.cmd run sim:check:all` recorrió 43 escenarios (10 de mecanismo y 33
+generales) y terminó con exit 1. La
+puerta de dieta pasó en `band` (55/56; falló únicamente `hills-see-farther`);
+la matriz no detectó un fallo de selección proteica. El resto de fallos se
+resume por escenario:
+
+| Escenario | Checks | Checks fallidos |
+|---|---:|---|
+| `nights` | 3/3 | — |
+| `salters` | 1/1 | — |
+| `tailors` | 3/3 | — |
+| `homes` | 7/7 | — |
+| `ironsmiths` | 1/1 | — |
+| `forgers` | 1/1 | — |
+| `ironminers` | 1/1 | — |
+| `carburisers` | 1/1 | — |
+| `ironworkers` | 1/1 | — |
+| `ploughmen` | 1/1 | — |
+| `smiths` | 64/70 | `nights-are-slept`, `gossip-is-aimed`, `projects-find-backers`, `roast-wins`, `cooking-spreads`, `discovery-is-situated` |
+| `frontier-cohort` | 3/3 | — |
+| `frontier` | 2/2 | — |
+| `food-news` | 1/1 | — |
+| `conflicts` | 1/1 | — |
+| `tiny` | 39/42 | `moods-move-choices`, `forest-is-used`, `predators-hunt` |
+| `band` | 55/56 | `hills-see-farther` |
+| `crowded` | 54/55 | `moods-move-choices` |
+| `century` | 71/77 | `nights-are-slept`, `moods-move-choices`, `children-keep-close`, `population-persists`, `the-wise-avoid-baneberries`, `bands-take-sides` |
+| `craft` | 69/74 | `nights-are-slept`, `people-survive`, `shelter-answers-cold`, `sub-webs-are-climbed`, `discovery-is-situated` |
+| `wilds` | 68/70 | `nights-are-slept`, `projects-find-backers` |
+| `emptied` | 55/59 | `nights-are-spent-at-home`, `needs-not-pinned`, `gossip-is-aimed`, `shelter-answers-cold` |
+| `hearths` | 66/73 | `nights-are-slept`, `moods-move-choices`, `projects-find-backers`, `roast-wins`, `sub-webs-are-climbed`, `bands-take-sides`, `hills-see-farther` |
+| `porters` | 55/57 | `nights-are-spent-at-home`, `moods-move-choices` |
+| `scribes` | 66/69 | `nights-are-slept`, `the-wise-avoid-baneberries`, `discovery-is-situated` |
+| `harsh-winter` | 55/58 | `needs-not-pinned`, `shelter-answers-cold`, `hills-see-farther` |
+| `coast` | 54/54 | — |
+| `shallows` | 6/6 | — |
+| `traps` | 62/66 | `nights-are-slept`, `gossip-is-aimed`, `shelter-answers-cold`, `hills-see-farther` |
+| `millers` | 71/75 | `nights-are-slept`, `the-wise-avoid-baneberries`, `bands-take-sides`, `hills-see-farther` |
+| `hunters` | 62/64 | `gossip-is-aimed`, `kills-are-butchered-for-bone` |
+| `fishers` | 63/66 | `nights-are-slept`, `gossip-is-aimed`, `food-spoils` |
+| `farmers` | 70/73 | `nights-are-slept`, `gossip-is-aimed`, `animals-are-tamed` |
+| `herders` | 64/72 | `nights-are-slept`, `moods-move-choices`, `population-persists`, `walkers-do-not-grind`, `generations-turn-over`, `techs-are-refined`, `the-wise-avoid-baneberries`, `animals-are-tamed` |
+| `feasts` | 75/79 | `nights-are-slept`, `techs-are-refined`, `pots-reach-a-granary`, `discovery-is-situated` |
+| `stewards` | 73/77 | `nights-are-slept`, `moods-move-choices`, `discovery-is-situated`, `bands-take-sides` |
+| `labour` | 59/67 | `nights-are-slept`, `moods-move-choices`, `people-survive`, `health-holds-up`, `gossip-is-aimed`, `shelter-answers-cold`, `research-is-social`, `discovery-is-situated` |
+| `polity` | 79/88 | `people-act-on-what-they-know`, `nights-are-slept`, `moods-move-choices`, `gossip-is-aimed`, `projects-find-backers`, `roast-wins`, `cooking-spreads`, `pots-reach-a-granary`, `discovery-is-situated` |
+| `conquest` | 86/95 | `nights-are-slept`, `moods-move-choices`, `records-are-cut`, `taxes-reach-the-temple`, `roast-wins`, `cooking-spreads`, `pots-reach-a-granary`, `discovery-is-situated`, `peoples-drift-apart` |
+| `culture` | 58/65 | `nights-are-slept`, `needs-not-pinned`, `gossip-is-aimed`, `projects-find-backers`, `pictures-are-painted`, `animals-are-tamed`, `kills-are-butchered-for-bone` |
+| `lean` | 57/70 | `nights-are-slept`, `moods-move-choices`, `population-persists`, `needs-not-pinned`, `gossip-is-aimed`, `projects-find-backers`, `generations-turn-over`, `camps-move-when-the-land-fails`, `knowledge-is-found`, `ideas-become-tech`, `the-tree-is-climbed`, `discovery-is-situated`, `families-exist` |
+| `diggers` | 58/64 | `earthworks-are-dug`, `nights-are-slept`, `moods-move-choices`, `needs-not-pinned`, `gossip-is-aimed`, `research-is-social` |
+| `orchard` | 55/61 | `nights-are-slept`, `moods-move-choices`, `people-survive`, `gossip-is-aimed`, `projects-find-backers`, `research-is-social` |
+
+La suite unitaria completa se lanzó después del rebuild de arte con
+`npm.cmd test -- --maxWorkers=1 --testTimeout=15000`. El caso de
+`earthwork-checks.test.ts` excedió el límite (14.850 ms observados); después no
+hubo más salida durante varios minutos y el wrapper quedó abierto sin procesos
+Vitest activos. Se interrumpió esa sesión, por lo que no hay resumen ni código
+de salida válido y no se declara la suite aprobada. El test focal de selección
+(7/7), typecheck y `sim:check -- --scenario band` sí terminaron correctamente.
+El log completo de la matriz quedó en el temporal
+`%TEMP%/m15-simcheck-all-20261013-rerun.log` de esa ejecución.

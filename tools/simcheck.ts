@@ -22,6 +22,10 @@ import type { Person } from '../src/sim/entities/Person.ts';
 import type { DeepPartial, SimConfig } from '../src/sim/core/Config.ts';
 import { TECH, techPower, type Tech, axeFactor, buildFactor, reapFactor } from '../src/sim/knowledge/Tech.ts';
 import { digTool } from '../src/sim/core/Earth.ts';
+import {
+  CRAVING_PROTEIN_MIN_OPPORTUNITIES, CRAVING_PROTEIN_SELECTION_RATE,
+  cravingProteinOpportunityPasses,
+} from '../src/sim/ai/FoodChoice.ts';
 
 /** Whether somebody holds a technology at any strength — for the civilisation check. */
 const TECH_KNOWN = (person: import('../src/sim/entities/Person.ts').Person, tech: Tech) => techPower(person, tech) > 0;
@@ -1883,16 +1887,25 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
       (seen > 0 ? ' (' + Object.entries(base.pregnancy.heavy).map(([k, n]) => k + ' ' + n).join(', ') + ')' : '') +
       ' (need 0)');
   }
+  const proteinOpportunities = tel.craving_protein_reachable ?? 0;
+  const proteinSelected = tel.craving_protein_reachable_selected ?? 0;
   const cravingMeals = tel.eat_craving_protein ?? 0;
   const calmMeals = tel.eat_calm_protein ?? 0;
-  if (cravingMeals < 20 || calmMeals < 20) {
-    skip('cravings-steer-the-diet', cravingMeals + ' protein-craving meals and ' + calmMeals + ' calm meals (need 20 each)');
+  const cravingRich = cravingMeals > 0 ? (tel.eat_craving_protein_rich ?? 0) / cravingMeals : 0;
+  const calmRich = calmMeals > 0 ? (tel.eat_calm_protein_rich ?? 0) / calmMeals : 0;
+  const mealRatio = calmRich > 0 ? (cravingRich / calmRich).toFixed(2) + 'x' : 'n/a';
+  const globalDietDiagnostic = 'global rich-meal share ' +
+    (cravingMeals > 0 ? (100 * cravingRich).toFixed(1) + '%' : 'n/a') + ' craving vs ' +
+    (calmMeals > 0 ? (100 * calmRich).toFixed(1) + '%' : 'n/a') + ' calm (' + mealRatio + ')';
+  if (proteinOpportunities < CRAVING_PROTEIN_MIN_OPPORTUNITIES) {
+    skip('cravings-steer-the-diet', proteinOpportunities + ' reachable-protein choices (need ' +
+      CRAVING_PROTEIN_MIN_OPPORTUNITIES + '); ' + globalDietDiagnostic);
   } else {
-    const cravingRich = (tel.eat_craving_protein_rich ?? 0) / cravingMeals;
-    const calmRich = (tel.eat_calm_protein_rich ?? 0) / calmMeals;
-    add('cravings-steer-the-diet', calmRich > 0 && cravingRich / calmRich >= 1.3,
-      (100 * cravingRich).toFixed(1) + '% rich-protein meals while craving vs ' +
-      (100 * calmRich).toFixed(1) + '% while calm (need 1.3x)');
+    add('cravings-steer-the-diet', cravingProteinOpportunityPasses(proteinSelected, proteinOpportunities),
+      proteinSelected + '/' + proteinOpportunities + ' reachable-protein choices (' +
+      (100 * proteinSelected / proteinOpportunities).toFixed(1) + '%; need ' +
+      (100 * CRAVING_PROTEIN_SELECTION_RATE).toFixed(0) + '%); ' +
+      (tel.craving_protein_reachable_ignored ?? 0) + ' alternatives ignored; ' + globalDietDiagnostic);
   }
   if (home.adultNightSamples < 200) skip('nights-are-slept', home.adultNightSamples + ' adult night samples (need 200)');
   else add('nights-are-slept', home.adultsSleeping / home.adultNightSamples >= 0.55,

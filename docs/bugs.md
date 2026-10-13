@@ -5520,3 +5520,33 @@ abandonó con `nothing_to_render`; no se confirmó si la causa es capacidad,
 interrupción o estado del origen. Se revirtió esa variante; no se cambió la
 simulación ni se relajó el test. Hace falta instrumentar el trayecto antes de
 atribuir una causa.
+
+### 2026-10-13 — selección de proteína con alternativa alcanzable
+
+La causa antes pendiente quedó localizada: durante antojo fuerte, `Brain` hallaba
+una alternativa proteica dentro del alcance pero `chooseCravingFood` recibía
+solo un booleano y mantenía la comida ordinaria. En `band`, antes del arreglo,
+la seleccionó en 303/1.039 oportunidades (29,2%; 736 alternativas ignoradas).
+Ahora el selector recibe y usa el nodo alcanzable; el resultado fue 840/840
+(100%) en la repetición, y 31.999/31.999 en la cohorte de 20 semillas.
+
+El gate de dieta quedó condicionado a oportunidad: mínimo 20 búsquedas y ≥90%
+de selección proteica. El control previo falla y la build corregida pasa; las
+cuotas agregadas de comidas se retienen como diagnóstico. En esa misma cohorte
+la comida rica fue 13,6% durante antojo frente a 32,7% en calma (0,41×), lo que
+muestra que el selector de forraje no basta para afirmar que la dieta observada
+está calibrada. No se rebajó el umbral conductual; ese patrón queda abierto para
+investigar el consumo de comida ya transportada. Evidencia detallada en
+`m15_calibration.md`.
+
+### 2026-10-13 — matriz M15 y suite unitaria tras el gate de dieta
+
+`npm.cmd run sim:check:all` terminó con exit 1 tras 43 escenarios. El nuevo gate
+de dieta pasa en `band` (55/56; único fallo `hills-see-farther`); la tabla
+completa está en `m15_calibration.md` y el log de la corrida en el temporal
+`%TEMP%/m15-simcheck-all-20261013-rerun.log`. La suite unitaria completa se
+lanzó con un worker; `earthwork-checks.test.ts` rebasó el límite de 15 s en su
+caso `diggers` (14,85 s observados) y el wrapper dejó de emitir salida durante
+varios minutos, sin procesos Vitest activos. Se interrumpió esa sesión; no se
+conoce el resumen final ni se declara la suite aprobada. Los tests focales del
+selector (7/7) y typecheck sí pasaron.
