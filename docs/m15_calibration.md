@@ -434,6 +434,27 @@ no llegaron a ella. El informe recogió cero portadores nocturnos de antorcha en
 0/248.274 observaciones-persona. No se ajustaron parámetros: la corrida deja
 abiertas recuperación, respuesta y adopción; no identifica una causa.
 
+### Segunda pasada de fase 41 — 2026-10-14 (`0.15.148-alpha`)
+
+Las cohortes se ejecutaron serialmente sobre el mismo código de simulación
+`b68c6e4`; los commits posteriores durante esta pasada solo cambiaron
+documentación. `lean` usa el brazo con `light.enabled=true` de la pareja 12f.
+
+| Escenario | Semillas × ticks | Supervivencia media | Extinción | Colapso <25% | `recovered` | `answered` | Gate adicional |
+|---|---:|---:|---:|---:|---:|---:|---|
+| `generations` | 20 × 144.000 | 6,1% | 14/20 | 17/20 | 0/57, censuradas | 80,6% (58/72) | `firemaking`: adopción mediana 7 días; 4 mundos no llegaron |
+| `century` | 20 × 40.000 | 43,9% | 1/20 | 4/20 | 0/41, censuradas | 81,7% (58/71) | `firemaking` en 9/20 (45%; gate 50%) |
+| `lean` | 20 × 24.000 | 4,9% | 5/20 | 20/20 | — | — | Sin adopción de antorcha: 0/52.702 muestras nocturnas |
+| `frontier-cohort` | 20 × 12.000 | 93,0% | 0/20 | 0/20 | 0/3, censuradas | 61,3% (19/31) | 65.639 ticks de bebida dulce, 0 de mar; 108 cruces de vado |
+
+La pareja `lean` y los detalles del mapa están en [12f nights](m15_phase12f_nights.md)
+y los logs de esta pasada en `test-results/` (no son artefactos versionados).
+`frontier-cohort` mide agua continental y no diagnóstico de recuperación; su
+proxy de respuesta tiene solo 31 eventos. En `century` y `generations` la
+recuperación fue 0% y `answered` permaneció por debajo de 90%; no hay base para
+ajustar pesos ni para cerrar M15. `sim:check:all` sigue en rojo en gates
+generales, aunque los 15 escenarios de mecanismo pasaron.
+
 ### Verificación completa repetida — 2026-10-14 (`0.15.147-alpha`)
 
 La lectura aislada `npm.cmd run sim:check` dio 145/147 en `band`: fallaron

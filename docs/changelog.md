@@ -13,6 +13,13 @@ diagnóstico y el siguiente instrumento necesario en
 `answered` 58/72 (80,6%) y 6,1% de supervivencia media. Se registran los gates
 abiertos en `m15_plan.md` y `bugs.md`; no se cambió calibración.
 
+## 2026-10-14 — M15 fase 41: segunda pasada de cohortes completa
+
+Se midieron 20 semillas de `century` y `frontier-cohort`, y se incorporaron
+`generations` y la pareja `lean` de 12f. `century` quedó en 43,9% de
+supervivencia, con recuperación 0/41 y `answered` 81,7%; no se cambiaron pesos.
+La fase sigue abierta según sus gates, con la tabla en `m15_calibration.md`.
+
 ## 2026-10-14 — M15 fase 17: leer una inscripción también se ve
 
 `read` recorre cuatro poses de atención reutilizadas de `ponder` mientras una

@@ -5612,3 +5612,10 @@ distinta de `idle` como respuesta y no demuestra que la víctima escape; la
 cohorte no diagnostica el mecanismo detrás de recuperación nula. Deben quedar
 como gates abiertos hasta un diagnóstico causal y una medición que cumpla sus
 denominadores. Reproducción y límites en [`m15_calibration.md`](m15_calibration.md).
+
+La repetición de `century` también dio `recovered` 0/41 (todas censuradas),
+`answered` 58/71 = 81,7% y `firemaking` en 9/20 semillas (45%, bajo el objetivo
+de 50%). `frontier-cohort` sí tuvo 0/20 extinciones, pero mide el agua de un
+mapa continental y solo reunió 31 eventos para `answered`; no invalida los
+gates demográficos. La pasada completa y sus límites están en
+[`m15_calibration.md`](m15_calibration.md).

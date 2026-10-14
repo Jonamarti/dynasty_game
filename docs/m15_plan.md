@@ -4677,6 +4677,17 @@ alcanzable. **Checks:** uno por nodo, cada uno contra el build sin el nodo.
 no identifica causalidad y mantiene abiertos recuperación, respuesta a ataques
 y difusión. Ver [`m15_calibration.md`](m15_calibration.md) y [`bugs.md`](bugs.md).
 
+**Segunda pasada de calibración 2026-10-14:** completadas 20 semillas en
+`generations`, `century`, `lean` (brazo `light.enabled=true` de la pareja 12f)
+y `frontier-cohort`; `sim:check:all` ya cubrió `band`, `frontier` y
+`food-news`. `century` mejoró supervivencia a 43,9%, pero sigue con
+`recovered` 0/41 (censuradas), `answered` 81,7% y `firemaking` 9/20 (45%, bajo
+50%). `frontier-cohort` tuvo 93,0% de supervivencia y 0/20 extinciones, pero
+solo 31 eventos para el proxy `answered`; no sustituye el escenario demográfico.
+La tabla completa está en [`m15_calibration.md`](m15_calibration.md). La
+segunda pasada no cierra fase 41: recuperación y respuesta siguen bajo objetivo,
+y `lean` colapsó en 20/20 semillas.
+
 **Límite del instrumento (revisado 2026-10-12):** los nombres `drought`,
 `migrants` y `caravans` que aparecen en documentación anterior no son
 escenarios registrados en `tools/simcheck.ts`; no se pueden lanzar como
