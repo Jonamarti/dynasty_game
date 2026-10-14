@@ -5355,3 +5355,8 @@ se declara calibrada la dieta consumida. Tests, calibración y límites en
 falló en checks ajenos a dieta; en `band` pasó el gate nuevo y falló solo
 `hills-see-farther`. La suite unitaria completa quedó inconclusa por timeout de
 terreno y wrapper colgado, no se declara aprobada. Versión `0.15.143-alpha`.
+
+**Cierre de verificación 2026-10-14:** pila completa ejecutada (ver
+[`m15_calibration.md`](m15_calibration.md)). Los gates de fase 41 siguen
+abiertos; el diagnóstico apunta a la puerta de techo de la fase 18 como causa de
+`recovered` 0/N. Queda una decisión del propietario antes de calibrar.

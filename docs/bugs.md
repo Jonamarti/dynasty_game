@@ -5619,3 +5619,10 @@ de 50%). `frontier-cohort` sí tuvo 0/20 extinciones, pero mide el agua de un
 mapa continental y solo reunió 31 eventos para `answered`; no invalida los
 gates demográficos. La pasada completa y sus límites están en
 [`m15_calibration.md`](m15_calibration.md).
+
+**Fase 41, diagnóstico de natalidad (2026-10-14).** ~93% de las concepciones
+con tirada exitosa se descartan por `conception_no_roof` en `century`; ver
+[`m15_calibration.md`](m15_calibration.md). Explica `recovered` 0/N y apunta a
+`nights-are-slept`. Abierto: requiere decisión sobre la regla de techo de la
+fase 18. `e2e`: cinco fallos transitorios por escritura de capturas en Windows
+(`UNKNOWN: open`), no regresiones.

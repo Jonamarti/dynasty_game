@@ -16343,6 +16343,7 @@ needs or draw a duplicate seat. Unit, art, and real-order E2E checks cover the
 pose and fatigue recovery. Four new screenshots are recorded at
 `artifacts/screenshots/m15-bench-rest-animation-2026-10-13/`.
 Contract: [`m15_bench_rest_animation.md`](m15_bench_rest_animation.md).
+
 ### 2026-10-13 — M15 fase 41: elegir proteína cuando está al alcance
 
 `chooseCravingFood` recibe ahora la alternativa proteica alcanzable y la
@@ -16357,40 +16358,6 @@ la matriz de 43 escenarios terminó con fallos en otros checks. La suite unitari
 completa quedó inconclusa tras un timeout ajeno y un wrapper colgado. Sin UI.
 Análisis: [`m15_calibration.md`](m15_calibration.md).
 
-## 2026-10-13 — M15 fase 16d: la lámpara puede motivar una caza real
-
-Una lámpara NPC vacía en el hogar de un adulto añade una motivación pequeña a
-la caza cuando hay presa alcanzable, incluso con hambre calmada. La presa, los
-gates de necesidad, las interrupciones y el rendimiento físico existente siguen
-siendo los mismos; no se crea grasa ni se añaden tiradas. La prueba focal cubre
-el caso positivo, lámpara cargada/ausente y presa fuera de alcance (29/29).
-No se hizo cohorte ni calibración. No hay cambio de UI.
-Versión `0.15.146-alpha`.
-
-
-### 2026-10-13 — fase 12f: medir portadores de antorcha
-
-`sim:seeds` registra cada 40 ticks nocturnos las observaciones-persona que
-llevan una antorcha encendida en una mano, por semilla y en agregado. Inventario
-apagado y hogueras no cuentan; la lectura es pasiva y no cambia comportamiento
-ni RNG. Pruebas focales 2/2, typecheck y `sim:check --scenario nights` (3/3)
-pasan. La cohorte histórica no recogió esta métrica, por lo que adopción
-poblacional y robos separados por día/noche siguen pendientes; no se declara
-12f cerrada.
-
-
-### 2026-10-13 — aislar la fixture `diggers` del primer silo orgánico
-
-La banda planificaba un `storage_pit` vacío antes de las dos obras marcadas y
-el jefe enviaba allí a los voluntarios. Sin despensa, la zanja quedaba en 0/36
-lifts y el montículo en 17/30 antes de que ambos sitios caducaran. La fixture
-ahora empieza con la despensa terminada por las transiciones normales de
-excavación, entrega y trabajo; `earthworks-are-dug` pasa con 1/2 obras y 41
-lifts. Los gates no cambian. Test focal 3/3 y typecheck pasan; `diggers` sigue
-con cinco checks ajenos fallidos, que se registran como baseline en `bugs.md`.
-No cambia la UI ni el comportamiento de juego.
-
-
 ### 2026-10-13 — corregir fixtures de calibración M15
 
 La prueba compacta agrupa tres semillas en `lean` y `craft`, conserva sus
@@ -16401,3 +16368,35 @@ seca, de modo que verifica la entrega y no rechazo o deterioro durante el viaje.
 Son correcciones de medición, sin cambios de simulación ni afirmaciones de
 calibración global. La suite unitaria completa terminó: 2.298 tests pasan, uno
 falla en `earthworks-are-dug`, uno se omite; ver `m15_calibration.md` y `bugs.md`.
+
+### 2026-10-13 — fase 12f: medir portadores de antorcha
+
+`sim:seeds` registra cada 40 ticks nocturnos las observaciones-persona que
+llevan una antorcha encendida en una mano, por semilla y en agregado. Inventario
+apagado y hogueras no cuentan; la lectura es pasiva y no cambia comportamiento
+ni RNG. Pruebas focales 2/2 y typecheck limpio. La cohorte histórica no recogió
+esta métrica, por lo que adopción poblacional y robos separados por día/noche
+siguen pendientes; no se declara 12f cerrada.
+
+### 2026-10-13 — aislar la fixture `diggers` del primer silo orgánico
+
+La banda iniciaba `storage_pit#3` antes de las obras del escenario y el jefe
+enviaba allí a los voluntarios; en la repetición rota, la zanja quedó en 0/36 y
+el montículo en 17/30, y ambos vencieron tras seis días sin progreso. Con un
+silo inicial ya terminado por las mismas transiciones de excavación, entrega y
+trabajo, `diggers` completó el montículo con 41 lifts; los checks del agua y de
+regiones siguieron pasando. El test comprueba tanto el check como que no se
+planifique otro silo. Es un ajuste del estado inicial de medición; no altera
+gates ni comportamiento de juego. Los otros seis checks rojos de `diggers`
+quedan registrados como baseline en `bugs.md`.
+
+
+## 2026-10-14 — M15 fase 41: verificación final y diagnóstico de natalidad
+
+Pila completa sin la restricción de verificación pesada: typecheck, 2.307
+pruebas, `sim:check:all` (15 escenarios de mecanismo en verde, generales con
+los rojos conocidos) y e2e 177/182 (los cinco fallos son escrituras de capturas
+en Windows y pasan al repetir). Diagnóstico: la puerta de techo de la fase 18
+descarta ~93% de las concepciones y explica `recovered` 0/N. Sin cambios de
+código ni de parámetros; docs-only, sin subir versión. Ver
+[m15_calibration.md](m15_calibration.md).

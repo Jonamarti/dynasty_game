@@ -637,3 +637,33 @@ apagada; no se cambió tasa ni parámetro.
 ### Suite unitaria completa — actualización 2026-10-13
 
 Una segunda ejecución completa, con `--maxWorkers=1 --testTimeout=30000 --reporter=dot`, sí terminó tras 714 s: 2.298 tests pasaron, uno falló y uno se omitió (313 archivos; 312 pasaron, uno falló). El único fallo fue `earthwork-checks.test.ts > earthworks-are-dug`; el gate observó 0/2 obras concluidas, con 22 levantamientos y ninguna obra restante. No se declara verde la suite. La investigación de causa sigue en `docs/bugs.md`; los otros dos ajustes de fixtures incluidos en esa corrida pasaron.
+
+### Verificación final y diagnóstico de natalidad — 2026-10-14 (`0.15.148-alpha`)
+
+Con la restricción de verificación pesada levantada por el propietario
+(AGENTS.md), se repitió la pila completa sobre HEAD `16b1077`:
+`typecheck` limpio; `vitest` 315 archivos, 2.307 pruebas pasadas y 1 omitida
+(407 s); `sim:check:all` con los 15 escenarios de mecanismo en verde y los
+generales en rojo con los checks ya conocidos (`nights-are-slept`,
+`moods-move-choices`, `gossip-is-aimed`, `hills-see-farther`, etc.); `e2e`
+177/182 en la primera pasada. Los 5 fallos (`globe`, `one-comarca`,
+`phase31-tribegraph-zoom`, `phase40-ploughshare`, `tend-animation`) fueron
+errores de escritura de capturas en Windows (`UNKNOWN: open ...png`) y pasan al
+repetirlos, por lo que no son regresiones.
+
+**Diagnóstico de `recovered` 0/N (sin cambio de parámetros).** `century`, 4
+semillas: 0,081 nacimientos por mujer-año y `recovered` 0/8. El embudo de
+concepción (`sim:seeds`, RECOVERY / FERTILITY) muestra, p. ej. en `alpha`, 907
+oportunidades, 76 bloqueos de espaciado, 92 de pareja y solo 4 embarazos: 53
+concepciones salidas de la tirada se descartan por `conception_no_roof`
+(fase 18). `shareTheHearth` solo registra techo a quien está en acción `sleep`
+bajo un edificio completo a medianoche; en `century` solo ~20% de los hogares
+tienen casa interior, y de noche una parte grande de los adultos hace `rest`
+(35–48% en `band`/`smiths`) o `idle` (19% en `craft`). `recovered` y
+`nights-are-slept` comparten, por tanto, raíz: pocas casas y poco sueño a
+cubierto. Es una hipótesis medida en pocas semillas, no una cohorte de 20.
+
+**Decisión pendiente del propietario:** la puerta de techo (fase 18) es una
+regla de diseño. Opciones: (a) mantenerla y subir la construcción de casas;
+(b) contar también `rest` dentro de un edificio; (c) relajar la puerta. No se
+eligió ninguna, para no ajustar a ciegas un mundo caótico.
