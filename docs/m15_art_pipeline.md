@@ -153,6 +153,8 @@ rule (and the key), and the two pictures stay.
   compost, attending a feast, inscribing, pondering, prototyping, reflecting,
   fighting, talking and swimming now have their own generated cycles; the
   procedural fallback and other actions outside these families remain open.
+  Reading an inscription reuses the quiet attention cycle from pondering,
+  gated by the reader's real `read` work ticks.
 - **Trees, resource nodes and terrain** are still drawn in code.
 
 ## Gathering cost measured on 2026-10-02

@@ -274,6 +274,14 @@ export function ponderingPose(person: Person, moving: boolean, alpha = 1): ArtPo
   return workFrame(PONDER_POSES, person.workedTicks, alpha);
 }
 
+/** Reading uses the same quiet attention gesture while real inscription work advances. */
+export function readingPose(person: Person, moving: boolean, alpha = 1): ArtPose | null {
+  // Only the reader's public action/work markers are needed. Do not inspect
+  // the record's contents, its author, or the reader's private knowledge.
+  if (moving || !person.alive || person.action !== 'read' || person.workedTicks <= 0) return null;
+  return workFrame(PONDER_POSES, person.workedTicks, alpha);
+}
+
 /** Open-ended reflection uses the same quiet hand-to-chin gesture as pondering. */
 export function reflectingPose(person: Person, moving: boolean, alpha = 1): ArtPose | null {
   // Reflection has no target or partner by design. Its own action and work

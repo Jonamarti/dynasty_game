@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Person } from '../../sim/entities/Person.ts';
 import { RNG } from '../../sim/core/RNG.ts';
-import { attendingFeastPose, benchRestPose, buildingPose, cuttingGrassPose, diggingPose, dyeingPose, extractionPose, farmingPose, fightingPose, fishingPose, gatheringPose, hideDressingPose, huntingPose, inscribingPose, mendingPose, ponderingPose, prototypingPose, plantingPose, reflectingPose, sleepingPose, spreadingCompostPose, swimmingPose, tamingPose, tendingPose } from '../WorkAnimation.ts';
+import { attendingFeastPose, benchRestPose, buildingPose, cuttingGrassPose, diggingPose, dyeingPose, extractionPose, farmingPose, fightingPose, fishingPose, gatheringPose, hideDressingPose, huntingPose, inscribingPose, mendingPose, ponderingPose, prototypingPose, plantingPose, readingPose, reflectingPose, sleepingPose, spreadingCompostPose, swimmingPose, tamingPose, tendingPose } from '../WorkAnimation.ts';
 import type { Simulation } from '../../sim/core/Simulation.ts';
 
 function fixture() {
@@ -444,6 +444,23 @@ describe('ponder animation', () => {
     }
     expect(ponderingPose(thinker, false, 0.5)).toBe('o0');
     expect(ponderingPose(thinker, false, 1)).toBe('o1');
+  });
+});
+
+describe('reading animation', () => {
+  it('uses the reader’s real work ticks without reading the record or private knowledge', () => {
+    const reader = new Person('Reader', 4, 4, 0, new RNG('read-animation'));
+    reader.action = 'read'; reader.workedTicks = 2;
+    for (const key of ['targetInscriptionId', 'knownTech', 'ideas']) {
+      Object.defineProperty(reader, key, { configurable: true, get() { throw new Error(`read private ${key}`); } });
+    }
+    expect([1, 3, 5, 7].map(ticks => {
+      reader.workedTicks = ticks;
+      return readingPose(reader, false, 0);
+    })).toEqual(['o0', 'o1', 'o2', 'o3']);
+    expect(readingPose(reader, true)).toBeNull();
+    reader.action = 'idle';
+    expect(readingPose(reader, false)).toBeNull();
   });
 });
 

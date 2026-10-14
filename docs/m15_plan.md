@@ -1,3 +1,12 @@
+**Avance del 2026-10-14 — fase 17, lectura:** `read` usa cuatro poses de
+atención (`o0`–`o3`) durante el trabajo real sobre una inscripción. Reutilizalas poses generadas de pensamiento; no añade celdas de arte. El selector solo
+lee vida, acción, movimiento y `workedTicks` del lector. Typecheck y suite
+unitaria completa (2.307 pruebas, una omitida) pasaron; E2E de orden real
+informó 1/1, pero el runner quedó en teardown y se interrumpió.
+Capturas en `artifacts/screenshots/m15-reading-animation-2026-10-14/`.
+Contrato: [`m15_reading_animation.md`](m15_reading_animation.md). Fase 17 sigue
+abierta para otras acciones sin gesto y la revisión ecológica pendiente.
+
 **Revisión instrumental del 2026-10-13 — fase 41:** corregidos tres
 instrumentos de verificación sin cambiar la simulación ni sus umbrales. El test
 de difusión divide ahora por la diferencia simétrica inicial correcta (8

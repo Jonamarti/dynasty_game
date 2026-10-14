@@ -1,3 +1,16 @@
+## 2026-10-14 — M15 fase 17: leer una inscripción también se ve
+
+`read` recorre cuatro poses de atención reutilizadas de `ponder` mientras una
+orden real acumula trabajo en la inscripción. El renderer solo observa vida,
+acción, movimiento y `workedTicks`; no inspecciona el registro ni conocimiento
+privado. El juego no añade píxeles de arte ni sorteos. Typecheck y la suite
+unitaria completa pasaron (2.307 pruebas, una omitida); el test focal de arte
+dio 73/73. Playwright informó 1/1 en el E2E real, pero el proceso quedó en
+teardown y se interrumpió. Capturas en
+`artifacts/screenshots/m15-reading-animation-2026-10-14/`.
+Contrato: [`m15_reading_animation.md`](m15_reading_animation.md). Versión
+`0.15.148-alpha`.
+
 ## 2026-10-14 — M15 fase 17: el cazador anima el trabajo a alcance
 
 Una orden `hunt` activa cuatro poses humanas generadas cuando el cazador ha
