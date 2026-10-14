@@ -409,6 +409,33 @@ se corresponde con el denominador de `answered` (segundos golpes del mismo
 agresor en 40 ticks). El instrumento queda corregido, pero la fase 41 sigue
 sin diagnóstico poblacional de `answered`; no se cambian parámetros.
 
+### Cohorte 12f de antorchas — 2026-10-14 (`0.15.148-alpha`)
+
+En el mismo HEAD `b68c6e4`, dos cohortes seriales `lean` de 20 semillas y
+24.000 ticks por semilla dieron 0/52.702 observaciones-persona nocturnas con
+antorcha encendida cuando `light.enabled=true` y 0/55.096 cuando era `false`.
+Hubo 3.620 snapshots nocturnos por brazo. La supervivencia fue 4,9% frente a
+5,2% (−0,3 puntos), con 5/20 frente a 7/20 mundos extintos; los veinte mundos
+de ambos brazos cayeron por debajo del 25% del pico. No hay evidencia de
+adopción poblacional ni señal demográfica atribuible a la luz. Como el resumen
+no mide disponibilidad de antorchas, no distingue ausencia de oportunidad de
+preferencia del scorer. El resultado y el límite están registrados en
+[`m15_phase12f_nights.md`](m15_phase12f_nights.md); fase 12f permanece abierta.
+
+### Verificación completa repetida — 2026-10-14 (`0.15.147-alpha`)
+
+La lectura aislada `npm.cmd run sim:check` dio 145/147 en `band`: fallaron
+`perf-budget` (445 pasos/s frente al suelo 1.678) y `hills-see-farther`.
+`npm.cmd run sim:check:all` recorrió 42 escenarios y salió con código 1.
+Los 15 escenarios de mecanismo (`nights`, `salters`, `tailors`, `homes`, los
+seis de hierro, `frontier-cohort`, `frontier`, `food-news`, `conflicts` y
+`shallows`) pasaron todos. En los escenarios generales reaparecieron fallos
+de sueño, supervivencia, conocimiento, descubrimiento, pertenencia, política,
+ecología y `hills-see-farther`; `band` dio 55/56 y solo falló este último.
+La matriz no evalúa `perf-budget`, por lo que su rojo aislado no se atribuye a
+la carga de la matriz. No se cambiaron reglas, parámetros ni umbrales. Esta
+repetición confirma que los gates globales siguen abiertos; no cierra fase 41.
+
 ### Verificación completa del 2026-10-13
 
 Por petición del propietario se ejecutaron las capas largas aunque M15 siga

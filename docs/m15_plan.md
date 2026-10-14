@@ -1865,13 +1865,19 @@ propiedad intrabanda en el recuento. El contrato registra también las corridas
 descartadas, el límite de separar día/noche y los resultados: [12f nights](m15_phase12f_nights.md).
 La cota separada de 12e y la adopción poblacional de antorchas siguen abiertas.
 
-**Instrumento 2026-10-13 — adopción observable:** `sim:seeds` ahora muestrea,
-cada 40 ticks nocturnos, qué fracción de observaciones-persona porta una
-antorcha realmente encendida en la mano. No cuenta inventario apagado ni
-hogueras, no altera la simulación y se imprime por semilla y en el agregado.
-La cohorte 20× `lean` ya documentada no contiene este campo; hace falta una
-nueva ejecución para medir adopción. Sigue faltando separar robos por día y
-noche, y la cota independiente de 12e; esto no cierra 12f.
+**Medición 2026-10-14 — adopción observable, resultado negativo:** el
+instrumento de `sim:seeds` muestrea cada 40 ticks nocturnos la fracción de
+observaciones-persona con una antorcha encendida en la mano. Dos cohortes
+seriales `lean`, 20 semillas y 24.000 ticks por semilla, ejecutadas en el mismo
+HEAD `b68c6e4` (`0.15.148-alpha`), dieron 0/52.702 con `light.enabled=true` y
+0/55.096 con `light.enabled=false`; ambos brazos tuvieron 3.620 snapshots
+nocturnos. Supervivencia media 4,9%/5,2%; extinciones 5/20 y 7/20. No hay señal
+demográfica ni adopción espontánea medible; la tasa cero en ambos brazos no
+permite atribuir causalidad al interruptor. El escenario controlado `nights`
+sigue verificando encendido autónomo cuando existe una oportunidad explícita.
+La comparación detallada y sus límites están en [12f nights](m15_phase12f_nights.md).
+12f permanece abierta: falta una cohorte con exposición real a antorchas,
+separar robos de día/noche y aislar el coste físico de 12e.
 
 - Escenario **`nights`**: invierno duro, dos bandas que saben `firemaking`.
 - `darkness-hides`: la fracción de hechos con testigo es menor de noche que de

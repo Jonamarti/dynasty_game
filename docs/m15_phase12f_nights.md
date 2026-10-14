@@ -96,6 +96,33 @@ fraction, so they cannot establish the night-versus-day robbery share.
 
 No code or commit may land between the two commands. Run them serially to avoid
 competing for the same machine. The two discarded attempts described above
-must not be pooled or cited. No adoption-rate claim can be made from the
-current `sim:seeds` summary; the controlled `nights` scenario remains the
+must not be pooled or cited. The controlled `nights` scenario remains the
 available evidence for autonomous torch ignition.
+
+## Population cohort, 2026-10-14
+
+The current instrumentation was measured in paired 20-seed `lean` cohorts,
+24,000 steps per seed, on the same HEAD `b68c6e4` (`0.15.148-alpha`). The
+commands ran serially with no code or commit between them. Each seed reported
+181 night snapshots; the paired arms differ only in `light.enabled`.
+
+| Metric | Light enabled | Light disabled |
+|---|---:|---:|
+| Night person-samples with a lit hand torch | 0/52,702 (0.00%) | 0/55,096 (0.00%) |
+| Night snapshots | 3,620 | 3,620 |
+| Mean survival | 4.9% | 5.2% |
+| Extinct worlds | 5/20 | 7/20 |
+| Worlds below 25% of peak | 20/20 | 20/20 |
+| `inBandKillRate` / 1,000 person-years | 0.000 | 0.000 |
+| Violent adult deaths | 8.1% | 6.2% |
+| `CONFLICT` blows / murders | 125 / 7 | 35 / 3 |
+
+The cohort shows no population adoption in either arm and no meaningful
+survival signal (−0.3 percentage points with light enabled, within the stated
+3-point ceiling). The difference in conflict totals is descriptive only; it
+does not separate day from night and does not justify tuning. This does not
+measure exposure to available torches, so it cannot distinguish lack of
+opportunity from failed scorer preference. The controlled `nights` fixture
+still passes autonomous ignition when need, belief, fuel and a completed torch
+are present. Phase 12f remains open for an opportunity-rich cohort, day/night
+theft split, and the independent 12e physical-heat cost.

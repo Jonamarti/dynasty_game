@@ -1,3 +1,12 @@
+## 2026-10-14 — M15 fase 12f: cohorte de adopción de antorchas
+
+Se repitieron los dos brazos pareados de 20 semillas `lean` con el instrumento
+de portadores nocturnos: 0% con luz activada y 0% en control; supervivencia
+4,9%/5,2%. No se ajustaron reglas ni umbrales. La medición muestra que `lean`
+no genera exposición de adopción suficiente y deja 12f abierta; se registra el
+diagnóstico y el siguiente instrumento necesario en
+[`m15_phase12f_nights.md`](m15_phase12f_nights.md).
+
 ## 2026-10-14 — M15 fase 17: leer una inscripción también se ve
 
 `read` recorre cuatro poses de atención reutilizadas de `ponder` mientras una

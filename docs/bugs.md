@@ -5588,3 +5588,16 @@ con cinco checks rojos ajenos: `nights-are-slept`, `moods-move-choices`,
 `research-is-social` ya no salen rojos en esta variante de la fixture. La nueva
 lectura de `spatial-hash-spreads` no se atribuyó a una causa confirmada ni se
 ajustó su límite.
+## 2026-10-14 — M15 12f: `lean` no muestra adopción de antorchas
+
+La cohorte pareada de 20 semillas produjo cero observaciones-persona con una
+antorcha encendida en ambos brazos: 0/52.702 con `light.enabled=true` y
+0/55.096 con `false`. El check controlado `nights` sí demuestra el encendido
+autónomo cuando el personaje tiene creencia, frío, combustible y una antorcha
+terminada. `lean` no informa si había una antorcha utilizable disponible, por
+lo que estos datos no identifican si falta oportunidad o si el scorer no la
+prefiere. No ajustar pesos con esta comparación. Siguiente instrumento:
+contar por semilla oportunidades elegibles (antorcha encendida disponible,
+creencia, oscuridad y necesidad), y dividir adopción por esas oportunidades.
+La separación de robos por día/noche y la cota de calor físico 12e también
+siguen pendientes. Detalle: [`m15_phase12f_nights.md`](m15_phase12f_nights.md).
