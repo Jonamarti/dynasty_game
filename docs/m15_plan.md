@@ -4668,6 +4668,15 @@ alcanzable. **Checks:** uno por nodo, cada uno contra el build sin el nodo.
 
 ## Fase 41 — Calibración final y cierre de M15
 
+**Medición `generations` 2026-10-14 — puerta no superada:** 20 semillas,
+144.000 ticks cada una, HEAD `be143c1` (`0.15.148-alpha`). Supervivencia media
+6,1%; extinción 14/20 y colapso bajo 25% del pico 17/20. `recovered` 0/57
+(todas censuradas) frente al objetivo ≥50%; `answered` 58/72 = 80,6% frente a
+≥90%. `firemaking` apareció en 23 chispas; la mediana de adopción fue 7 días y
+4 mundos no llegaron a adoptarla. No se ajustaron parámetros: este resultado
+no identifica causalidad y mantiene abiertos recuperación, respuesta a ataques
+y difusión. Ver [`m15_calibration.md`](m15_calibration.md) y [`bugs.md`](bugs.md).
+
 **Límite del instrumento (revisado 2026-10-12):** los nombres `drought`,
 `migrants` y `caravans` que aparecen en documentación anterior no son
 escenarios registrados en `tools/simcheck.ts`; no se pueden lanzar como

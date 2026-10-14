@@ -422,6 +422,18 @@ no mide disponibilidad de antorchas, no distingue ausencia de oportunidad de
 preferencia del scorer. El resultado y el límite están registrados en
 [`m15_phase12f_nights.md`](m15_phase12f_nights.md); fase 12f permanece abierta.
 
+### Cohorte de cierre `generations` — 2026-10-14 (`0.15.148-alpha`)
+
+`npm.cmd run sim:seeds -- --scenario generations --seeds 20` terminó en 3.343,9
+s sobre HEAD `be143c1`, sin cambios de código durante la corrida. Fueron
+144.000 ticks por semilla. Supervivencia media 6,1%, extinción 14/20 y colapso
+bajo 25% del pico 17/20. La banda no se recuperó en 0/57 episodios (57
+censurados); `answered` fue 58/72 = 80,6%, por debajo de la meta 90%. La chispa
+de `firemaking` apareció 23 veces; la mediana de adopción fue 7 días y 4 mundos
+no llegaron a ella. El informe recogió cero portadores nocturnos de antorcha en
+0/248.274 observaciones-persona. No se ajustaron parámetros: la corrida deja
+abiertas recuperación, respuesta y adopción; no identifica una causa.
+
 ### Verificación completa repetida — 2026-10-14 (`0.15.147-alpha`)
 
 La lectura aislada `npm.cmd run sim:check` dio 145/147 en `band`: fallaron

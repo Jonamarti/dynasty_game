@@ -5601,3 +5601,14 @@ contar por semilla oportunidades elegibles (antorcha encendida disponible,
 creencia, oscuridad y necesidad), y dividir adopción por esas oportunidades.
 La separación de robos por día/noche y la cota de calor físico 12e también
 siguen pendientes. Detalle: [`m15_phase12f_nights.md`](m15_phase12f_nights.md).
+
+## 2026-10-14 — M15 fase 41: `generations` no supera los gates de cierre
+
+La segunda cohorte completa de 20 semillas terminó con `recovered` 0/57
+(todas censuradas) frente al objetivo ≥50%, y `answered` 58/72 = 80,6% frente
+a ≥90%. Hubo 14/20 extinciones y 17/20 mundos colapsaron bajo el 25% del pico.
+No se ajustaron coeficientes: el proxy `answered` cuenta cualquier acción
+distinta de `idle` como respuesta y no demuestra que la víctima escape; la
+cohorte no diagnostica el mecanismo detrás de recuperación nula. Deben quedar
+como gates abiertos hasta un diagnóstico causal y una medición que cumpla sus
+denominadores. Reproducción y límites en [`m15_calibration.md`](m15_calibration.md).

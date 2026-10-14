@@ -7,6 +7,12 @@ no genera exposición de adopción suficiente y deja 12f abierta; se registra el
 diagnóstico y el siguiente instrumento necesario en
 [`m15_phase12f_nights.md`](m15_phase12f_nights.md).
 
+## 2026-10-14 — M15 fase 41: cohorte `generations` repetida
+
+20 semillas de 144.000 ticks dieron `recovered` 0/57 (todas censuradas),
+`answered` 58/72 (80,6%) y 6,1% de supervivencia media. Se registran los gates
+abiertos en `m15_plan.md` y `bugs.md`; no se cambió calibración.
+
 ## 2026-10-14 — M15 fase 17: leer una inscripción también se ve
 
 `read` recorre cuatro poses de atención reutilizadas de `ponder` mientras una
