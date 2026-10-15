@@ -16605,3 +16605,11 @@ de costa reporto `ok`, y `coast` (54/54) y `shallows` (6/6) pasan en
 `sim:check:all`. La matriz mantiene fallos conocidos de salud en otros
 escenarios; no se atribuyen a esta correccion. El runner E2E dejo su servidor
 abierto tras el resultado y se interrumpio ese proceso de cierre.
+## 2026-10-16 — M15: aplazar la comparación económica de peces agrupados
+
+Se anotó como pendiente una cohorte emparejada que compare la distribución
+gaussiana de peces con una uniforme, manteniendo las mismas semillas y el tope
+de 1,5× por comarca. La ejecución iniciada se canceló antes de completar un
+brazo; su resumen parcial no permite concluir nada sobre acceso, agotamiento,
+hambre o supervivencia. El detalle y el protocolo de continuación están en
+`docs/bugs.md` y `docs/m15_plan.md`. Sin cambio de comportamiento.

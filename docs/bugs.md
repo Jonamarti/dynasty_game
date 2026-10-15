@@ -5717,3 +5717,21 @@ en la crónica del proponente. La pantalla solo muestra el aviso cuando la obra
 está al alcance visual (salvo que el proponente sea el personaje seguido). La
 prueba cubre ambos registros y la persistencia de las coordenadas; ver
 `docs/changelog.md`.
+## 2026-10-16 — Falta medir el efecto económico de la distribución gaussiana de peces
+
+Los bancos geográficos ahora se agrupan alrededor de centros costeros y la
+cuota por comarca sigue limitada a 1,5× la cuota medida por hábitat somero.
+Esto corrige el aspecto de «alfombra» en costas largas, pero no demuestra que
+la concentración dé a los NPCs mejor o peor acceso a la pesca: puede acercar
+un banco a una banda, dejar otras zonas sin un banco cercano o hacer que un
+banco se agote con más rapidez. La cantidad está acotada; su efecto en la
+economía sigue sin medir.
+
+Se inició `sim:seeds --scenario fishers --seeds 20` (9.000 ticks por semilla),
+pero se canceló antes de completar el brazo gaussiano y antes de tener una
+cohorte comparable. El resumen parcial no se debe interpretar como resultado.
+En otra sesión, ejecutar los mismos 20 seeds con distribución gaussiana y
+uniforme, manteniendo idénticos el tope por comarca, cuota, escenario y demás
+parámetros. Comparar acceso/consumo y agotamiento de peces, hambre y
+supervivencia; mantener `fishRng` dedicado y variar solo la estrategia de
+selección de casillas. No cambiar parámetros a partir de una corrida parcial.

@@ -1,3 +1,14 @@
+**Pendiente: medir el efecto económico de agrupar los peces (2026-10-16).**
+La cohorte `fishers` prevista (20 semillas × 9.000 ticks) se canceló antes de
+completar el brazo gaussiano; el resumen parcial no sirve para comparar ni se
+usa como resultado. La implementación conserva el tope por comarca (1,5× la
+cuota) y agrupa los bancos alrededor de centros costeros. En otra sesión,
+comparar distribución gaussiana y uniforme con las mismas semillas y el mismo
+tope; medir acceso a bancos, consumo/agotamiento, hambre y supervivencia. Usar
+el mismo `fishRng` dedicado y cambiar únicamente la selección de casillas.
+Hasta tener esa comparación no afirmar que el agrupamiento mejora o empeora la
+economía.
+
 **Cohorte emparejada de hambre (2026-10-16):** con 20 semillas `lean` y 24.000 pasos, explorar×2,0 dio 1,8% de supervivencia y 317 muertes adultas por hambre; explorar×0,28 dio 2,9% y 323. La reducción cercana al 3% de `explore`→`idle` con hambre alta no mejoró población o recuperación. Se mantiene 0,28; el hallazgo completo está en `bugs.md`.
 **Prueba piloto de hambre (2026-10-15):** subir el multiplicador de exploración por hambre de 0,28 a 1,0 en una semilla `lean` no redujo las 28 muertes adultas; el hambre media subió de 51 a 52–53 y aumentó el tiempo de exploración y los viajes a nodos recordados ya agotados. Se revirtió el cambio. Investigar `remembered_empty_walk` antes de volver a ajustar pesos; una semilla no calibra población.
 **Avance del 2026-10-15 — peces costeros limitados y agrupados:** la cantidad

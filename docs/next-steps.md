@@ -17,10 +17,14 @@ el diario de decisiones y entregas históricas debajo de este resumen.
   realmente alcanzable explica el rechazo al pulsar Empezar. La selección de
   comarca sigue mostrando su porcentaje y mínimo. Captura en
   `artifacts/screenshots/m15-open-ocean-refusal-2026-10-15/`.
-- **Peces en costas largas (2026-10-15):** el tope por comarca se conserva y
-  los bancos se agrupan con un kernel gaussiano alrededor de centros de costa.
-  Se mantiene un centro por clase de agua cuando la cuota alcanza, sin duplicar casillas. El vínculo
-  entre superficie de mar/caudal y abundancia total sigue pendiente de medir.
+- **Peces en costas largas (2026-10-16):** el tope por comarca se conserva y
+  los bancos se agrupan con un kernel gaussiano. Falta medir si esta forma de
+  repartirlos mejora el acceso o la economía frente a una distribución
+  uniforme con el mismo tope. La cohorte `fishers` de 20 semillas × 9.000 ticks
+  se canceló antes de terminar un brazo; su salida parcial no es evidencia.
+  Repetir en otra sesión con ambos brazos emparejados y comparar acceso,
+  agotamiento, hambre y supervivencia. El vínculo entre hábitat y cuota total
+  también sigue pendiente.
 - **Verificación integrada (2026-10-15):** `typecheck` pasa; la suite unitaria
   tiene el fallo conocido en `salters-checks.test.ts` (2.326 pasan, 1 omitida).
   En `sim:check:all`, `coast` 54/54, `shallows` 6/6 y `salters` 1/1; `fishers`
