@@ -1,3 +1,6 @@
+## 2026-10-15 — M15: una prioridad mayor para explorar no reduce el hambre
+
+En una prueba piloto de la misma semilla `lean`, subir solo el multiplicador de exploración por hambre de 0,28 a 1,0 mantuvo las 28 muertes adultas por hambre y elevó el hambre media de 51 a 52–53. También aumentaron el tiempo en `explore`, sus cortes críticos antes de avanzar y `remembered_empty_walk` (13.221 frente a 11.735 en la ejecución previa). Se revirtió el cambio; una semilla no sirve para calibrar población. Los viajes a nodos recordados que están agotados al llegar son una pista, no una causa demostrada.
 ## 2026-10-15 — M15: exceso visual de peces en costas largas
 
 Los mapas geográficos ya limitaban el número de bancos por comarca a 1,5 veces

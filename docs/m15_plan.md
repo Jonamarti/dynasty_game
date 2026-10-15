@@ -1,3 +1,4 @@
+**Prueba piloto de hambre (2026-10-15):** subir el multiplicador de exploración por hambre de 0,28 a 1,0 en una semilla `lean` no redujo las 28 muertes adultas; el hambre media subió de 51 a 52–53 y aumentó el tiempo de exploración y los viajes a nodos recordados ya agotados. Se revirtió el cambio. Investigar `remembered_empty_walk` antes de volver a ajustar pesos; una semilla no calibra población.
 **Avance del 2026-10-15 — peces costeros limitados y agrupados:** la cantidad
 por comarca sigue la superficie de hábitat somero y el tope de `NODE_CAP_FACTOR`;
 la colocación en mapas geográficos ya no alfombra el litoral de manera uniforme.
