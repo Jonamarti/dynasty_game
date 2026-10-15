@@ -10,6 +10,14 @@ En `sim:check:all` pasan `coast` 54/54, `shallows` 6/6 y `salters` 1/1;
 `fishers` da 64/67 y `lean` 58/74, con fallos de calibración también en otros
 escenarios. La matriz no cierra la calibración de M15.
 
+**Avance del 2026-10-15 — motivo de rechazo por falta de tierra:** la tarjeta
+de mar abierto explica que no hay tierra firme al alcance y desactiva el
+inicio. Una región etiquetada como costa que luego no encuentra tierra al
+alcance también explica el rechazo al pulsar Empezar. El rechazo de una comarca
+concreta muestra el porcentaje de tierra y el mínimo del 35%. Pruebas E2E y
+captura nueva en
+`artifacts/screenshots/m15-open-ocean-refusal-2026-10-15/`.
+
 **Medición del hambre (2026-10-15):** en 20 semillas `lean`, bajar el límite
 de interrupción de exploración de 98 a 90 elevó los cortes `explore/hungry`
 de 207.551 a 252.313; los casos `h75+` sin comida que elegían explorar y

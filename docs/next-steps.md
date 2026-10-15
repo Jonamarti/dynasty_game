@@ -16,6 +16,11 @@ el diario de decisiones y entregas históricas debajo de este resumen.
 - **Selector del mundo (2026-10-15):** las comarcas de la cuadrícula ya
   distinguen litoral e interior por una muestra de terreno y color. Captura
   fechada bajo `artifacts/screenshots/m15-comarca-choice-2026-10-15T17-55-22-915Z/`.
+- **Motivo de falta de tierra (2026-10-15):** mar abierto muestra que no hay
+  tierra firme al alcance y desactiva el inicio; una región costera sin tierra
+  realmente alcanzable explica el rechazo al pulsar Empezar. La selección de
+  comarca sigue mostrando su porcentaje y mínimo. Captura en
+  `artifacts/screenshots/m15-open-ocean-refusal-2026-10-15/`.
 - **Peces en costas largas (2026-10-15):** el tope por comarca se conserva y
   los bancos se agrupan con un kernel gaussiano alrededor de centros de costa.
   Se mantiene un centro por clase de agua cuando la cuota alcanza, sin duplicar casillas. El vínculo

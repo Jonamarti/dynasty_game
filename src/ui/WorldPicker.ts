@@ -382,7 +382,7 @@ export class WorldPicker {
     if (!terrain) return;
     line(terrainLabel(terrain), 'is-title');
     if (terrain === 'ocean' && !isCoastalRegion(this.geography, cell.x, cell.y)) {
-      line(t('Open sea: nobody can begin here.'), 'is-dim'); return;
+      line(t('Open sea: no dry land is within reach of a start.'), 'is-dim'); return;
     }
     if (terrain === 'ice') { line(t('Ice: nobody can begin here.'), 'is-dim'); return; }
     if (terrain === 'ocean') { line(t('Coast: you will begin on the shore.')); }

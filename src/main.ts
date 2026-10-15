@@ -815,7 +815,7 @@ async function beginOnEarth(region: { x: number; y: number }, comarca?: { x: num
     // Genuinely nothing: no water in reach and not even dry ground close enough to call a start (open ocean with no shore
     // within a window's own half-span — `isCoastalRegion` and `findStartInRegion` already turned away anything that was at
     // least a coast). This is the one case M15 "begin anywhere" leaves as a refusal, same as it always was.
-    worldPicker.setNote(t('There is no river or lake within reach of that place. Choose somewhere with water.'), true);
+    worldPicker.setNote(t('There is no dry land within reach of that place. Choose a region closer to land.'), true);
     return;
   }
   const far = findNearestStart(earthMap, region.x, region.y, GLOBE_SPAN, config, FAR_WATER_RADIUS);

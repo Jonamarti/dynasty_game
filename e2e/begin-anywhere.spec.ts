@@ -119,3 +119,15 @@ test('a coastal region — ocean at its own centre, land next door — is select
 
   expect(errors).toEqual([]);
 });
+
+test('open ocean explains that no dry land is within reach', async ({ page }) => {
+  const errors = guardErrors(page);
+  await page.goto('/?seed=e2e-open-ocean-refusal&lang=es');
+  await expect(page.locator('.worldpicker-canvas')).toBeVisible({ timeout: 15_000 });
+  // 5,24 is open ocean with no coast reachable from the selected region.
+  await clickRegion(page, 5, 24);
+  await expect(page.locator('.worldpicker-info')).toContainText('Mar abierto: no hay tierra firme lo bastante cerca para empezar.');
+  await expect(page.locator('.worldpicker-begin')).toBeDisabled();
+  await page.screenshot({ path: `${SHOTS}/06-open-ocean-land-refusal.png` });
+  expect(errors).toEqual([]);
+});

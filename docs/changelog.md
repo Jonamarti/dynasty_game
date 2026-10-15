@@ -32,6 +32,16 @@ añadió hambre y movimiento al corte: 11.378 exploraciones elegidas con hambre
 ocurre antes de que la ruta pueda hacer progreso; la falta de una fuente
 alcanzable antes de llegar a 100 sigue sin aislarse.
 
+## 2026-10-15 — M15: explicar el rechazo de una región de mar abierto
+
+Cuando el jugador selecciona mar abierto, la tarjeta explica que no hay tierra
+firme al alcance y desactiva el inicio. Si una región etiquetada como costera
+no encuentra tierra al alcance al pulsar Empezar, el rechazo también explica
+que hay que elegir una región más cercana a tierra. La elección de una comarca
+concreta conserva su mensaje con porcentaje de tierra y umbral del 35%. Pruebas
+E2E y captura:
+`artifacts/screenshots/m15-open-ocean-refusal-2026-10-15/06-open-ocean-land-refusal.png`.
+
 ## 2026-10-15 — M15: distinguir comarcas costeras e interiores al elegir mundo
 
 La cuadrícula de comarcas ahora mezcla el color de terreno con la proporción
