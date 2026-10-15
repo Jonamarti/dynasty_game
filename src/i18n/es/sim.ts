@@ -376,4 +376,5 @@ export const ES_SIM: Record<string, string> = {
   "That transport animal is no longer available": "Ese animal de transporte ya no está disponible",
   "You need the right training and a living tamed animal": "Necesitas la técnica adecuada y un animal vivo domesticado",
   "You have no active transport animal": "No tienes ningún animal de transporte activo",
+  "The {building} they proposed was shelved: nobody worked on it for days": "La obra {building} que propuso se dejó de lado: nadie trabajó en ella durante días",
 };

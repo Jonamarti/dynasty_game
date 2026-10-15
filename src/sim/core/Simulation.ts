@@ -5745,6 +5745,24 @@ export class Simulation {
   }
 
   /**
+   * The planner shelves a band's own stalled site. Unlike a bare `removeBuilding`
+   * this says so: the sponsor's chronicle gets the reason, so a project does not
+   * simply vanish (the project rule that every abandonment is explained).
+   * Delivered materials are dropped on the ground by `removeBuilding`.
+   */
+  private abandonSite(site: Building): void {
+    const sponsor = site.sponsorId === null ? undefined : this.peopleById.get(site.sponsorId);
+    if (sponsor?.alive) {
+      sponsor.chronicle.push({
+        tick: this.time.tick, ageDays: sponsor.age, kind: 'suffered',
+        text: t('The {building} they proposed was shelved: nobody worked on it for days',
+          { building: t(site.def.label) }),
+      });
+    }
+    this.removeBuilding(site);
+  }
+
+  /**
    * Takes a site out of the world.
    *
    * Anything already delivered to it is dropped where it stood rather than
@@ -6149,7 +6167,7 @@ export class Simulation {
         bandRelations: this.bandRelations,
         sameRegion: (ax, ay, bx, by) => this.world.sameRegion(ax, ay, bx, by),
         territoryOwnerAt: (x, y) => this.territoryOwnerAt(x, y),
-        abandonSite: site => this.removeBuilding(site),
+        abandonSite: site => this.abandonSite(site),
         command: (leader, subordinate, action, target, options) =>
           this.command(leader, subordinate, action, target, options),
         knownRaidDestination: this.worldRaidDestination,

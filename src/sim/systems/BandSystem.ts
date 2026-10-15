@@ -1986,7 +1986,11 @@ export class BandSystem {
    */
   private dropStaleSites(theirs: Building[], ctx: BandContext): void {
     for (const site of theirs) {
-      if (site.complete) {
+      if (site.complete || site.playerPlaced) {
+        // A site the player marked out is theirs to cancel (`cancelConstruction`),
+        // never the planner's: the player may be away fetching timber for far
+        // longer than `STALE_SITE_DAYS`, and a foundation that vanished while
+        // they were gone, with no word, read as NPCs cancelling their build.
         this.siteProgress.delete(site.id);
         continue;
       }

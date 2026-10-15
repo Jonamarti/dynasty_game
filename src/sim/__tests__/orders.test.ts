@@ -16,7 +16,7 @@ import { Tree } from '../entities/Tree.ts';
 import { workProgressOf } from '../core/Progress.ts';
 import { PATIENCE } from '../systems/MovementSystem.ts';
 import { Person } from '../entities/Person.ts';
-import type { Building } from '../entities/Building.ts';
+import { BUILDINGS, type Building } from '../entities/Building.ts';
 import { menaceOver, orderCost } from '../social/Authority.ts';
 import { telemetry } from '../core/Telemetry.ts';
 
@@ -174,6 +174,32 @@ describe('stores and construction controls', () => {
     expect(sim.buildings.some(building => building.id === site!.id)).toBe(false);
     expect(sim.piles.length).toBeGreaterThan(before);
     expect(sim.piles.at(-1)!.contents.count('sticks')).toBe(3);
+  });
+
+  it('the planner never shelves a site the player marked out', () => {
+    const sim = new Simulation(SMALL);
+    const player = sim.livingPeople()[0]!;
+    // The costliest design the band can mark out: a cheap one is simply built
+    // by its own band inside the window, and then there is nothing stale to drop.
+    const designs = Object.values(BUILDINGS)
+      .filter(def => !def.furniture && !def.earthwork && !def.dig && def.requiresTech === null)
+      .sort((a, b) => b.workTicks - a.workTicks);
+    let site: Building | null = null;
+    for (const def of designs) {
+      for (const [dx, dy] of [[6, 0], [-6, 0], [0, 6], [0, -6]]) {
+        site = sim.place(def.id, Math.round(player.x) + dx!, Math.round(player.y) + dy!,
+          player.bandId, player.id, true);
+        if (site) break;
+      }
+      if (site) break;
+    }
+    expect(site).not.toBeNull();
+    // Nothing is delivered and no work goes in, which is exactly the "stale"
+    // condition that used to remove it six days later with no word.
+    const id = site!.id;
+    for (let i = 0; i < sim.config.time.ticksPerDay * 14; i++) sim.step();
+    expect(site!.complete).toBe(false);
+    expect(sim.buildings.some(building => building.id === id)).toBe(true);
   });
 });
 

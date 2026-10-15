@@ -1,3 +1,22 @@
+## 2026-10-15 — M15: el planificador ya no retira las obras del jugador (N9)
+
+**Causa confirmada.** `BandSystem.dropStaleSites` retiraba cualquier obra sin
+progreso ni materiales tras `STALE_SITE_DAYS` (6 días), también las que marcó el
+jugador (`playerPlaced`), y sin aviso. Un jugador que se alejaba a por madera veía
+desaparecer su cimiento y lo leía como "los NPC cancelan mi obra". No las cancela
+ningún NPC: era el planificador de la banda.
+
+**Cambio.** (1) Las obras con `playerPlaced` quedan exentas; solo las cancela el
+jugador con `cancelConstruction`. (2) Cuando el planificador retira una obra de
+NPC, la crónica del proponente lo dice (`Simulation.abandonSite`). (3) Los
+materiales ya se devolvían al suelo en una pila recogible (`removeBuilding`), y
+las obras no consumen `delivered` hasta terminarse, así que no se pierde nada;
+queda cubierto por la prueba existente de `cancelConstruction`.
+
+**Prueba.** `orders.test.ts`, "the planner never shelves a site the player marked
+out": falla con el código anterior (la obra desaparece) y pasa con el arreglo.
+Un diseño barato no sirve para la prueba porque la propia banda lo termina.
+
 ## 2026-10-14 — M15 fase 12f: cohorte de adopción de antorchas
 
 Se repitieron los dos brazos pareados de 20 semillas `lean` con el instrumento
