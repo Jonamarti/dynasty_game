@@ -645,6 +645,9 @@ describe('bedding and beds', () => {
 
   it('autonomously crafts and lights one fat lamp after the household essentials', () => {
     const { sim, person, house } = fixture();
+    // Noon: a fresh world starts at midnight, when the dark now pulls a person
+    // to bed; this test is about the household's working day.
+    sim.time.tick = Math.round(0.5 * sim.config.time.ticksPerDay);
     person.knownTech.add('fat_lamp');
     person.inventory.add('flint', 1);
     person.inventory.add('fat', 2);

@@ -97,6 +97,9 @@ describe('NPC pickup', () => {
       seed: 'npc-pickup-hunting-tool', world: { width: 64, height: 64 },
       population: { bands: 1, peoplePerBand: 2 }, ai: { commitmentEntryPressure: 0.99 },
     }));
+    // Noon: the premise is a hunter's working day. A fresh world starts at
+    // midnight, where the dark now (rightly) pulls a person towards bed.
+    sim.time.tick = Math.round(0.5 * sim.config.time.ticksPerDay);
     const person = sim.people.find(candidate => candidate.alive && !candidate.isPlayer)!;
     person.age = 30 * person.daysPerYear;
     person.armsTaken = 0;

@@ -5626,3 +5626,10 @@ con tirada exitosa se descartan por `conception_no_roof` en `century`; ver
 `nights-are-slept`. Abierto: requiere decisión sobre la regla de techo de la
 fase 18. `e2e`: cinco fallos transitorios por escritura de capturas en Windows
 (`UNKNOWN: open`), no regresiones.
+**Natalidad / noche (2026-10-15, M15 cierre).** Mitigado, no resuelto: con
+`nightExposure` 6 los nacimientos casi se duplican en `century`, pero
+`conception_no_roof` sigue siendo ~92% de las tiradas exitosas porque hay ~1,8
+refugios por banda de 10 personas y la pareja debe compartir el mismo. El resto
+es oferta de cobijo (M16: cuevas, refugio de ramas y hojas, mantenimiento como
+tope natural). Abierto: el rótulo sobre una obra retirada por el planificador
+(R6, plan 2.2b); hoy solo queda la línea en la crónica del proponente.

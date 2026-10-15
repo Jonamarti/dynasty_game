@@ -3621,6 +3621,18 @@ export class Brain {
     // Fatigue can call for a nap in daylight too. Use a local spatial query,
     // even with no cold: gating this search on night left tired people resting
     // outside a roof they were already standing beside.
+    // M15 close: how much the dark raises the want to sleep under a roof. Zero
+    // `nightExposure` is the old scorer exactly. Night is the same 0-1 dusk
+    // ramp `go_home` uses, so the two pulls rise and fall together.
+    const nightNow = Math.max(0, Math.min(1, 1 - ctx.time.daylight / 0.35));
+    // The dark may tip a choice between rest and work, never outrank an
+    // emergency: it is scaled down by every urgent need and vanishes while the
+    // person is being hurt (a sleeper beside an attacker scored sleep 6.2
+    // against flee 3.4 before this).
+    // The same goes for a baby crying to be fed and for a starving companion in sight.
+    const calm = ctx.time.tick - person.lastHarmedTick < 300 || nursingChild || person.starvingSeen ? 0 :
+      1 - Math.max(drive.hunger, drive.thirst, drive.warmth, drive.safety);
+    const dark = 1 + ctx.motivation.nightExposure * nightNow * calm;
     if (fatigue > 0) {
       const homeId = person.householdId === null ? null :
         ctx.householdsById.get(person.householdId)?.homeBuildingId ?? null;
@@ -3647,9 +3659,19 @@ export class Brain {
             : 1;
           // A better sleep surface can win over a slightly warmer hut; doSleep
           // routes the last room tiles to that surface before fatigue recovers.
+          // Safety in company: a shelter with the person's own band already
+          // around it is a safer place to lie down, weighted by how much this
+          // person needs belonging (the loyal gather, the independent shrug).
+          // Counted only in the dark, and capped, so a crowd is a comfort and
+          // not a magnet that empties every other roof.
+          const company = ctx.motivation.nightExposure > 0 && nightNow > 0
+            ? Math.min(5, ctx.peopleHash.queryRadius(b.centerX, b.centerY, 6).filter(other =>
+              other.id !== person.id && other.alive && !other.isChild && other.bandId === person.bandId).length)
+            : 0;
           return b.def.shelter * 40 + roomQuality *
             (10 + (ctx.motivation.sleepQualityEffectsEnabled ? drive.comfort : 0)) -
-            person.distanceTo({ x: b.centerX, y: b.centerY });
+            person.distanceTo({ x: b.centerX, y: b.centerY }) +
+            company * 2 * nightNow * sensitivity(person, 'belonging');
         });
       if (restShelter) {
         const nearness = this.proximityBonus(person,
@@ -3658,9 +3680,9 @@ export class Brain {
         // fatigue is high. Both values are on the same 0–100 pressure scale;
         // the existing sleep weight and destination quality still decide how
         // strongly and where the person sleeps.
-        add('sleep', Math.max(fatigue, drive.comfort * 100) * 3.2 * nearness);
+        add('sleep', Math.max(fatigue, drive.comfort * 100) * 3.2 * nearness * dark);
       } else if (anchor && Math.hypot(person.x - anchor.x, person.y - anchor.y) <= ctx.motivation.nightRadius) {
-        add('sleep', fatigue * 3.2 * 0.8);
+        add('sleep', fatigue * 3.2 * 0.8 * dark);
       }
     }
     // Cold can still justify a journey to a more distant refuge. It is a
@@ -4216,7 +4238,9 @@ export class Brain {
     }
     // Still here for people with no roof, which after a bad winter is most of
     // them. Sleeping is strictly better and scores higher when it is available.
-    add('rest', fatigue * 2.4 * (restFurniture ? 1.2 : 1));
+    // With a roof to lie under, lying in the open at night is the worse
+    // choice by the same factor that makes the roof better.
+    add('rest', fatigue * 2.4 * (restFurniture ? 1.2 : 1) / (restShelter ? dark : 1));
 
     // --- Wander ------------------------------------------------------------
     // A small floor so a person with nothing pressing still looks alive, and so

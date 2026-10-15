@@ -384,6 +384,8 @@ export interface MotivationConfig {
   nightRadius: number;
   span: number;
   spanNight: number;
+  /** M15 close: extra weight of being far from shelter at night, scaled by tiredness. 0 is the old behaviour. */
+  nightExposure: number;
   homeWeight: number;
   /** Extra pull for a child keeping up with a moving carer. */
   childHomeMultiplier: number;
@@ -659,7 +661,7 @@ export const DEFAULT_CONFIG: SimConfig = {
     chronicRate: 0.02, wantAt: 0.3, needComfort: 0.4,
     backersWanted: 3, persuadeAt: 0.5,
     raidUrge: 0.45, relocateAfter: 10,
-    comfortAdult: 24, nightRadius: 8, span: 30, spanNight: 12,
+    comfortAdult: 24, nightRadius: 8, span: 30, spanNight: 12, nightExposure: 6,
     homeWeight: 2.4, childHomeMultiplier: 4, childHomeMinimumPressure: 0.25, reachAdult: 36, parentReach: 20,
     childRadius: { under1: 2, years1to3: 3, years4to7: 6, years8to11: 10, years12to13: 16 },
   },

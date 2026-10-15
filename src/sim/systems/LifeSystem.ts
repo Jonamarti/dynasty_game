@@ -40,10 +40,39 @@ import {
 export function roofOverSleeper(person: Person, buildingsById: ReadonlyMap<number, Building>): Building | null {
   if (!person.alive || person.action !== 'sleep' || person.targetBuildingId === null) return null;
   const roof = buildingsById.get(person.targetBuildingId);
-  const underRoof = roof?.def.interior
-    ? houseInteriorContains(roof, person.x, person.y)
-    : roof?.contains(person.x, person.y, 1) ?? false;
-  return roof && roof.complete && roof.def.shelter > 0 && underRoof ? roof : null;
+  return roof && roof.complete && roof.def.shelter > 0 && isUnderRoof(roof, person.x, person.y) ? roof : null;
+}
+
+/** Walled houses need the room itself; open shelters use the building margin. */
+export function isUnderRoof(roof: Building, x: number, y: number): boolean {
+  return roof.def.interior ? houseInteriorContains(roof, x, y) : roof.contains(x, y, 1);
+}
+
+/**
+ * The roof a person is *resting* under in private, or null. M15 close: a couple
+ * who lie awake alone in a finished house have the privacy to conceive even if
+ * neither is in the `sleep` action at the midnight sample. The old rule read
+ * only `sleep`, and at night 35-48% of adults were `rest`ing, so ~96% of the
+ * conceptions that passed the roll were thrown away (`conception_no_roof`).
+ *
+ * Privacy is what makes this a rule rather than a loophole: nobody else may be
+ * awake in the building besides the person's spouse. Sleepers do not count,
+ * because a family with sleeping babies would otherwise never conceive again.
+ * `occupants` are the people standing inside the building.
+ */
+export function roofOverPrivateRest(
+  person: Person, buildingsById: ReadonlyMap<number, Building>,
+  buildingAt: (x: number, y: number) => Building | null,
+  occupantsOf: (building: Building) => readonly Person[],
+): Building | null {
+  if (!person.alive || person.action !== 'rest') return null;
+  const roof = buildingAt(person.x, person.y);
+  if (!roof || !buildingsById.has(roof.id) || !roof.complete || roof.ruined ||
+      roof.def.shelter <= 0 || !isUnderRoof(roof, person.x, person.y)) return null;
+  const intruder = occupantsOf(roof).some(other =>
+    other.id !== person.id && other.id !== person.spouseId &&
+    other.alive && other.action !== 'sleep');
+  return intruder ? null : roof;
 }
 
 // Moved to `entities/Pregnancy.ts` (M15 phase 19) so the thirds of a pregnancy

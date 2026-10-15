@@ -52,8 +52,15 @@ export function drivePressures(person: Person, ctx?: AnchorContext & {
       const radius = person.isChild ? childRadius(person, ctx.motivation) : ctx.motivation.comfortAdult / attachment;
       const night = Math.max(0, Math.min(1, 1 - ctx.time.daylight / 0.35));
       const nightRadius = person.isChild ? Math.max(2, childRadius(person, ctx.motivation) / 2) : ctx.motivation.nightRadius;
+      // M15 close: the dark is the pressure that gathers a band. Exposure far
+      // from the shelter weighs more the more tired you are, since a tired
+      // person alone in the open is the one a predator or the cold finds. It is
+      // scaled by `attachment` below like every other part of `home`, so the
+      // independent (low loyalty, high curiosity) feel it least and are the
+      // ones who sleep farther out - nothing here assigns a bedtime.
+      const darkExposure = 1 + (ctx.motivation.nightExposure) * Math.min(1, person.needs.fatigue / 100);
       const away = Math.max(Math.max(0, Math.min(1, (d - radius) / ctx.motivation.span)),
-        Math.max(0, Math.min(1, (d - nightRadius) / ctx.motivation.spanNight)) * night);
+        Math.min(1, Math.max(0, Math.min(1, (d - nightRadius) / ctx.motivation.spanNight)) * night * darkExposure));
       // Home is a basic safety need, but it must not drown out another urgent
       // basic need. As hunger, thirst, fatigue or cold rises, reduce the pull
       // to return so survival work can win the scorer; keep a safety floor so
@@ -62,7 +69,10 @@ export function drivePressures(person: Person, ctx?: AnchorContext & {
       const basicNeedUrgency = Math.max(
         urgencyCurve(person.needs.hunger),
         urgencyCurve(person.needs.thirst),
-        urgencyCurve(person.needs.fatigue),
+        // At night fatigue is answered *at home*, so it must not talk the
+        // person out of going: damped by the dark, it used to leave the tired
+        // resting wherever they stood, away from any roof.
+        urgencyCurve(person.needs.fatigue) * (1 - night * (ctx.motivation.nightExposure ? 1 : 0)),
         urgencyCurve(person.needs.cold),
       );
       const homePriority = 1 - 0.65 * basicNeedUrgency;

@@ -92,7 +92,7 @@ import {
 import { WildlifeSystem, DOG_HEARING, DOG_SIGHT } from '../systems/WildlifeSystem.ts';
 import { ForestSystem, seedInitialForest } from '../systems/ForestSystem.ts';
 import {
-  LifeSystem, findHeir, roofOverSleeper, settleEstate,
+  LifeSystem, findHeir, roofOverSleeper, roofOverPrivateRest, isUnderRoof, settleEstate,
 } from '../systems/LifeSystem.ts';
 import { wearWornGarments } from '../systems/GarmentSystem.ts';
 import { linkFamily } from '../social/SocialSystem.ts';
@@ -4119,6 +4119,21 @@ export class Simulation {
         const household = this.householdsById.get(person.householdId);
         if (household) household.homeBuildingId = roof.id;
       }
+    }
+    // M15 close: privacy for conception. Someone resting awake in a finished
+    // house with nobody but their spouse awake there has the roof conception
+    // asks for. They are deliberately *not* added to `byRoof`: a hearth
+    // conversation and a lesson are for people asleep together, not for two
+    // people awake, and adding them would change relationships and teaching
+    // worlds that this rule is not about.
+    for (const person of this.people) {
+      if (!person.alive || person.action !== 'rest' || this.roofTonight.has(person.id)) continue;
+      const roof = roofOverPrivateRest(person, this.buildingsById,
+        (x, y) => this.buildingAt(x, y),
+        building => this.peopleHash.queryRadius(building.centerX, building.centerY,
+          Math.max(building.def.width, building.def.height))
+          .filter(other => isUnderRoof(building, other.x, other.y)));
+      if (roof) this.roofTonight.set(person.id, roof.id);
     }
     for (const under of byRoof.values()) {
       this.social.hearth(under, this.time.tick);

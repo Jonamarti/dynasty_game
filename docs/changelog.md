@@ -1,3 +1,54 @@
+## 2026-10-15 — M15 cierre: la noche reúne a la banda bajo techo (natalidad)
+
+**Problema.** El diagnóstico de la fase 41 ponía el ~93% de las concepciones con
+tirada exitosa en `conception_no_roof`. Medido en 3 semillas de `century`: a
+medianoche solo el 9,9% de los adultos dormía bajo techo, el 27% descansaba al
+raso y el 19,6% estaba `idle`; 249 de 258 tiradas exitosas se descartaban.
+
+**Causa (confirmada con la tabla de puntuaciones).** No era que prefirieran el
+suelo: el `sleep` bajo techo puntuaba ~1 mientras el trabajo corriente puntuaba
+7 o más, porque el ritmo circadiano apenas pesaba en el decisor, y la fatiga
+*frenaba* `go_home` (`homePriority`) justo cuando la casa es donde se resuelve.
+
+**Cambio, sin horarios ni eventos.** `motivation.nightExposure` (6):
+- `Drives.ts`: la exposición lejos del refugio de noche pesa más cuanto más
+  cansado estás, y de noche la fatiga ya no frena el regreso. Se multiplica por
+  `attachment` (lealtad/curiosidad), así que los independientes duermen más lejos.
+- `Brain.ts`: la oscuridad multiplica el `sleep` bajo techo y encarece el `rest`
+  al raso cuando hay un techo a mano; al elegir refugio cuenta la compañía de la
+  propia banda (máx. 5), ponderada por la necesidad de pertenencia.
+- `LifeSystem.roofOverPrivateRest` + `Simulation.shareTheHearth`: concebir pide
+  intimidad. Quien descansa despierto en un refugio terminado con nadie más
+  despierto salvo su pareja cuenta como techo (los que duermen no cuentan). No
+  entra en la conversación de hogar ni en las lecciones.
+
+**Corrección tras la primera medida.** La suite encontró seis tests rotos: de
+noche el `sleep` (6,2) ganaba a `flee` (3,4) con un agresor al lado, y también a
+amamantar y a socorrer a alguien que pasa hambre. La oscuridad ahora se
+multiplica por una *calma* (0 con daño reciente, un bebé que llora o alguien
+hambriento a la vista; menor cuanto más urgentes son hambre, sed, frío o
+seguridad). Dos tests más (cazar con herramienta, hacer una lámpara) tenían la
+premisa de una jornada de trabajo pero arrancaban a medianoche: ahora fijan el
+mediodía.
+
+**Medida final (20 semillas `century`, mismas semillas).**
+| | nacimientos | por mujer-año | supervivencia media | colapsos |
+|---|---|---|---|---|
+| `nightExposure` 0 (antes) | 51 | 0,078 | 46,8% | 3/20 |
+| `nightExposure` 6 con calma (final) | 84 | 0,132 | 45,4% | 4/20 |
+
+La natalidad sube un 65%. La supervivencia no cambia dentro de lo que 20
+semillas resuelven (ver `AGENTS.md`: menos de ~10 puntos es ruido); no se
+afirma que mejore. Una versión anterior sin calma dio 96 nacimientos y 54,0%,
+pero rompía la respuesta a emergencias y se descartó. Sueño bajo techo 10% →
+18% (3 semillas). La intimidad sola no movió nada medible (8 frente a 9
+concepciones); el efecto viene de la presión nocturna. Sigue habiendo ~18%
+durmiendo al raso junto al campamento y ~19% `idle`: el techo escaso (≈1,8
+refugios por banda de 10) es el límite, y es trabajo de M16.
+
+Pruebas: `night-gathering.test.ts` (7). Los instrumentos temporales de medición
+no se commitean.
+
 ## 2026-10-15 — M15: el planificador ya no retira las obras del jugador (N9)
 
 **Causa confirmada.** `BandSystem.dropStaleSites` retiraba cualquier obra sin
