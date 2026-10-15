@@ -68,11 +68,10 @@ export const TILES_PER_COMARCA = DEFAULT_CONFIG.world.width * DEFAULT_CONFIG.wor
 /**
  * No kind of node outnumbers its quota by more than this. The density is nodes per habitat tile, set so that the median
  * window reproduces the quota, so a map that is nearly all one habitat (a coast of shallows, a berry heath) would ask for
- * many times the quota: the shallows of a median window with any are 121 tiles and a long coast has thousands. A cap is a
- * design choice, not a measurement: three times is what the fixed-quota generator's richest window could hold without the
- * map filling with nodes (and without the step slowing down with them).
+ * many times the quota. The former 3x ceiling still let an ordinary stretch of coast place 150 shoals in one comarca;
+ * 1.5x keeps richer country richer without letting a single habitat dominate the map.
  */
-export const NODE_CAP_FACTOR = 3;
+export const NODE_CAP_FACTOR = 1.5;
 /** Nutrition points one person's day costs: the unit of a ration. */
 export const RATION_NUTRITION = DEFAULT_CONFIG.needs.hungerRate * DEFAULT_CONFIG.time.ticksPerDay;
 

@@ -76,6 +76,14 @@ describe('geographic fish placement', () => {
     }
   });
 
+  it('does not stack coastal shoals on the same shallow tile', () => {
+    const sim = createWaterFishSimulation('coastal-shoals-spread', { world: { fishingSpots: 80 } });
+    const fish = sim.nodes.filter(node => node.kind === 'fish');
+    const tiles = fish.map(node => `${node.x},${node.y}`);
+    expect(fish.length).toBeGreaterThan(2);
+    expect(new Set(tiles).size).toBe(tiles.length);
+  });
+
   it('lets an autonomous hungry fisher route to and harvest a fresh fish node', () => {
     const sim = createWaterFishSimulation('frontier-fresh-fish-ai', {
       world: { treeDensity: 0, berryBushes: 0, wildGrainPatches: 0, gameHerds: 0 },

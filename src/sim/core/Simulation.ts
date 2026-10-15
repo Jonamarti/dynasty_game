@@ -1322,6 +1322,18 @@ export class Simulation {
     // level cannot silently erase most of the configured fishing spots.
     const shallows = this.world.shoreTiles.filter(tile => this.world.isShallow(tile.x, tile.y));
     if (shallows.length === 0) return;
+    // Keep the classic island's seeded placement loop unchanged. Geographic
+    // maps use a derived per-kind stream and can spread without shifting any
+    // saved classic seed.
+    if (!this.geographicStart) {
+      for (let placed = 0; placed < count; placed++) {
+        const spot = rng.pick(shallows);
+        const node = new ResourceNode('fish', spot.x, spot.y, rng, this.ids);
+        this.nodes.push(node);
+        this.nodesById.set(node.id, node);
+      }
+      return;
+    }
     // A continental coastline can have thousands of salt shallows for every
     // narrow river ford. Sampling only the combined list made the configured
     // fish count look healthy while a whole freshwater network had no shoal.
@@ -1334,17 +1346,23 @@ export class Simulation {
         ].filter(tiles => tiles.length > 0)
       : [];
     let placed = 0;
+    const used = new Set<number>();
     if (count >= habitats.length) {
       for (const habitat of habitats) {
         const spot = rng.pick(habitat);
+        used.add(spot.y * this.world.width + spot.x);
         const node = new ResourceNode('fish', spot.x, spot.y, rng, this.ids);
         this.nodes.push(node);
         this.nodesById.set(node.id, node);
         placed++;
       }
     }
-    for (; placed < count; placed++) {
-      const spot = rng.pick(shallows);
+    // Picking with replacement let a long coast stack many shoals on the same
+    // tile. Sample remaining shallow tiles without replacement, so the local
+    // habitat caps both abundance and spatial density.
+    const available = shallows.filter(tile => !used.has(tile.y * this.world.width + tile.x));
+    for (; placed < count && available.length > 0; placed++) {
+      const spot = available.splice(rng.int(0, available.length - 1), 1)[0]!;
       const node = new ResourceNode('fish', spot.x, spot.y, rng, this.ids);
       this.nodes.push(node);
       this.nodesById.set(node.id, node);
@@ -2000,8 +2018,9 @@ export class Simulation {
         this.suitsBiome(kind, spot.x, spot.y) &&
         this.geographicResourceAvailableAt(kind, spot.x, spot.y));
       if (banks.length === 0) return;
-      for (let placed = 0; placed < count; placed++) {
-        const spot = rng.pick(banks);
+      const available = [...banks];
+      for (let placed = 0; placed < count && available.length > 0; placed++) {
+        const spot = available.splice(rng.int(0, available.length - 1), 1)[0]!;
         const node = new ResourceNode(kind, spot.x, spot.y, rng, this.ids);
         this.nodes.push(node);
         this.nodesById.set(node.id, node);

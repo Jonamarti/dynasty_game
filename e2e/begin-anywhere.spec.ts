@@ -93,6 +93,20 @@ test('a coastal region — ocean at its own centre, land next door — is select
   // 46,10: classed `ocean` by its own centre sample — before this milestone `canBegin` refused it outright — but coastal,
   // with dry land in a neighbouring region; see `isCoastalRegion` and the matching case in `start-place.test.ts`.
   await clickRegion(page, 46, 10);
+  const comarcaColors = await page.locator('.worldpicker-comarcas button').evaluateAll(buttons =>
+    [...new Set(buttons.map(button => (button as HTMLButtonElement).style.backgroundColor))]);
+  expect(comarcaColors.length, 'a coastal region should show sea and land comarcas').toBeGreaterThan(1);
+  // The first cell in this region is mostly sea. A rejected explicit choice
+  // should say how much dry ground it has and what the 35% minimum is.
+  await page.locator('.worldpicker-comarcas button').first().click();
+  await page.locator('.worldpicker-begin').click();
+  await expect(page.locator('.worldpicker-note')).toContainText('Only ');
+  await expect(page.locator('.worldpicker-note')).toContainText('35%');
+  await page.screenshot({ path: `${SHOTS}/05-comarca-land-requirement.png` });
+  // Pick a neighbour first: tapping the already-picked region is the direct
+  // Begin shortcut, so it would retry the same comarca instead of clearing it.
+  await clickRegion(page, 45, 10);
+  await clickRegion(page, 46, 10);
   await expect(page.locator('.worldpicker-info')).toContainText('Coast: you will begin on the shore.');
   await page.screenshot({ path: `${SHOTS}/04-coastal-region-hover.png` });
   const begin = page.locator('.worldpicker-begin');

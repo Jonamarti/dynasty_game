@@ -16480,3 +16480,23 @@ Los avisos con ubicación se conservan en el checkpoint, y se validan como
 coordenadas finitas emparejadas. Se mantiene la exención de obras marcadas por
 el jugador. Captura: `artifacts/screenshots/m15-site-abandonment-2026-10-15/`.
 Versión `0.15.151-alpha`.
+
+
+## 2026-10-15 - M15: costa legible y recursos costeros limitados
+
+Las comarcas de un mismo pixel regional heredaban todas la etiqueta de agua,
+asi que la cuadricula ocultaba la costa real. El selector usa ahora la
+elevacion interpolada local para separar mar y tierra. Cuando una comarca no
+alcanza el minimo para empezar, el aviso muestra la fraccion seca medida y el
+umbral requerido. El techo de recursos baja de tres cuotas a una cuota y media;
+peces, juncos y arcilla se reparten sin repetir una casilla en mapas
+geograficos. La dispersion evita apilar nodos, aunque la curva de abundancia
+por caudal y extension de mar sigue pendiente. Verificacion inicial previa al
+cambio: `sim:check` tuvo el fallo conocido `perf-budget` (576 pasos/s; suelo
+1.678), que no se atribuye a esta correccion. Version `0.15.152-alpha`.
+Capturas del selector: `artifacts/screenshots/m15-coast-2026-10-15/`.
+Tras el cambio: typecheck limpio, 2.319 pruebas pasaron (una omitida), el E2E
+de costa reporto `ok`, y `coast` (54/54) y `shallows` (6/6) pasan en
+`sim:check:all`. La matriz mantiene fallos conocidos de salud en otros
+escenarios; no se atribuyen a esta correccion. El runner E2E dejo su servidor
+abierto tras el resultado y se interrumpio ese proceso de cierre.

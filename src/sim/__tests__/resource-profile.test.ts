@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { randomWorldGeography, type WorldGeography } from '../world/WorldGeography.ts';
 import {
-  comarcaResourceProfile, windowResourceProfile, profileKeyOf, keyText, foodModel, MEASURED_RESOURCES, HABITAT_FIELDS,
+  comarcaResourceProfile, windowResourceProfile, profileKeyOf, keyText, foodModel, foodFromHabitat, MEASURED_RESOURCES, HABITAT_FIELDS,
   PROFILE_SPAN, TILES_PER_COMARCA, NODE_CAP_FACTOR, MINERALS, type MeasuredResourceTable, type HabitatField,
 } from '../world/ResourceProfile.ts';
 import { geographicResourceAvailable } from '../world/GeographicResources.ts';
@@ -205,6 +205,13 @@ describe('comarca resource profile: what the game rules say a node gives', () =>
     }
     expect(poor).toBeLessThan(0.1);
     expect(rich).toBeGreaterThan(5);
+  });
+
+  it('keeps very large coastal habitat from exceeding the tighter node ceiling', () => {
+    const saturated = Object.fromEntries(HABITAT_FIELDS.map(field => [field, 1])) as Record<HabitatField, number>;
+    const { nodes } = foodFromHabitat(saturated, true);
+    expect(nodes.shoals).toBeLessThanOrEqual(NODE_CAP_FACTOR * MEASURED_RESOURCES.density.fish.quota);
+    expect(nodes.bushes).toBeLessThanOrEqual(NODE_CAP_FACTOR * MEASURED_RESOURCES.density.berries.quota);
   });
 
   it('lists a mineral exactly when the generator would let that resource be placed there', () => {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { randomWorldGeography } from '../world/WorldGeography.ts';
+import type { WorldGeographyProfile } from '../world/WorldGeography.ts';
 import { findGlobeStart, worldTerrainOf } from '../world/WorldTerrain.ts';
 import { WorldState } from '../world/WorldState.ts';
 
@@ -16,6 +17,18 @@ describe('globe start', () => {
 
   it('answers nothing for the classic island', () => {
     expect(worldTerrainOf({ kind: 'legacyIsland' } as never)).toBeNull();
+  });
+
+  it('uses interpolated local height to split coastal Earth comarcas inside one source region', () => {
+    const profile = (elevationAboveSeaMeters: number): WorldGeographyProfile => ({
+      kind: 'earth', mapId: 'test', x: 0, y: 0, regionX: 0, regionY: 0,
+      region: { id: 0, x: 0, y: 0, latitude: 0, elevationMeters: 0, climateClass: 8,
+        features: 0, land: false, water: 'salt' as const },
+      latitude: 0, elevationMeters: elevationAboveSeaMeters, elevationAboveSeaMeters,
+      climateClass: 8, features: 0, land: false, water: 'salt' as const,
+    });
+    expect(worldTerrainOf(profile(-2))).toBe('ocean');
+    expect(worldTerrainOf(profile(2))).toBe('temperate_forest');
   });
 
   it('builds a populated world there whose people know the ground they stand on', () => {

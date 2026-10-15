@@ -35,7 +35,12 @@ function terrainOfKoppen(koppen: number): WorldTerrain {
 export function worldTerrainOf(profile: WorldGeographyProfile): WorldTerrain | null {
   if (profile.kind === 'legacyIsland') return null;
   if (profile.kind === 'random') return profile.biome;
-  if (profile.water === 'salt') return 'ocean';
+  // `water` is inherited from the coarse source region. On a real-world
+  // coastline that paints every comarca in the region blue, even though the
+  // interpolated elevation already shows which side of the shore each cell is
+  // on. Use the local height for the sea boundary; keep categorical features
+  // for lakes and climate below.
+  if (profile.elevationAboveSeaMeters < 0) return 'ocean';
   // `water === 'fresh'` also fires for a comarca a river merely passes
   // through (RealWorldMap.ts sets it from river-or-lake features alike), so
   // reading it alone painted almost every forested region of the globe blue.

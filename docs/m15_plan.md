@@ -5370,3 +5370,6 @@ terreno y wrapper colgado, no se declara aprobada. Versión `0.15.143-alpha`.
 [`m15_calibration.md`](m15_calibration.md)). Los gates de fase 41 siguen
 abiertos; el diagnóstico apunta a la puerta de techo de la fase 18 como causa de
 `recovered` 0/N. Queda una decisión del propietario antes de calibrar.
+
+
+**Avance del 2026-10-15 - costa y comienzo por comarca:** la cuadricula del selector usa la elevacion interpolada de cada comarca para mostrar mar y tierra dentro de una region atlas; el rechazo por tierra insuficiente explica el porcentaje medido y el minimo del 35%. El techo del perfil de nodos baja a 1,5x cuota y peces, juncos y arcilla usan casillas unicas en mapas geograficos. Esto reduce acumulaciones, pero no es una curva gaussiana ni calibra el caudal/area marina; esa parte sigue pendiente. Changelog y limites en [docs/changelog.md](changelog.md) y [docs/bugs.md](bugs.md). Version `0.15.152-alpha`.

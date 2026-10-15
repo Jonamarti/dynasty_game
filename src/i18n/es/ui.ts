@@ -181,7 +181,7 @@ export const ES_UI: Record<string, string> = {
   "Comarcas in the selected region": "Comarcas de la región elegida",
   "Comarca {x}, {y}": "Comarca {x}, {y}",
   "Chosen comarca {x}, {y}": "Comarca elegida {x}, {y}",
-  "That comarca does not have enough dry land for a start. Choose another.": "Esa comarca no tiene suficiente tierra firme para empezar. Elige otra.",
+  "Only {land}% of this comarca is dry land; a start needs at least {minimum}%. Choose another.": "Solo el {land}% de esta comarca es tierra firme; para empezar hace falta al menos un {minimum}%. Elige otra.",
   "There is no river or lake within reach of that place. Choose somewhere with water.": "No hay río ni lago al alcance de ese lugar. Elige un sitio con agua.",
   "Starting {n} regions from the place you chose, at the nearest fresh water": "Empiezas a {n} regiones del lugar elegido, en el agua dulce más cercana",
   "There is no river or lake near here. You can begin on dry land anyway, or go to the nearest water.":

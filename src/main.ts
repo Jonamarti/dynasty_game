@@ -15,7 +15,7 @@ import { earthWorldGeography, randomWorldGeography, type EarthWorldGeography, ty
 import { RNG } from './sim/core/RNG.ts';
 import { saltSourceNear } from './sim/core/Preservation.ts';
 import { loadWorldAtlas, type LoadedWorldMap } from './sim/world/WorldAtlas.ts';
-import { findNearestStart, findStartInRegion, findWateredGlobeStart, localWorldConfig, startInComarca, type StartPlace } from './sim/world/StartPlace.ts';
+import { findNearestStart, findStartInRegion, findWateredGlobeStart, localWorldConfig, measureWindow, MIN_LAND_SHARE, startInComarca, type StartPlace } from './sim/world/StartPlace.ts';
 import { WorldPicker } from './ui/WorldPicker.ts';
 import { GAME_VERSION_LABEL } from './ui/GameVersion.ts';
 import { Camera } from './render/Camera.ts';
@@ -788,7 +788,10 @@ async function beginOnEarth(region: { x: number; y: number }, comarca?: { x: num
     if (found) { settleOnEarth(found, region); return; }
     const dry = startInComarca(earthMap, comarca.x, comarca.y, config, { requireWater: false });
     if (!dry) {
-      worldPicker.setNote(t('That comarca does not have enough dry land for a start. Choose another.'), true);
+      const measured = measureWindow(earthMap, comarca.x + 0.5, comarca.y + 0.5, 1, config);
+      worldPicker.setNote(t('Only {land}% of this comarca is dry land; a start needs at least {minimum}%. Choose another.', {
+        land: Math.round(measured.land * 100), minimum: Math.round(MIN_LAND_SHARE * 100),
+      }), true);
       return;
     }
     const far = findNearestStart(earthMap, region.x, region.y, GLOBE_SPAN, config, FAR_WATER_RADIUS);

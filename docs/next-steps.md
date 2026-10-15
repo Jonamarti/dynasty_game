@@ -163,6 +163,11 @@ liquidar jornadas incompletas y conectar autoridad/cruce.
 
 Sigue **paso 2 / fase 34: cruce del borde y TileLedger**. El puente debe transferir autoridad una vez, extraer existencias físicas para evitar doble conteo, agrupar bandas por comarca, corregir el perfil y resolver la primera jornada parcial; el runtime admite transferencia inicial y guardados en cualquier tick. Simulation todavía no lo llama. **Calibración y puerta lod-matches-detail pendientes del paso 4**: el muestreo corto de cosecha no calibra estaciones ni alimentación infantil/agua, y las dos aserciones heredadas de correspondencia/difusión siguen sin relajarse. Cohortes y matriz pesada diferidas por AGENTS.md.
 
+**2026-10-15: tope y dispersión costera, primera corrección.** El perfil reduce el techo de nodos de 3× a 1,5× la cuota clásica y los bancos de peces, reeds y clay banks se colocan sin repetir casilla en mapas geográficos. Esto limita acumulaciones y distribuye los nodos por el hábitat disponible; no modela aún las zonas de concentración por anchura de ríos y extensión del mar que pide el diseño de pesca:
+
+- **Peces proporcionales al agua.** El límite nuevo reduce el extremo, pero costa, río ancho y riachuelo aún dependen del hábitat somero medido, no de una curva calibrada por caudal/área marina. Mantener cohortes antes de afirmar balance.
+- **El pescado no se recoge como una piedra.** En aguas someras, a mano y sin herramientas: marisco, cangrejos y lo que viva en la orilla (recolección costera). La pesca de verdad es otra cosa: zonas de concentración de peces y **caña de pescar**, una tecnología por descubrir. Hoy `fishing` es una práctica con lanza que solo multiplica el rendimiento, y existe `fish_trap` (red y cestería); revisar cómo encajan caña, red y nasa con la regla de la casa de no declarar contenido inerte.
+
 **2026-10-08: pendientes del propietario sobre agua, pesca y biomas duros (sin fase asignada todavía).** Dictados al revisar el paso 1b del LOD (`m15_simulation_lod.md` §0):
 
 - **Peces proporcionales al agua.** Hoy casi cualquier comarca con agua satura el tope de 150 bancos. Deben depender de la anchura del río y de cuánto mar hay: una isla o una costa, muchos; un río ancho (Danubio, Ebro), muchos; un riachuelo, pocos. Sin comida prácticamente infinita.
