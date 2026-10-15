@@ -13,10 +13,10 @@ escenarios. La matriz no cierra la calibración de M15.
 **Medición del hambre (2026-10-15):** en 20 semillas `lean`, bajar el límite
 de interrupción de exploración de 98 a 90 elevó los cortes `explore/hungry`
 de 207.551 a 252.313; los casos `h75+` sin comida que elegían explorar y
-acababan `idle` fueron 301.155 a 98 y 306.738 a 90. Se mantiene 98; la causa
-pendiente está en la ruta/interrupción posterior. Una semilla confirmó que la
-búsqueda ofrecía destinos, con cortes observados por hambre y frío. Ver el
-experimento detallado en [`bugs.md`](bugs.md).
+acababan `idle` fueron 301.155 a 98 y 306.738 a 90. Se mantiene 98. Una traza
+confirmó que con hambre 100 el intento se corta antes de moverse, aun con una
+frontera disponible. Sigue sin aislarse por qué no alcanzan una fuente antes de
+ese punto. Ver el experimento detallado en [`bugs.md`](bugs.md).
 
 **Avance del 2026-10-15 — selector de comarcas:** el grid usa una muestra 3×3
 de costa por comarca para teñir el color del terreno según su litoral. La

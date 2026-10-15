@@ -26,8 +26,11 @@ casos `h75+` sin opción de comida que eligieron explorar y acabaron en `idle`
 sumaron 306.738 a 90 frente a 301.155 a 98. Se conserva
 98; bajar la cota interrumpe más sin resolver el `idle`. En una reproducción
 individual, no faltó un destino de frontera (`food_exploration_no_frontier` =
-0), y los cortes se repartieron entre hambre y frío. El caso sigue abierto para
-seguir el trayecto hasta un recurso y la recuperación del compromiso.
+0), y los cortes se repartieron entre hambre y frío. Una traza de una semilla
+añadió hambre y movimiento al corte: 11.378 exploraciones elegidas con hambre
+100 acabaron interrumpidas por hambre sin avanzar 0,5 tiles. El fallo inmediato
+ocurre antes de que la ruta pueda hacer progreso; la falta de una fuente
+alcanzable antes de llegar a 100 sigue sin aislarse.
 
 ## 2026-10-15 — M15: distinguir comarcas costeras e interiores al elegir mundo
 

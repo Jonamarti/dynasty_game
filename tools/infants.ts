@@ -113,12 +113,18 @@ function run(scenarioName: string, seed: string, stepsArg: number | null) {
   // Capture the decision that actually came out of `Brain.think`; `lastScores`
   // is only the inspector's latest table, and an action can end as `idle`
   // during the same tick. This keeps the audit causal without changing a draw.
-  const chosenThisTick = new Map<number, string | null>();
+  const chosenThisTick = new Map<number, {
+    action: string | null; hunger: number; cold: number; x: number; y: number;
+    targetX: number | null; targetY: number | null;
+  }>();
   const brain = (sim as unknown as { brain: Brain }).brain;
   const think = brain.think.bind(brain);
   brain.think = (person, ctx, allowed) => {
     const chosen = think(person, ctx, allowed);
-    chosenThisTick.set(person.id, chosen);
+    chosenThisTick.set(person.id, {
+      action: chosen, hunger: person.needs.hunger, cold: person.needs.cold,
+      x: person.x, y: person.y, targetX: person.targetX, targetY: person.targetY,
+    });
     return chosen;
   };
 
@@ -143,6 +149,22 @@ function run(scenarioName: string, seed: string, stepsArg: number | null) {
       const who = sim.peopleById.get(notice.personId);
       const cat = who ? categoryOf(who) : null;
       if (cat) bump(stops, `${cat === 'nursing mothers' ? 'MOTHER' : cat}: ${notice.action}/${notice.reason}`);
+      const decision = chosenThisTick.get(notice.personId);
+      if (who && notice.action === 'explore' && decision?.action === 'explore') {
+        const targetDistance = decision.targetX === null || decision.targetY === null ? Infinity
+          : Math.hypot(decision.targetX - decision.x, decision.targetY - decision.y);
+        const moved = Math.hypot(who.x - decision.x, who.y - decision.y);
+        const distanceBand = targetDistance < 3 ? '<3' : targetDistance < 8 ? '3-8' : targetDistance < 16 ? '8-16' : '16+';
+        const movedBand = moved < 0.5 ? '<0.5' : moved < 2 ? '0.5-2' : '2+';
+        const hungerBand = `${Math.floor(decision.hunger / 10) * 10}`;
+        bump(exploreStopAudit, `${notice.reason} · hunger ${hungerBand} · final ${who.action} · target ${distanceBand} · moved ${movedBand}`);
+        if (verbose && exploreStopExamples++ < 8) {
+          console.log(`  explore stop: ${notice.reason}; person ${who.id}; start ${decision.x.toFixed(1)},${decision.y.toFixed(1)} ` +
+            `hunger ${decision.hunger.toFixed(1)} cold ${decision.cold.toFixed(1)}; ` +
+            `target ${decision.targetX?.toFixed(1) ?? 'none'},${decision.targetY?.toFixed(1) ?? 'none'}; ` +
+            `now ${who.x.toFixed(1)},${who.y.toFixed(1)} hunger ${who.needs.hunger.toFixed(1)} cold ${who.needs.cold.toFixed(1)} action ${who.action}`);
+        }
+      }
     }
     for (const p of sim.peopleById.values()) {
       if (!p.alive) {
@@ -169,7 +191,7 @@ function run(scenarioName: string, seed: string, stepsArg: number | null) {
       prevAction.set(p.id, p.action);
       // Decision audit: pair the exact action returned by this tick's think
       // with its score table; a completed action may already read `idle` here.
-      const chosen = chosenThisTick.get(p.id);
+      const chosen = chosenThisTick.get(p.id)?.action;
       if (chosenThisTick.has(p.id) && p.needs.hunger >= 50 && !FOOD_ACTIONS.has(chosen ?? '') && !p.isPlayer) {
         const rows = lastScores.get(p.id) ?? [];
         const food = rows.find(r => FOOD_ACTIONS.has(r.id));
@@ -295,9 +317,11 @@ const FOOD_ACTIONS = new Set(['eat', 'forage', 'pick', 'take', 'pickup', 'hunt',
 const hungryAudit = new Map<string, number>();
 const hungryTotals = new Map<string, number>();
 const noFoodWhy = new Map<string, number>();
+const exploreStopAudit = new Map<string, number>();
 const interrupts = new Map<string, number>();
 const stops = new Map<string, number>();
 let examples = 0;
+let exploreStopExamples = 0;
 const seenNotices = new WeakSet<object>();
 const nursingCounts = new Map<string, number>();
 const budget = new Map<string, Map<string, number>>();
@@ -385,6 +409,8 @@ console.log(`HUNGRY ADULTS NOT GETTING FOOD (samples: ${top(hungryTotals, 3)})`)
 for (const [k, v] of [...hungryAudit.entries()].sort((a, b) => b[1] - a[1]).slice(0, 25)) console.log(`  ${String(v).padStart(6)}  ${k}`);
 console.log(`NO FOOD OPTION, WHY`);
 for (const [k, v] of [...noFoodWhy.entries()].sort((a, b) => b[1] - a[1]).slice(0, 16)) console.log(`  ${String(v).padStart(6)}  ${k}`);
+console.log(`EXPLORE STOPS AFTER AN EXPLORE DECISION (reason / target range / movement)`);
+for (const [k, v] of [...exploreStopAudit.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12)) console.log(`  ${String(v).padStart(6)}  ${k}`);
 console.log(`NURSING  ${[...nursingCounts.entries()].map(([k, v]) => `${k} ${v}`).join(' · ')}`);
 console.log(`CUT OFF BY A NEED (action_need: count)`);
 console.log('  ' + [...interrupts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 24).map(([k, v]) => `${k} ${v}`).join(' · '));

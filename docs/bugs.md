@@ -43,14 +43,19 @@ cambio de hambre.
 urgente ofreció exploración 26.773 veces y no registró ningún caso de
 `food_exploration_no_frontier`. Aun así, hubo 14.268 cortes de `explore` por
 hambre y 7.357 por frío en esa semilla: el agente sí obtiene un destino, pero
-la búsqueda larga acaba interrumpida. En una cohorte de 20 semillas emparejada,
+búsqueda larga acaba interrumpida. Una traza emparejada con el stop muestra
+el caso más grave: 11.378 decisiones con hambre 100 eligieron `explore`, fueron
+interrumpidas por hambre antes de moverse 0,5 tiles y terminaron en `idle`; en
+1.801 casos el destino estaba a 8–16 tiles y tampoco hubo avance medible. En
+una cohorte de 20 semillas emparejada,
 bajar el límite de hambre de 98 a 90 subió los cortes `explore/hungry` de
 207.551 a 252.313. Los casos `h75+` sin opción de comida que eligieron explorar
 y acabaron idle sumaron 306.738 a 90, frente a 301.155 en la medición a 98.
 Se restauró 98: bajar la cota añade cortes
-sin reducir el síntoma. Hace falta seguir la llegada desde la frontera hasta
-el recurso y medir la recuperación del compromiso después del corte; no
-ajustar más este parámetro con los datos actuales.
+sin reducir el síntoma. El punto ciego ya no es la interrupción: a hambre 100
+la búsqueda reiniciada no puede dar el primer paso. Sigue pendiente explicar
+por qué no aparece antes una comida que puedan alcanzar; no ajustar más este
+parámetro con los datos actuales.
 
 ## 2026-10-15 — Inspección inicial de NPCs hambrientos que aparecen `idle`
 
