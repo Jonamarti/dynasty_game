@@ -4,6 +4,21 @@ M15 sigue siendo el único plan activo y **permanece abierto**. El estado
 autoritativo de sus fases es [m15_plan.md](m15_plan.md); esta página conserva
 el diario de decisiones y entregas históricas debajo de este resumen.
 
+- **NPCs hambrientos en `idle` (2026-10-15):** el scorer ya prioriza una acción
+  de comida disponible sobre `rest`/`sleep`/`shelter` desde hambre 70 cuando
+  esa acción ganaría y la sed no requiere respuesta urgente. En una cohorte de
+  20 semillas `lean` hubo 485 muertes adultas por hambre frente a 483 en la
+  referencia; no se demostró mejora de supervivencia. El caso sin comida
+  accesible sigue abierto. Ver `m15_plan.md` y `bugs.md`.
+- **Selector del mundo (2026-10-15):** las comarcas de la cuadrícula ya
+  distinguen litoral e interior por una muestra de terreno y color. Captura
+  fechada bajo `artifacts/screenshots/m15-comarca-choice-2026-10-15T17-55-22-915Z/`.
+- **Verificación integrada (2026-10-15):** `typecheck` pasa; la suite unitaria
+  tiene un fallo en `salters-checks.test.ts` (2.322 pasan, 1 omitida). En
+  `sim:check:all`, `coast` 54/54 y `shallows` 6/6; `lean` 58/74 y los demás
+  escenarios conservan fallos de calibración. La spec E2E del grid completó sus
+  aserciones, pero el cierre de Vite se tuvo que interrumpir.
+
 - **Fase 17, arte de trabajo:** el 13 de octubre se entregaron las poses de
   vestir pieles, teñir, extender compost, atender el banquete, tallar
   inscripciones, vendar heridas, pensar una idea y prototipar. Cada cambio

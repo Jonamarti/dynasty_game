@@ -27,9 +27,10 @@ sus fallos están supervivencia, muertes explicadas, frío y economía. Esta
 matriz registra la base observada en esta revisión; no aísla regresiones del
 cambio de hambre.
 
-## 2026-10-15 — NPCs hambrientos que aparecen `idle`: falta semilla reproducible
+## 2026-10-15 — Inspección inicial de NPCs hambrientos que aparecen `idle`
 
-El mensaje `at a loose end` corresponde a `action === 'idle'`, que queda cuando
+En la inspección inicial, antes de la cohorte anotada arriba, el mensaje
+`at a loose end` correspondía a `action === 'idle'`, que queda cuando
 el scorer no elige una acción positiva. La búsqueda de hambre ofrece comida
 local o recordada y, si no encuentra comida, intenta explorar una frontera
 desconocida o una celda antigua; si no hay destino válido en la misma región,
