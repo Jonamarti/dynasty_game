@@ -39,6 +39,27 @@ test('changing the atlas clears the old start and installs the selected map', as
   expect(errors).toEqual([]);
 });
 
+test('the comarca grid distinguishes the coastal strip from inland terrain', async ({ page }) => {
+  await page.goto('/?seed=e2e-coastal-comarca-grid&lang=es');
+  const picker = page.locator('.worldpicker');
+  const canvas = picker.locator('.worldpicker-canvas');
+  await expect(picker.locator('.worldpicker-map')).toBeEnabled({ timeout: 20_000 });
+  const box = (await canvas.boundingBox())!;
+  // Region 46,10 is a real atlas coastline whose regional centre lies at sea.
+  await page.mouse.click(box.x + 46.5 / 96 * box.width, box.y + 10.5 / 48 * box.height);
+  const buttons = picker.locator('.worldpicker-comarcas button');
+  await expect(buttons).toHaveCount(100);
+  const colors = await buttons.evaluateAll(rows => rows.map(row => ({
+    coastal: (row as HTMLButtonElement).dataset.coastal === 'true',
+    color: getComputedStyle(row).backgroundColor,
+  })));
+  const coastalCount = colors.filter(row => row.coastal).length;
+  expect(coastalCount, 'the selected atlas region contains sampled coastal comarcas').toBeGreaterThan(0);
+  expect(coastalCount, 'inland comarcas retain their terrain colors').toBeLessThan(colors.length);
+  expect(new Set(colors.map(row => row.color)).size, 'the grid shows more than one ground color').toBeGreaterThan(1);
+  await page.screenshot({ path: `${SHOTS}/05-coastal-comarca-colors-es.png` });
+});
+
 test('a generated globe can be chosen in the start screen without URL flags', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', error => { errors.push(error.message); console.log('Generated start error:', error.message); });

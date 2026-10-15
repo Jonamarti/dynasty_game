@@ -1,3 +1,10 @@
+**Avance del 2026-10-15 — selector de comarcas:** el grid usa una muestra 3×3
+de costa por comarca para teñir el color del terreno según su litoral. La
+prueba unitaria y E2E distinguen costa/interior y más de un color. Captura en
+`artifacts/screenshots/m15-comarca-choice-2026-10-15T17-55-22-915Z/`.
+El caso Playwright terminó sus aserciones, pero el servidor quedó abierto en
+teardown y se interrumpió; no se considera una salida limpia.
+
 **Avance del 2026-10-15 — NPC hambriento que queda `idle`:** la cohorte
 instrumentada `lean`, veinte semillas y 12.000 ticks por semilla, encontró que
 algunos adultos con hambre ≥70 escogían descanso aunque Brain ya tuviera una

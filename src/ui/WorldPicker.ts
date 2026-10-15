@@ -13,12 +13,26 @@
  */
 import type { WorldGeography } from '../sim/world/WorldGeography.ts';
 import type { WorldMapEntry } from '../sim/world/WorldAtlas.ts';
-import { globeGridOf, worldTerrainOf, type GlobeGrid, type WorldTerrain } from '../sim/world/WorldTerrain.ts';
+import { comarcaCoastShare, globeGridOf, worldTerrainOf, type GlobeGrid, type WorldTerrain } from '../sim/world/WorldTerrain.ts';
 import { isCoastalRegion, regionWater } from '../sim/world/StartPlace.ts';
 import { TERRAIN_COLOR, terrainLabel } from './WorldMapView.ts';
 import { t, onLanguageChange } from '../i18n/i18n.ts';
 
 const CELL = 12;
+const COAST_SAND = [224, 202, 133] as const;
+
+function coastalTint(color: string, seaShare: number): string {
+  const match = /^#([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i.exec(color);
+  if (!match) return color;
+  // The tint follows how much of the comarca is sea, so a thin coast and a
+  // broad bay remain distinguishable while inland terrain keeps its biome hue.
+  const mix = 0.18 + Math.max(0, Math.min(1, seaShare)) * 0.36;
+  const channels = [1, 2, 3].map((index) => {
+    const base = Number.parseInt(match[index]!, 16);
+    return Math.round(base * (1 - mix) + COAST_SAND[index - 1]! * mix);
+  });
+  return `rgb(${channels.join(' ')})`;
+}
 
 export interface WorldPickerCallbacks {
   /** The player chose a region to begin in. */
@@ -345,7 +359,10 @@ export class WorldPicker {
       button.setAttribute('aria-label', label);
       button.title = label;
       const terrain = this.comarcaTerrainOf(x, y);
-      button.style.backgroundColor = terrain ? TERRAIN_COLOR[terrain] : '#0b0e14';
+      const coastShare = comarcaCoastShare(this.geography!, x, y);
+      const color = terrain ? TERRAIN_COLOR[terrain] : '#0b0e14';
+      button.style.backgroundColor = coastShare === null ? color : coastalTint(color, coastShare);
+      button.dataset.coastal = String(coastShare !== null);
       button.setAttribute('aria-pressed', String(this.pickedComarca?.x === x && this.pickedComarca?.y === y));
       buttons.push(button);
     }

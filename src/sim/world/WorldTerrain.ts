@@ -50,6 +50,19 @@ export function worldTerrainOf(profile: WorldGeographyProfile): WorldTerrain | n
   return terrainOfKoppen(profile.climateClass);
 }
 
+/** Fraction of a comarca's 3x3 samples that are sea, when land and sea meet. */
+export function comarcaCoastShare(geography: WorldGeography, cx: number, cy: number): number | null {
+  if (geography.kind === 'legacyIsland') return null;
+  let sea = 0;
+  let land = 0;
+  for (const oy of [0.17, 0.5, 0.83]) for (const ox of [0.17, 0.5, 0.83]) {
+    const terrain = worldTerrainOf(geography.profileAt(cx + ox, cy + oy));
+    if (terrain === 'ocean') sea++;
+    else if (terrain !== null && terrain !== 'lake' && terrain !== 'ice') land++;
+  }
+  return sea > 0 && land > 0 ? sea / 9 : null;
+}
+
 /** The globe's grid: regions across and down, and how many comarcas a region holds a side. */
 export interface GlobeGrid {
   regionsWide: number;

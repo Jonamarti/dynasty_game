@@ -1,3 +1,17 @@
+## 2026-10-15 — M15: distinguir comarcas costeras e interiores al elegir mundo
+
+La cuadrícula de comarcas ahora mezcla el color de terreno con la proporción
+de costa muestreada en cada comarca. Así, una vista de costa ya no pinta todas
+las opciones como si compartieran bioma; interiores conservan su terreno y las
+costas toman un matiz de arena proporcional. El cálculo comparte la geografía
+del mapa y no consume RNG. Test unitario y E2E verifican comarcas costeras,
+interiores y varios colores. Captura: [`05-coastal-comarca-colors-es.png`](../artifacts/screenshots/m15-comarca-choice-2026-10-15T17-55-22-915Z/05-coastal-comarca-colors-es.png).
+
+**Verificación:** la spec Playwright informó `ok 1` (39,1 s), pero el proceso
+quedó bloqueado al cerrar Vite y se interrumpió; no se declara salida E2E limpia.
+El test unitario pasa dentro de la suite completa y `sim:check:all` da `coast`
+54/54 y `shallows` 6/6.
+
 ## 2026-10-15 — M15: evitar descanso improductivo con hambre crítica
 
 Las trazas de veinte semillas `lean` mostraron adultos con hambre alta y un
