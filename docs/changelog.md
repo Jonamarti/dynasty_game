@@ -1,3 +1,22 @@
+## 2026-10-15 — M15: limitar y agrupar los bancos de peces de costa
+
+Las comarcas con más bajíos conservan una cantidad mayor, pero el perfil pone
+un tope de 1,5 veces la cuota medida. Antes, esos nodos se repartían de forma
+uniforme por todas las casillas someras. Ahora se agrupan alrededor de varios
+centros mediante pesos gaussianos, con un centro por clase de agua disponible cuando la cuota alcanza;
+la selección sin reemplazo evita apilar bancos en la misma casilla. El cambio
+usa el flujo derivado propio de peces de cada mapa geográfico, y la isla clásica
+mantiene su bucle sembrado histórico.
+
+**Verificación:** `typecheck` pasa; las pruebas focales de kernel, pesca
+geográfica, perfil y generación pasan (28/28). La suite completa termina con
+2.326 aprobadas, 1 omitida y 1 fallo conocido en `salters-checks.test.ts`
+(esperaba 0 ticks y obtuvo 1). En `sim:check:all`, pasan `coast` (54/54),
+`shallows` (6/6) y `salters` (1/1); `fishers` queda 64/67 y `lean` 58/74.
+Hay fallos de calibración en varios escenarios largos; su matriz completa
+queda registrada en la salida de esa ejecución. No hay regresión en los dos
+escenarios costeros ni en el escenario que usa la cohorte de pesca.
+
 ## 2026-10-15 — M15: distinguir comarcas costeras e interiores al elegir mundo
 
 La cuadrícula de comarcas ahora mezcla el color de terreno con la proporción

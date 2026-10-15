@@ -1,3 +1,15 @@
+## 2026-10-15 — M15: exceso visual de peces en costas largas
+
+Los mapas geográficos ya limitaban el número de bancos por comarca a 1,5 veces
+la cuota medida según el hábitat somero, pero el reparto uniforme hacía que una
+costa extensa pareciera alfombrada. La generación ahora conserva ese límite y
+usa centros de costa con pesos gaussianos para formar grupos locales. Cada
+clase de agua disponible conserva un centro cuando la cuota alcanza; los bancos no comparten casilla.
+La cantidad total por comarca sigue dependiendo de los bajíos medidos, así que
+no se afirma que la relación entre superficie marina, caudal y abundancia esté
+calibrada. Requiere cohorte para medir el efecto económico; el cambio no altera
+los resultados de la isla clásica.
+
 ## 2026-10-15 — M15: hambre crítica sin comida al alcance sigue pudiendo acabar en `idle`
 
 Se instrumentó la elección efectiva de `Brain.think` durante veinte semillas

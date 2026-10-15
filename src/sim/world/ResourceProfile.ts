@@ -20,7 +20,8 @@
  *    that has any of that habitat*. A median comarca therefore holds what the island holds; a richer one holds
  *    more (up to `NODE_CAP_FACTOR` times the quota) and a poorer one fewer. **Since step 1b the generator places
  *    exactly these counts** on a map that is one comarca (`profileOfStart` in `Simulation.ts`); the classic
- *    island and the inspection windows of other sizes keep the fixed quotas.
+ *    island and the inspection windows of other sizes keep the fixed quotas. Geographic shoals then use a
+ *    Gaussian spatial kernel around several shoreline centers; this changes where fish cluster, never the count.
  * 3. **Food per node and season** is neither guessed nor tabulated: `foodModel()` runs the game's own
  *    `ResourceNode.regrow` on a real clock for each bush species and for a shoal, and reads the species and
  *    herd tables, so a retuned regrowth rate moves the profile with no regeneration.

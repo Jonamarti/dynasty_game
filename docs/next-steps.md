@@ -13,11 +13,16 @@ el diario de decisiones y entregas históricas debajo de este resumen.
 - **Selector del mundo (2026-10-15):** las comarcas de la cuadrícula ya
   distinguen litoral e interior por una muestra de terreno y color. Captura
   fechada bajo `artifacts/screenshots/m15-comarca-choice-2026-10-15T17-55-22-915Z/`.
+- **Peces en costas largas (2026-10-15):** el tope por comarca se conserva y
+  los bancos se agrupan con un kernel gaussiano alrededor de centros de costa.
+  Se mantiene un centro por clase de agua cuando la cuota alcanza, sin duplicar casillas. El vínculo
+  entre superficie de mar/caudal y abundancia total sigue pendiente de medir.
 - **Verificación integrada (2026-10-15):** `typecheck` pasa; la suite unitaria
-  tiene un fallo en `salters-checks.test.ts` (2.322 pasan, 1 omitida). En
-  `sim:check:all`, `coast` 54/54 y `shallows` 6/6; `lean` 58/74 y los demás
-  escenarios conservan fallos de calibración. La spec E2E del grid completó sus
-  aserciones, pero el cierre de Vite se tuvo que interrumpir.
+  tiene el fallo conocido en `salters-checks.test.ts` (2.326 pasan, 1 omitida).
+  En `sim:check:all`, `coast` 54/54, `shallows` 6/6 y `salters` 1/1; `fishers`
+  64/67 y `lean` 58/74. Otros escenarios largos conservan fallos de calibración.
+  La spec E2E del grid completó sus aserciones, pero el cierre de Vite se tuvo
+  que interrumpir.
 
 - **Fase 17, arte de trabajo:** el 13 de octubre se entregaron las poses de
   vestir pieles, teñir, extender compost, atender el banquete, tallar
@@ -178,14 +183,14 @@ liquidar jornadas incompletas y conectar autoridad/cruce.
 
 Sigue **paso 2 / fase 34: cruce del borde y TileLedger**. El puente debe transferir autoridad una vez, extraer existencias físicas para evitar doble conteo, agrupar bandas por comarca, corregir el perfil y resolver la primera jornada parcial; el runtime admite transferencia inicial y guardados en cualquier tick. Simulation todavía no lo llama. **Calibración y puerta lod-matches-detail pendientes del paso 4**: el muestreo corto de cosecha no calibra estaciones ni alimentación infantil/agua, y las dos aserciones heredadas de correspondencia/difusión siguen sin relajarse. Cohortes y matriz pesada diferidas por AGENTS.md.
 
-**2026-10-15: tope y dispersión costera, primera corrección.** El perfil reduce el techo de nodos de 3× a 1,5× la cuota clásica y los bancos de peces, reeds y clay banks se colocan sin repetir casilla en mapas geográficos. Esto limita acumulaciones y distribuye los nodos por el hábitat disponible; no modela aún las zonas de concentración por anchura de ríos y extensión del mar que pide el diseño de pesca:
+**2026-10-15: tope costero, revisión posterior.** El perfil reduce el techo de nodos de 3× a 1,5× la cuota clásica y los bancos de peces, reeds y clay banks se colocan sin repetir casilla en mapas geográficos. Los peces ahora se agrupan con pesos gaussianos alrededor de centros; el total aún depende del hábitat somero y no calibra la abundancia según caudal o superficie marina:
 
 - **Peces proporcionales al agua.** El límite nuevo reduce el extremo, pero costa, río ancho y riachuelo aún dependen del hábitat somero medido, no de una curva calibrada por caudal/área marina. Mantener cohortes antes de afirmar balance.
 - **El pescado no se recoge como una piedra.** En aguas someras, a mano y sin herramientas: marisco, cangrejos y lo que viva en la orilla (recolección costera). La pesca de verdad es otra cosa: zonas de concentración de peces y **caña de pescar**, una tecnología por descubrir. Hoy `fishing` es una práctica con lanza que solo multiplica el rendimiento, y existe `fish_trap` (red y cestería); revisar cómo encajan caña, red y nasa con la regla de la casa de no declarar contenido inerte.
 
 **2026-10-08: pendientes del propietario sobre agua, pesca y biomas duros (sin fase asignada todavía).** Dictados al revisar el paso 1b del LOD (`m15_simulation_lod.md` §0):
 
-- **Peces proporcionales al agua.** Hoy casi cualquier comarca con agua satura el tope de 150 bancos. Deben depender de la anchura del río y de cuánto mar hay: una isla o una costa, muchos; un río ancho (Danubio, Ebro), muchos; un riachuelo, pocos. Sin comida prácticamente infinita.
+- **Peces proporcionales al agua.** La anotación original de 2026-10-08 describía mapas que podían saturar 150 bancos; ese límite se redujo después. Sigue pendiente calibrar cuántos peces corresponden a la anchura del río y la superficie marina: una isla o costa, muchos; un río ancho (Danubio, Ebro), muchos; un riachuelo, pocos. Evitar comida prácticamente infinita.
 - **El pescado no se recoge como una piedra.** En aguas someras, a mano y sin herramientas: marisco, cangrejos y lo que viva en la orilla (recolección costera). La pesca de verdad es otra cosa: zonas de concentración de peces y **caña de pescar**, una tecnología por descubrir. Hoy `fishing` es una práctica con lanza que solo multiplica el rendimiento, y existe `fish_trap` (red y cestería); revisar cómo encajan caña, red y nasa con la regla de la casa de no declarar contenido inerte.
 - **Bioma de desierto en el mapa local.** El mapa detallado no tiene arena: un desierto se pinta con hierba y conserva 17 manadas. Hace falta el bioma y sus reglas de hábitat. La tundra igual: partidas más duras a propósito.
 - **Agua en el desierto.** Del subsuelo (pozos, `well` ya existe), de plantas (cactus) y otras fuentes; todo sin implementar.

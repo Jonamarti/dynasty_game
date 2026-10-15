@@ -1,3 +1,15 @@
+**Avance del 2026-10-15 — peces costeros limitados y agrupados:** la cantidad
+por comarca sigue la superficie de hábitat somero y el tope de `NODE_CAP_FACTOR`;
+la colocación en mapas geográficos ya no alfombra el litoral de manera uniforme.
+Varios centros por tramo y clase de agua ponderan los bajíos con un kernel
+gaussiano; cuando la cuota lo permite se conserva un nodo por clase disponible, no se repiten
+casillas y no se consume el `spawnRng` compartido. El test sembrado, pesca
+geográfica, perfil y correspondencia pasan (28/28); `typecheck` pasa. Suite
+completa: 2.326 pasan, 1 omitida y 1 fallo conocido de `salters-checks.test.ts`.
+En `sim:check:all` pasan `coast` 54/54, `shallows` 6/6 y `salters` 1/1;
+`fishers` da 64/67 y `lean` 58/74, con fallos de calibración también en otros
+escenarios. La matriz no cierra la calibración de M15.
+
 **Avance del 2026-10-15 — selector de comarcas:** el grid usa una muestra 3×3
 de costa por comarca para teñir el color del terreno según su litoral. La
 prueba unitaria y E2E distinguen costa/interior y más de un color. Captura en

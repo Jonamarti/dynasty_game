@@ -1,5 +1,6 @@
 import { boatTileFor, canUseBoat, canUseLogboat, canUseRaft, sameBoatRouteFor } from './Raft.ts';
 import { transferTransportAnimal } from './TransportAnimals.ts';
+import { pickGaussianTile } from '../world/GaussianPlacement.ts';
 /**
  * The simulation: owns the world, the people, the clock and the systems, and
  * runs them in a fixed order every step.
@@ -1347,22 +1348,47 @@ export class Simulation {
       : [];
     let placed = 0;
     const used = new Set<number>();
+    const centresByHabitat: { x: number; y: number }[][] = habitats.map(() => []);
     if (count >= habitats.length) {
-      for (const habitat of habitats) {
+      for (let index = 0; index < habitats.length; index++) {
+        const habitat = habitats[index]!;
         const spot = rng.pick(habitat);
         used.add(spot.y * this.world.width + spot.x);
+        centresByHabitat[index]!.push(spot);
         const node = new ResourceNode('fish', spot.x, spot.y, rng, this.ids);
         this.nodes.push(node);
         this.nodesById.set(node.id, node);
         placed++;
       }
     }
-    // Picking with replacement let a long coast stack many shoals on the same
-    // tile. Sample remaining shallow tiles without replacement, so the local
-    // habitat caps both abundance and spatial density.
+    // Keep several coastal centers on a long reach. The number is tied to the
+    // capped quota, so a huge shelf gets a handful of shoals rather than one
+    // uniform carpet; each center produces a local Gaussian cluster.
+    if (count >= habitats.length) {
+      const centresPerHabitat = Math.max(1, Math.ceil(count / Math.max(1, habitats.length) / 16));
+      for (let index = 0; index < habitats.length; index++) {
+        const pool = habitats[index]!.filter(tile => !used.has(tile.y * this.world.width + tile.x));
+        while (centresByHabitat[index]!.length < centresPerHabitat && pool.length > 0) {
+          const spot = pool.splice(rng.int(0, pool.length - 1), 1)[0]!;
+          used.add(spot.y * this.world.width + spot.x);
+          centresByHabitat[index]!.push(spot);
+          const node = new ResourceNode('fish', spot.x, spot.y, rng, this.ids);
+          this.nodes.push(node);
+          this.nodesById.set(node.id, node);
+          placed++;
+        }
+      }
+    }
+    // Never stack nodes on one shallow tile. Candidate tiles are weighted by
+    // a two-dimensional Gaussian around their water-class centers, and the
+    // existing profile quota remains the hard per-comarca count cap.
     const available = shallows.filter(tile => !used.has(tile.y * this.world.width + tile.x));
+    const centres = centresByHabitat.flat();
     for (; placed < count && available.length > 0; placed++) {
-      const spot = available.splice(rng.int(0, available.length - 1), 1)[0]!;
+      const spot = centres.length > 0
+        ? pickGaussianTile(available, centres, 9, rng)!
+        : available[rng.int(0, available.length - 1)]!;
+      available.splice(available.indexOf(spot), 1);
       const node = new ResourceNode('fish', spot.x, spot.y, rng, this.ids);
       this.nodes.push(node);
       this.nodesById.set(node.id, node);
