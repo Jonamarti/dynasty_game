@@ -1,3 +1,13 @@
+**Avance del 2026-10-15 — fase 2.2c: obras promovidas por el jugador y relevo de materiales.**
+Una obra cuyo promotor es el personaje jugador queda marcada como `playerPlaced`
+desde el momento de creación, así que la limpieza por inactividad no la retira.
+Quien recibe una orden explícita `build`/`haul`/`gather_for_site` pasa a ser
+patrocinador auxiliar; tras acabar la orden puede reunir los materiales que
+faltan y volver a la obra. Pruebas de 14 días y del ciclo completo en
+`orders.test.ts`. La explicación de NPC hambrientos en `idle` queda abierta:
+sin una semilla reproducible no se ajustan los pesos de comida/exploración.
+Versión `0.15.153-alpha`.
+
 **Avance del 2026-10-15 — fase 2.2b, R6: motivo al archivar obras.** Cuando el
 planificador retira una obra estancada de un NPC, ahora deja el motivo en la
 crónica del proponente y lo muestra como aviso sobre el lugar de la obra,

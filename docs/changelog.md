@@ -1,3 +1,21 @@
+## 2026-10-15 — M15: conservar las obras del jugador y reanudar tras reunir materiales
+
+Una propuesta del personaje jugador podía desaparecer porque llegaba al
+planificador con `playerPlaced` sin marcar; ahora se conserva ese origen al
+crear la obra y se excluye de la retirada automática por inactividad. Al ordenar
+a una persona que trabaje en una obra incompleta, queda como colaboradora del
+proyecto. Si faltan materiales, puede reunirlos y el scorer vuelve a ofrecerle
+esa misma obra para entregarlos y construir. Una regresión en `orders.test.ts`
+deja correr 14 días sin materiales y otra verifica la construcción completa
+tras recolectar. El caso de NPCs que mueren de hambre mientras aparece `idle`
+queda pendiente de una reproducción con semilla y destino de búsqueda medible;
+no se retunearon los pesos de comida sin cohorte.
+
+**Verificación:** `typecheck` y la prueba focal (2/2) pasan. La suite completa
+terminó con 2.319 aprobadas, 1 omitida y un fallo en
+`salters-checks.test.ts` (esperaba 0, obtuvo 1), sin relación aparente con esta
+corrección. `sim:check:all` también sale
+con fallos generales; sus escenarios `coast` (54/54) y `shallows` (6/6) pasan.
 ## 2026-10-15 — M15 cierre: la noche reúne a la banda bajo techo (natalidad)
 
 **Problema.** El diagnóstico de la fase 41 ponía el ~93% de las concepciones con

@@ -4676,6 +4676,14 @@ export class Simulation {
       person.targetBuildingId = building.id;
       person.targetX = building.centerX;
       person.targetY = building.centerY;
+      // An explicit request to work on a site is also a promise to come back
+      // after gathering. Once the order ends, Brain uses backers to keep
+      // scoring that project's missing materials and then its construction.
+      if (!building.complete && building.ownerBandId === person.bandId &&
+          ['build', 'haul', 'gather_for_site'].includes(action) &&
+          !building.backers.includes(person.id)) {
+        building.backers.push(person.id);
+      }
       if (action === 'sow' && target.itemId === 'iron_plough') {
         const refusal = this.ploughOrderRefusal(person, building);
         if (refusal) return this.cancelOrder(person, refusal);
@@ -5284,10 +5292,15 @@ export class Simulation {
     const plan = def.earthwork ?? def.dig;
     if (plan) building.earth = earthworkTiles(plan, x, y, def.width, def.height, this.world);
     building.plannedTick = this.time.tick;
-    building.playerPlaced = playerPlaced;
     building.sponsorId = sponsorId !== undefined
       ? sponsorId
       : this.player?.bandId === bandId ? this.player.id : null;
+    // A project proposed by the player is just as explicitly theirs as a
+    // footprint they placed directly. Keep this bit on the building so the
+    // NPC planner cannot silently shelf it after the player leaves the area or
+    // succeeds somebody else.
+    building.playerPlaced = playerPlaced || (building.sponsorId !== null &&
+      this.peopleById.get(building.sponsorId)?.isPlayer === true);
     this.buildings.push(building);
     this.buildingsById.set(building.id, building);
     this.buildingHash.insert(building);

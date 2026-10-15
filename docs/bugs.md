@@ -1,3 +1,15 @@
+## 2026-10-15 — NPCs hambrientos que aparecen `idle`: falta semilla reproducible
+
+El mensaje `at a loose end` corresponde a `action === 'idle'`, que queda cuando
+el scorer no elige una acción positiva. La búsqueda de hambre ofrece comida
+local o recordada y, si no encuentra comida, intenta explorar una frontera
+desconocida o una celda antigua; si no hay destino válido en la misma región,
+no existe una acción de búsqueda que pueda resolver la carencia. Esto explica
+una ruta plausible, pero no confirma la partida reportada ni distingue una
+frontera agotada de un fallo de selección. No cambiar pesos hasta registrar
+semilla, comarca y destino. El estado visible tampoco debe consultar el hambre
+privada de un NPC desconocido.
+
 ## 2026-10-13 — M15 compact telemetry fixture fixed; thirst correspondence remains open
 
 `determinism.test.ts` previously required `compact_food_nutrition_gather > 0`

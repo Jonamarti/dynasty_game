@@ -17,6 +17,7 @@ import { workProgressOf } from '../core/Progress.ts';
 import { PATIENCE } from '../systems/MovementSystem.ts';
 import { Person } from '../entities/Person.ts';
 import { BUILDINGS, Building } from '../entities/Building.ts';
+import { ResourceNode } from '../entities/ResourceNode.ts';
 import { menaceOver, orderCost } from '../social/Authority.ts';
 import { telemetry } from '../core/Telemetry.ts';
 
@@ -178,7 +179,7 @@ describe('stores and construction controls', () => {
 
   it('the planner never shelves a site the player marked out', () => {
     const sim = new Simulation(SMALL);
-    const player = sim.livingPeople()[0]!;
+    const player = sim.possessFirst()!;
     // The costliest design the band can mark out: a cheap one is simply built
     // by its own band inside the window, and then there is nothing stale to drop.
     const designs = Object.values(BUILDINGS)
@@ -188,18 +189,50 @@ describe('stores and construction controls', () => {
     for (const def of designs) {
       for (const [dx, dy] of [[6, 0], [-6, 0], [0, 6], [0, -6]]) {
         site = sim.place(def.id, Math.round(player.x) + dx!, Math.round(player.y) + dy!,
-          player.bandId, player.id, true);
+          player.bandId, player.id);
         if (site) break;
       }
       if (site) break;
     }
     expect(site).not.toBeNull();
+    expect(site!.playerPlaced).toBe(true);
     // Nothing is delivered and no work goes in, which is exactly the "stale"
     // condition that used to remove it six days later with no word.
     const id = site!.id;
     for (let i = 0; i < sim.config.time.ticksPerDay * 14; i++) sim.step();
     expect(site!.complete).toBe(false);
     expect(sim.buildings.some(building => building.id === id)).toBe(true);
+  });
+
+  it('returns an ordered builder to a player-proposed site after gathering its materials', () => {
+    const sim = new Simulation(SMALL);
+    const player = sim.possessFirst()!;
+    const worker = sim.livingPeople().find(person => person.id !== player.id)!;
+    settle(worker);
+    const site = sim.place('windbreak', Math.round(worker.x) + 5,
+      Math.round(worker.y), player.bandId, player.id)!;
+    expect(site).not.toBeNull();
+    const sticks = new ResourceNode('sticks', Math.round(worker.x) + 1,
+      Math.round(worker.y), new RNG('ordered-building-sticks'), sim.ids);
+    const thatch = new ResourceNode('reeds', Math.round(worker.x) + 2,
+      Math.round(worker.y), new RNG('ordered-building-thatch'), sim.ids);
+    sim.nodes.push(sticks);
+    sim.nodes.push(thatch);
+    sim.nodesById.set(sticks.id, sticks);
+    sim.nodesById.set(thatch.id, thatch);
+    sim.nodeHash.insert(sticks);
+    sim.nodeHash.insert(thatch);
+
+    expect(sim.order(worker, 'build', { buildingId: site.id })).toBe(true);
+    expect(site.backers).toContain(worker.id);
+    for (let i = 0; i < 600 && !site.complete; i++) {
+      worker.needs.thirst = 0;
+      worker.needs.hunger = 0;
+      worker.needs.cold = 0;
+      sim.step();
+    }
+
+    expect(site.complete).toBe(true);
   });
 
   it('reports an NPC site being shelved at the site and in the proposer’s chronicle', () => {
