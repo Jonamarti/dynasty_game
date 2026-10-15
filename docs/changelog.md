@@ -17,6 +17,18 @@ Hay fallos de calibración en varios escenarios largos; su matriz completa
 queda registrada en la salida de esa ejecución. No hay regresión en los dos
 escenarios costeros ni en el escenario que usa la cohorte de pesca.
 
+## 2026-10-15 — M15: aislar el límite de hambre durante la exploración
+
+Una cohorte emparejada de 20 semillas `lean` comparó el límite de interrupción
+de `explore` a 90 y 98, manteniendo la prioridad de comida en ambos brazos. A
+90 hubo 252.313 interrupciones `explore/hungry`, frente a 207.551 a 98. Los
+casos `h75+` sin opción de comida que eligieron explorar y acabaron en `idle`
+sumaron 306.738 a 90 frente a 301.155 a 98. Se conserva
+98; bajar la cota interrumpe más sin resolver el `idle`. En una reproducción
+individual, no faltó un destino de frontera (`food_exploration_no_frontier` =
+0), y los cortes se repartieron entre hambre y frío. El caso sigue abierto para
+seguir el trayecto hasta un recurso y la recuperación del compromiso.
+
 ## 2026-10-15 — M15: distinguir comarcas costeras e interiores al elegir mundo
 
 La cuadrícula de comarcas ahora mezcla el color de terreno con la proporción

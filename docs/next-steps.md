@@ -8,8 +8,9 @@ el diario de decisiones y entregas históricas debajo de este resumen.
   de comida disponible sobre `rest`/`sleep`/`shelter` desde hambre 70 cuando
   esa acción ganaría y la sed no requiere respuesta urgente. En una cohorte de
   20 semillas `lean` hubo 485 muertes adultas por hambre frente a 483 en la
-  referencia; no se demostró mejora de supervivencia. El caso sin comida
-  accesible sigue abierto. Ver `m15_plan.md` y `bugs.md`.
+  referencia; no se demostró mejora de supervivencia. El A/B 90/98 halló más
+  cortes de exploración a 90 (+20%) y prácticamente el mismo `idle` hambriento.
+  El caso sin comida accesible sigue abierto. Ver `m15_plan.md` y `bugs.md`.
 - **Selector del mundo (2026-10-15):** las comarcas de la cuadrícula ya
   distinguen litoral e interior por una muestra de terreno y color. Captura
   fechada bajo `artifacts/screenshots/m15-comarca-choice-2026-10-15T17-55-22-915Z/`.

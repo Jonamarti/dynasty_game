@@ -10,6 +10,14 @@ En `sim:check:all` pasan `coast` 54/54, `shallows` 6/6 y `salters` 1/1;
 `fishers` da 64/67 y `lean` 58/74, con fallos de calibración también en otros
 escenarios. La matriz no cierra la calibración de M15.
 
+**Medición del hambre (2026-10-15):** en 20 semillas `lean`, bajar el límite
+de interrupción de exploración de 98 a 90 elevó los cortes `explore/hungry`
+de 207.551 a 252.313; los casos `h75+` sin comida que elegían explorar y
+acababan `idle` fueron 301.155 a 98 y 306.738 a 90. Se mantiene 98; la causa
+pendiente está en la ruta/interrupción posterior. Una semilla confirmó que la
+búsqueda ofrecía destinos, con cortes observados por hambre y frío. Ver el
+experimento detallado en [`bugs.md`](bugs.md).
+
 **Avance del 2026-10-15 — selector de comarcas:** el grid usa una muestra 3×3
 de costa por comarca para teñir el color del terreno según su litoral. La
 prueba unitaria y E2E distinguen costa/interior y más de un color. Captura en
@@ -36,7 +44,9 @@ Quien recibe una orden explícita `build`/`haul`/`gather_for_site` pasa a ser
 patrocinador auxiliar; tras acabar la orden puede reunir los materiales que
 faltan y volver a la obra. Pruebas de 14 días y del ciclo completo en
 `orders.test.ts`. La explicación de NPC hambrientos en `idle` queda abierta:
-sin una semilla reproducible no se ajustan los pesos de comida/exploración.
+hay semillas reproducibles, pero el A/B del límite de exploración mostró que
+90 frente a 98 añade cortes sin cambiar el síntoma; no se retocan pesos sin
+seguir el recurso y la reanudación tras una interrupción.
 Versión `0.15.153-alpha`.
 
 **Avance del 2026-10-15 — fase 2.2b, R6: motivo al archivar obras.** Cuando el
