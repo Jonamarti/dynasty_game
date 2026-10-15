@@ -1,3 +1,6 @@
+## 2026-10-16 — M15: la prioridad 2,0 para buscar comida no mejora la supervivencia
+
+Cohortes emparejadas `lean`, 20 semillas y 24.000 pasos: el multiplicador de explorar por hambre 2,0 dio supervivencia media 1,8%, extinción 9/20 y 317 muertes adultas por hambre; con 0,28 fueron 2,9%, 10/20 y 323. El indicador corto `h75+` sin comida que explora y termina `idle` bajó aproximadamente 3%, pero la población final y la recuperación no mejoraron de forma consistente; nacimientos, violencia y pérdidas también divergieron. Se conserva 0,28. No se atribuye una mejora al peso 2,0.
 ## 2026-10-15 — M15: una prioridad mayor para explorar no reduce el hambre
 
 En una prueba piloto de la misma semilla `lean`, subir solo el multiplicador de exploración por hambre de 0,28 a 1,0 mantuvo las 28 muertes adultas por hambre y elevó el hambre media de 51 a 52–53. También aumentaron el tiempo en `explore`, sus cortes críticos antes de avanzar y `remembered_empty_walk` (13.221 frente a 11.735 en la ejecución previa). Se revirtió el cambio; una semilla no sirve para calibrar población. Los viajes a nodos recordados que están agotados al llegar son una pista, no una causa demostrada.

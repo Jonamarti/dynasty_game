@@ -1,17 +1,14 @@
-## Estado vigente — 2026-10-15
+## Estado vigente — 2026-10-16
 
 M15 sigue siendo el único plan activo y **permanece abierto**. El estado
 autoritativo de sus fases es [m15_plan.md](m15_plan.md); esta página conserva
 el diario de decisiones y entregas históricas debajo de este resumen.
 
-- **NPCs hambrientos en `idle` (2026-10-15):** desde hambre 70 el scorer
-  prioriza una acción de comida disponible cuando ganaría y la sed no es más
-  urgente; la cohorte de 20 semillas no mostró mejora de supervivencia. Bajar
-  el límite de exploración de 98 a 90 añadió cortes sin mejorar `idle`. Una
-  prueba piloto de mayor prioridad tampoco mejoró una semilla y elevó el hambre
-  media; `remembered_empty_walk` alto queda como pista sin causa demostrada.
-  Ver `m15_plan.md` y `bugs.md`.
-
+- **NPCs hambrientos en `idle` (2026-10-16):** la cohorte emparejada de 20
+  semillas `lean` no justifica aumentar el peso de búsqueda: a 2,0, `idle`
+  con hambre alta bajó ~3%, pero supervivencia fue 1,8% y hubo 317 muertes
+  adultas por hambre; a 0,28 fueron 2,9% y 323. Se mantiene 0,28. El caso
+  sigue abierto; `remembered_empty_walk` merece investigación causal.
 - **Selector del mundo (2026-10-15):** las comarcas de la cuadrícula ya
   distinguen litoral e interior por una muestra de terreno y color. Captura
   fechada bajo `artifacts/screenshots/m15-comarca-choice-2026-10-15T17-55-22-915Z/`.

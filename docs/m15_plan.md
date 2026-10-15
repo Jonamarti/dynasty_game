@@ -1,3 +1,4 @@
+**Cohorte emparejada de hambre (2026-10-16):** con 20 semillas `lean` y 24.000 pasos, explorar×2,0 dio 1,8% de supervivencia y 317 muertes adultas por hambre; explorar×0,28 dio 2,9% y 323. La reducción cercana al 3% de `explore`→`idle` con hambre alta no mejoró población o recuperación. Se mantiene 0,28; el hallazgo completo está en `bugs.md`.
 **Prueba piloto de hambre (2026-10-15):** subir el multiplicador de exploración por hambre de 0,28 a 1,0 en una semilla `lean` no redujo las 28 muertes adultas; el hambre media subió de 51 a 52–53 y aumentó el tiempo de exploración y los viajes a nodos recordados ya agotados. Se revirtió el cambio. Investigar `remembered_empty_walk` antes de volver a ajustar pesos; una semilla no calibra población.
 **Avance del 2026-10-15 — peces costeros limitados y agrupados:** la cantidad
 por comarca sigue la superficie de hábitat somero y el tope de `NODE_CAP_FACTOR`;
