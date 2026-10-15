@@ -983,11 +983,38 @@ export class Brain {
     const nurseRow = decisionPool.find(row => row.id === 'nurse');
     const urgentDrink = person.needs.thirst >= ctx.needs.workLimits.thirst &&
       found.water !== null && drinkRow !== undefined && !(nurseRow && nurseRow.score > drinkRow.score);
+    const exploreRow = pool.find(row => row.id === 'explore');
+    // The 20-seed lean audit found starving adults with a real forage/eat
+    // target repeatedly choosing rest or shelter, which often ended as idle
+    // on the same tick. At this pressure, choose the best self-feeding action
+    // directly; below it the calibrated scorer still balances meals with rest.
+    const urgentFoodRow = !person.isChild && person.needs.hunger >= 70 &&
+      person.needs.thirst <= ctx.needs.workLimits.thirst
+      ? pool.find(row => row.id !== 'explore' && row.id !== 'feed' && row.id !== 'give' &&
+        row.id !== 'bring_food' && actionAnswersDrive('hunger', row.id, found, ctx, person))
+      : undefined;
+    const restingWouldWin = decisionPool[0] !== undefined &&
+      (decisionPool[0].id === 'rest' || decisionPool[0].id === 'sleep' || decisionPool[0].id === 'shelter');
+    const urgentFoodAction = urgentFoodRow !== undefined && restingWouldWin &&
+      !(nurseRow && nurseRow.score > urgentFoodRow.score);
+    // An idle person can still retain a rest commitment from the tick before
+    // fatigue recovered. That commitment used to filter out food discovery,
+    // even when hunger had stopped work and no food was known. Treat this as
+    // the same survival escape hatch as urgent drinking; a crying child whose
+    // nursing score is stronger still gets cared for first.
+    const urgentFoodExplore = !person.isChild &&
+      person.needs.hunger > ctx.needs.workLimits.hunger &&
+      person.needs.thirst <= ctx.needs.workLimits.thirst &&
+      found.waterExplorePoint === null &&
+      !pool.some(row => row.id !== 'explore' && actionAnswersDrive('hunger', row.id, found, ctx, person)) &&
+      found.explorePoint !== null && exploreRow !== undefined &&
+      !(nurseRow && nurseRow.score > exploreRow.score);
     const continuingRoute = ROUTE_COMMIT_ACTIONS.has(person.action) &&
       person.targetX !== null && person.targetY !== null &&
       decisionPool.some(row => row.id === person.action);
-    if (urgentDrink || continuingRoute) {
-      const chosen = urgentDrink ? 'drink' : person.action;
+    if (urgentDrink || urgentFoodAction || urgentFoodExplore || continuingRoute) {
+      const chosen = urgentDrink ? 'drink' : urgentFoodAction ? urgentFoodRow!.id :
+        urgentFoodExplore ? 'explore' : person.action;
       this.setup(person, chosen, ctx, found);
       saveCommitment(chosen);
       return recordDecision(chosen);
@@ -1494,9 +1521,16 @@ export class Brain {
     ) / 100;
     const curiousEnoughToExplore = idleForExploration > 0.45 && person.traits.curiosity > 0.5;
     const hungryEnoughToSearch = drive.hunger > 0.25;
+    // Once hunger has stopped ordinary work, discovery must leave the same
+    // home-radius fence as the known-food search. Waiting for the critical
+    // answer threshold left hungry people with no visible food choosing a
+    // short rest that ended immediately, then appearing idle until starvation.
+    const urgentFoodSearch = !person.isChild &&
+      person.needs.hunger > ctx.needs.workLimits.hunger &&
+      foodToEat === null && foodNode === null && fruitTree === null && pickupPile === null;
     const curiosityExplorePoint = !thirstyWithoutWater && !foodNode &&
       (curiousEnoughToExplore || hungryEnoughToSearch)
-      ? this.findExplorePoint(person, ctx, { anchor, reach })
+      ? this.findExplorePoint(person, ctx, urgentFoodSearch ? { urgentFood: true } : { anchor, reach })
       : null;
     const explorePoint = waterExplorePoint ?? curiosityExplorePoint;
     if (waterQuestionPeer) {
@@ -1514,6 +1548,12 @@ export class Brain {
       add('explore', Math.max(waterUrgency, discoveryInterest));
       telemetry.count('water_exploration_offered');
       telemetry.count(person.isChild ? 'water_exploration_offered_child' : 'water_exploration_offered_adult');
+      if (urgentFoodSearch && curiosityExplorePoint) {
+        telemetry.count('food_exploration_offered');
+        if (!withinReach(anchor, reach, curiosityExplorePoint.x, curiosityExplorePoint.y)) {
+          telemetry.count('food_exploration_beyond_home_offered');
+        }
+      }
     }
 
 
@@ -3673,7 +3713,7 @@ export class Brain {
             person.distanceTo({ x: b.centerX, y: b.centerY }) +
             company * 2 * nightNow * sensitivity(person, 'belonging');
         });
-      if (restShelter) {
+      if (restShelter && !(urgentFoodSearch && curiosityExplorePoint)) {
         const nearness = this.proximityBonus(person,
           { x: restShelter.centerX, y: restShelter.centerY }, ctx.sightRadius);
         // A comfort deficit can justify using a real shelter even before
@@ -3681,13 +3721,14 @@ export class Brain {
         // the existing sleep weight and destination quality still decide how
         // strongly and where the person sleeps.
         add('sleep', Math.max(fatigue, drive.comfort * 100) * 3.2 * nearness * dark);
-      } else if (anchor && Math.hypot(person.x - anchor.x, person.y - anchor.y) <= ctx.motivation.nightRadius) {
+      } else if (!restShelter && !(urgentFoodSearch && curiosityExplorePoint) && anchor &&
+          Math.hypot(person.x - anchor.x, person.y - anchor.y) <= ctx.motivation.nightRadius) {
         add('sleep', fatigue * 3.2 * 0.8 * dark);
       }
     }
     // Cold can still justify a journey to a more distant refuge. It is a
     // separate destination from the nearby bed used for sleep and rest.
-    if (person.needs.cold > 25) {
+    if (person.needs.cold > 25 && !(person.needs.hunger > 55 && curiosityExplorePoint)) {
       shelter = this.pickBest(
         // `!b.ruined`, M11 phase 11b: sent to a sabotaged roof, the scorer's
         // own promise — warmer the moment they arrive — would simply be false,
@@ -4594,7 +4635,7 @@ export class Brain {
   /** A deterministic frontier walk after thirst or curiosity calls for discovery. */
   private findExplorePoint(
     person: Person, ctx: BrainContext,
-    options: { urgentWater?: boolean; anchor?: Anchor | null; reach?: number } = {},
+    options: { urgentWater?: boolean; urgentFood?: boolean; anchor?: Anchor | null; reach?: number } = {},
   ): { x: number; y: number } | null {
     if (options.urgentWater && person.isChild) {
       const hasLivingParent = [person.motherId, person.fatherId].some(id => {
@@ -4621,7 +4662,7 @@ export class Brain {
     const firstRing = Math.max(1, Math.ceil(ctx.sightRadius / 4));
     const baseCellX = Math.floor(person.x / 4);
     const baseCellY = Math.floor(person.y / 4);
-    const allowed = (x: number, y: number): boolean => options.urgentWater === true ||
+    const allowed = (x: number, y: number): boolean => options.urgentWater === true || options.urgentFood === true ||
       withinReach(options.anchor ?? null, options.reach ?? Number.POSITIVE_INFINITY, x, y);
     // The four cells of a ring at one offset, in the order the old array
     // literal listed them: top, bottom, left, right. Written as a function that
@@ -4672,7 +4713,8 @@ export class Brain {
         }
       }
     }
-    telemetry.count('water_exploration_no_frontier');
+    telemetry.count(options.urgentWater ? 'water_exploration_no_frontier'
+      : options.urgentFood ? 'food_exploration_no_frontier' : 'curiosity_exploration_no_frontier');
     return null;
   }
 

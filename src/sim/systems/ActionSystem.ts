@@ -540,6 +540,7 @@ export type LethalNeed = 'thirst' | 'hunger' | 'cold';
  * about it, which costs nothing on the average.
  */
 const ANSWERING_LIMIT: Record<LethalNeed, number> = { hunger: 90, thirst: 90, cold: 100 };
+const FOOD_SEARCH_HUNGER_LIMIT = 98;
 
 /**
  * Most a nearly-finished pull may push past the line, in need points.
@@ -1484,8 +1485,16 @@ export class ActionSystem {
     if (!opts.ignoreNeeds) {
       if (person.needs.thirst + ctx.needs.thirstRate * ahead >
         workLimit(person, 'thirst', limits, opts.answers)) return 'thirsty';
-      if (person.needs.hunger + ctx.needs.hungerRate * ahead >
-        workLimit(person, 'hunger', limits, opts.answers)) return 'hungry';
+      // Exploring is the discovery leg of a food errand, not a general walk.
+      // Stopping it at the ordinary 90-point answer limit repeatedly cleared
+      // the frontier target before the first new food could be reached; the
+      // idle brain then chose the same frontier and stopped again. Give this
+      // one trip a narrow margin below starvation while thirst and cold keep
+      // their normal interruption rules.
+      const hungerLimit = opts.answers === 'hunger' && person.action === 'explore'
+        ? FOOD_SEARCH_HUNGER_LIMIT
+        : workLimit(person, 'hunger', limits, opts.answers);
+      if (person.needs.hunger + ctx.needs.hungerRate * ahead > hungerLimit) return 'hungry';
       // Cold is read as it stands: its rate depends on the season and the roof
       // overhead, so projecting it forward from a per-tick constant would be a
       // guess dressed up as arithmetic.

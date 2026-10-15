@@ -1,3 +1,15 @@
+**Avance del 2026-10-15 — NPC hambriento que queda `idle`:** la cohorte
+instrumentada `lean`, veinte semillas y 12.000 ticks por semilla, encontró que
+algunos adultos con hambre ≥70 escogían descanso aunque Brain ya tuviera una
+acción propia de comida disponible. Desde hambre 70, si `rest`, `sleep` o
+`shelter` ganaría, se toma la acción de comida mejor valorada (salvo sed por
+encima del límite o una necesidad de enfermería más fuerte). El test verifica
+una elección `forage` real. La cohorte de seguimiento
+registró 485 muertes adultas por hambre frente a 483 en la referencia, por lo
+que no se declara una mejora de supervivencia. Explorar sin comida accesible
+sigue cortándose por hambre/frío y continúa pendiente; no subir la cota sin una
+medición que incluya daño crítico. Ver [`bugs.md`](bugs.md).
+
 **Avance del 2026-10-15 — fase 2.2c: obras promovidas por el jugador y relevo de materiales.**
 Una obra cuyo promotor es el personaje jugador queda marcada como `playerPlaced`
 desde el momento de creación, así que la limpieza por inactividad no la retira.

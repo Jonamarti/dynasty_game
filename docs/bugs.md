@@ -1,3 +1,32 @@
+## 2026-10-15 — M15: hambre crítica sin comida al alcance sigue pudiendo acabar en `idle`
+
+Se instrumentó la elección efectiva de `Brain.think` durante veinte semillas
+`lean` de 12.000 ticks. Con hambre ≥70, disponer de un objetivo `forage`/`eat`
+no siempre bastaba: la fila de descanso podía ganar y terminar en `idle`. El
+Brain ahora escoge la mejor acción propia de comida disponible; el test focal
+confirma `forage` con una baya accesible y cansancio cero. En la cohorte de
+seguimiento, las muertes adultas por hambre fueron 485 (233 hombres, 249 otras
+mujeres, 3 madres lactantes), frente a 483 en la corrida de referencia (239 y
+244). El histograma de decisiones confirma que bajó la selección de `rest` con
+forage disponible en la banda crítica, pero la mortalidad no mejoró.
+
+Queda el caso sin comida accesible: en la misma cohorte se eligió explorar y
+acabar en `idle` 301.155 veces con hambre ≥75, y hubo 207.551 cortes de
+`explore` por hambre. Subir la cota de 98 no se justifica aún: el daño crítico
+comienza en 85, y una exploración larga podría prolongar la pérdida de salud.
+Falta aislar si el destino no llega a alimento, si una interrupción por frío
+lo desvía, o si solo es un instante entre acciones. No retocar pesos globales
+ni afirmar que las muertes están corregidas con esta evidencia.
+
+La suite integrada pasó 2.322 pruebas, omitió 1 y dejó el fallo conocido en
+`salters-checks.test.ts`: esperaba 0 ticks y midió 1 para el indicador de
+portador de conserva invernal con hambre 40. `npm.cmd run sim:check:all` también
+terminó con fallos en varios escenarios; los escenarios costeros `coast`
+(54/54), `shallows` (6/6) y `salters` (1/1) pasan. `lean` queda en 58/74; entre
+sus fallos están supervivencia, muertes explicadas, frío y economía. Esta
+matriz registra la base observada en esta revisión; no aísla regresiones del
+cambio de hambre.
+
 ## 2026-10-15 — NPCs hambrientos que aparecen `idle`: falta semilla reproducible
 
 El mensaje `at a loose end` corresponde a `action === 'idle'`, que queda cuando

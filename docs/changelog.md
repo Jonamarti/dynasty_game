@@ -1,3 +1,26 @@
+## 2026-10-15 — M15: evitar descanso improductivo con hambre crítica
+
+Las trazas de veinte semillas `lean` mostraron adultos con hambre alta y un
+objetivo real de comida que escogían `rest`/`shelter`; el descanso inmediato
+podía dejarlos en `idle`. Desde hambre 70, si `rest`, `sleep` o `shelter`
+ganaría la decisión, Brain escoge la mejor acción propia de comida disponible
+si la sed no supera su límite. Un test con comida local
+comprueba la elección real. La misma cohorte quedó en 485 muertes adultas por
+hambre frente a 483 en la corrida de referencia: el cambio corrige esa elección
+visible, pero no demuestra menos mortalidad. La búsqueda sin destino cercano
+sigue abierta; subir más su límite de interrupción no se justifica porque el
+daño crítico empieza en 85. `tools/infants.ts` ahora registra la decisión real
+de Brain y los contadores de exploración, no un `lastScores` potencialmente
+obsoleto.
+
+**Verificación:** tests focales de hambre y recogida de herramientas 8/8,
+`typecheck` pasa. La suite completa termina con 2.322 aprobadas, 1 omitida y 1
+fallo en `salters-checks.test.ts` (comida invernal preservada). La matriz
+`sim:check:all` termina con fallos crónicos en varios escenarios; `coast`
+(54/54), `shallows` (6/6) y `salters` (1/1) pasan. `lean` queda en 58/74,
+incluidos fallos de supervivencia y economía. Estos informes no justifican
+declarar cerrada la calibración de fase 41.
+
 ## 2026-10-15 — M15: conservar las obras del jugador y reanudar tras reunir materiales
 
 Una propuesta del personaje jugador podía desaparecer porque llegaba al

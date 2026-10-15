@@ -21,7 +21,7 @@ import { makeConfig } from '../src/sim/core/Config.ts';
 import type { Person } from '../src/sim/entities/Person.ts';
 import { SCENARIOS } from './simcheck.ts';
 import { ITEMS } from '../src/sim/entities/Item.ts';
-import { lastScores } from '../src/sim/ai/Brain.ts';
+import { lastScores, type Brain } from '../src/sim/ai/Brain.ts';
 import { telemetry } from '../src/sim/core/Telemetry.ts';
 
 interface Child {
@@ -110,6 +110,17 @@ function run(scenarioName: string, seed: string, stepsArg: number | null) {
   const founders = new Set(sim.people.map(p => p.id));
   const children = new Map<number, Child>();
   const tpd = sim.config.time.ticksPerDay;
+  // Capture the decision that actually came out of `Brain.think`; `lastScores`
+  // is only the inspector's latest table, and an action can end as `idle`
+  // during the same tick. This keeps the audit causal without changing a draw.
+  const chosenThisTick = new Map<number, string | null>();
+  const brain = (sim as unknown as { brain: Brain }).brain;
+  const think = brain.think.bind(brain);
+  brain.think = (person, ctx, allowed) => {
+    const chosen = think(person, ctx, allowed);
+    chosenThisTick.set(person.id, chosen);
+    return chosen;
+  };
 
   const exposure = new Map<string, { days: number; deaths: number; hunger: number; foodDays: number }>();
   const categoryOf = (p: Person): string | null => {
@@ -122,6 +133,7 @@ function run(scenarioName: string, seed: string, stepsArg: number | null) {
   };
   const lastCategory = new Map<number, string>();
   for (let i = 0; i < steps; i++) {
+    chosenThisTick.clear();
     sim.step();
     const tick = sim.time.tick;
     // Every stop or abandonment, by action and reason, split by category.
@@ -155,16 +167,17 @@ function run(scenarioName: string, seed: string, stepsArg: number | null) {
         bump(cutShort, prev);
       }
       prevAction.set(p.id, p.action);
-      // Decision audit: a hungry adult doing something that is not food. Read
-      // the last think's top six to tell "no food option was scored at all"
-      // from "a food option was scored and something outranked it".
-      if (tick % 10 === 0 && p.needs.hunger >= 50 && !FOOD_ACTIONS.has(p.action) && !p.isPlayer) {
+      // Decision audit: pair the exact action returned by this tick's think
+      // with its score table; a completed action may already read `idle` here.
+      const chosen = chosenThisTick.get(p.id);
+      if (chosenThisTick.has(p.id) && p.needs.hunger >= 50 && !FOOD_ACTIONS.has(chosen ?? '') && !p.isPlayer) {
         const rows = lastScores.get(p.id) ?? [];
         const food = rows.find(r => FOOD_ACTIONS.has(r.id));
         const band = (cat === 'nursing mothers' ? 'MOTHER ' : '') + (p.needs.hunger >= 75 ? 'h75+' : 'h50-74')
           + (p.carrying >= p.carryCapacity ? ' full-hands' : p.carrying > 0 ? ' holding' : ' empty-handed');
+        const outcome = `chose ${chosen ?? 'none'} · ended ${p.action}`;
         if (!food) {
-          bump(hungryAudit, `${band} no food option · doing ${p.action}`);
+          bump(hungryAudit, `${band} no food option · ${outcome}`);
           if (verbose && cat === 'nursing mothers' && p.action === 'idle' && examples++ < 6) {
             console.log(`  example: mother ${p.id} tick ${tick} at ${p.x.toFixed(0)},${p.y.toFixed(0)} hunger ${p.needs.hunger.toFixed(0)} top ${rows.map(r => r.id + ':' + r.score.toFixed(2)).join(' ')}`);
           }
@@ -189,7 +202,7 @@ function run(scenarioName: string, seed: string, stepsArg: number | null) {
             full ? 'hands-full' : '',
           ].filter(Boolean).join(' · '));
         }
-        else bump(hungryAudit, `${band} ${food.id} outranked by ${rows[0]!.id} · doing ${p.action}`);
+        else bump(hungryAudit, `${band} ${food.id} scored · ${outcome}`);
         bump(hungryTotals, band);
         if (p.order !== null) bump(hungryAudit, `${band} [under order ${p.order}]`);
       }
@@ -269,7 +282,7 @@ function run(scenarioName: string, seed: string, stepsArg: number | null) {
     if (k === 'nursing_sessions' || k === 'wet_nursing_sessions') bump(nursingCounts, k, v as number);
   }
   telemetry.disable();
-  return { sim, children, tpd, steps };
+  return { sim, children, tpd, steps, counters: telemetry.snapshot() };
 }
 
 function top(m: Map<string, number>, n = 8, total?: number): string {
@@ -289,6 +302,7 @@ const seenNotices = new WeakSet<object>();
 const nursingCounts = new Map<string, number>();
 const budget = new Map<string, Map<string, number>>();
 const cutShort = new Map<string, number>();
+const foodSearch = new Map<string, number>();
 const prevAction = new Map<number, string>();
 const aggExposure = new Map<string, { days: number; deaths: number; hunger: number; foodDays: number }>();
 const deathCauseByCat = new Map<string, number>();
@@ -311,7 +325,11 @@ const agg = {
   motherLostWhile: new Map<string, number>(),
 };
 for (const seed of seeds) {
-  const { sim, children, tpd } = run(scenario, seed, steps);
+  const { sim, children, tpd, counters } = run(scenario, seed, steps);
+  for (const key of ['food_exploration_offered', 'food_exploration_beyond_home_offered', 'food_exploration_no_frontier',
+    'action_target_from_memory_forage', 'remembered_empty_walk', 'stale_memory_resource_empty']) {
+    bump(foodSearch, key, counters[key] ?? 0);
+  }
   const dpy = sim.time.daysPerYear;
   for (const c of children.values()) {
     agg.born++;
@@ -374,6 +392,7 @@ console.log(`STOPS AND ABANDONMENTS (category: action/reason)`);
 for (const [k, v] of [...stops.entries()].sort((a, b) => b[1] - a[1]).slice(0, 30)) console.log(`  ${String(v).padStart(6)}  ${k}`);
 console.log(`BABY CARE CUT SHORT ${[...cutShort.values()].reduce((a, b) => a + b, 0)} times: ${top(cutShort, 12)}`);
 console.log(`HUNGER RELIEF    ${top(agg.relief)}`);
+console.log(`FOOD SEARCH DIAGNOSTICS  ${[...foodSearch.entries()].map(([k, v]) => `${k} ${v}`).join(' · ')}`);
 console.log(`DANGER TICKS (hunger or thirst >= 70), by`);
 console.log(`  mother         ${top(agg.motherDuringDanger, 14)}`);
 console.log(`  father         ${top(agg.fatherDuringDanger, 10)}`);
