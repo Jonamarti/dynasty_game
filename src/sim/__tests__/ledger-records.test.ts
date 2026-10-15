@@ -69,6 +69,7 @@ describe('execution ledger records', () => {
     sim.watchedUses.push({ personId: p!.id, use: { ours: false, watched: true, seen: q!, basis: 'seen' } });
     sim.helpCalls.push({ callerId: q!.id, x: 14.5, y: 20 });
     sim.insights.push({ personId: p!.id, text: 'new idea', kind: 'idea' });
+    sim.insights.push({ personId: q!.id, text: 'site was shelved', kind: 'setback', x: 21.5, y: 12.5 });
     const internal = sim as unknown as Record<string, any>;
     internal.territoryPermissions.set(`${p!.id}:${bandB!.id}`, sim.time.day + 2);
     internal.feudEvents.add(801);
@@ -100,6 +101,7 @@ describe('execution ledger records', () => {
     expect(restored.succession?.died).toBe(q);
     expect(restored.succession?.heir).toBe(p);
     expect(restored.watchedUses[0]?.use.seen).toBe(q);
+    expect(restored.insights).toContainEqual({ personId: q!.id, text: 'site was shelved', kind: 'setback', x: 21.5, y: 12.5 });
     expect(restored.territoryPermissions.get(`${p!.id}:${bandB!.id}`)).toBe(sim.time.day + 2);
     expect(restored.pendingVerdicts[0]?.kind).toBe('theft');
     expect(restored.sightings.get(bandA!.id)?.get(q!.id)).toEqual({ tick: sim.time.tick, bandId: bandB!.id });

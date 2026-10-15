@@ -16,7 +16,7 @@ import { Tree } from '../entities/Tree.ts';
 import { workProgressOf } from '../core/Progress.ts';
 import { PATIENCE } from '../systems/MovementSystem.ts';
 import { Person } from '../entities/Person.ts';
-import { BUILDINGS, type Building } from '../entities/Building.ts';
+import { BUILDINGS, Building } from '../entities/Building.ts';
 import { menaceOver, orderCost } from '../social/Authority.ts';
 import { telemetry } from '../core/Telemetry.ts';
 
@@ -200,6 +200,27 @@ describe('stores and construction controls', () => {
     for (let i = 0; i < sim.config.time.ticksPerDay * 14; i++) sim.step();
     expect(site!.complete).toBe(false);
     expect(sim.buildings.some(building => building.id === id)).toBe(true);
+  });
+
+  it('reports an NPC site being shelved at the site and in the proposer’s chronicle', () => {
+    const sim = new Simulation(SMALL);
+    const player = sim.livingPeople()[0]!;
+    const sponsor = sim.livingPeople().find(person => person.id !== player.id && person.bandId === player.bandId)!;
+    const site = new Building(BUILDINGS.windbreak!, Math.round(player.x) + 7,
+      Math.round(player.y), player.bandId, sim.ids);
+    site.sponsorId = sponsor.id;
+    sim.buildings.push(site);
+    sim.buildingsById.set(site.id, site);
+    const abandon = (sim as unknown as { abandonSite(building: Building): void }).abandonSite.bind(sim);
+    abandon(site);
+
+    const text = sim.insights.find(notice => notice.personId === sponsor.id)?.text;
+    expect(text).toContain('was shelved');
+    expect(sim.insights.find(notice => notice.text === text)).toMatchObject({
+      x: site.centerX, y: site.centerY, kind: 'setback',
+    });
+    expect(sponsor.chronicle.at(-1)?.text).toBe(text);
+    expect(sim.buildings.some(building => building.id === site.id)).toBe(false);
   });
 });
 

@@ -2515,16 +2515,18 @@ function reportInsights(): void {
   for (const notice of notices) {
     const person = sim.peopleById.get(notice.personId);
     if (!person) continue;
+    const x = notice.x ?? person.x;
+    const y = notice.y ?? person.y;
     const mine = person.isPlayer || person.id === commanding?.id;
     if (!mine) {
       if (!observer || !observer.alive) continue;
-      const dx = person.x - observer.x;
-      const dy = person.y - observer.y;
+      const dx = x - observer.x;
+      const dy = y - observer.y;
       if (Math.sqrt(dx * dx + dy * dy) > sim.config.sightRadius) continue;
     }
     const color = notice.kind === 'setback' ? '#e0705c'
       : notice.kind === 'gain' ? '#c88ad8' : '#8ab4d8';
-    renderer.floaters.push(person.x, person.y, notice.text,
+    renderer.floaters.push(x, y, notice.text,
       { color, boxed: person.isPlayer, ttl: 3.4 });
   }
 }

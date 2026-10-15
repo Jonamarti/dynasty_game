@@ -5633,3 +5633,10 @@ refugios por banda de 10 personas y la pareja debe compartir el mismo. El resto
 es oferta de cobijo (M16: cuevas, refugio de ramas y hojas, mantenimiento como
 tope natural). Abierto: el rótulo sobre una obra retirada por el planificador
 (R6, plan 2.2b); hoy solo queda la línea en la crónica del proponente.
+
+**Actualización 2026-10-15 — R6, plan 2.2b resuelto:** la retirada ahora añade
+un aviso de contratiempo anclado a la ubicación de la obra y conserva la línea
+en la crónica del proponente. La pantalla solo muestra el aviso cuando la obra
+está al alcance visual (salvo que el proponente sea el personaje seguido). La
+prueba cubre ambos registros y la persistencia de las coordenadas; ver
+`docs/changelog.md`.

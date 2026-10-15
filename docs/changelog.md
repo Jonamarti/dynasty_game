@@ -16470,3 +16470,13 @@ en Windows y pasan al repetir). Diagnóstico: la puerta de techo de la fase 18
 descarta ~93% de las concepciones y explica `recovered` 0/N. Sin cambios de
 código ni de parámetros; docs-only, sin subir versión. Ver
 [m15_calibration.md](m15_calibration.md).
+## 2026-10-15 — M15 2.2b: la retirada de una obra NPC se explica en el lugar
+
+La crónica del proponente ya explicaba la retirada, pero no se mostraba nada
+junto a la obra que desaparecía. El planificador ahora publica el mismo motivo
+como aviso de contratiempo anclado a las coordenadas del sitio; la interfaz lo
+presenta en el mapa solo si el jugador puede verlo (o sigue al proponente).
+Los avisos con ubicación se conservan en el checkpoint, y se validan como
+coordenadas finitas emparejadas. Se mantiene la exención de obras marcadas por
+el jugador. Captura: `artifacts/screenshots/m15-site-abandonment-2026-10-15/`.
+Versión `0.15.151-alpha`.

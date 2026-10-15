@@ -220,6 +220,9 @@ export interface InsightNotice {
   personId: number;
   text: string;
   kind: 'idea' | 'gain' | 'setback';
+  /** Optional world position for notices about a place rather than the person. */
+  x?: number;
+  y?: number;
 }
 
 /**
@@ -5767,12 +5770,18 @@ export class Simulation {
    */
   private abandonSite(site: Building): void {
     const sponsor = site.sponsorId === null ? undefined : this.peopleById.get(site.sponsorId);
-    if (sponsor?.alive) {
+    if (sponsor) {
+      const text = t('The {building} they proposed was shelved: nobody worked on it for days',
+        { building: t(site.def.label) });
       sponsor.chronicle.push({
         tick: this.time.tick, ageDays: sponsor.age, kind: 'suffered',
-        text: t('The {building} they proposed was shelved: nobody worked on it for days',
-          { building: t(site.def.label) }),
+        text,
       });
+      // The chronicle is durable, but only visible when the proponent's life
+      // is selected. Put the same explanation over the place being cleared so
+      // the player can see why a site disappeared even when its sponsor is away.
+      this.insights.push({ personId: sponsor.id, text, kind: 'setback', x: site.centerX, y: site.centerY });
+      if (this.insights.length > this.interruptionCap) this.insights.shift();
     }
     this.removeBuilding(site);
   }

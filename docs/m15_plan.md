@@ -1,3 +1,13 @@
+**Avance del 2026-10-15 — fase 2.2b, R6: motivo al archivar obras.** Cuando el
+planificador retira una obra estancada de un NPC, ahora deja el motivo en la
+crónica del proponente y lo muestra como aviso sobre el lugar de la obra,
+respetando el alcance visible del jugador. El aviso puntual conserva sus
+coordenadas en el checkpoint. La obra marcada por el jugador sigue exenta.
+Pruebas en `orders.test.ts` y `ledger-records.test.ts`; captura en
+`artifacts/screenshots/m15-site-abandonment-2026-10-15/`. Versión
+`0.15.151-alpha`. La calibración de fase 41 y los otros pendientes enumerados
+abajo siguen abiertos por falta de evidencia/decisión, no por este cambio.
+
 **Avance del 2026-10-14 — fase 17, lectura:** `read` usa cuatro poses de
 atención (`o0`–`o3`) durante el trabajo real sobre una inscripción. Reutilizalas poses generadas de pensamiento; no añade celdas de arte. El selector solo
 lee vida, acción, movimiento y `workedTicks` del lector. Typecheck y suite

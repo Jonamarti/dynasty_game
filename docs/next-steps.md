@@ -1,4 +1,4 @@
-## Estado vigente — 2026-10-13
+## Estado vigente — 2026-10-15
 
 M15 sigue siendo el único plan activo y **permanece abierto**. El estado
 autoritativo de sus fases es [m15_plan.md](m15_plan.md); esta página conserva
@@ -31,6 +31,9 @@ el diario de decisiones y entregas históricas debajo de este resumen.
   consume en invierno de forma suficiente; no se afirma mejora económica.
 - **Documentación de arquitectura:** revisada el 13 de octubre para reflejar
   los contratos vigentes; no cierra por sí sola la calibración de M15.
+- **R6, plan 2.2b (2026-10-15):** resuelto. La retirada de una obra NPC deja
+  un aviso localizado en el sitio además de la entrada en la crónica del
+  proponente; la UI respeta la visión del jugador.
 - **E2E UI, 2026-10-13:** la matriz de 172 casos pasa completa en
   `0.15.131-alpha`, incluidos `inscription-animation`, `tend-animation`,
   `ponder-animation` y `prototype-animation`. Para

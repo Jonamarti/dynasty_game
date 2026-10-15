@@ -202,9 +202,15 @@ export function fromLedgerRecord(input: unknown, peopleById?: ReadonlyMap<number
     return { callerId: raw.callerId as number, x: raw.x as number, y: raw.y as number };
   });
   const insights = input.insights.map(raw => {
-    if (!object(raw)) invalid('invalid insight'); exact(raw, ['personId', 'text', 'kind']); person(raw.personId);
+    if (!object(raw)) invalid('invalid insight');
+    exact(raw, raw.x !== undefined || raw.y !== undefined
+      ? ['personId', 'text', 'kind', 'x', 'y'] : ['personId', 'text', 'kind']);
+    person(raw.personId);
     if (typeof raw.text !== 'string' || !['idea', 'gain', 'setback'].includes(String(raw.kind))) invalid('invalid insight fields');
-    return { personId: raw.personId as number, text: raw.text, kind: raw.kind as InsightNotice['kind'] };
+    if ((raw.x === undefined) !== (raw.y === undefined) ||
+        (raw.x !== undefined && !finite(raw.x)) || (raw.y !== undefined && !finite(raw.y))) invalid('invalid insight location');
+    return { personId: raw.personId as number, text: raw.text, kind: raw.kind as InsightNotice['kind'],
+      ...(raw.x !== undefined ? { x: raw.x as number, y: raw.y as number } : {}) };
   });
   const territoryPermissions = new Map<string, number>();
   for (const entry of input.territoryPermissions) {
