@@ -28,11 +28,6 @@ export default defineConfig({
     viewport: { width: 1280, height: 800 },
     trace: 'retain-on-failure',
   },
-  webServer: {
-    command: 'npm run dev -- --port ' + PORT + ' --strictPort',
-    url: ORIGIN,
-    reuseExistingServer: true,
-    timeout: 60_000,
-  },
+  globalSetup: './e2e/global-setup.ts',
   outputDir: 'artifacts/playwright',
 });

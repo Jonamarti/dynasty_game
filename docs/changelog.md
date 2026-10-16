@@ -16801,3 +16801,20 @@ local de 60 s y ahora documentan la causa junto a la prueba. `herding` y
 `determinism` tardaron 2,56 s y 3,93 s. Las cuatro suites aisladas pasaron; no
 se modificó el timeout global ni la lógica del juego.
 
+## 2026-10-16 — M16 1.2 T4/E15: cerrar Vite al terminar Playwright
+
+**Problema:** en Windows, Playwright terminaba los casos E2E y dejaba Vite
+activo; el proceso de pruebas se quedaba detenido durante el cierre.
+
+**Causa:** el servidor iniciado mediante el wrapper npm no quedaba bajo un
+handle que el teardown pudiera terminar de forma fiable.
+
+**Cambio:** `playwright.config.ts` usa ahora setup global propio. Este arranca
+Vite directamente, devuelve una función que conserva el handle del proceso y
+lo cierra al terminar; la función además falla si el puerto sigue respondiendo.
+El primer intento con `taskkill` fue rechazado por Windows y se descartó.
+
+**Verificación:** typecheck pasó; el spec `version.spec.ts` pasó (1/1) en el
+puerto 5399 y `Get-NetTCPConnection` confirmó que no quedó listener. Falta la
+doble pasada de E2E completa exigida como gate de la fase 1.2.
+
