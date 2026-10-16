@@ -16818,3 +16818,19 @@ El primer intento con `taskkill` fue rechazado por Windows y se descartó.
 puerto 5399 y `Get-NetTCPConnection` confirmó que no quedó listener. Falta la
 doble pasada de E2E completa exigida como gate de la fase 1.2.
 
+## 2026-10-16 — M16 1.2 T5: verificar lo que fotografía la gira
+
+**Problema:** varias capturas podían guardar un panel vacío o una pantalla
+distinta de la que pretendían documentar, sin que la gira fallara.
+
+**Causa:** la mayoría de los pasos disparaban la captura sin comprobar que el
+menú, panel, gráfico o lienzo esperado siguiera visible en ese momento.
+
+**Cambio:** las 41 capturas ahora pasan por una ayuda que exige visibilidad de
+su superficie. La comprobación del panel de equipo cuenta sus once ranuras
+actuales; la captura del menú del bebé exige una opción radial visible. Se
+guardaron las 41 imágenes bajo `artifacts/verification/m16-1.2/shots/`.
+
+**Verificación:** `npm.cmd run shots` pasó 18/18; el puerto 5399 quedó sin
+listener tras el teardown.
+

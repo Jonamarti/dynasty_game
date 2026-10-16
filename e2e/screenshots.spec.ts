@@ -8,6 +8,16 @@ import { test, expect } from '@playwright/test';
 
 const DIR = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots';
 
+/** A tour frame is useful only if its intended surface is actually visible. */
+async function capture(
+  page: import('@playwright/test').Page,
+  path: string,
+  surface: string,
+): Promise<void> {
+  await expect(page.locator(surface).first()).toBeVisible();
+  await page.screenshot({ path });
+}
+
 /**
  * Clicks something and takes it out of the chooser.
  *
@@ -46,12 +56,12 @@ test('tour', async ({ page }) => {
   await page.goto('/?seed=tour&skipIntro=1');
   await expect(page.locator('.hud-clock')).not.toBeEmpty({ timeout: 15000 });
   await page.waitForTimeout(800);
-  await page.screenshot({ path: DIR + '/01-start.png' });
+  await capture(page, DIR + '/01-start.png', '.hud-clock');
 
   // The radial menu over open ground.
   await page.locator('#view').click({ button: 'right', position: { x: 700, y: 430 } });
   await page.waitForTimeout(250);
-  await page.screenshot({ path: DIR + '/02-radial.png' });
+  await capture(page, DIR + '/02-radial.png', '.radial');
   await page.keyboard.press('Escape');
 
   // Let a few in-game days pass so people meet, gossip and build.
@@ -59,7 +69,7 @@ test('tour', async ({ page }) => {
   await page.waitForTimeout(9000);
 
   await page.locator('.hud-tab', { hasText: 'Ties' }).click();
-  await page.screenshot({ path: DIR + '/03-ties.png' });
+  await capture(page, DIR + '/03-ties.png', '#hud .hud-panel');
 
   // A stranger: what the inspector will and will not tell you.
   const stranger = await page.evaluate(() => {
@@ -77,12 +87,12 @@ test('tour', async ({ page }) => {
     await page.mouse.click(stranger.x, stranger.y);
     await page.locator('.hud-tab', { hasText: 'Self' }).click();
     await page.waitForTimeout(200);
-    await page.screenshot({ path: DIR + '/07-stranger.png' });
+    await capture(page, DIR + '/07-stranger.png', '#hud .hud-panel');
     await page.locator('.hud-tab', { hasText: 'Life' }).click();
   }
 
   await page.locator('.hud-tab', { hasText: 'Life' }).click();
-  await page.screenshot({ path: DIR + '/04-life.png' });
+  await capture(page, DIR + '/04-life.png', '#hud .hud-panel');
 
   // The mind: an idea mid-lifecycle, and a refined design beside it. Staged
   // rather than waited for, because a two-year run is what it takes to see one
@@ -121,7 +131,7 @@ test('tour', async ({ page }) => {
     await unproven.first().hover();
     await page.waitForTimeout(250);
   }
-  await page.screenshot({ path: DIR + '/12-techweb.png' });
+  await capture(page, DIR + '/12-techweb.png', '.techweb-card');
   await page.keyboard.press('Escape');
   await page.waitForTimeout(200);
 
@@ -132,14 +142,14 @@ test('tour', async ({ page }) => {
   const viewport = page.viewportSize();
   await page.setViewportSize({ width: viewport?.width ?? 1280, height: 1160 });
   await page.waitForTimeout(500);
-  await page.screenshot({ path: DIR + '/04-mind.png' });
+  await capture(page, DIR + '/04-mind.png', '#hud .hud-panel');
   await page.setViewportSize({ width: viewport?.width ?? 1280, height: viewport?.height ?? 800 });
   await page.waitForTimeout(300);
 
   // Build mode, with the locked designs visible.
   await page.keyboard.press('b');
   await page.waitForTimeout(300);
-  await page.screenshot({ path: DIR + '/05-build.png' });
+  await capture(page, DIR + '/05-build.png', '.hud-buildbar');
   await page.keyboard.press('Escape');
 
   // The succession screen: what a life comes to.
@@ -150,7 +160,7 @@ test('tour', async ({ page }) => {
     d.sim.player?.die('a fall from the rocks');
   });
   await page.waitForTimeout(600);
-  await page.screenshot({ path: DIR + '/08-succession.png' });
+  await capture(page, DIR + '/08-succession.png', '.succession-card');
   await page.locator('.succession-go').click();
   await page.waitForTimeout(300);
 
@@ -177,9 +187,9 @@ test('tour', async ({ page }) => {
   });
   if (tree) {
     await clickThrough(page, tree.x, tree.y, '\u{1F333}');
-    await page.screenshot({ path: DIR + '/09-tree.png' });
+    await capture(page, DIR + '/09-tree.png', '#hud .hud-panel');
     await clickThrough(page, tree.x, tree.y, '\u{1F333}', 'right');
-    await page.screenshot({ path: DIR + '/10-tree-menu.png' });
+    await capture(page, DIR + '/10-tree-menu.png', '.radial');
     if (await page.locator('.radial').isVisible()) await page.keyboard.press('Escape');
   }
   // A missed world target leaves no radial for Escape to close, so older tour
@@ -237,13 +247,13 @@ test('tour', async ({ page }) => {
   });
   await page.locator('.hud-tab', { hasText: 'Kit' }).click();
   await page.waitForTimeout(250);
-  await page.screenshot({ path: DIR + '/11-kit.png' });
+  await capture(page, DIR + '/11-kit.png', '#hud .hud-panel');
 
   // Zoom out over the island.
   await page.locator('#view').hover();
   for (let i = 0; i < 10; i++) await page.mouse.wheel(0, 120);
   await page.waitForTimeout(500);
-  await page.screenshot({ path: DIR + '/06-island.png' });
+  await capture(page, DIR + '/06-island.png', 'canvas#view');
 });
 
 test('M15 phase 7 command cost estimate', async ({ page }) => {
@@ -312,17 +322,17 @@ test('M15 phase 7 command cost estimate', async ({ page }) => {
   await page.mouse.click(clear!.x, clear!.y, { button: 'right' });
   const walk = page.locator('.radial-item', { hasText: 'Walk here' });
   await expect(walk).toContainText(/almost certain|may well obey|uncertain|unlikely to obey/);
-  await page.screenshot({ path: DIR + '/m15-7-command-cost.png' });
+  await capture(page, DIR + '/m15-7-command-cost.png', '.radial');
 });
 
 test('M15 2i observer map and fog toggle', async ({ page }) => {
   await page.goto('/?seed=m15-2i-fog&skipIntro=1');
   await expect(page.locator('.hud-clock')).not.toBeEmpty({ timeout: 15_000 });
   await page.waitForTimeout(1200);
-  await page.screenshot({ path: DIR + '/m15-2i-fog-visible-map.png' });
+  await capture(page, DIR + '/m15-2i-fog-visible-map.png', 'canvas#view');
   await page.keyboard.press('v');
   await page.waitForTimeout(100);
-  await page.screenshot({ path: DIR + '/m15-2i-fog-visible-observer.png' });
+  await capture(page, DIR + '/m15-2i-fog-visible-observer.png', 'canvas#view');
 });
 
 test('M15 2i corrected fog after memory updates', async ({ page }) => {
@@ -337,7 +347,7 @@ test('M15 2i corrected fog after memory updates', async ({ page }) => {
     d.sim.time.tick = Math.floor(d.sim.config.time.ticksPerDay / 2);
   });
   await page.waitForTimeout(100);
-  await page.screenshot({ path: DIR + '/m15-2i-fog-black-unvisited.png' });
+  await capture(page, DIR + '/m15-2i-fog-black-unvisited.png', 'canvas#view');
   await page.evaluate(() => {
     const d = (window as unknown as { __dynasty: {
       sim: { player: { x: number; y: number; placeMemory: {
@@ -363,7 +373,7 @@ test('M15 2i corrected fog after memory updates', async ({ page }) => {
     }
   });
   await page.waitForTimeout(150);
-  await page.screenshot({ path: DIR + '/m15-2i-fog-stable-visited.png' });
+  await capture(page, DIR + '/m15-2i-fog-stable-visited.png', 'canvas#view');
 });
 
 test('the four seasons', async ({ page }) => {
@@ -412,7 +422,7 @@ test('the four seasons', async ({ page }) => {
     // the landscape shot is not covered by messages from weeks of past work.
     await page.evaluate(() => (window as any).__dynasty.renderer.floaters.clear());
     await page.waitForTimeout(50);
-    await page.screenshot({ path: `${DIR}/13-season-${season}.png` });
+    await capture(page, `${DIR}/13-season-${season}.png`, 'canvas#view');
   }
 });
 
@@ -432,7 +442,7 @@ test('the tribe graph, flat and in ranks', async ({ page }) => {
 
   await page.keyboard.press('t');
   await page.waitForTimeout(400);
-  await page.screenshot({ path: DIR + '/14-tribe-flat.png' });
+  await capture(page, DIR + '/14-tribe-flat.png', '.tribegraph-card');
   await page.keyboard.press('Escape');
 
   await page.evaluate(() => {
@@ -466,7 +476,7 @@ test('the tribe graph, flat and in ranks', async ({ page }) => {
 
   await page.keyboard.press('t');
   await page.waitForTimeout(400);
-  await page.screenshot({ path: DIR + '/15-tribe-ranks.png' });
+  await capture(page, DIR + '/15-tribe-ranks.png', '.tribegraph-card');
   await page.keyboard.press('Escape');
 });
 
@@ -477,12 +487,12 @@ test('the menu and the settings screen', async ({ page }) => {
   await page.keyboard.press('Escape');
   await expect(page.locator('.pausemenu')).toBeVisible();
   await page.waitForTimeout(200);
-  await page.screenshot({ path: DIR + '/20-menu.png' });
+  await capture(page, DIR + '/20-menu.png', '.pausemenu');
 
   await page.locator('.pausemenu button', { hasText: 'Settings' }).click();
   await expect(page.locator('.settings')).toBeVisible();
   await page.waitForTimeout(200);
-  await page.screenshot({ path: DIR + '/21-settings.png' });
+  await capture(page, DIR + '/21-settings.png', '.settings');
 
   // And again at the far end of the slider, so the record shows what a
   // difficulty actually does to the numbers under it.
@@ -490,7 +500,7 @@ test('the menu and the settings screen', async ({ page }) => {
   await difficulty.fill('4');
   await difficulty.dispatchEvent('input');
   await page.waitForTimeout(200);
-  await page.screenshot({ path: DIR + '/22-settings-extreme.png' });
+  await capture(page, DIR + '/22-settings-extreme.png', '.settings');
 });
 
 test('the screen the game opens on', async ({ page }) => {
@@ -500,12 +510,12 @@ test('the screen the game opens on', async ({ page }) => {
   await page.locator('.worldpicker-island').click({ timeout: 20_000 });
   await expect(page.locator('.settings')).toBeVisible({ timeout: 15_000 });
   await page.waitForTimeout(250);
-  await page.screenshot({ path: DIR + '/19-start.png' });
+  await capture(page, DIR + '/19-start.png', '.settings');
 
   await page.locator('.settings button', { hasText: 'Begin' }).click();
   await expect(page.locator('.newgame')).toBeVisible();
   await page.waitForTimeout(250);
-  await page.screenshot({ path: DIR + '/19b-newgame-after-settings.png' });
+  await capture(page, DIR + '/19b-newgame-after-settings.png', '.newgame-card');
 });
 
 test('M15 phase 4 idea born from a chronic want', async ({ page }) => {
@@ -527,7 +537,7 @@ test('M15 phase 4 idea born from a chronic want', async ({ page }) => {
   const story = page.getByText('wanted warmth through one cold night too many, with flint in hand');
   await story.scrollIntoViewIfNeeded();
   await expect(story).toBeInViewport();
-  await page.screenshot({ path: DIR + '/m15-4-wanting-idea.png' });
+  await capture(page, DIR + '/m15-4-wanting-idea.png', '#hud .hud-panel');
 });
 
 test('M15 phase 6 project proposal menu', async ({ page }) => {
@@ -565,14 +575,14 @@ test('M15 phase 6 project proposal menu', async ({ page }) => {
   await clickThrough(page, point!.x, point!.y, '\u{1F464}', 'right');
   const group = page.locator('.radial-item', { hasText: 'Ask for help with...' });
   await expect(group).toBeVisible();
-  await page.screenshot({ path: DIR + '/m15-6-propose-menu.png' });
+  await capture(page, DIR + '/m15-6-propose-menu.png', '.radial');
   // Radial buttons fan over the full circle; one neighbor can overlap this
   // small group label, so activate the visible group through its DOM click.
   await group.evaluate((element: HTMLButtonElement) => element.click());
   const projects = page.locator('.radial-item', { hasText: 'Help with' });
   await expect(projects).toHaveCount(2);
   await expect(projects.first()).toBeVisible();
-  await page.screenshot({ path: DIR + '/m15-6-propose-projects.png' });
+  await capture(page, DIR + '/m15-6-propose-projects.png', '#hud .hud-panel');
 });
 
 test('M15 phase 11a equipment slots', async ({ page }) => {
@@ -581,14 +591,21 @@ test('M15 phase 11a equipment slots', async ({ page }) => {
   await page.locator('.hud-button', { hasText: 'Pause' }).click();
   await page.locator('.hud-tab', { hasText: 'Kit' }).click();
 
-  // Five slots, all empty: `Person.equipment` has no writer until phase 11c,
-  // so this is what every player sees until then — but the space for it is
-  // there, which is the point of shipping the scaffold ahead of what fills it.
+  // Five carrying slots plus six garment slots; all eleven are empty in this seed.
+  // The old five-slot assertion stopped counting after garments gained slots.
   const equipment = page.locator('.hud-section', { hasText: 'Equipment' });
   await expect(equipment).toBeVisible();
-  const slots = page.locator('.hud-sub', { hasText: 'empty' });
-  await expect(slots).toHaveCount(5);
-  await page.screenshot({ path: DIR + '/m15-11a-equipment-slots.png' });
+  const slotCount = await equipment.evaluate(section => {
+    let next = section.nextElementSibling;
+    let count = 0;
+    while (next && !next.classList.contains('hud-section')) {
+      if (next.classList.contains('hud-sub')) count++;
+      next = next.nextElementSibling;
+    }
+    return count;
+  });
+  expect(slotCount).toBe(11);
+  await capture(page, DIR + '/m15-11a-equipment-slots.png', '#hud .hud-panel');
 });
 
 test('M15 20 a mother carries and nurses her baby', async ({ page }) => {
@@ -638,7 +655,7 @@ test('M15 20 a mother carries and nurses her baby', async ({ page }) => {
   const picker = page.locator('.picker');
   if (await picker.isVisible()) await picker.locator('.picker-item').first().click();
   await page.waitForTimeout(300);
-  await page.screenshot({ path: DIR + '/m15-20-mother-carries-baby.png' });
+  await capture(page, DIR + '/m15-20-mother-carries-baby.png', '#hud .hud-panel');
 });
 
 test('M15 20b playing a mother: the baby in her arms, and a baby\'s own menu', async ({ page }) => {
@@ -699,8 +716,7 @@ test('M15 20b playing a mother: the baby in her arms, and a baby\'s own menu', a
   }
   await expect(page.locator('.radial-item', { hasText: 'Nurse' })).toBeVisible({ timeout: 5_000 });
   await expect(page.locator('.radial-item', { hasText: 'down here' })).toBeVisible();
-  await page.waitForTimeout(200);
-  await page.screenshot({ path: DIR + '/m15-20b-baby-menu.png' });
+  await capture(page, DIR + '/m15-20b-baby-menu.png', '.radial-item');
 });
 
 test('M15 20c berry bushes in their own seasons: a winter hedge', async ({ page }) => {
@@ -779,7 +795,7 @@ test('M15 20c berry bushes in their own seasons: a winter hedge', async ({ page 
     await (await rose.count() > 0 ? rose.first() : picker.locator('.picker-item').first()).click();
   }
   await page.waitForTimeout(300);
-  await page.screenshot({ path: DIR + '/m15-20c-bushes-in-winter.png' });
+  await capture(page, DIR + '/m15-20c-bushes-in-winter.png', 'canvas#view');
 });
 
 test('M15 21 wounds and fever show on the character sheet', async ({ page }) => {
@@ -808,7 +824,7 @@ test('M15 21 wounds and fever show on the character sheet', async ({ page }) => 
   await page.waitForTimeout(300);
   await expect(page.locator('.hud-wound-infected').first()).toBeVisible();
   await expect(page.locator('.hud-wound-fresh')).toBeVisible();
-  await page.screenshot({ path: DIR + '/m15-21-wounds-sheet.png' });
+  await capture(page, DIR + '/m15-21-wounds-sheet.png', '#hud .hud-panel');
 });
 
 test('M15 21d/22 a poisoned player shows the sickness and carries herbs', async ({ page }) => {
@@ -835,7 +851,7 @@ test('M15 21d/22 a poisoned player shows the sickness and carries herbs', async 
   await page.locator('.hud-tab', { hasText: 'Now' }).click();
   await page.waitForTimeout(300);
   await expect(page.locator('.hud-wound-infected').first()).toBeVisible();
-  await page.screenshot({ path: DIR + '/m15-22-poisoned-sheet.png' });
+  await capture(page, DIR + '/m15-22-poisoned-sheet.png', '#hud .hud-panel');
 });
 
 test('M15 25a the land has relief, and the ground says how high it is', async ({ page }) => {
@@ -876,7 +892,7 @@ test('M15 25a the land has relief, and the ground says how high it is', async ({
   await page.keyboard.press('v');
   for (let i = 0; i < 4; i++) await page.mouse.wheel(0, 300);
   await page.waitForTimeout(400);
-  await page.screenshot({ path: DIR + '/m15-phase25-2026-10-02/m15-25a-relief.png' });
+  await capture(page, DIR + '/m15-phase25-2026-10-02/m15-25a-relief.png', 'canvas#view');
 });
 
 // M15 phase 26: the menu offers to dig and to pile, and what has been moved
@@ -926,8 +942,8 @@ test('earth moved', async ({ page }) => {
   const box = (await page.locator('canvas#view').boundingBox())!;
   await page.mouse.click(box.x + box.width / 2 + 90, box.y + box.height / 2 + 70, { button: 'right' });
   await page.waitForTimeout(400);
-  await page.screenshot({ path: DIR + '/m15-phase26-2026-10-02/m15-26-dig-menu.png' });
+  await capture(page, DIR + '/m15-phase26-2026-10-02/m15-26-dig-menu.png', '.radial');
   await page.keyboard.press('Escape');
   await page.waitForTimeout(300);
-  await page.screenshot({ path: DIR + '/m15-phase26-2026-10-02/m15-26-trench-and-mound.png' });
+  await capture(page, DIR + '/m15-phase26-2026-10-02/m15-26-trench-and-mound.png', 'canvas#view');
 });
