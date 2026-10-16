@@ -1,3 +1,22 @@
+## 2026-10-16 — M16 0.2: actualizar el triaje
+
+**Problema:** el triaje se había escrito antes de cerrar M15 y trataba como
+abiertos varios defectos ya corregidos, además de omitir resultados recientes.
+
+**Causa:** el registro mezclaba diagnósticos leídos con fallos reproducidos y
+no enlazaba las últimas correcciones del changelog con sus filas de M16.
+
+**Cambio:** se verificaron T9/T10 y A5/A9/A10 contra la línea base actual; se
+marcaron cerrados los dos primeros y A9, y A5/A10 siguen como fallos activos.
+Se registraron los hallazgos de `docs/bugs.md` posteriores al 13-10 y se
+actualizaron N9, N16/N40, N21 y E7 con el alcance real de sus arreglos M15.
+No cambió código ni versión.
+
+**Verificación:** la línea base registrada contiene 186/186 casos E2E y
+2.339 pruebas unitarias aprobadas en 320 archivos. La lectura de `ActionCatalog`,
+`Simulation` y los tests vigentes confirma que A5 y A10 aún tienen las rutas
+descritas; el código y las pruebas de M15 cubren los tres efectos de A9.
+
 ## 2026-10-16 — M16 0.1: congelar la línea base de M15
 
 **Problema:** M16 empezaba sin un registro único que distinguiera los fallos

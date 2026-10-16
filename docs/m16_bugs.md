@@ -57,7 +57,7 @@ Los números de línea cambian; no te fíes de ellos.
 | N6 | Los edificios planeados no deben verse en la niebla; un edificio recordado que ya no existe se sigue viendo aunque se haya visto que no está; revisar otras entidades | A | 2.3 |
 | N7 | La imagen del edificio con tejado y sin tejado no encaja (las paredes no coinciden; la vista con tejado parece horizontal y no oblicua) | A | 2.6 |
 | N8 | La ropa, el hatillo, etc. tienen que equiparse. Error "manos llenas" al recoger un hatillo con las manos vacías y otro hatillo en el inventario | A + B | 2.4 (el error), 6.3 (equipar) |
-| N9 | ¿Los edificios planeados se cancelan solos, o los cancelan otros NPC? | A | 2.2 (respuesta abajo) |
+| N9 | ¿Los edificios planeados se cancelan solos, o los cancelan otros NPC? | A | 2.2 (respuesta abajo; obras del jugador protegidas en M15, verificar la regresión) |
 | N10 | El nivel de habilidad permite o bloquea edificios y tareas; hay que practicar; la división del trabajo sale de la destreza natural y de la práctica | B | 6.5 |
 | N11 | Los NPC ven el hatillo y no lo usan ni lo investigan. Quien conoce la técnica lo coge y se lo equipa; quien no, lo investiga y hace ingeniería inversa poco a poco. También con objetos de otra tribu | B | 6.3, 6.4 |
 
@@ -90,10 +90,10 @@ prueba falle.
 | ID | Nota (resumida) | Et. | Causa probable | Carril | Fase |
 |---|---|---|---|---|---|
 | N12 | La memoria del mapa fuera del círculo de visión no se actualiza bien: hay trozos recordados y otros negros, quizá donde el NPC actuó | A, P | Se recuerda lo que `observePlaces` toca al actuar, no lo visto al pasar. Comprobar si la memoria de casillas se escribe solo desde acciones | Percepción | 2.3 (se amplía) |
-| N16 | Trabajar en construir el hogar no avanza: se queda en 0 % | A, P | Sin reproducir. Sospechas: la obra espera materiales que nadie lleva (N40); o `dropStaleSites` (N9) o un requisito de `minSkill`/`clearing` la bloquea. Mirar `Building.progress` y el motivo de parada con `npm run why` | Obras | 2.15 |
+| N16 | Trabajar en construir el hogar no avanza: se queda en 0 % | A, P | M15 añadió que "trabajar en" reúna materiales y reanude la obra; parcialmente atendido, falta capability test de la hoguera y su límite de progreso | Obras | 2.15 |
 | N18 | No se puede equipar armadura de piel; la bolsa de piel se equipa sola en la cadera y no se puede quitar | A, P | `equipContainer` coloca por `container.slot`; el desequipado del jugador y la armadura (`armourOf`) pueden no tener ruta desde la pestaña de equipo (6.3 paso 2) | Capacidad y equipo | 2.16 |
 | N20 | Con hatillo y bolsa de piel equipados el inventario dice que hay hueco, el personaje "recoge", y el objeto desaparece del mundo y no aparece | A, P | Las capacidades usan el modelo agregado (`Carry.capacityFor`) y la recogida por montón (`Simulation.takeFromPile`) puede quitar del montón más de lo que `Person.inventory` admite. Prueba de conservación: suelo + inventario antes = después | Capacidad y equipo | 2.4 (se amplía) |
-| N21 | Mucha hambre, nada de comida alrededor, y no busca más lejos | A, P | Radio de búsqueda de comida acotado a lo visto o recordado (R8 de conocimiento). Falta una conducta de explorar cuando no hay candidata de comida | IA | 2.17 |
+| N21 | Mucha hambre, nada de comida alrededor, y no busca más lejos | A, P | M15 corrigió elecciones de comida accesible y el primer paso de exploración; sigue abierta la búsqueda sin fuente alcanzable (véase la medición del 15-10 en `bugs.md`) | IA | 2.17 |
 | N32 | No se distingue qué casillas de orilla dan barro; el menú dice "cavar aquí" / "cavar barro de la orilla" sin que se vea el yacimiento | A | Falta una capa visual o un motivo (R6) que diga por qué esa casilla sí/no | Interfaz | 2.18 |
 | N34 | Al llegar al borde del mapa sale "el agua era demasiado profunda para nadar" | A, P | **Leído en código:** `World.isWater` es `biomeAt(x,y)==='water'`; si `biomeAt` fuera de límites devuelve `'water'`, `MovementSystem.nudge` devuelve `too_deep` (`MovementSystem.ts`, línea ~393). Falta comprobar `biomeAt` | Mundo | 2.19 |
 | N36 | Tras explorar al este, el árbol de tribu y de familia salen vacíos ("todos muertos"); el río generado en la comarca nueva hace que la vuelta diga "la comarca vecina está bajo el mar" | A, P | Doble: (a) las vistas leen la banda del mapa activo y no la del jugador al cambiar de comarca; (b) la decisión de "bajo el mar" mira solo el borde de la comarca vecina | Mundo | 2.19 |
@@ -150,8 +150,8 @@ contradice la columna «Causa probable» de 1b, manda esta.
 
 | ID | Qué se leyó | Conclusión | Consecuencia para la fase |
 |---|---|---|---|
-| N9 | `BandSystem.dropStaleSites` (~l. 1987) | Sigue igual que el 05-10: sin mirar `site.playerPlaced` (el campo existe y se guarda) y sin aviso; solo `telemetry.count('site_abandoned')` y `ctx.abandonSite` → `Simulation.removeBuilding`. `siteProgress` sí se guarda (`LedgerRecords`) | 2.2 es un arreglo de dos líneas más el aviso R6. Barato: va en la ola 1 |
-| N16, N40 | `ActionSystem.doBuild` (~l. 2861) | Con `!site.materialsReady`: si el trabajador lleva algo que la obra quiere, `haul`; si no, `abandon('site_needs_materials')`. **No hay rama de ir a buscar.** La hoguera pide 4 palos y 2 sílex (`BUILDINGS.hearth`), así que «Trabajar en» una hoguera recién colocada con las manos vacías se para en 0 %. N16 es casi seguro N40 | 2.15: la rama nueva es «buscar el material que falta» reutilizando `gather_for_site`; no hace falta tocar `Building.progress` |
+| N9 | `BandSystem.dropStaleSites` (~l. 1987) | M15 corrigió la causa: conserva las obras `playerPlaced` y avisa al proponente cuando retira una obra NPC. La prueba existente cubre que el jugador no pierde su obra; falta el capability test del aviso por retirada NPC que exige la matriz M16 | 2.2: revisar ambas mitades de la expectativa |
+| N16, N40 | `ActionSystem.doBuild` (~l. 2861) | M15 añadió una búsqueda de materiales para el personaje asignado; el changelog registra que el test de órdenes termina la obra tras reunirlos. Aún falta el capability test de una hoguera con inventario vacío y el avance monótono / acotado | 2.15: conservar la extensión y verificar explícitamente los límites |
 | N8 | `Carry.itemCapacityFor`, `ITEMS.bundle`, `ActionCatalog` (`case 'pile'`) | El hatillo declara `hand: {perHand 1, perArms 1}`, va al hueco `shoulder` y solo acepta `long`. Con uno ya poseído, `itemCapacityFor('bundle')` da `max(1, ⌊1·vigor⌋ + 0 + 0)` = 1 y `canTake` niega el segundo. El menú, en cambio, habilita «Recoger» con la cuenta agregada (`carrying < carryCapacity`), y el texto de negativa que se ve es el genérico «manos llenas» | 2.4: decidir si un segundo hatillo se lleva en brazos (capacidad 2) o se niega con su motivo («ya llevas un hatillo al hombro»). El menú debe preguntar a `canTake` por objeto, no a la cuenta agregada |
 | N8 (2) | `Simulation.takeFromPile`, rama «todo» | Usa `break` cuando un montón no cabe: si el primer objeto del montón es un segundo hatillo, **no se intenta nada más**, aunque el resto quepa | 2.4: `continue`, con prueba. Cambia mundos (los NPC recogen montones con esta rama): `baseline:pin` |
 | N34 | `World.biomeAt`, `isWater`, `depthAt`, `isShallow`, `MovementSystem.nudge` | Confirmado: fuera de límites `biomeAt` devuelve `'water'`; `depthAt` 0, luego `isShallow` es **verdadero** fuera del mapa; `isWalkable` falso → `nudge` devuelve `too_deep` | 2.19: el borde no es agua para el movimiento del jugador. **No** cambiar `biomeAt` globalmente sin leer K1: en la isla clásica el borde sí es mar |
@@ -175,8 +175,8 @@ contradice la columna «Causa probable» de 1b, manda esta.
 | T6 | "`perf-budget` is a wall-clock check and it flakes hard" | oscila un 21 % según la carga de la máquina; el presupuesto de rendimiento está sin decidir | A + decisión |
 | T7 | "Ten seeds cannot resolve a change of under about ten points" | las cohortes no distinguen cambios pequeños | regla, ver protocolo |
 | T8 | "M15 fase 10 — `sim:seeds --scenario X --seeds N`" | corregido; las medidas de M15 anteriores al 29-09 con esa forma son sospechosas | regla |
-| T9 | "Seis e2e de `smoke.spec.ts` fallan" | dados por corregidos el 03-10 (74/74) | V |
-| T10 | "Suite base observada durante M15 fase 6a" | fallos de `herding.test.ts`; las suites recientes pasan enteras | V |
+| T9 | "Seis e2e de `smoke.spec.ts` fallan" | Verificado ya resuelto el 2026-10-16: la línea base M16 ejecutó las 186 specs sin fallos; salida en `artifacts/verification/m16-baseline/e2e.log` | cerrado en M15; regresión cubierta por `smoke.spec.ts` |
+| T10 | "Suite base observada durante M15 fase 6a" | Verificado ya resuelto el 2026-10-16: Vitest pasó 320 archivos, 2.339 pruebas; no reaparecieron los fallos de `herding.test.ts`. Salida en `artifacts/verification/m16-baseline/unit-tests.log` | cerrado en M15; suite completa |
 
 ## 3. Fallos de corrección (Bloque 2)
 
@@ -186,12 +186,12 @@ contradice la columna «Causa probable» de 1b, manda esta.
 | A2 | nota N9 | las obras se cancelan a los 6 días sin aviso, también las del jugador | A | 2.2 |
 | A3 | "M15 fase 20, tercera ronda" y nota N6 | la niebla conserva recuerdos de cosas que ya no están; obras planeadas visibles en la niebla | A | 2.3 |
 | A4 | nota N8 | "manos llenas" al recoger un hatillo | A | 2.4 |
-| A5 | "The radial menu's \"Pick up\" has no reach test" | recoger una pila lejana no exige acercarse | A, V | 2.5 |
+| A5 | "The radial menu's \"Pick up\" has no reach test" | Reproducido por lectura del flujo vigente: `ActionCatalog.ts` ofrece recoger solo según capacidad y `Simulation.takeFromPile` tampoco comprueba distancia | A | 2.5 |
 | A6 | nota N7 | arte de edificios con y sin tejado desalineado | A | 2.6 |
 | A7 | "Sueño animal pendiente" | el signo de alarma animal sigue tras expirar | A | 2.7 |
 | A8 | "M15 fase 26c: lo que las obras de tierra no hacen" | un foso que se llena aísla casillas pendientes y deja la obra a medias | A | 2.8 |
-| A9 | "Two effects bypass `techPower`" | la caza ignora el alcance del arma; la armadura protege a quien no sabe hacerla; refinar el enmangue no mejora la tala | A, V | 2.9 |
-| A10 | "The catalogue reads a stranger's knowledge" | el menú revela qué técnicas tiene un desconocido | A, V | 2.10 |
+| A9 | "Two effects bypass `techPower`" | Verificado ya corregido en M15: `armourOf` pasa por `techPower` (37i), `doHunt` usa el alcance del arma y el rendimiento del hacha se escala por `hafting`; `combat.test.ts`, `craft-nodes.test.ts` y pruebas de metales cubren los consumidores actuales | cerrado en M15; pruebas de combate y herramientas |
+| A10 | "The catalogue reads a stranger's knowledge" | Reproducido por lectura del flujo vigente: `personActions` consulta `other.knownTech` y `other.skills` para habilitar y describir `teach`/`discuss`; `Knowledge.ts` no media esa consulta | A | 2.10 |
 | A11 | "A sixth of all conversations are broken off for thirst" | `talk` no consulta si la sed ya aprieta antes de empezar | A | 2.11 |
 | A12 | "Floaters do not follow the entity" | los rótulos se quedan atrás | A, baja | 2.12 |
 | A13 | "M15 equipamiento: matriz roja y cobertura perdida" | 15 fallos nuevos y 12 pérdidas de aplicabilidad sin causa establecida | A | 0.1, 2.13 |
@@ -344,7 +344,7 @@ más **H** = herramienta o instrumento de prueba.
 | E4 | `bugs.md` «M15 paso 0 (D): la niebla…no se guarda» | ver N12 en 1d | A | PERCEPCION | 2.3 |
 | E5 | `bugs.md` fase 33, «El cargador no restaura la compartición de objetos» | guardar, cargar y avanzar 29 días da un nodo más en `objects.graph`: un objeto compartido pasa a dos copias. No se sabe si una mutación posterior diverge | A | HERR (persistencia) | 2.24 |
 | E6 | `bugs.md` «Compacto de raciones: `RangeError`…» y «Seguimiento de raciones aparcadas» | `RangeError: compact ration callback returned relief outside its request` al aparcar una comarca con `peoplePerBand` alto; **sigue abierta**. Otra exploración a 400 ticks dio `too many interruption notices` (se arregló un mecanismo; el caso largo no se atribuye) | A | MUNDO (frontera) | 2.25 |
-| E7 | `bugs.md` «M15 fase 35: avance de origen en bloque cruza el reloj de llegada» y «viaje de grupo no simula la comarca de destino» | `advancePeoples` debe llamarse tras **cada** `step`; un lote que cruza la llegada deja el origen con el reloj por delante y `serializeSave` lo rechaza. Cualquier herramienta o prueba que avance en bloque lo dispara | A | MUNDO (frontera) | 2.25 |
+| E7 | `bugs.md` «M15 fase 35: avance de origen en bloque cruza el reloj de llegada» y «viaje de grupo no simula la comarca de destino» | M15 fase 35 alineó el avance por lote al reloj de llegada; verificar round trip y guardado con la capability test de 2.25 | atendido en M15, verificar | MUNDO (frontera) | 2.25 |
 | E8 | `bugs.md` «combustible de antorcha y transferencias sociales automáticas» | las rutas sociales automáticas (reparaciones, exigencias) retiran directamente de `Inventory` sin metadatos de combustible: la llama se pierde y puede quedar una ranura sin dueño | A | CARGA | 2.26 |
 | E9 | `m16_notes.md` (14c) y código | `Person.age` está en **días**, pero `Brain` (vestir, curtir, quitarse por calor: `person.age >= 1`) y `ToolEquipment` (`age < 1` → `too_young_to_wear`) comparan con 1. Un bebé de dos días puede recibir la orden de ponerse una armadura | A | CARGA | 2.27 |
 | E10 | `bugs.md` «fase 29c: semillas y fuentes», auditoría del 06-10 | los escenarios clásicos `hearths`, `porters`, `scribes` y `conquest` meten claves de configuración que el codec estricto de checkpoint **no admite** | **H, bloqueante para 1.4** | HERR | 1.4 |
@@ -428,3 +428,20 @@ montado a mano, nombre = capacidad).
 | `m16-scout-identity` | N36 | tras explorar al este y volver, `currentIdentity` es la comarca donde está el jugador en cada paso del viaje |
 | `m16-load-keeps-sharing` | E5 | guardar, cargar y avanzar 20 días: `objects.graph` tiene el mismo número de nodos que sin guardar |
 | `m16-block-advance-across-arrival` | E7 | avanzar en un solo lote más allá de la llegada deja origen y destino con el mismo reloj, o se rechaza con motivo; nunca un guardado inválido |
+## 12. Entradas posteriores al 13-10 (actualizado 2026-10-16)
+
+Las entradas de `docs/bugs.md` posteriores al triaje del 13-10 quedan ligadas
+a una fase o a un gate ya existente. Los resultados de M15 se conservan como
+línea base y evidencia; no se convierten en una afirmación de mejora de M16.
+
+| Fecha / entrada en `bugs.md` | Etiqueta | Fase / destino | Resumen y estado |
+|---|---|---|---|
+| 14-10 — M15 12f: `lean` no muestra adopción de antorchas | C | 10.2 | 0/20 observaciones elegibles con luz activada y 0/20 en control; el mecanismo focal funciona, pero `lean` no ofrece oportunidad medida. Gate M15 abierto, sin ajuste. |
+| 14-10 — M15 fase 41: `generations` no supera los gates; diagnóstico de concepción y sueño | C | 10.2; bloque 14 | Recuperación 0/57 censurada y `answered` 58/72 (80,6%); la evidencia de techo escaso motiva la escalera de refugios. No se atribuyen causas que el proxy no mide. |
+| 15-10 — hambre crítica, exploración y `idle` | A + C | 2.17; 10.2 | M15 corrigió decisiones con comida accesible y probó el primer paso; aún no se identifica una fuente alcanzable cuando el hambre llega a 100. Conservar límites y mediciones como baseline. |
+| 15-10 — exceso visual de peces en costas largas; 16-10 — efecto económico de la distribución gaussiana | B + C | 15.3; 10.2 | La agrupación reduce la alfombra visual, pero no se midió el efecto sobre acceso, consumo, agotamiento, hambre o supervivencia. La cohorte parcial no cuenta como resultado. |
+| 16-10 — M15 32b: cadena agrícola no se ejercita en la muestra | C | 6.7; 10.2 | `farmers` no trabajó campos en las muestras de 40 y 100 días; la traza de `furrow` observó cereal recogido pero ninguna obra agrícola. Es una prioridad abierta del planificador, no una tasa cero medida. |
+| 16-10 — M15 41: KO corregido; atribución de `answered` aún abierta | A + C | 2.14; 10.2 | Se corrigió el reintento autónomo contra un objetivo inconsciente. El registro histórico no permite atribuirle los casos restantes de `answered`; el gate sigue abierto. |
+
+No aparece ninguna necesidad de fase nueva: cada entrada tiene un destino en la
+secuencia vigente de `docs/m16/README.md` §7.
