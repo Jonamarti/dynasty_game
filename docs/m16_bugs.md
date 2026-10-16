@@ -167,7 +167,7 @@ contradice la columna «Causa probable» de 1b, manda esta.
 
 | ID | Dónde en `bugs.md` | Qué pasa | Etiqueta |
 |---|---|---|---|
-| T1 | "M15 fase 21: lo que queda abierto" | `sim:check -- --scenario tiny` da 11 fallos con 0 pasos; en la matriz el mismo escenario pasa | A |
+| T1 | "M15 fase 21: lo que queda abierto" | Cerrado el 2026-10-16: `tools/headless.ts` ya corrigió el reenvío posicional en `21c9af5`. La prueba `headless-cli.test.ts` falla al restaurar el parseo roto (0 pasos frente a los 2.000 de `tiny`) y pasó dos veces con el código vigente | cerrado en M15; prueba de regresión M16 |
 | T2 | "Timeout de Vitest en GitHub Actions" | CI y el despliegue siguen aunque `npm test` falle (`continue-on-error`) | A |
 | T3 | "Tres tests de simulación exceden el límite fijo de cinco segundos" | `band`, `herding`, `determinism`, `grazing` agotan el tiempo con carga en paralelo | A |
 | T4 | "M12 health report" y "M15 fase 28: checkpoint compuesto" | Playwright aprueba todo y se queda esperando el cierre de Vite | A |

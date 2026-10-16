@@ -16773,3 +16773,17 @@ de 1,5× por comarca. La ejecución iniciada se canceló antes de completar un
 brazo; su resumen parcial no permite concluir nada sobre acceso, agotamiento,
 hambre o supervivencia. El detalle y el protocolo de continuación están en
 `docs/bugs.md` y `docs/m15_plan.md`. Sin cambio de comportamiento.
+## 2026-10-16 — M16 1.2 T1: cubrir el CLI de escenarios
+
+**Problema:** `sim:check -- --scenario tiny` llegó a informar fallos de salud tras
+ejecutar cero pasos, aunque la matriz sí recorría el escenario.
+
+**Causa:** un parser anterior confundía el argumento posicional reenviado con el
+número de pasos. La corrección ya estaba en `21c9af5`; faltaba una prueba que
+protegiera el horizonte configurado del escenario.
+
+**Cambio:** se añadió `headless-cli.test.ts`, que ejecuta `tiny` a través de
+`vite-node` y exige los 2.000 pasos configurados. El control negativo con el
+parseo roto produjo 0 pasos y falló; con la versión vigente, la prueba pasó dos
+veces. Se cerró T1 en `docs/m16_bugs.md`; sin cambio de producción ni versión.
+
