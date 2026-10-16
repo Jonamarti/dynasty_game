@@ -1,3 +1,14 @@
+## 2026-10-16 — M15 32b: cobertura agrícola aún sin medir
+
+La observación estacional de producción completa `farmers` y `salters` a
+tres semillas × cuarenta días. En `farmers` no se registró trabajo de campo
+ni procesado; no se interpreta como una tasa cero ni prueba un defecto del
+ejecutor. El escenario habitual dura cien días: se amplía la ventana antes
+de diagnosticar autonomía/materiales. En `salters` hay procesado en las cuatro
+estaciones, incluido gasto de grasa en productos no comestibles. Eso no
+calibra por sí mismo producción compacta ni ahorro por conservación.
+[Contrato y evidencia](m15_production_cohort_20261016.md).
+
 ## 2026-10-16 — M15: la prioridad 2,0 para buscar comida no mejora la supervivencia
 
 Cohortes emparejadas `lean`, 20 semillas y 24.000 pasos: el multiplicador de explorar por hambre 2,0 dio supervivencia media 1,8%, extinción 9/20 y 317 muertes adultas por hambre; con 0,28 fueron 2,9%, 10/20 y 323. El indicador corto `h75+` sin comida que explora y termina `idle` bajó aproximadamente 3%, pero la población final y la recuperación no mejoraron de forma consistente; nacimientos, violencia y pérdidas también divergieron. Se conserva 0,28. No se atribuye una mejora al peso 2,0.

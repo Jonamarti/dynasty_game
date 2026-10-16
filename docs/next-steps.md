@@ -4,6 +4,12 @@ M15 sigue siendo el único plan activo y **permanece abierto**. El estado
 autoritativo de sus fases es [m15_plan.md](m15_plan.md); esta página conserva
 el diario de decisiones y entregas históricas debajo de este resumen.
 
+- **Producción compacta (2026-10-16):** nuevo instrumento por escenario,
+  semilla y día/estación. `salters` ofrece procesado observado en las cuatro
+  estaciones; `farmers` no ofrece trabajo agrícola en la ventana de cuarenta
+  días y se está midiendo a cien. No se han elegido tasas para el compacto.
+  [Contrato y resultados](m15_production_cohort_20261016.md).
+
 - **NPCs hambrientos en `idle` (2026-10-16):** la cohorte emparejada de 20
   semillas `lean` no justifica aumentar el peso de búsqueda: a 2,0, `idle`
   con hambre alta bajó ~3%, pero supervivencia fue 1,8% y hubo 317 muertes

@@ -1,3 +1,11 @@
+**Avance del 2026-10-16 — 32b, observación estacional de producción:** el
+instrumento admite escenarios, semillas y días, conserva las transferencias
+reales de cada receta y separa los días al cruzar estaciones. La primera tanda
+`farmers`/`salters` (tres semillas, cuarenta días) tiene cobertura de procesado
+en las cuatro estaciones y ninguna de agricultura; se amplía esta última a
+cien días. No se eligen coeficientes ni se cierra correspondencia compacta.
+[Protocolo y evidencia](m15_production_cohort_20261016.md).
+
 **Pendiente: medir el efecto económico de agrupar los peces (2026-10-16).**
 La cohorte `fishers` prevista (20 semillas × 9.000 ticks) se canceló antes de
 completar el brazo gaussiano; el resumen parcial no sirve para comparar ni se

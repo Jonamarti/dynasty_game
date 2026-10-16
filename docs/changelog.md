@@ -1,3 +1,19 @@
+## 2026-10-16 — M15 32b: observar producción por escenario y estación
+
+`compact-food-cohort.ts` extiende la observación de trabajo y materiales a
+escenarios y semillas explícitos, separando días completos y estaciones. Usa
+el foco del juego y guarda cada semilla terminada con estado de completitud;
+rechaza sesiones de telemetría ajenas. Dos pruebas verifican el cruce de
+estación y la igualdad del checkpoint completo/RNG, además de rechazos sin
+efectos secundarios. Typecheck pasa; la suite completa y la matriz de esta
+sesión siguen en ejecución y no se presentan como verdes.
+
+La tanda de tres semillas × cuarenta días en `farmers` y `salters` ofrece
+procesado estacional, pero agricultura `n/a`; se amplía su horizonte antes
+de interpretar esa ausencia. No modifica comportamiento ni versión, no
+elige parámetros ni cierra `lod-matches-detail`.
+[Protocolo y evidencia](m15_production_cohort_20261016.md).
+
 ## 2026-10-16 — M15: la prioridad 2,0 para buscar comida no mejora la supervivencia
 
 Cohortes emparejadas `lean`, 20 semillas y 24.000 pasos: el multiplicador de explorar por hambre 2,0 dio supervivencia media 1,8%, extinción 9/20 y 317 muertes adultas por hambre; con 0,28 fueron 2,9%, 10/20 y 323. El indicador corto `h75+` sin comida que explora y termina `idle` bajó aproximadamente 3%, pero la población final y la recuperación no mejoraron de forma consistente; nacimientos, violencia y pérdidas también divergieron. Se conserva 0,28. No se atribuye una mejora al peso 2,0.
