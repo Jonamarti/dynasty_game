@@ -76,7 +76,7 @@ todavía no corresponde integrarlo en `master`.
 
 Screenshots: none; no UI change.
 
-## M16 1.1 — Medir el coste de verificación (2026-10-16, pendiente de commit)
+## M16 1.1 — Medir el coste de verificación (2026-10-16, `095d90c`)
 
 Goal: medir el tiempo de cada escenario, la suite unitaria y E2E para ordenar
 las futuras mejoras de herramientas.
