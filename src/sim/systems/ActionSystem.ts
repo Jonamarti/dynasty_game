@@ -480,6 +480,8 @@ interface InterruptionOptions {
   answers?: LethalNeed;
   /** This act answers the infant's needs, so its mother's needs do not cancel it. */
   ignoreNeeds?: boolean;
+  /** A starving adult is walking to discover food, so hunger cannot stop that leg. */
+  ignoreHunger?: boolean;
 }
 
 /** A cold worker may finish work whose product can actually warm them. */
@@ -1309,7 +1311,16 @@ export class ActionSystem {
     // score table. Thirst wins when both are past the line, as it kills first.
     const answers: LethalNeed = person.needs.thirst > workLimit(person, 'thirst', ctx.needs.workLimits)
       ? 'thirst' : 'hunger';
-    const stop = this.interruption(person, ctx, { ignoreLaden: true, answers });
+    // The 98-point cap is right for curiosity and water walks, but wrong when
+    // an adult has no food in hand and hunger itself sent them to find a
+    // frontier: hunger then stopped the first step and the brain chose that
+    // frontier again without moving. Let only that autonomous food search
+    // continue. Thirst, cold, danger, manual orders and children still apply.
+    const searchingForFood = !person.isChild && person.order === null && answers === 'hunger' &&
+      person.needs.hunger > ctx.needs.workLimits.hunger &&
+      bestFoodFor(person, undefined, ctx.motivation.cravings, ctx.motivation.beliefChoice) === null;
+    const stop = this.interruption(person, ctx, { ignoreLaden: true, answers,
+      ignoreHunger: searchingForFood });
     if (stop) {
       this.stop(person, stop, ctx, 'explore_ended_');
       return;
@@ -1485,16 +1496,16 @@ export class ActionSystem {
     if (!opts.ignoreNeeds) {
       if (person.needs.thirst + ctx.needs.thirstRate * ahead >
         workLimit(person, 'thirst', limits, opts.answers)) return 'thirsty';
-      // Exploring is the discovery leg of a food errand, not a general walk.
-      // Stopping it at the ordinary 90-point answer limit repeatedly cleared
-      // the frontier target before the first new food could be reached; the
-      // idle brain then chose the same frontier and stopped again. Give this
-      // one trip a narrow margin below starvation while thirst and cold keep
-      // their normal interruption rules.
-      const hungerLimit = opts.answers === 'hunger' && person.action === 'explore'
-        ? FOOD_SEARCH_HUNGER_LIMIT
-        : workLimit(person, 'hunger', limits, opts.answers);
-      if (person.needs.hunger + ctx.needs.hungerRate * ahead > hungerLimit) return 'hungry';
+      // Curiosity and water exploration keep a narrow margin below starvation.
+      // A food search with no edible pack contents opts into `ignoreHunger`
+      // above, because the hunger being answered cannot also cancel its first
+      // step. Thirst and cold retain their independent checks either way.
+      if (!opts.ignoreHunger) {
+        const hungerLimit = opts.answers === 'hunger' && person.action === 'explore'
+          ? FOOD_SEARCH_HUNGER_LIMIT
+          : workLimit(person, 'hunger', limits, opts.answers);
+        if (person.needs.hunger + ctx.needs.hungerRate * ahead > hungerLimit) return 'hungry';
+      }
       // Cold is read as it stands: its rate depends on the season and the roof
       // overhead, so projecting it forward from a per-tick constant would be a
       // guess dressed up as arithmetic.

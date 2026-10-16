@@ -10,6 +10,17 @@ o GPU. Las capturas están en
 abiertas porque aún no existe estado de colocación en el mundo.
 [Contrato](m15_infant_care_art_20261016.md). Versión `0.15.159-alpha`.
 
+## 2026-10-16 — M15: continuar la primera búsqueda urgente de comida
+
+Un adulto autónomo sin comida en el inventario ya no cancela por la misma
+hambre crítica el primer movimiento de `explore`. La guarda mantiene las
+interrupciones de sed, frío y peligro, y excluye niños, órdenes manuales y
+quien ya lleva comida. Veinte parejas de 24.000 pasos reducen los cortes por
+hambre 98,2%, pero la diferencia de supervivencia (+1,48 puntos; intervalo
+pareado aproximado al 95%: −0,14 a +3,10) no se resuelve; hambre crítica +0,98%
+y caminatas a recuerdos vacíos +7,46%. Se conserva el arreglo causal sin tocar
+pesos ni afirmar una ganancia de supervivencia. [Datos y límites](m15_hunger_resolution_20261016.md), [CSV](m15_hunger_search_cohort_20261016.csv). Versión `0.15.160-alpha`.
+
 ## 2026-10-16 — M15 32c: ampliar la cohorte del mundo de pueblos
 
 Se amplía la cohorte del mundo de pueblos de diez a veinte semillas, 200 años

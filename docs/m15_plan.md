@@ -2942,6 +2942,14 @@ plantas medicinales y una baya tóxica en su propia pasada de aparición, y
 **Check:** `wounds-fester-untended`, verificado contra un build en el que
 `tend` no cambia nada.
 
+**Avance del 2026-10-16 — primer paso al buscar comida con hambre crítica.**
+Si un adulto autónomo no lleva comida y `explore` responde a su hambre sobre
+el límite de trabajo, esa hambre no cancela el primer paso de la misma búsqueda.
+Sed, frío, peligro, niños y órdenes manuales conservan sus interrupciones.
+La cohorte emparejada de veinte semillas no demuestra un cambio fiable de
+supervivencia; se corrige el bucle mecánico sin cambiar pesos del scorer. Ver
+`m15_hunger_resolution_20261016.md`.
+
 ## Fase 22 — Crudo y podrido enferman (M14 fase 8c)
 
 **Detalle en `m14_plan.md` fase 8c.** Comer carne o pescado crudos tiene una
