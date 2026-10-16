@@ -14,4 +14,5 @@
 - **Resolution:** Created local branch `m16` at the plan-only M16 commit and
   added this diary scaffold before phase 0.1. The user's pre-existing change is
   preserved and excluded from phase commits. Phase 0.3 still needs to verify
-  the remaining rules, version note and branch setup.
+  the remaining rules and version note; its branch-creation step is already
+  done and should be recorded as such rather than repeated.

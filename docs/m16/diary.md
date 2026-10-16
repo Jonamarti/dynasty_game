@@ -1,6 +1,6 @@
 # M16 diary
 
-## M16 0.1 — Freeze the M15 baseline (2026-10-16, commit pending)
+## M16 0.1 — Freeze the M15 baseline (2026-10-16, `71e5729`)
 
 Goal: establish a fixed, reviewable starting point for M16.
 

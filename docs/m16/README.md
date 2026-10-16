@@ -303,7 +303,7 @@ A stage ends with the full level (§5) and a screenshot tour.
 
 | Step | Phase | Title | Status |
 |---|---|---|---|
-| 1 | [0.1](phases/0.1-baseline.md) | Freeze the M15 close as the baseline | todo |
+| 1 | [0.1](phases/0.1-baseline.md) | Freeze the M15 close as the baseline | done 71e5729 |
 | 2 | [0.2](phases/0.2-triage-refresh.md) | Refresh the triage | todo |
 | 3 | [0.3](phases/0.3-rules-and-version.md) | Rules, branch and version | todo |
 | 4 | [1.1](phases/1.1-timings.md) | Measure how long everything takes | todo |
