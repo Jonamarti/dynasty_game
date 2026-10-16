@@ -1,3 +1,25 @@
+## 2026-10-16 — M16 1.1: medir el coste de verificación
+
+**Problema:** las fases 1.5–1.7 necesitan saber qué parte de la verificación
+consume el tiempo y qué casos conviene optimizar primero.
+
+**Causa:** no había una medida serial de todas las claves de `SCENARIOS`, los
+archivos unitarios más lentos ni los specs E2E más costosos en la máquina actual.
+
+**Cambio:** se midieron 41 escenarios aislados, la suite unitaria completa y la
+E2E completa; se guardaron los logs y se añadió el orden de costes en
+[`docs/m16/timings.md`](m16/timings.md). El barrido de escenarios suma
+1.361,88 s de pared, Vitest 1.061,52 s y E2E 898,46 s hasta el último caso. No
+cambió código ni versión.
+
+**Verificación:** typecheck pasó en 15,29 s. Vitest pasó 320 archivos, 2.339
+tests, uno omitido. Las 186 specs pasaron con `DYNASTY_PORT=5399`; el runner se
+atascó en teardown y hubo que interrumpirlo. La pasada inicial en 5173 no fue
+válida: sus navegaciones recibieron `ERR_CONNECTION_REFUSED`. Veintiocho
+escenarios aislados devolvieron checks rojos; los resultados directos incluyen
+`perf-budget`, que la matriz de baseline desactiva. Los logs permiten revisar
+cada caso sin atribuirlo a este cambio documental.
+
 ## 2026-10-16 — M16 0.3: reglas y rama del hito
 
 **Problema:** las reglas específicas de M16 vivían solo en el plan y no había

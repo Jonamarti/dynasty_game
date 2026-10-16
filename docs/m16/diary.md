@@ -71,7 +71,34 @@ existían porque el protocolo de 0.1 exigía estar en la rama y llevar diario
 antes del primer commit de fase; se documentó la preparación anticipada en vez
 de repetirla.
 
-What is left open: fase 1.1 es la siguiente; M16 permanece en curso y todavía
-no corresponde integrarlo en `master`.
+What is left open: sigue pendiente la fase 1.2. M16 permanece en curso y
+todavía no corresponde integrarlo en `master`.
+
+Screenshots: none; no UI change.
+
+## M16 1.1 — Medir el coste de verificación (2026-10-16, pendiente de commit)
+
+Goal: medir el tiempo de cada escenario, la suite unitaria y E2E para ordenar
+las futuras mejoras de herramientas.
+
+What was done: se ejecutaron de forma aislada las 41 claves de `SCENARIOS`,
+Vitest completo y los 186 casos E2E. Se guardaron logs por escenario, el JSON
+con duraciones por archivo y las salidas de las dos pruebas E2E: la fallida en
+5173 y la válida en 5399.
+
+Before and after: el barrido aislado suma 1.361,88 s de pared; Vitest tarda
+1.061,52 s y E2E 898,46 s hasta el último resultado. El spec más lento fue el
+de eventos animales (24,7 s); el archivo unitario más lento fue
+`compact-correspondence.test.ts` (86,53 s).
+
+What turned out differently from the card: el reporter normal de Vitest no
+mostró duraciones por archivo, así que se hizo una segunda pasada JSON. El
+puerto 5173 rechazó conexiones; con 5399 pasaron los 186 specs. El runner quedó
+en teardown y se interrumpió tras 30 s; las capturas históricas reescritas se
+restauraron.
+
+What is left open: la matriz de salud conserva los rojos de baseline; los 28
+códigos de salida 1 en ejecuciones aisladas no son una lectura de regresiones.
+El cierre del runner E2E todavía no tiene salida limpia.
 
 Screenshots: none; no UI change.
