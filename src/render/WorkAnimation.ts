@@ -3,7 +3,7 @@ import type { Simulation } from '../sim/core/Simulation.ts';
 import type { Person } from '../sim/entities/Person.ts';
 import type { Building } from '../sim/entities/Building.ts';
 import { ARRIVAL_RADIUS } from '../sim/systems/MovementSystem.ts';
-import { ATTEND_POSES, BENCH_REST_POSES, BUILD_POSES, CHOP_POSES, CUT_GRASS_POSES, DIG_POSES, DYE_POSES, EXTRACT_POSES, FARM_POSES, FIGHT_POSES, FISH_POSES, GATHER_POSES, HIDE_DRESS_POSES, HUNT_POSES, INSCRIBE_POSES, MAKE_POSES, MEND_POSES, PLANT_POSES, PONDER_POSES, PROTOTYPE_POSES, SLEEP_POSES, SPREAD_POSES, SWIM_POSES, TAME_POSES, TALK_POSES, TEND_POSES, type ArtPose } from './ArtManifest.ts';
+import { ATTEND_POSES, BENCH_REST_POSES, BUILD_POSES, CHOP_POSES, CUT_GRASS_POSES, DIG_POSES, DYE_POSES, EXTRACT_POSES, FARM_POSES, FIGHT_POSES, FISH_POSES, GATHER_POSES, HIDE_DRESS_POSES, HUNT_POSES, INSCRIBE_POSES, MAKE_POSES, MEND_POSES, NURSING_POSES, PLANT_POSES, PONDER_POSES, PROTOTYPE_POSES, SLEEP_POSES, SPREAD_POSES, SWIM_POSES, TAME_POSES, TALK_POSES, TEND_POSES, type ArtPose } from './ArtManifest.ts';
 import { RECIPES } from '../sim/entities/Recipe.ts';
 import { ITEMS } from '../sim/entities/Item.ts';
 import { isStationFor } from '../sim/entities/Building.ts';
@@ -36,6 +36,12 @@ export function huntingPose(
 export function sleepingPose(person: Person, moving: boolean, alpha = 1): ArtPose | null {
   if (moving || !person.alive || person.action !== 'sleep' || person.actionTicks <= 0) return null;
   return workFrame(SLEEP_POSES, person.actionTicks, alpha);
+}
+
+/** Nursing follows the adult's explicit reached action clock, never stillness. */
+export function nursingPose(person: Person, moving: boolean, alpha = 1): ArtPose | null {
+  if (moving || !person.alive || person.action !== 'nurse' || person.workedTicks <= 0) return null;
+  return workFrame(NURSING_POSES, person.workedTicks, alpha);
 }
 
 /** Bench rest is visibly seated only after the real rest action reaches its bench. */

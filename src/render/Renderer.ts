@@ -47,8 +47,9 @@ import { Floaters } from './Floaters.ts';
 import { t, tc } from '../i18n/i18n.ts';
 import { ArtAtlas, type PersonAspect } from './ArtAtlas.ts';
 import type { ArtDir, ArtPose } from './ArtManifest.ts';
-import { attendingFeastPose, benchRestPose, buildingPose, choppingPose, craftingPose, cuttingGrassPose, diggingPose, dyeingPose, extractionPose, farmingPose, fightingPose, fishingPose, gatheringPose, hideDressingPose, huntingPose, inscribingPose, mendingPose, ponderingPose, prototypingPose, plantingPose, readingPose, reflectingPose, sleepingPose, spreadingCompostPose, swimmingPose, talkingPose, tamingPose, tendingPose } from './WorkAnimation.ts';
+import { attendingFeastPose, benchRestPose, buildingPose, choppingPose, craftingPose, cuttingGrassPose, diggingPose, dyeingPose, extractionPose, farmingPose, fightingPose, fishingPose, gatheringPose, hideDressingPose, huntingPose, inscribingPose, mendingPose, nursingPose, ponderingPose, prototypingPose, plantingPose, readingPose, reflectingPose, sleepingPose, spreadingCompostPose, swimmingPose, talkingPose, tamingPose, tendingPose } from './WorkAnimation.ts';
 import { ADULT_YEARS } from '../sim/entities/Person.ts';
+import { ARRIVAL_RADIUS } from '../sim/systems/MovementSystem.ts';
 import { showing } from '../sim/entities/Pregnancy.ts';
 import {
   SpriteAtlas, BAND_COLORS, bandColorIndex, sizeClassOf, bodyScaleOf, hairVariantOf, hasBeardOf, heldItemFor, heldTorchFor,
@@ -868,8 +869,27 @@ export class Renderer {
       const held = carried.get(person.carriedBy);
       if (held) held.push(person); else carried.set(person.carriedBy, [person]);
     }
+    // A nursing infant is composed from its own person sprite exactly once.
+    // The adult's target id is already part of the public action presentation;
+    // no infant hunger, health, inventory, or relationship history is read.
+    const nursing = new Map<number, Person[]>();
+    const nursedIds = new Set<number>();
+    for (const adult of sim.livingPeople()) {
+      if (adult.action !== 'nurse' || adult.targetPersonId === null) continue;
+      const baby = sim.peopleById.get(adult.targetPersonId);
+      // The simulation age is a number of days; `isInfant` is its canonical
+      // under-one-year predicate. Do not read the infant's private needs here.
+      // A nurse can spend ticks approaching a distant baby; the action label
+      // alone does not mean the two are together yet.
+      if (!baby?.alive || !baby.isInfant || adult.workedTicks <= 0 ||
+          adult.distanceTo(baby) > ARRIVAL_RADIUS ||
+          (baby.carriedBy !== null && baby.carriedBy !== adult.id)) continue;
+      const babies = nursing.get(adult.id);
+      if (babies) babies.push(baby); else nursing.set(adult.id, [baby]);
+      nursedIds.add(baby.id);
+    }
     for (const person of sim.livingPeople()) {
-      if (person.carriedBy !== null && sim.peopleById.get(person.carriedBy)?.alive) continue;
+      if ((person.carriedBy !== null && sim.peopleById.get(person.carriedBy)?.alive) || nursedIds.has(person.id)) continue;
       const at = this.interpolator.at('person', person, alpha);
       if (at.x < view.minX || at.x > view.maxX || at.y < view.minY || at.y > view.maxY) continue;
       if (!inSight(at.x, at.y)) continue;
@@ -881,12 +901,23 @@ export class Renderer {
       if (d.kind === 0) this.drawAnimal(d.ref as Animal, highlight?.animalId === (d.ref as Animal).id, d.at!);
       else if (d.kind === 1) {
         const person = d.ref as Person;
-        this.drawPerson(person, highlight?.personId === person.id, d.at!);
+        const nursingBabies = nursing.get(person.id);
+        const carrying = !!carried.get(person.id)?.length && !nursingBabies?.length;
+        const lyingInfant = person.isInfant && person.carriedBy === null && !nursedIds.has(person.id);
+        if (lyingInfant) this.drawInfantBed(person, d.at!, person.action !== 'sleep');
+        this.drawPerson(person, highlight?.personId === person.id, d.at!, carrying, lyingInfant);
+        if (lyingInfant) this.drawInfantBedOverlay(person, d.at!, person.action !== 'sleep');
         const babies = carried.get(person.id);
         babies?.forEach((baby, i) => {
           const side = i === 0 ? 1 : -1;
           this.drawPerson(baby, highlight?.personId === baby.id,
-            { ...d.at!, x: d.at!.x + side * 0.22, y: d.at!.y - 0.06 });
+            { ...d.at!, x: d.at!.x + side * 0.22, y: d.at!.y - 0.06 }, false, true);
+        });
+        nursingBabies?.forEach((baby, i) => {
+          if (babies?.some(carriedBaby => carriedBaby.id === baby.id)) return;
+          const side = i === 0 ? -1 : 1;
+          this.drawPerson(baby, highlight?.personId === baby.id,
+            { ...d.at!, x: d.at!.x + side * 0.13, y: d.at!.y - 0.08 }, false, true);
         });
       } else this.drawDepthBuilding(d.ref as Building);
     }
@@ -2023,7 +2054,8 @@ export class Renderer {
     }
   }
 
-  private drawPerson(person: Person, selected: boolean, at: Placed): void {
+  private drawPerson(person: Person, selected: boolean, at: Placed,
+    carryBaby = false, lyingInfant = false): void {
     const { ctx, camera } = this;
     const scale = camera.scale;
     const px = camera.worldToScreenX(at.x);
@@ -2059,7 +2091,7 @@ export class Renderer {
         this.atlas.drawSilhouette(ctx, sizeClass, colorIndex, px, py, this.atlas.bodyDrawSize(sizeClass, w) * 1.15);
       }
     } else if (this.art) {
-      this.drawArtPerson(this.art, person, at, px, py, scale, bodyScale, sizeClass, colorIndex);
+      this.drawArtPerson(this.art, person, at, px, py, scale, bodyScale, sizeClass, colorIndex, carryBaby, lyingInfant);
     } else {
       const bodySize = this.atlas.bodyDrawSize(sizeClass, w);
       this.atlas.drawPerson(ctx, {
@@ -2120,6 +2152,27 @@ export class Renderer {
     }
   }
 
+  /** Existing generated floor bedding stays behind the real infant Person sprite. */
+  private drawInfantBed(person: Person, at: Placed, awake: boolean): void {
+    if (!this.art) return;
+    const px = this.camera.worldToScreenX(at.x);
+    const py = this.camera.worldToScreenY(at.y);
+    const k = TILE * 1.55 * bodyScaleOf(person) / 96;
+    const key = `baby/ground/${awake ? 'awake' : 'asleep'}/bed`;
+    this.art.drawAsset(this.ctx, 'props', key, px - 48 * k, py - 52 * k, k);
+  }
+
+  /** Swaddling and the cradle rail sit above the infant's own face and clothes. */
+  private drawInfantBedOverlay(person: Person, at: Placed, awake: boolean): void {
+    if (!this.art) return;
+    const px = this.camera.worldToScreenX(at.x);
+    const py = this.camera.worldToScreenY(at.y);
+    const k = TILE * 1.55 * bodyScaleOf(person) / 96;
+    const root = `baby/ground/${awake ? 'awake' : 'asleep'}`;
+    this.art.drawAsset(this.ctx, 'props', `${root}/blanket`, px - 48 * k, py - 52 * k, k);
+    this.art.drawAsset(this.ctx, 'props', `${root}/bedfront`, px - 48 * k, py - 52 * k, k);
+  }
+
   /** Which way to face for a step of `dx, dy`, keeping the old facing on near-ties so a diagonal walk does not flicker. */
   private static facingOf(dx: number, dy: number, prev: ArtDir): ArtDir {
     const ax = Math.abs(dx), ay = Math.abs(dy);
@@ -2150,7 +2203,8 @@ export class Renderer {
    */
   private drawArtPerson(
     art: ArtAtlas, person: Person, at: Placed, px: number, py: number, scale: number,
-    bodyScale: number, sizeClass: SizeClass, colorIndex: number
+    bodyScale: number, sizeClass: SizeClass, colorIndex: number, carryBaby: boolean,
+    lyingInfant: boolean
   ): void {
     const { ctx } = this;
     const frame = this.walkPoseFor(person, at);
@@ -2190,13 +2244,16 @@ export class Renderer {
     const taming = tamingPose(person, this.workAlpha);
     const swimming = swimmingPose(person, this.sim, moving, this.workAlpha);
     const sleeping = sleepingPose(person, moving, this.workAlpha);
+    const nursing = nursingPose(person, moving, this.workAlpha);
     const benchResting = benchRestPose(person, this.sim.buildingsById, moving, this.workAlpha);
-    const workPose = gathering ?? fishing ?? extraction ?? digging ?? chopping ?? crafting ?? farming ?? building ?? mending ?? hideDressing ?? cuttingGrass ?? planting ?? spreading ?? dyeing ?? attending ?? inscribing ?? tending ?? pondering ?? reading ?? reflecting ?? prototyping ?? fighting ?? hunting ?? talking ?? taming ?? sleeping ?? benchResting;
+    const workPose = gathering ?? fishing ?? extraction ?? digging ?? chopping ?? crafting ?? farming ?? building ?? mending ?? hideDressing ?? cuttingGrass ?? planting ?? spreading ?? dyeing ?? attending ?? inscribing ?? tending ?? pondering ?? reading ?? reflecting ?? prototyping ?? fighting ?? hunting ?? talking ?? taming ?? sleeping ?? nursing ?? benchResting;
     const torch = heldTorchFor(person);
-    const otherHeld = gathering || crafting || mending || hideDressing || spreading || dyeing || attending || benchResting || inscribing || tending || pondering || prototyping || taming || swimming ? null : heldItemFor(person, this.sim.config.carry.autoEquipTools, true);
+    const otherHeld = gathering || crafting || mending || hideDressing || spreading || dyeing || attending || benchResting || inscribing || tending || pondering || prototyping || taming || swimming || nursing ? null : heldItemFor(person, this.sim.config.carry.autoEquipTools, true);
     const aspect: PersonAspect = {
-      age: sizeClass, sex: person.sex === 'male' ? 'm' : 'f', dir,
-      pose: swimming ?? taming ?? (moving ? (('w' + frame) as ArtPose) : workPose ?? 'idle'),
+      age: sizeClass, sex: person.sex === 'male' ? 'm' : 'f',
+      dir: lyingInfant ? 'E' : dir,
+      pose: lyingInfant ? (sleeping ?? 'L0') :
+        swimming ?? taming ?? (moving ? (('w' + frame) as ArtPose) : workPose ?? (person.isInfant ? 'L0' : 'idle')),
       skin: Renderer.TRIBE_SKIN[colorIndex]!,
       hair: hair === 'grey' ? '#a7a197' : person.id % 3 === 0 ? '#5b3d28' : '#2b2018',
       band: BAND_COLORS[colorIndex]!,
@@ -2205,9 +2262,10 @@ export class Renderer {
       // visible state; the garment slot is the public observation of what is
       // being worn.
       wear: wornGarmentsOf(person),
-      carryBaby: false,
-      held: inscribing ? 'chisel' : torch?.slot === 'right' ? torch.kind : otherHeld,
-      heldLeft: inscribing ? (torch?.slot === 'left' ? torch.kind : null) : torch?.slot === 'left' ? torch.kind : torch ? otherHeld : null,
+      carryBaby,
+      drawCarriedBaby: carryBaby ? false : undefined,
+      held: nursing ? null : inscribing ? 'chisel' : torch?.slot === 'right' ? torch.kind : otherHeld,
+      heldLeft: nursing ? null : inscribing ? (torch?.slot === 'left' ? torch.kind : null) : torch?.slot === 'left' ? torch.kind : torch ? otherHeld : null,
       // M15 phase 19c: the belly of the last third, which anybody can see
       // (`Pregnancy.showing`); the earlier thirds are not on the sprite.
       belly: showing(person),

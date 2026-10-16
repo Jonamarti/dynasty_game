@@ -2692,6 +2692,14 @@ producirlo.
 
 ### 17a. El contrato (escrito desde la fase 11)
 
+**Avance del 2026-10-16 — bebé tumbado, cargado y lactancia:** el renderer
+usa la entidad `Person` real para `L0` despierto y el ciclo de sueño, muestra
+las capas generadas de suelo/manta, compone al bebé cargado una sola vez y
+anima `nurse` tras llegar al objetivo. La prueba E2E verifica los cuatro
+estados y que dibujarlos no cambia el checkpoint. Esterilla/cuna aún no se
+pueden escoger desde estado del mundo, así que este avance no cierra la fase
+17. [Auditoría y capturas](m15_phase17_audit_20261016.md).
+
 `docs/m15_art_contract.md` y `public/art/people/manifest.json`:
 
 - **Capas:** cuerpo (clase de tamaño de `Sprites.ts`, sexo y tono de piel);
@@ -4268,6 +4276,11 @@ Constantes = suposiciones. [Detalle](m15_phase32c_peoples.md).
 
 **Avance del 2026-10-07 (32c-13, puertas medidas):** `world:cohort` (10 semillas, 200 años, la Tierra): `the-world-is-uneven` pasa 10/10; `farming-spreads` 0/10 y `states-arise` 0/10 **fallan**, sin ajustar nada; `world:bench` con el motor real pasa (43 frente a 59,6 µs/tick) tras indexar las relaciones. `peoples-match-bands` sin correr. **32c NO queda cerrada**: ver el
 diagnóstico y las decisiones que necesita del propietario en [el doc de 32c](m15_phase32c_peoples.md).
+
+**Actualización 2026-10-16:** repetición de 20 semillas × 200 años: uneven
+20/20; `farming-spreads` 0/20 y `states-arise` 0/20. Los dos bloqueos se
+confirman en el horizonte comprometido; no se cambian las suposiciones de
+contacto, materiales ni umbrales. Véase el [resultado ampliado](m15_phase32c_peoples.md).
 
 **Puertas**, encadenadas:
 

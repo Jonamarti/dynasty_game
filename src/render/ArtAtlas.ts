@@ -50,6 +50,8 @@ export interface PersonAspect {
   expression: string;
   wear: WornGarments;
   carryBaby: boolean;
+  /** Keep the folded carrier arms while drawing the real infant separately. */
+  drawCarriedBaby?: boolean;
   held: string | null;
   /** A second observed object uses the other hand's existing rig anchor. */
   heldLeft?: string | null;
@@ -145,7 +147,7 @@ export class ArtAtlas {
       a.age, a.sex, a.dir, a.pose, a.skin, a.hair, a.band, a.hairStyle, a.beard ? 'b' : '-', a.expression,
       w.torso ?? '', w.legs ?? '', w.feet ?? '', w.hands ?? '', w.head ?? '', w.cloak ?? '', w.hips ?? '',
       w.dyes?.hips ?? '', w.dyes?.torso ?? '', w.dyes?.legs ?? '', w.dyes?.feet ?? '', w.dyes?.head ?? '', w.dyes?.cloak ?? '',
-      a.carryBaby ? 'c' : '', a.held ?? '', a.heldLeft ?? '', a.belly ? 'belly' : '',
+      a.carryBaby ? 'c' : '', a.drawCarriedBaby === false ? 'no-overlay-baby' : '', a.held ?? '', a.heldLeft ?? '', a.belly ? 'belly' : '',
     ].join('|');
   }
 
@@ -191,7 +193,7 @@ export class ArtAtlas {
         case 'face': variant = a.expression; break;
         case 'beard': variant = a.beard ? 'beard' : null; break;
         case 'head_back': case 'head_wear': variant = w.head ?? null; garmentTint = w.dyes?.head; break;
-        case 'baby': case 'baby_skin': variant = a.carryBaby ? 'baby' : null; break;
+        case 'baby': case 'baby_skin': variant = a.carryBaby && a.drawCarriedBaby !== false ? 'baby' : null; break;
         // Bare skin where nothing covers the abdomen; the same bulge in the
         // garment's colours where a wrap or a tunic does.
         case 'belly': variant = a.belly && !(w.torso && BELLY_COVERS.has(w.torso)) ? 'base' : null; break;

@@ -1,3 +1,22 @@
+## 2026-10-16 — M15 fase 17: dibujar cuidado infantil con la persona real
+
+El bebé en suelo despierto/dormido usa la misma entidad y su arte de persona;
+el adulto que lo carga compone los brazos una sola vez, y `nurse` anima tras
+llegar al objetivo. La E2E comprueba los cuatro estados y el checkpoint antes y
+después del render. El arte generado suma 932.228 bytes PNG compartidos
+(7,24%); no se convierte ese tamaño en una afirmación sobre memoria del proceso
+o GPU. Las capturas están en
+`artifacts/screenshots/m15-infant-care-2026-10-16/`. Esterilla/cuna siguen
+abiertas porque aún no existe estado de colocación en el mundo.
+[Contrato](m15_infant_care_art_20261016.md). Versión `0.15.159-alpha`.
+
+## 2026-10-16 — M15 32c: ampliar la cohorte del mundo de pueblos
+
+Se amplía la cohorte del mundo de pueblos de diez a veinte semillas, 200 años
+cada una. `the-world-is-uneven` pasa 20/20; `farming-spreads` y `states-arise`
+fallan 0/20. No se modifican materiales, tasas, contacto ni umbrales, y la
+puerta queda abierta para decisión de diseño. [Datos y causa investigada](m15_phase32c_peoples.md).
+
 ## 2026-10-16 — M15: medir la colocación geográfica de peces
 
 Veinte parejas de 9.000 ticks comparan el selector gaussiano actual con uno
@@ -25,9 +44,8 @@ El aviso de un NPC autónomo respeta la selección y el conocimiento del jugador
 La regresión del golpe falla antes del arreglo; `respond` pasa 14/14 e i18n
 6/6. La E2E bilingüe pasa y guarda las capturas en
 `artifacts/screenshots/m15-attack-response-2026-10-16/`. No se modifica el
-predicado ni el objetivo del proxy `answered`; una cohorte integrada de veinte
-semillas está en marcha. La matriz y suite global aún no son verificación del
-estado final. Versión `0.15.158-alpha`.
+predicado ni el objetivo del proxy `answered`; no hay cohorte emparejada que
+mida una variación causal de ese gate. Versión `0.15.158-alpha`.
 [Causa, contrato y límites](m15_attack_response_20261016.md).
 
 ## 2026-10-16 — M15 32b: observar producción por escenario y estación

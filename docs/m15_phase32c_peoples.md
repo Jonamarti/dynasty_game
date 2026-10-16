@@ -457,6 +457,14 @@ umbrales escritos **antes** de medir (uneven: >= 3 valores distintos de técnica
 Además, en las diez: 1430-1470 pueblos -> 1690-1755 (250-300 divisiones), 118.000-126.000 personas, **0 guerras y 0 uniones**: con tierra y comida de sobra la rivalidad por comida nunca baja el `standing` de nadie a -40 y el contacto de partida (<= 0,5) queda por debajo del de alianza (0,9). Es lo que el diseño dice («un mundo con espacio y recursos puede permanecer en paz»), pero significa
 que en la cohorte **guerra, tributo y unión no se ejercitan**: solo los prueban los tests con la oportunidad preparada.
 
+**Repetición ampliada (2026-10-16, 20 semillas, 200 años):** la cohorte
+`artifacts/m15-20261016-people-world.log` confirma `the-world-is-uneven`
+20/20, pero `farming-spreads` 0/20 y `states-arise` 0/20. Cada semilla tiene
+0 invenciones/aprendizajes de agricultura y 0 Estados; son 2.000 años-semilla
+adicionales frente a la puerta original. Sin cambios de modelo ni umbral. El
+resultado amplía la evidencia del bloqueo a 20 semillas; no valida la causa
+del prototipo ni justifica subir contacto o alargar el gate por sí solo.
+
 **Diagnóstico (sondas `tools/people-world-probe.ts`, una semilla, no es una cohorte):**
 
 1. *Qué bloquea la agricultura.* `farming` pide `plant_lore + grinding` y su prototipo es `grain`; `grinding` pide `flint + sticks`. Solo **4 de 959** regiones tienen cereal silvestre y pocas tienen sílex, así que hace falta que `grinding` (de una región con sílex) **llegue por contacto** a una de las cuatro con cereal. Con el contacto declarado (0,2 entre vecinas) y la difusión pequeña que decidió el

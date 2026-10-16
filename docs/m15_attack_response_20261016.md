@@ -41,10 +41,44 @@ the familiar person and the reason in both languages.
 - `e2e/attack-response.spec.ts` passes for English and Spanish and captured
   `artifacts/screenshots/m15-attack-response-2026-10-16/`.
 - `answered`'s predicate and threshold were not changed. No completed paired
-  20-seed run measures the change in its cohort rate; the initial exploratory
-  run was stopped because its available baseline was not comparable. The
-  remaining unanswered causes and the gate result stay open.
-- A typecheck run during concurrent fish-cohort edits reported only the then
-  current `tools/fish-placement-cohort.ts` errors (`Tree.species` and
-  `Tree.growth`). That run predates the fish agent's reported correction and
-  is not a final typecheck result.
+  before/after 20-seed run measures the change in its cohort rate; the initial
+  exploratory run was stopped because its available baseline was not
+  comparable. No persisted integrated `century` result is available for this
+  close-out, so the fix is supported by the reproduced KO mechanism and its
+  negative regression only, not by an answered-rate claim. The remaining
+  unanswered causes and the gate result stay open.
+- `npm.cmd run typecheck` passes on the current integrated checkout.
+
+## Open M15 contracts independent of `answered`
+
+The phase-41 answer gate is only one part of the milestone. Phase 41 also
+requires `recovered` ≥50% in `generations` and `firemaking` in ≥50% of
+`century` seeds. The latest recorded 20-seed results are `recovered` 0/57
+(all censored), `answered` 58/72 = 80.6% in `generations`, and `firemaking`
+9/20 = 45% in `century`. The current attack fix has not measured or claimed
+progress on recovery or firemaking. General `sim:check:all` behavior gates
+also remain open; see [calibration](m15_calibration.md) and
+[`bugs.md`](bugs.md).
+
+Phases 32 and 34 carry separate fidelity and travel contracts.
+`lod-matches-detail` requires a 20-seed comparison of detailed level 0 against
+level 1, with final mean population within ±15% and the same technology trend.
+The equivalent `peoples-match-bands` comparison for levels 1 and 2 has the
+same bounds and is also a blocking gate. The 32c world cohort requires uneven
+technology, farming to originate where prerequisites exist and spread to
+neighbors, and a State in at least half of 10 seeds over 200 years. The
+recorded farming and State checks were 0/10, and the level-1/2 correspondence
+run was not done. Detached compact-runtime fixtures do not satisfy these
+integrated annual gates.
+
+Phase 34's functional travel implementation and short `drought` /
+`the-thirsty-leave` mechanism controls are not its empirical gate:
+`fission-happens` still requires a cohort with a map. The phase-34 verification
+note explicitly records the 20-seed migrants cohort and annual
+`lod-matches-detail` as deferred. A successful `answered` result cannot close
+these gates, establish compact correspondence, or demonstrate migration and
+fission in a world cohort.
+
+The phase-41 empirical gates, annual LOD correspondence, and mapped
+migration/fission cohort remain independent and open. No local run of the
+unpaired fix build substitutes for those specified measurements.
