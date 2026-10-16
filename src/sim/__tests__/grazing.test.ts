@@ -31,6 +31,7 @@ describe('grazing', () => {
     expect(sim.animals.some(a => a.fed < 1) || after < sim.world.grassCap.reduce((s, c) => s + c, 0) * 0.8).toBe(true);
   });
 
+  // Thirty days of a full simulation take about 23 seconds in isolation.
   it('starves where there is nothing to eat, and says so', () => {
     const sim = new Simulation({ seed: 'graze-2' });
     const start = sim.animals.length;

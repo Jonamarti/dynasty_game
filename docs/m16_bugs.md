@@ -169,7 +169,7 @@ contradice la columna «Causa probable» de 1b, manda esta.
 |---|---|---|---|
 | T1 | "M15 fase 21: lo que queda abierto" | Cerrado el 2026-10-16: `tools/headless.ts` ya corrigió el reenvío posicional en `21c9af5`. La prueba `headless-cli.test.ts` falla al restaurar el parseo roto (0 pasos frente a los 2.000 de `tiny`) y pasó dos veces con el código vigente | cerrado en M15; prueba de regresión M16 |
 | T2 | "Timeout de Vitest en GitHub Actions" | CI y el despliegue siguen aunque `npm test` falle (`continue-on-error`) | A |
-| T3 | "Tres tests de simulación exceden el límite fijo de cinco segundos" | `band`, `herding`, `determinism`, `grazing` agotan el tiempo con carga en paralelo | A |
+| T3 | "Tres tests de simulación exceden el límite fijo de cinco segundos" | Verificado el 2026-10-16 en aislamiento: `band` (caso de órdenes por rango 10,41 s) y `grazing` (inanición durante 30 días, 23,42 s) superan 5 s; ambos ya usan timeout explícito de 60 s y ahora explican el coste medido. `herding` (2,56 s de tests) y `determinism` (3,93 s) no necesitan ajuste. Las cuatro suites pasan aisladas | resuelto; timeouts por caso |
 | T4 | "M12 health report" y "M15 fase 28: checkpoint compuesto" | Playwright aprueba todo y se queda esperando el cierre de Vite | A |
 | T5 | "La gira de capturas espera un selector antiguo" y "The screenshot tour had quietly stopped showing" | la gira no comprueba nada y se degrada sin avisar | A |
 | T6 | "`perf-budget` is a wall-clock check and it flakes hard" | oscila un 21 % según la carga de la máquina; el presupuesto de rendimiento está sin decidir | A + decisión |

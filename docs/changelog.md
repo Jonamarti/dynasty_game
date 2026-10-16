@@ -16787,3 +16787,17 @@ protegiera el horizonte configurado del escenario.
 parseo roto produjo 0 pasos y falló; con la versión vigente, la prueba pasó dos
 veces. Se cerró T1 en `docs/m16_bugs.md`; sin cambio de producción ni versión.
 
+## 2026-10-16 — M16 1.2 T3: documentar los límites de dos casos lentos
+
+**Problema:** dos pruebas de simulación recorren muchos ticks y superan el
+presupuesto de cinco segundos cuando Vitest está cargado.
+
+**Causa:** el caso de órdenes por rango puede construir hasta cinco mundos de
+40 días; el de inanición avanza una simulación completa durante 30 días.
+
+**Cambio:** se midieron las cuatro suites por separado. `band` y `grazing`
+tardaron 10,41 s y 23,42 s en sus casos lentos; ambos ya tenían un timeout
+local de 60 s y ahora documentan la causa junto a la prueba. `herding` y
+`determinism` tardaron 2,56 s y 3,93 s. Las cuatro suites aisladas pasaron; no
+se modificó el timeout global ni la lógica del juego.
+

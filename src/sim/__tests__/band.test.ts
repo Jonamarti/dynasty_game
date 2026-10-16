@@ -353,6 +353,8 @@ describe('the middle rank', () => {
     expect(chiefTermDays(versed)).toBeGreaterThan(chiefTermDays(plain));
   });
 
+  // This capability check may run five separate 40-day worlds before one
+  // head gets a chance to give an order; isolated it takes about 10 seconds.
   it('is actually exercised by somebody who is not the chief', () => {
     // The assertion the whole phase turns on. Before 4d the chief was the only
     // order-giver anywhere in the simulation, and a chief is covered by
