@@ -1,0 +1,3 @@
+0946fa7bf18ffc4132fac8cd87fe79d69b79238a
+2026-10-16
+docs(m16): single-agent M16 plan with one card per phase

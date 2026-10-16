@@ -1,3 +1,26 @@
+## 2026-10-16 — M16 0.1: congelar la línea base de M15
+
+**Problema:** M16 empezaba sin un registro único que distinguiera los fallos
+heredados de los que aparezcan durante el hito.
+
+**Causa:** El cierre M15 seguía abierto: su matriz tenía 118 fallos conocidos y
+varias puertas de supervivencia, recuperación, respuesta, fuego y
+correspondencia pendientes.
+
+**Cambio:** Se fijaron el commit `0c2214e`, la versión `0.15.160-alpha`, los
+resultados de verificación y las puertas aceptadas como línea de partida. No
+cambió el código del juego ni la versión.
+
+**Verificación:** `typecheck` pasó; Vitest pasó con 320 archivos, 2.339 tests
+correctos y uno omitido; `sim:check:all` registró 43 escenarios, 17 limpios y
+1.810/1.928 checks aplicables aprobados. `sim:check` conserva el fallo
+`perf-budget` (622 pasos/s; suelo 1.678). Las cohortes de 20 semillas dieron
+97,9% de supervivencia y 0 colapsos en `band`, y 53,5% y 2 colapsos en
+`century`; esta última coincidió parcialmente con Vitest, así que su tiempo no
+se usa como medición aislada. E2E reportó 186/186 casos correctos, pero el
+proceso salió con código 1 al cerrar el runner. Detalle y salidas: [línea base
+M16](m16/baseline.md) y `artifacts/verification/m16-baseline/`.
+
 ## 2026-10-16 — M15 fase 17: dibujar cuidado infantil con la persona real
 
 El bebé en suelo despierto/dormido usa la misma entidad y su arte de persona;
