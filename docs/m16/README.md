@@ -155,9 +155,9 @@ the new ones. A card may cite them by number.
 
 ### 4.1 Before
 
-1. `git status` clean; on branch `m16` (created in phase 0.3 from the M15
-   close). One phase per commit; if a phase has several commits, each is one
-   working feature.
+1. `git status` clean; on branch `m16` (pre-created from the M15 close to
+   satisfy this protocol; phase 0.3 records the setup). One phase per commit;
+   if a phase has several commits, each is one working feature.
 2. Read `AGENTS.md`, this README §1–6 and your card. Nothing else unless the
    card says.
 3. **Save the before-baseline:** run the *fast* level (§5) and the card's
@@ -218,6 +218,9 @@ the next agent needs to find any bug you ran into. So:
    Closes: <triage IDs>|none
    ```
    followed by the attribution lines your harness requires.
+9. **Milestone close:** after all phases and full verification are complete,
+   merge the M16 work branch into `master`. The owner pushes `master` to
+   GitHub for the remote run; do not push on the owner's behalf.
 
 ### 4.4 If you get stuck
 
@@ -305,7 +308,7 @@ A stage ends with the full level (§5) and a screenshot tour.
 |---|---|---|---|
 | 1 | [0.1](phases/0.1-baseline.md) | Freeze the M15 close as the baseline | done 71e5729 |
 | 2 | [0.2](phases/0.2-triage-refresh.md) | Refresh the triage | done 1b615c6 |
-| 3 | [0.3](phases/0.3-rules-and-version.md) | Rules, branch and version | todo |
+| 3 | [0.3](phases/0.3-rules-and-version.md) | Rules, branch and version | todo; bump to `0.16.0-alpha` in the first behaviour-changing M16 commit |
 | 4 | [1.1](phases/1.1-timings.md) | Measure how long everything takes | todo |
 | 5 | [1.2](phases/1.2-tool-fixes.md) | Fix the test tools (T1–T5, E15, E16) | todo |
 | 6 | [1.3](phases/1.3-comparable-baseline.md) | Comparable baseline and the "off equals before" test | todo |

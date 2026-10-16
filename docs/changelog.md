@@ -1,3 +1,22 @@
+## 2026-10-16 — M16 0.3: reglas y rama del hito
+
+**Problema:** las reglas específicas de M16 vivían solo en el plan y no había
+una pauta persistente para integrar el trabajo al cerrar un hito.
+
+**Causa:** `AGENTS.md` todavía describía el prefijo M15 y no indicaba qué
+hacer con la rama de trabajo al completar el hito.
+
+**Cambio:** `AGENTS.md` ahora apunta al plan M16, contiene R0, R11–R13,
+R21–R24 y R26, y exige `m16:` en sus commits. Se registró que la rama se
+integra en `master` después del cierre y verificación completa; el propietario
+sube `master` a GitHub para la ejecución remota. La rama `m16` y el andamiaje
+del diario ya existían por la secuencia requerida por el protocolo. No cambió
+el juego ni la versión: `0.16.0-alpha` se aplicará con el primer cambio de
+comportamiento.
+
+**Verificación:** se comprobó que la rama actual es `m16`, que parte del cierre
+M15 y que `AGENTS.md` enlaza las reglas del plan. Esta fase es solo documental.
+
 ## 2026-10-16 — M16 0.2: actualizar el triaje
 
 **Problema:** el triaje se había escrito antes de cerrar M15 y trataba como

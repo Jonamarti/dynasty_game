@@ -50,3 +50,28 @@ en sus fases programadas. Los gates de M15 permanecen abiertos y fijados como
 baseline.
 
 Screenshots: none; no UI change.
+
+## M16 0.3 — Reglas y rama del hito (2026-10-16, pendiente de commit)
+
+Goal: dejar las reglas de M16 visibles desde `AGENTS.md` y fijar cómo se cierra
+e integra el hito.
+
+What was done: se añadió la referencia al plan M16 y una copia legible de las
+reglas R0, R11–R13, R21–R24 y R26. También se dejó escrito que, tras completar
+las fases y la verificación completa, `m16` se integra en `master`; el
+propietario hace la subida a GitHub para la prueba remota.
+
+Before and after: `AGENTS.md` ya no prescribe el prefijo M15 para trabajo M16,
+y tanto ese archivo como el protocolo de M16 describen el mismo cierre de
+rama. La versión sigue en `0.15.160-alpha`; `0.16.0-alpha` se reserva para el
+primer cambio de comportamiento.
+
+What turned out differently from the card: la rama `m16` y el diario ya
+existían porque el protocolo de 0.1 exigía estar en la rama y llevar diario
+antes del primer commit de fase; se documentó la preparación anticipada en vez
+de repetirla.
+
+What is left open: fase 1.1 es la siguiente; M16 permanece en curso y todavía
+no corresponde integrarlo en `master`.
+
+Screenshots: none; no UI change.

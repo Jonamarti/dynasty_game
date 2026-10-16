@@ -20,6 +20,8 @@ steps, performance, and a changelog with the reason for every change.
 4. `src/sim/ai/Brain.ts` — why anybody does anything.
 5. `docs/bugs.md` before you "fix" something that looks broken. It may be known,
    investigated, and deliberately left.
+6. **M16:** read `docs/m16/README.md` sections 1–6 and your phase card;
+   follow its phase protocol.
 
 ---
 
@@ -152,6 +154,42 @@ before a hover lands on it, so the panel never responds and nothing throws.
 
 ---
 
+## M16 rules
+
+These rules supplement the project rules above. The full M16 protocol and phase
+cards are in `docs/m16/README.md`.
+
+- **R0 stop rule:** if a card does not match the code, do not invent. Record
+  phase, expected behaviour, what you found, and file/line in
+  `docs/m16/doubts.md`; adapt only when the goal is unambiguous and the
+  difference is a name, otherwise leave the phase and take the next independent
+  one.
+- **R11 saved state:** register any new class hung on `Person`, `Household`,
+  `Band` or `Building` in `persistence/EntityRecords.ts` (`constructorEntries`)
+  and add a round-trip test: save, load, compare, advance, compare. Plain data
+  saves automatically but still gets the test.
+- **R12 daily values:** store values computed once a day on the person; do not
+  recompute them on load.
+- **R13 off equals before:** with a block's switch off, seeds 1, 2, and 3 of
+  `band` at 3,000 steps must match the pinned baseline checkpoint fingerprints.
+- **R21 red baseline:** at `0.15.160`, `sim:check:all` has 43 scenarios, 17
+  clean and 118 failing checks (`docs/m15_closeout_20261016.md`). Done means no
+  new unexplained failure, not that the inherited matrix is green.
+- **R22 capability test:** do not close a bug without a test named after what
+  the player expects (for example `m16-hearth-buildable`). If it passes on
+  current code, keep it as a regression test, record that it was already fixed
+  and when, and change no game code; if it fails, it is the live bug.
+- **R23 config migration:** every new `Config` key needs a checkpoint
+  migration that restores the old behaviour and a test that loads a checkpoint
+  without the key and advances it identically.
+- **R24 persistence:** all state the player can see or that affects play,
+  including UI state such as explored fog, persists across save/load with a
+  round-trip test. Rebuilding it approximately on load is not acceptable.
+- **R26 e2e registration:** add every new e2e spec to the explicit list in
+  `package.json` → `scripts.e2e`, or it will never run.
+
+---
+
 ## Versioning
 
 **The game stays in alpha until the project owner says otherwise.** This is a
@@ -171,7 +209,7 @@ missing from every screen but the main menu before M15 phase closed this gap.
 The middle number tracks the milestone (`15` for M15); the last number is a
 running count of accumulated changes inside that milestone, not a semantic
 patch level — bump it by one in every commit that changes game behaviour
-(an `m15:` phase, a fix, a tuning pass), so the number on screen says how much
+(a milestone phase, a fix, a tuning pass), so the number on screen says how much
 has shipped since the milestone opened, not whether anything is "stable."
 Docs-only or tooling-only commits don't need the bump. Reset the count to `0`
 and bump the milestone number, in the same commit as the milestone's first
@@ -191,7 +229,7 @@ string to express that opinion yourself.
 
 ## Verifying your work
 
-**Commit every functional change separately.** Use a `m15:` prefix for M15 work,
+**Commit every functional change separately.** Use an `m16:` prefix for M16 work,
 and keep each commit focused on one feature, instrument or measured fix. After
 each meaningful milestone, save a screenshot set under `artifacts/screenshots/`
 using the project's screenshot tour (`npm run shots`) or an equivalent capture
@@ -208,6 +246,14 @@ do not describe a failing verification run as passing.
 
 Four layers, fastest first. `npm run verify` chains them. Run at least the
 first three before you claim anything works.
+
+**Milestone integration:** complete the milestone's full verification and
+closeout on its work branch, then merge that branch into `master`. The owner
+pushes `master` to GitHub for the remote test run; do not push on the owner's
+behalf unless explicitly asked.
+
+**New e2e spec:** add its path to the explicit list in `package.json` under
+`scripts.e2e` (M16 R26), or the standard suite will not execute it.
 
 ```bash
 npm run typecheck      # ~3s
