@@ -16834,3 +16834,17 @@ guardaron las 41 imágenes bajo `artifacts/verification/m16-1.2/shots/`.
 **Verificación:** `npm.cmd run shots` pasó 18/18; el puerto 5399 quedó sin
 listener tras el teardown.
 
+## 2026-10-16 — M16 1.2 E16: repetir la creación de personaje
+
+**Problema:** una ejecución E2E anterior observó que `.newgame-option` pasó
+de tres opciones a cero al cambiar de tres a cinco pueblos (98/99 pasadas).
+
+**Causa:** no conocida; la observación original fue intermitente.
+
+**Cambio:** se repitió 50 veces la spec `character creation picks a life inside
+a world that already exists`, con el mismo recorrido y seed. Se añadió el
+intento a `docs/bugs.md`; no se cambió la lógica ni la aserción.
+
+**Verificación:** 50/50 pasaron en 6m24s. El evento no se reprodujo y queda
+registrado como intermitente histórico.
+

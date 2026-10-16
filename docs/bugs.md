@@ -5763,3 +5763,10 @@ uniforme, manteniendo idénticos el tope por comarca, cuota, escenario y demás
 parámetros. Comparar acceso/consumo y agotamiento de peces, hambre y
 supervivencia; mantener `fishRng` dedicado y variar solo la estrategia de
 selección de casillas. No cambiar parámetros a partir de una corrida parcial.
+
+## 2026-10-16 - M16 1.2 E16: repeat character creation
+
+The historical character creation spec once saw `.newgame-option` go from 3 to 0
+when switching to five tribes (98/99 passes). Repeating it 50 times with
+`--repeat-each=50` passed 50/50 in 6m24s. The issue did not reproduce; its cause
+is unknown, and no game behavior or assertion was changed.

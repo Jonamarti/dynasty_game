@@ -353,7 +353,7 @@ más **H** = herramienta o instrumento de prueba.
 | E13 | ídem | `sim:check` de `band` falla `cravings-steer-the-diet`, `moods-move-choices`, `perf-budget` (467 pasos/s frente a 1.678) y `hills-see-farther` | H (línea base) / C | HERR | 0.1 |
 | E14 | `bugs.md` «M15 full test rerun…», último párrafo | `npm run art:sheet` no termina: la sección `dig` dibuja un lienzo vacío (`InvalidStateError`) | H | PERCEPCION (arte) | 2.29 |
 | E15 | `next-steps.md` «Estado vigente — 2026-10-13», E2E | Corregido en T4: el setup global ahora administra el Vite que levanta para E2E y lo detiene al terminar; verificación focal en 5399 sin listener residual. Pendiente doble pasada completa de la fase | resuelto; gate final 1.2 | HERR | 1.2 (T4) |
-| E16 | `bugs.md` «fase 40b — regresión de difusión», segundo párrafo | `.newgame-option` pasa de 3 a 0 tras una navegación (1 de 99), sin causa | H (intermitente) | HERR | 1.2 |
+| E16 | `bugs.md` «fase 40b — regresión de difusión», segundo párrafo | La repetición focal de la spec original con `--repeat-each=50` pasó 50/50 en 6m24s; no reprodujo que `.newgame-option` pasara de 3 a 0. Se mantiene como intermitente histórico sin causa confirmada | no reproducido; queda registrado | HERR | 1.2 |
 | E17 | `bugs.md` fase 32b-2/32b-3/32c y fase 34 | el modelo compacto no registra al recién nacido, no aborta ni complica partos, no tiene frío, y `KnowledgeLedger` no entra en la instantánea de `PeopleSim` | D (LOD) | — | fuera; ver Parte C |
 
 ### Funcionalidad que el autor pidió y no tiene fase (F)
