@@ -1,6 +1,6 @@
 # Architecture
 
-Current as of 2026-10-13 (M15 phase-17 work poses and phase-41 cohort).
+Current contracts reviewed 2026-10-16 (M15 closeout work; calibration remains open).
 No runtime dependencies, Vite + a 2D canvas.
 
 ## Layout
@@ -26,6 +26,44 @@ tools/          simcheck (library) + headless / scenarios / seeds / why (CLIs);
                 demographic cohort observer for seeded calibration
 e2e/            Playwright smoke tests and screenshot tour
 ```
+
+## Current integration boundary — 2026-10-16
+
+The active map runs detailed people, including other bands; only their polling
+cadence changes. Camera position and fog never transfer authority. `WorldState`
+owns the active local motor and world allocator. Its frontier coordinator parks
+the departed comarca as an inert checkpoint, advances the named residents through
+`ComarcaOffmapRuntime`, and materialises them at the global date before return.
+There is no second live `Simulation.step()` behind the active map. Physical food
+is withdrawn from finite node stocks, inventories, stores and piles before need
+relief; shared IDs, kin, streams and partial-day plans survive the transition.
+See [off-map runtime](m15_phase34_offmap_runtime.md) and
+[travel](m15_phase34_travel.md).
+
+This adapter and the detached `CompactBandRuntime` foundation are distinct. The
+adapter's 25% adult harvest budget, equal allocations and two-day reserve are
+explicit design rules, not measured correspondence. Autonomous farming/crafting
+outside the map and annual `lod-matches-detail` remain open. The new
+`tools/compact-food-cohort.ts` measures actual detailed production by scenario,
+seed and day/season; it supplies observations rather than fitted coefficients.
+See [production observation](m15_production_cohort_20261016.md).
+
+Conception accepts the existing shared-roof sleep sample and the implemented
+private-rest sample: resting adults in a finished shelter qualify only when
+nobody except their spouse is awake there. Sleeping occupants do not remove
+privacy. `roofOverPrivateRest` and `shareTheHearth` own this rule; older
+sleep-only diagnostic figures below predate that implementation.
+
+Autonomous attacks abandon an unconscious target with a localized stop reason;
+the scorer also excludes that target until consciousness returns. An explicit
+attack order retains player control. Autonomous notices remain restricted to
+the selected known NPC. The `answered` proxy and its target are unchanged; this
+fix does not establish how many historical unanswered blows involved a knockout.
+See [response contract](m15_attack_response_20261016.md).
+
+The dated implementation and verification notes below retain their historical
+figures. A green short mechanism fixture does not establish population balance,
+annual compact correspondence or completion of M15.
 
 ## M15 field equipment and preservation — 2026-10-12
 
@@ -110,9 +148,10 @@ restore. Food potential is not a worker yield and no harvest rate is inferred.
 `CompactFoodRateWatch` supplies short, opt-in observations without RNG draws;
 its current single-seed sample is not seasonal forecasting calibration.
 
-Simulation does not call this engine yet. Off-map authority transfer,
-TileLedger corrections and return-to-map materialisation are step 2/phase 34;
-this engine must not be run on a roster still owned by detailed Simulation.
+Simulation does not call this detached engine directly. The phase-34 adapter
+described above performs off-map authority transfer and return materialisation
+using the shared compact body/life foundations; detached runtime policies must
+not also run on a roster owned by that adapter or detailed Simulation.
 The final correspondence gate remains open (step 4), with inherited measured
 failures recorded separately. See [m15_compact_band.md](m15_compact_band.md).
 Phase 28 now has inert JSON graph snapshots in `persistence/EntityRecords.ts`.

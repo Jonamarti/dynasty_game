@@ -11,8 +11,10 @@ el diario de decisiones y entregas históricas debajo de este resumen.
   [Contrato](m15_attack_response_20261016.md).
 - **Producción compacta (2026-10-16):** nuevo instrumento por escenario,
   semilla y día/estación. `salters` ofrece procesado observado en las cuatro
-  estaciones; `farmers` no ofrece trabajo agrícola en la ventana de cuarenta
-  días y se está midiendo a cien. No se han elegido tasas para el compacto.
+  estaciones; `farmers` no ofrece trabajo agrícola a cuarenta ni a cien días
+  en las tres semillas observadas. La traza registra cereal cosechado, pero
+  ningún molino/campo proyectado; revisar la cola de obras básicas antes de
+  elegir tasas para el compacto.
   [Contrato y resultados](m15_production_cohort_20261016.md).
 
 - **NPCs hambrientos en `idle` (2026-10-16):** la cohorte emparejada de 20
@@ -28,20 +30,19 @@ el diario de decisiones y entregas históricas debajo de este resumen.
   realmente alcanzable explica el rechazo al pulsar Empezar. La selección de
   comarca sigue mostrando su porcentaje y mínimo. Captura en
   `artifacts/screenshots/m15-open-ocean-refusal-2026-10-15/`.
-- **Peces en costas largas (2026-10-16):** el tope por comarca se conserva y
-  los bancos se agrupan con un kernel gaussiano. Falta medir si esta forma de
-  repartirlos mejora el acceso o la economía frente a una distribución
-  uniforme con el mismo tope. La cohorte `fishers` de 20 semillas × 9.000 ticks
-  se canceló antes de terminar un brazo; su salida parcial no es evidencia.
-  Repetir en otra sesión con ambos brazos emparejados y comparar acceso,
-  agotamiento, hambre y supervivencia. El vínculo entre hábitat y cuota total
-  también sigue pendiente.
-- **Verificación integrada (2026-10-15):** `typecheck` pasa; la suite unitaria
-  tiene el fallo conocido en `salters-checks.test.ts` (2.326 pasan, 1 omitida).
-  En `sim:check:all`, `coast` 54/54, `shallows` 6/6 y `salters` 1/1; `fishers`
-  64/67 y `lean` 58/74. Otros escenarios largos conservan fallos de calibración.
-  La spec E2E del grid completó sus aserciones, pero el cierre de Vite se tuvo
-  que interrumpir.
+- **Peces en costas largas (2026-10-16):** comparación geográfica completa de
+  veinte parejas × 9.000 ticks, mismo stock/cuota y checkpoint inicial salvo
+  posiciones de peces. No justifica cambiar la distribución gaussiana:
+  uniforme obtiene +3,4% de nutrición y +1,2 puntos de supervivencia agregada,
+  con once empates por semilla. Alcance: un perfil de bahía, sin conclusión
+  general para hábitat/cuota. [Informe y CSV](m15_fish_cohort_20261016.md).
+- **Verificación integrada (2026-10-16):** suite estable de 319 archivos:
+  2.336 pruebas pasan y una se omite; corregida la expectativa incidental de
+  `salters`. La matriz termina con 118 fallos en 43 escenarios (17 sin
+  fallos), 1.810/1.928 checks aplicables. Solo cambia `lean`; dos checks
+  pasan a `n/a`, lo que no equivale a mejora. E2E estable pasa 185/185 con
+  salida limpia. La matriz conserva sus fallos de calibración.
+  [Revisión y puertas](m15_closeout_20261016.md).
 
 - **Fase 17, arte de trabajo:** el 13 de octubre se entregaron las poses de
   vestir pieles, teñir, extender compost, atender el banquete, tallar

@@ -1,3 +1,19 @@
+## 2026-10-16 — M15: medir la colocación geográfica de peces
+
+Veinte parejas de 9.000 ticks comparan el selector gaussiano actual con uno
+uniforme, conservando cuota, stock, centros reservados y draws del stream
+dedicado. El checkpoint inicial completo coincide al normalizar solo las
+coordenadas de los peces. El uniforme produce +3,4% de nutrición y +1,2 puntos
+de supervivencia agregada, con once empates de supervivencia; un solo perfil
+no justifica cambiar la distribución. Se conserva el comportamiento.
+[Informe y datos por semilla](m15_fish_cohort_20261016.md).
+
+El test de `salters` deja de fijar a cero un contador incidental de hambre y
+comprueba los límites de sus subconjuntos observados. Conserva el consumo
+invernal positivo y el control negativo sin recetas. Sus dos casos y la
+suite completa estable (2.336 correctas, una omitida) pasan. Instrumentación
+y corrección de una expectativa del test, sin cambio de versión.
+
 ## 2026-10-16 — M15 41: terminar el ataque autónomo ante una víctima inconsciente
 
 Una víctima KO no tiene turno para huir o defenderse, pero podía recibir

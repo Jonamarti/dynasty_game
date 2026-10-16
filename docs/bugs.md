@@ -9,13 +9,18 @@ La cohorte integrada pendiente debe informar el resultado del gate sin
 confundirse con una comparación causal.
 [Regresión, evidencia y capturas](m15_attack_response_20261016.md).
 
-## 2026-10-16 — M15 32b: cobertura agrícola aún sin medir
+## 2026-10-16 — M15 32b: la cadena agrícola no se ejercita en la muestra
 
 La observación estacional de producción completa `farmers` y `salters` a
 tres semillas × cuarenta días. En `farmers` no se registró trabajo de campo
 ni procesado; no se interpreta como una tasa cero ni prueba un defecto del
-ejecutor. El escenario habitual dura cien días: se amplía la ventana antes
-de diagnosticar autonomía/materiales. En `salters` hay procesado en las cuatro
+ejecutor. La ampliación a cien días también termina sin trabajo agrícola ni
+procesado (`furrow`/`alpha`/`beta`). La traza adicional de `furrow` confirma
+95 cosechas de cereal y hasta 46 unidades transportadas, pero ningún molino
+ni campo proyectado. Acaba con cuatro obras básicas a progreso cero. El
+planificador exige que no haya obras pendientes para proponer estaciones o
+campos; investigar esa prioridad, sin afirmar aún una causa exclusiva ni
+escoger tasas a partir de esta ausencia. En `salters` hay procesado en las cuatro
 estaciones, incluido gasto de grasa en productos no comestibles. Eso no
 calibra por sí mismo producción compacta ni ahorro por conservación.
 [Contrato y evidencia](m15_production_cohort_20261016.md).

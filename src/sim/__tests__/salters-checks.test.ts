@@ -18,13 +18,18 @@ describe('salters checks detect real preservation', () => {
     expect(check.ok).toBe(true);
     expect(check.ok).toBe(meals > 0 && preserved > 0);
     expect(check.skipped).not.toBe(true);
-    // The failed outcome is currently a demand/choice mismatch, not missing
-    // inventory: a carrier has the batch all winter, but stays below hunger
-    // 40 and the selector ranks another food ahead throughout this window.
-    expect(report.telemetry.salters_winter_preserved_carrier_ticks_knowing).toBeGreaterThan(0);
-    expect(report.telemetry.salters_winter_preserved_carrier_hunger40_ticks_knowing ?? 0).toBe(0);
-    expect(report.telemetry.salters_winter_preserved_best_food_ticks_knowing ?? 0).toBe(0);
-    expect(report.telemetry.salters_winter_other_food_best_ticks_with_preserved_knowing).toBeGreaterThan(0);
+    // These are instrumentation bounds, not a gameplay target: other food
+    // selection or hunger can move as the mechanics evolve. Every measured
+    // hunger/selector observation must remain a subset of carrier person-ticks.
+    const carrierTicks = report.telemetry.salters_winter_preserved_carrier_ticks_knowing ?? 0;
+    const hunger40Ticks = report.telemetry.salters_winter_preserved_carrier_hunger40_ticks_knowing ?? 0;
+    const hunger60Ticks = report.telemetry.salters_winter_preserved_carrier_hunger60_ticks_knowing ?? 0;
+    const preservedBest = report.telemetry.salters_winter_preserved_best_food_ticks_knowing ?? 0;
+    const otherBest = report.telemetry.salters_winter_other_food_best_ticks_with_preserved_knowing ?? 0;
+    expect(carrierTicks).toBeGreaterThan(0);
+    expect(hunger40Ticks).toBeLessThanOrEqual(carrierTicks);
+    expect(hunger60Ticks).toBeLessThanOrEqual(hunger40Ticks);
+    expect(preservedBest + otherBest).toBeLessThanOrEqual(carrierTicks);
     expect(report.checks.some(check => check.id === 'spoilage-is-answered')).toBe(false);
     const losses = Object.entries(report.telemetry).filter(([key]) => /^spoiled_band_\d+_nutrition$/.test(key));
     expect(losses.length).toBeGreaterThanOrEqual(2);

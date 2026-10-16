@@ -35,8 +35,25 @@ node node_modules/vite-node/dist/cli.mjs tools/compact-food-cohort.ts -- farmers
 La primera ejecución completó seis parejas: `farmers` y `salters`, tres
 semillas y cuarenta días cada una (57.600 pasos). `farmers` no registró trabajo
 agrícola ni procesado en esas ventanas: esa cobertura es `n/a`, no una tasa
-cero. Se amplía la observación agrícola a los cien días del escenario antes
-de concluir nada sobre su mecanismo.
+cero.
+
+La segunda ejecución también terminó: `farmers`, `furrow`/`alpha`/`beta`, cien
+días por semilla (72.000 pasos). Las tres ventanas siguen sin ticks agrícolas
+ni procesado; sus poblaciones finales son 27/21/11. Tres semillas no permiten
+calibrar población ni asignar tasas agrícolas. El JSON completo está en
+`artifacts/m15-production-farmers-20261016.json`, con las tres parejas en
+`completed` y `complete: true`.
+
+Una traza adicional del escenario original `furrow` registra 95 cosechas de
+cereal silvestre y hasta 46 unidades de grano transportadas, pero ningún
+molino ni campo construido o proyectado durante cien días. Al final quedan
+dos pozos de almacenamiento y dos chozas en proyecto, todos sin progreso.
+`BandSystem.planBuildings` exige `underway === 0` para proponer estaciones y
+campos: la prioridad de obras básicas es una pista concreta para investigar,
+pero la traza no prueba que sea la única causa de la ausencia de agricultura.
+Su estado y hashes de fuentes están en
+`artifacts/m15-farming-diagnostic-20261016.json`. Es una observación adicional,
+no un brazo de comparación demográfica.
 
 En `salters` sí hay procesado en las cuatro estaciones: 8.135 / 7.818 / 5.278 /
 4.662 ticks de trabajo en otoño / invierno / primavera / verano, sumando las
