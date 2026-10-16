@@ -1,3 +1,19 @@
+## 2026-10-16 — M15 41: terminar el ataque autónomo ante una víctima inconsciente
+
+Una víctima KO no tiene turno para huir o defenderse, pero podía recibir
+golpes autónomos sucesivos. La acción ahora termina por la ruta de abandono
+con motivo visible y localizado; el scorer evita volver a escoger al mismo
+objetivo inconsciente. La orden explícita de atacar conserva su comportamiento.
+El aviso de un NPC autónomo respeta la selección y el conocimiento del jugador.
+
+La regresión del golpe falla antes del arreglo; `respond` pasa 14/14 e i18n
+6/6. La E2E bilingüe pasa y guarda las capturas en
+`artifacts/screenshots/m15-attack-response-2026-10-16/`. No se modifica el
+predicado ni el objetivo del proxy `answered`; una cohorte integrada de veinte
+semillas está en marcha. La matriz y suite global aún no son verificación del
+estado final. Versión `0.15.158-alpha`.
+[Causa, contrato y límites](m15_attack_response_20261016.md).
+
 ## 2026-10-16 — M15 32b: observar producción por escenario y estación
 
 `compact-food-cohort.ts` extiende la observación de trabajo y materiales a

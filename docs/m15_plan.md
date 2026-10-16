@@ -1,3 +1,11 @@
+**Avance del 2026-10-16 — 41, víctimas inconscientes:** los atacantes
+autónomos dejan de golpear a una víctima KO, explican el abandono y no vuelven
+a seleccionarla hasta que se recupere. Se conservan las órdenes explícitas y
+las puertas de conocimiento de la UI. Regresión negativa del golpe confirmada,
+14 pruebas de respuesta y E2E bilingüe pasan. La cohorte de veinte semillas
+queda pendiente; no cambia el proxy ni se declara cerrado `answered`.
+[Contrato](m15_attack_response_20261016.md).
+
 **Avance del 2026-10-16 — 32b, observación estacional de producción:** el
 instrumento admite escenarios, semillas y días, conserva las transferencias
 reales de cada receta y separa los días al cruzar estaciones. La primera tanda

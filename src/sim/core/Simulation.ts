@@ -249,7 +249,7 @@ export interface StopNotice {
    * exactly the shrug this whole channel exists to replace.
    */
   recipe: string | null;
-  /** Set only when an autonomous route was released by the M15 need policy. */
+  /** Restricts an autonomous stop to a known selected NPC. */
   autonomousCommitment?: boolean;
 }
 
@@ -3902,9 +3902,12 @@ export class Simulation {
     // standing idle, when there was no order to stop — because from then on
     // their keys do nothing, and a character that will not move needs a
     // reason on screen.
-    if (person.order === null && person.commitment === null &&
+    const selectedAutonomousStop = person.order === null && !person.isPlayer &&
+      person.commitment === null && reason === 'target_unconscious';
+    if (person.order === null && person.commitment === null && !selectedAutonomousStop &&
       !(person.isPlayer && (reason === 'restrained' || reason === 'bound' || reason === 'taken_captive'))) return;
-    const autonomousCommitment = person.order === null && !person.isPlayer && person.commitment !== null;
+    const autonomousCommitment = person.order === null && !person.isPlayer &&
+      (person.commitment !== null || selectedAutonomousStop);
     this.interruptions.push({
       personId: person.id, action, reason, recipe: person.targetRecipe,
       ...(autonomousCommitment ? { autonomousCommitment: true } : {}),

@@ -7080,6 +7080,14 @@ export class ActionSystem {
     const quarry = person.targetPersonId === null
       ? null
       : ctx.peopleById.get(person.targetPersonId);
+    // A body knocked out by the last blow cannot flee or turn to defend itself.
+    // Let an explicit player order continue, but end an autonomous attack with
+    // a reason: otherwise the victim stays frozen for `KNOCKOUT_TICKS` while
+    // the attacker repeats a helpless beating.
+    if (quarry && quarry.knockedOutUntil >= ctx.tick && person.order !== 'attack') {
+      this.abandon(person, 'target_unconscious', ctx);
+      return;
+    }
     // Give up the chase. A victim who runs must be able to get away, or fleeing
     // is theatre: attacker and quarry move at the same speed, so a pursuit that
     // never ends is a death sentence with extra steps.

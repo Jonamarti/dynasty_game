@@ -8,7 +8,8 @@
  * verbs had no way for a blow to reach somebody committed to them; and
  * `flee` could be chosen with nowhere to run to.
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+import { Brain } from '../ai/Brain.ts';
 import { RNG } from '../core/RNG.ts';
 import { Person } from '../entities/Person.ts';
 import { Simulation } from '../core/Simulation.ts';
@@ -135,7 +136,9 @@ describe('somebody set upon', () => {
     expect(snapshot.blow_repeat_unanswered_action_flee ?? 0).toBe(0);
   }
 
-  function secondBlowTelemetry(action: 'flee' | 'give', repeat = true): Record<string, number> {
+  function secondBlowTelemetry(
+    action: 'flee' | 'give', repeat = true, knockedOut = false, explicitOrder = false,
+  ): Record<string, number> {
     const sim = new Simulation(SMALL);
     for (let i = 0; i < 5; i++) sim.step();
     // The attacker is in the first band and therefore acts before the victim.
@@ -155,12 +158,13 @@ describe('somebody set upon', () => {
 
     striker.lastHarmedBy = null;
     striker.action = 'attack';
-    striker.order = 'attack';
+    striker.order = explicitOrder ? 'attack' : null;
     striker.targetPersonId = victim.id;
     striker.actionTimer = 1;
     striker.pursuitFrom = null;
     victim.lastHarmedBy = repeat ? striker.id : null;
     victim.lastHarmedTick = repeat ? sim.time.tick : -100;
+    if (knockedOut) victim.knockedOutUntil = sim.time.tick + 100;
     victim.action = action;
     victim.actionTimer = 20;
     victim.order = null;
@@ -217,6 +221,91 @@ describe('somebody set upon', () => {
     expect(first.answered_under_attack_detected_tick).toBeGreaterThan(0);
     expect(first.answered_interrupted_under_attack_action_give).toBe(1);
     expect(first.blow_repeat ?? 0).toBe(0);
+  });
+
+  it('does not count an autonomous follow-up blow against somebody unconscious', () => {
+    const snapshot = secondBlowTelemetry('give', true, true);
+    expect(snapshot.blow_repeat ?? 0).toBe(0);
+    expect(snapshot.blow_landed ?? 0).toBe(0);
+    expect(snapshot.abandoned_target_unconscious).toBe(1);
+  });
+
+  it('keeps an explicit attack order against an unconscious target', () => {
+    const snapshot = secondBlowTelemetry('give', true, true, true);
+    expect(snapshot.blow_repeat).toBe(1);
+    expect(snapshot.blow_landed).toBe(1);
+    expect(snapshot.abandoned_target_unconscious ?? 0).toBe(0);
+  });
+
+  it('does not reselect an unconscious assailant after ending an autonomous attack', () => {
+    const sim = new Simulation(SMALL);
+    for (let i = 0; i < 5; i++) sim.step();
+    const attacker = sim.livingPeople().find(p => p.bandId === 0 && !p.isChild)!;
+    const target = sim.livingPeople().find(p => p.bandId === 1 && !p.isChild)!;
+    for (const person of [attacker, target]) settled(person);
+    attacker.x = 31;
+    attacker.y = 32;
+    target.x = 32;
+    target.y = 32;
+    sim.peopleHash.rebuild(sim.livingPeople());
+    attacker.action = 'attack';
+    attacker.actionTimer = 1;
+    attacker.order = null;
+    attacker.targetPersonId = target.id;
+    attacker.lastHarmedBy = target.id;
+    attacker.lastHarmedTick = sim.time.tick;
+    attacker.body.left_leg.damage = 0.5;
+    attacker.body.right_leg.damage = 0.5;
+    target.action = 'idle';
+    target.knockedOutUntil = sim.time.tick + 100;
+
+    sim.step();
+    expect(attacker.action).toBe('idle');
+    sim.step();
+
+    expect(attacker.action === 'attack' && attacker.targetPersonId === target.id).toBe(false);
+  });
+
+  it('does not score an unconscious hated neighbour as a repeated autonomous attack target', () => {
+    const sim = new Simulation(SMALL);
+    for (let i = 0; i < 5; i++) sim.step();
+    const actor = sim.livingPeople().find(p => p.bandId === 0 && !p.isChild)!;
+    const victim = sim.livingPeople().find(p => p.bandId === 1 && !p.isChild)!;
+    const distantAdult = sim.livingPeople().find(p => p.bandId === 1 && !p.isChild && p.id !== victim.id)!;
+    for (const person of [actor, victim, distantAdult]) settled(person);
+    actor.x = 20; actor.y = 20;
+    victim.x = 21; victim.y = 20;
+    distantAdult.x = 55; distantAdult.y = 55;
+    actor.traits.aggression = 1;
+    sim.relationships.addDeed(actor.id, victim.id, -100, sim.time.tick);
+    sim.peopleHash.rebuild(sim.livingPeople());
+    victim.knockedOutUntil = sim.time.tick + 100;
+
+    const originalScore = Brain.prototype.score;
+    let captured = false;
+    const scoreSpy = vi.spyOn(Brain.prototype, 'score').mockImplementation(function(
+      this: Brain, person, ctx,
+    ) {
+      if (person !== actor || captured) return originalScore.call(this, person, ctx);
+      captured = true;
+      const whileUnconscious = originalScore.call(this, person, ctx);
+      expect(whileUnconscious.scores.some(row => row.id === 'attack')).toBe(false);
+      expect(whileUnconscious.found.foe).toBeNull();
+
+      // Keep the same score context and grievance, changing only the target's
+      // consciousness, to prove this guard—not the fixture—removes the row.
+      victim.knockedOutUntil = ctx.time.tick - 1;
+      const afterRecovery = originalScore.call(this, person, ctx);
+      expect(afterRecovery.scores.some(row => row.id === 'attack')).toBe(true);
+      expect(afterRecovery.found.foe).toBe(victim);
+      return whileUnconscious;
+    });
+    try {
+      for (let i = 0; i < 30 && !captured; i++) sim.step();
+      expect(captured).toBe(true);
+    } finally {
+      scoreSpy.mockRestore();
+    }
   });
 
   it('runs or hits back, rather than going on with the day', () => {

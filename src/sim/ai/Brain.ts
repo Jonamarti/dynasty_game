@@ -2283,7 +2283,9 @@ export class Brain {
     // fight: one who is hit runs, which `flee` already answers. Filtered
     // before the pick rather than after it, so that a hated child in view
     // cannot hide the hated adult behind them.
-    const adults = person.isChild ? [] : neighbours.filter(other => !other.isChild);
+    const adults = person.isChild ? [] : neighbours.filter(other =>
+      !other.isChild && other.knockedOutUntil < ctx.time.tick,
+    );
     // Whoever is hitting this person right now comes first, whoever else is
     // hated more: the owner's note that "some do not defend themselves". A
     // blow that had not yet soured opinion past the revenge gate below left
@@ -4296,7 +4298,15 @@ export class Brain {
     // --- Words that would be cut off, and being set upon ---------------------
     // M12 phase 2c. Here, after every route has had its say, because both
     // questions are about the table as a whole rather than about any one row.
-    const setUpon = assailantOf(person, id => neighbours.find(other => other.id === id), ctx.time.tick);
+    const detectedAssailant = assailantOf(
+      person, id => neighbours.find(other => other.id === id), ctx.time.tick,
+    );
+    // `assailantOf` retains a fresh blow for a couple of ticks even if the
+    // striker then falls unconscious. They cannot still be attacking, and
+    // treating that memory as a live threat only makes the victim choose the
+    // same futile counterattack that ActionSystem must then abandon.
+    const setUpon = detectedAssailant && detectedAssailant.knockedOutUntil < ctx.time.tick
+      ? detectedAssailant : null;
     if (person.isChild && neighbours.some(other =>
       person.distanceTo(other) <= 6 &&
       assailantOf(other, id => neighbours.find(candidate => candidate.id === id), ctx.time.tick) !== null

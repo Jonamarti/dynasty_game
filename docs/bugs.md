@@ -1,3 +1,14 @@
+## 2026-10-16 — M15 41: KO corregido; atribución de `answered` aún abierta
+
+Se reprodujo y corrigió el golpe autónomo contra un adulto inconsciente. Ese
+adulto no podía tener turno para responder. Se conserva la orden explícita,
+el proxy y su objetivo; el abandono se explica y el scorer evita reintentos
+contra el KO. La evidencia antigua no registra inconsciencia por golpe: no
+permite atribuirle los casos de `give`/`drink`/`go_home` ni todos los `idle`.
+La cohorte integrada pendiente debe informar el resultado del gate sin
+confundirse con una comparación causal.
+[Regresión, evidencia y capturas](m15_attack_response_20261016.md).
+
 ## 2026-10-16 — M15 32b: cobertura agrícola aún sin medir
 
 La observación estacional de producción completa `farmers` y `salters` a

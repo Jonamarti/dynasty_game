@@ -346,6 +346,7 @@ export const STOP_REASONS: Record<string, string> = {
   // M11 phase 12b. `quarry_escaped` speaks of an animal; a person who gets
   // away from an attack needed their own sentence.
   target_escaped: 'they got away',
+  target_unconscious: 'they could not go on beating someone unconscious',
 
   // They could not do it after all.
   no_water: 'there was no water within reach',

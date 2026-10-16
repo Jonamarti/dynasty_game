@@ -4,6 +4,11 @@ M15 sigue siendo el único plan activo y **permanece abierto**. El estado
 autoritativo de sus fases es [m15_plan.md](m15_plan.md); esta página conserva
 el diario de decisiones y entregas históricas debajo de este resumen.
 
+- **Respuesta a ataques (2026-10-16):** arreglado el ataque autónomo repetido
+  contra un KO, con motivo visible y filtro del scorer. La orden explícita
+  sigue disponible. Tests focales y E2E bilingüe pasan; la cohorte integrada
+  de veinte semillas está en marcha, por lo que `answered` sigue abierto.
+  [Contrato](m15_attack_response_20261016.md).
 - **Producción compacta (2026-10-16):** nuevo instrumento por escenario,
   semilla y día/estación. `salters` ofrece procesado observado en las cuatro
   estaciones; `farmers` no ofrece trabajo agrícola en la ventana de cuarenta
