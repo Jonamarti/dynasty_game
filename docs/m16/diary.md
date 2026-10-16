@@ -51,7 +51,7 @@ baseline.
 
 Screenshots: none; no UI change.
 
-## M16 0.3 — Reglas y rama del hito (2026-10-16, pendiente de commit)
+## M16 0.3 — Reglas y rama del hito (2026-10-16, `80af525`)
 
 Goal: dejar las reglas de M16 visibles desde `AGENTS.md` y fijar cómo se cierra
 e integra el hito.

@@ -308,7 +308,7 @@ A stage ends with the full level (§5) and a screenshot tour.
 |---|---|---|---|
 | 1 | [0.1](phases/0.1-baseline.md) | Freeze the M15 close as the baseline | done 71e5729 |
 | 2 | [0.2](phases/0.2-triage-refresh.md) | Refresh the triage | done 1b615c6 |
-| 3 | [0.3](phases/0.3-rules-and-version.md) | Rules, branch and version | todo; bump to `0.16.0-alpha` in the first behaviour-changing M16 commit |
+| 3 | [0.3](phases/0.3-rules-and-version.md) | Rules, branch and version | done 80af525; bump to `0.16.0-alpha` in the first behaviour-changing M16 commit |
 | 4 | [1.1](phases/1.1-timings.md) | Measure how long everything takes | todo |
 | 5 | [1.2](phases/1.2-tool-fixes.md) | Fix the test tools (T1–T5, E15, E16) | todo |
 | 6 | [1.3](phases/1.3-comparable-baseline.md) | Comparable baseline and the "off equals before" test | todo |
