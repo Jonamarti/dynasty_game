@@ -16848,3 +16848,18 @@ intento a `docs/bugs.md`; no se cambió la lógica ni la aserción.
 **Verificación:** 50/50 pasaron en 6m24s. El evento no se reprodujo y queda
 registrado como intermitente histórico.
 
+## 2026-10-16 — M16 1.2 T2: hacer obligatorias las pruebas en CI
+
+**Problema:** GitHub Actions podía marcar exitosos CI y Deploy aunque `npm
+test` fallara.
+
+**Causa:** ambos pasos Unit tests tenían `continue-on-error: true` mientras se
+investigaba un timeout de Actions.
+
+**Cambio:** se quitó esa opción de `.github/workflows/ci.yml` y
+`.github/workflows/deploy.yml`. El resultado de Vitest ahora determina el
+resultado del job. No se ejecuta el flujo remoto desde esta rama.
+
+**Verificación:** ambos YAML ya no contienen `continue-on-error`; el cierre de
+1.2 requiere dos pasadas locales completas de Vitest y E2E.
+
