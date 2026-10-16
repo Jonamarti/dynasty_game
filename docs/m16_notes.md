@@ -4,6 +4,11 @@
 
 # M16 — Notas diferidas durante M15
 
+> **2026-10-16.** El plan de M16 está en [m16/README.md](m16/README.md) (fichas
+> por fase en `m16/phases/`); el triaje, con las notas del autor y las pruebas
+> de funcionalidad, en [m16_bugs.md](m16_bugs.md). Este fichero conserva solo
+> observaciones de implementación heredadas de M15.
+
 ## Temperatura exterior e interior (plan solicitado, 2026-10-10)
 
 Pendiente de implementar en M16: [plan detallado de temperatura y calor de
