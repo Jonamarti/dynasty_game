@@ -1,3 +1,23 @@
+## 2026-10-18 — M16 1.9: veredictos de los tests y checks rojos
+
+**Problema:** E12 y E13 conservaban una lista de fallos tomada de
+`0.15.127-alpha`; la fase necesita veredictos basados en la línea congelada
+0.1 y en mediciones repetidas.
+
+**Causa:** varios tests ya habían cambiado sus fixtures o corregido sus
+premisas durante M15. El `perf-budget` sigue siendo una medición de pared y
+queda bajo su suelo en el escenario `band`.
+
+**Cambio:** no se modificó juego, thresholds ni tests. Se verificaron las cinco
+suites de E12 y los checks de E13; E12 queda cerrado. E13 permanece abierto por
+`perf-budget`. Los 118 checks de salud rojos se repitieron tres veces en sus 26
+escenarios y quedan como baseline R21.
+
+**Verificación:** las cinco suites focales pasan; los tres checks de conducta
+de E13 pasan 3/3 y el presupuesto obtiene 554, 591 y 508 pasos/s frente a
+1.678. Los 78 informes aislados reprodujeron los 118 fallos de matriz y sus
+métricas sin variación. No hubo cambio funcional ni de interfaz.
+
 ## 2026-10-18 — M16 1.7: pausa por incompatibilidad de tiempos (R0)
 
 **Problema:** la tarjeta pide que `check:fast` ejecute typecheck y la suite

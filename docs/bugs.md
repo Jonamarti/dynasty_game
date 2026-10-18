@@ -1,3 +1,36 @@
+## 2026-10-18 — M16 1.9: veredicto de los rojos congelados (E12/E13)
+
+Se volvieron a medir los cinco tests que E12 enumeraba. Los cinco archivos
+focales pasan con el código de `0.15.160-alpha`: `compact-correspondence`
+2/2 (el test demográfico sigue omitido por la premisa documentada),
+`determinism` 11/11, `people-knowledge` 35/35, `polity` 32/32 y
+`salters-checks` 2/2. Son fallos de test ya corregidos antes de M16: la
+correspondencia agrupa tres semillas desde `521a790` (13-10); el test de
+telemetría recibió una cosecha real en `09f45b3` (09-10); la dispersión de
+conocimiento corrigió el denominador del cambio simétrico (anotado el 13-10);
+las premisas de golpe/tributo se cambiaron por fixtures controladas; y
+`1420f3e` (12-10) reemplazó el control de salado que daba un falso positivo por
+una comida invernal real. No se movieron tolerancias en esta fase ni se cambió
+código de juego.
+
+Los cuatro checks de E13 se midieron tres veces en `band`: `cravings-steer-the-
+diet` observó 736/736 elecciones de proteína alcanzable (100%); `moods-move-
+choices`, 3,8% de conversación en el tercil bajo frente a 2,6% en el alto;
+`hills-see-farther`, 8 de 120 avistamientos más allá del radio base. Los tres
+pasan en las tres corridas. `perf-budget` sigue fallando: 554, 591 y 508 pasos/s
+frente al suelo 1.678. Un `polity` aislado también conserva sus nueve fallos
+de salud de matriz y el presupuesto, idénticos en sus tres repeticiones; son
+checks del mundo, distintos del test unitario `polity.test.ts` que ya pasa.
+
+Se ejecutaron tres corridas aisladas para cada uno de los 26 escenarios que
+tenían fallos en la matriz 0.1 (78 corridas), con sus configuraciones y semillas
+fijas. Los 118 pares escenario/check fallidos y sus métricas se repitieron
+exactamente; están enumerados por escenario y por check en el diario M16 1.9,
+y los logs completos están en `artifacts/verification/m16-1.9/after/`. Ningún
+umbral se cambió. Los 118 siguen siendo la línea roja aceptada por R21; donde
+no hay un mecanismo confirmado, el síntoma queda abierto y no se le atribuye
+una causa.
+
 ## 2026-10-18 — M16 1.2: intermitencia al medir el grafo de tribu en móvil
 
 Una corrida completa de `npm.cmd run e2e` falló una vez en

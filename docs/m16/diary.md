@@ -263,3 +263,83 @@ What is left open: decidir qué subconjunto nominal puede cubrir
 independiente (depende de 0.1).
 
 Screenshots: none; no UI change.
+
+## M16 1.9 — Veredictos de los rojos congelados (2026-10-18)
+
+Goal: dar un veredicto respaldado por medidas a los fallos unitarios y de salud
+que E12/E13 atribuían a la base.
+
+What was done: se ejecutaron por separado las cinco suites de E12 y se midieron
+los checks de E13 en tres ejecuciones de `band`. También se repitieron tres
+veces los 26 escenarios que tienen fallos en la matriz congelada; no se cambió
+ningún test, regla, umbral ni código de juego.
+
+Before and after: los cinco tests de E12 pasan en el build de M16:
+`compact-correspondence` 2 aprobados y 1 omitido, `determinism` 11/11,
+`people-knowledge` 35/35, `polity` 32/32 y `salters-checks` 2/2. E12 queda
+resuelto por correcciones anteriores a M16. En E13, `cravings-steer-the-diet`
+da 736/736 elecciones alcanzables, `moods-move-choices` da 3,8% frente a 2,6%
+y `hills-see-farther` 8/120; pasan las tres corridas. `perf-budget` queda rojo
+a 554, 591 y 508 pasos/s frente al suelo de 1.678.
+
+La línea base de 0.1 tiene 118 checks rojos en 26 escenarios. Las 78
+ejecuciones aisladas (tres por escenario) reprodujeron exactamente los mismos
+118 fallos y las mismas métricas. Cada check recibe el veredicto **world wrong**:
+la condición medida ocurre con datos suficientes y el fallo pertenece al mundo
+de prueba; el resultado no autoriza a mover el umbral. La tabla agrupa los 118
+pares escenario/check por nombre del check:
+
+| Check rojo | Escenarios de la línea base | Veredicto |
+|---|---|---|
+| `animals-are-tamed` | farmers, herders, culture | world wrong |
+| `bands-take-sides` | century, hearths, millers, farmers, herders, feasts | world wrong |
+| `camps-move-when-the-land-fails` | lean | world wrong |
+| `cooking-spreads` | smiths, polity, conquest | world wrong |
+| `deaths-explained` | lean | world wrong |
+| `discovery-is-situated` | smiths, craft, scribes, herders, stewards, labour, polity, conquest | world wrong |
+| `families-exist` | lean | world wrong |
+| `food-spoils` | fishers | world wrong |
+| `forest-is-used` | tiny | world wrong |
+| `generations-turn-over` | feasts, lean | world wrong |
+| `gossip-is-aimed` | smiths, wilds, emptied, traps, hunters, fishers, herders, labour, culture, diggers, orchard | world wrong |
+| `health-holds-up` | lean | world wrong |
+| `ideas-become-tech` | lean | world wrong |
+| `kills-are-butchered-for-bone` | culture | world wrong |
+| `knowledge-is-found` | lean | world wrong |
+| `materials-delivered` | tiny | world wrong |
+| `moods-move-choices` | tiny, crowded, emptied, hearths, porters, herders, labour, polity, culture, diggers | world wrong |
+| `needs-not-pinned` | harsh-winter | world wrong |
+| `nights-are-slept` | smiths, century, craft, wilds, emptied, hearths, porters, scribes, traps, millers, hunters, fishers, farmers, herders, feasts, stewards, labour, polity, conquest, culture, lean, diggers, orchard | world wrong |
+| `nights-are-spent-at-home` | lean | world wrong |
+| `people-survive` | smiths, wilds, labour | world wrong |
+| `peoples-drift-apart` | lean | world wrong |
+| `population-persists` | feasts, conquest, lean | world wrong |
+| `pots-reach-a-granary` | polity | world wrong |
+| `projects-find-backers` | smiths, millers, polity, conquest | world wrong |
+| `records-are-cut` | conquest | world wrong |
+| `research-is-social` | emptied, labour, lean | world wrong |
+| `roast-wins` | smiths, hearths, polity, conquest | world wrong |
+| `shelter-answers-cold` | harsh-winter, labour, lean | world wrong |
+| `soldiers-are-kept` | conquest | world wrong |
+| `spatial-hash-spreads` | diggers, orchard | world wrong |
+| `sub-webs-are-climbed` | craft, hearths | world wrong |
+| `techs-are-refined` | farmers, herders, feasts, polity, conquest | world wrong |
+| `the-beaten-pay-tribute` | conquest | world wrong |
+| `the-map-grows` | lean | world wrong |
+| `the-tree-is-climbed` | lean | world wrong |
+| `the-wise-avoid-baneberries` | century, millers, polity | world wrong |
+| `walkers-do-not-grind` | herders | world wrong |
+
+What turned out differently from the card: `determinism` y los cuatro tests
+unitarios restantes ya no están rojos en la base de M16. El check unitario
+`polity.test.ts` (32/32) no es la fila de escenario `polity`, que mantiene nueve
+fallos de matriz idénticos en sus tres corridas. Los informes aislados añaden
+`perf-budget` (fuera de la matriz): en `polity` midió 342, 331 y 304 pasos/s
+frente al suelo 1.724. E13 permanece abierto por la insuficiencia de
+rendimiento; el valor cambia entre corridas y no se ajusta ningún límite.
+
+What is left open: los 118 fallos aceptados por R21 y `perf-budget` siguen
+abiertos; los mecanismos que no se confirmaron permanecen documentados sin
+atribución causal.
+
+Screenshots: none; no UI change.
