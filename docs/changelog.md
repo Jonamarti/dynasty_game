@@ -1,3 +1,21 @@
+## 2026-10-18 — M16 1.3: cerrar la línea base comparable
+
+**Problema:** los bloques futuros necesitan detectar regresiones frente a un
+estado fijado, no solo comprobar que dos ejecuciones nuevas coincidan.
+
+**Causa:** faltaban un formato estable para la matriz de checks, un comparador
+que juzgara sus cambios y una huella anterior a cada bloque con switch.
+
+**Cambio:** tras los commits `140769b`, `5e3d2fd` y `2f3aefb`, la matriz JSON,
+`baseline:diff` y `switches-off.test.ts` quedan integrados. Se enlazó la matriz
+vigente en `docs/m16/baseline.md`; no cambia el mundo ni la versión.
+
+**Verificación:** typecheck y Vitest completo pasaron (324 archivos, 2.344
+pruebas aprobadas, una omitida). La matriz registra 43 escenarios: 1.810
+aprobados, 118 fallidos y 2.268 `n/a`; los fallos son baseline. La mutación
+R17 hizo fallar las tres huellas y fue restaurada. Evidencia en
+`artifacts/verification/m16-1.3/after/`.
+
 ## 2026-10-18 — M16 1.3c: fijar los checkpoints con los switches apagados
 
 **Problema:** los próximos bloques de IA necesitan una prueba que detecte

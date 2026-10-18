@@ -129,3 +129,29 @@ What is left open: investigar si vuelve a aparecer la lectura nula de
 `boundingBox()`; no se modificó un test por una sola incidencia.
 
 Screenshots: none; no UI change.
+
+## M16 1.3 — Comparar la línea base (2026-10-18, `2f3aefb`)
+
+Goal: guardar las matrices de escenarios en un formato comparable y fijar que
+los switches apagados conservan exactamente el mundo de antes.
+
+What was done: se exporta la matriz con `passed`, `failed` y `na`, se añade el
+comando `baseline:diff` para señalar deterioros y se guardan huellas completas
+de checkpoint para tres semillas de `band`. La prueba R17 detectó una mutación
+temporal del apetito de caza y volvió a pasar al restaurar el valor original.
+
+Before and after: la matriz contiene 43 escenarios, 1.810 checks aprobados,
+118 fallidos y 2.268 `n/a`; el JSON coincide con la tabla y no incluye tiempos.
+El auto-comparador terminó con código 0, mientras que una mutación sintética
+pass → fail terminó con código 1. Las huellas fijadas son `37125c01`,
+`7bf8a322` y `1d3f0ade`. Vitest completo: 324 archivos, 2.344 pruebas
+aprobadas y una omitida.
+
+What turned out differently from the card: fue necesario crear `fixtures/`
+desde `baseline:pin`; ahora el comando crea la carpeta cuando falta. La matriz
+completa conserva el código 1 por los rojos heredados.
+
+What is left open: los 118 checks rojos siguen siendo baseline; no hubo nuevas
+regresiones conocidas.
+
+Screenshots: none; no UI change.

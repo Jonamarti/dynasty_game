@@ -29,6 +29,17 @@ derived from total steps divided by that time.
 elapsed time and derived throughput are not an isolated performance measure.
 Neither cohort is a before/after balance comparison.
 
+## Comparable machine-readable matrix (M16 phase 1.3)
+
+The current-format matrix is saved at
+[`artifacts/verification/m16-baseline/matrix.json`](../../artifacts/verification/m16-baseline/matrix.json).
+It contains 43 scenarios, 1,810 passing checks, 118 failing checks, and 2,268
+not-applicable checks. Timing data is excluded. The command exits 1 because
+these include the inherited baseline failures; it does not indicate a new
+regression. The `baseline:diff` self-comparison exits 0. Full suite and
+comparison evidence is under
+[`artifacts/verification/m16-1.3/after/`](../../artifacts/verification/m16-1.3/after/).
+
 ## M15 open gates accepted as the M16 starting point
 
 | Gate | Last measured evidence at closeout |

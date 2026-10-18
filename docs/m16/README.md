@@ -311,7 +311,7 @@ A stage ends with the full level (§5) and a screenshot tour.
 | 3 | [0.3](phases/0.3-rules-and-version.md) | Rules, branch and version | done 80af525; bump to `0.16.0-alpha` in the first behaviour-changing M16 commit |
 | 4 | [1.1](phases/1.1-timings.md) | Measure how long everything takes | done 095d90c |
 | 5 | [1.2](phases/1.2-tool-fixes.md) | Fix the test tools (T1–T5, E15, E16) | done c4c14c2 |
-| 6 | [1.3](phases/1.3-comparable-baseline.md) | Comparable baseline and the "off equals before" test | todo |
+| 6 | [1.3](phases/1.3-comparable-baseline.md) | Comparable baseline and the "off equals before" test | done 2f3aefb |
 | 7 | [1.4](phases/1.4-checkpoint-scenario-keys.md) | Checkpoints of every scenario can be saved (E10) | todo |
 | 8 | [1.5](phases/1.5-fixture-worlds.md) | Fixture worlds | todo |
 | 9 | [1.6](phases/1.6-from-scenarios.md) | Short scenarios that start from a fixture | todo |

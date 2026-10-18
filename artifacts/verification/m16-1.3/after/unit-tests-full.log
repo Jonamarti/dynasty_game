@@ -1,0 +1,13 @@
+
+> dynasty@0.15.160-alpha test
+> vitest run --maxWorkers=1 --testTimeout=15000
+
+
+ RUN  v4.1.11 C:/Users/Marty/Documents/Work/Programs/dynastyGame
+
+
+ Test Files  324 passed (324)
+      Tests  2344 passed | 1 skipped (2345)
+   Start at  11:41:46
+   Duration  718.99s (transform 8.23s, setup 0ms, import 163.40s, tests 486.21s, environment 46ms)
+
