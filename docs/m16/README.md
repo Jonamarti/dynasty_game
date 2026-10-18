@@ -323,7 +323,7 @@ A stage ends with the full level (§5) and a screenshot tour.
 
 | Step | Phase | Title | Status |
 |---|---|---|---|
-| 13 | [2.2](phases/2.2-player-sites-kept.md) | Player sites are never dropped silently (N9) — **M15 protects player sites; verify both protection and NPC notice** | todo |
+| 13 | [2.2](phases/2.2-player-sites-kept.md) | Player sites are never dropped silently (N9) — **M15 protects player sites; verify both protection and NPC notice** | verified already fixed 112eec6 |
 | 14 | [2.15](phases/2.15-work-on-fetches-materials.md) | "Work on" fetches missing materials; the hearth can be built (N16, N40) — **partly done in M15, verify** | todo |
 | 15 | [2.4](phases/2.4-pickup.md) | Picking up: right reason, nothing vanishes, rest of the pile (N8, N20, K3, K4) | todo |
 | 16 | [2.19](phases/2.19-map-edge.md) | The map edge is not sea (N34, N36, K1, K2, K8, E1) | todo |

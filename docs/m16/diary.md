@@ -51,6 +51,20 @@ baseline.
 
 Screenshots: none; no UI change.
 
+## M16 2.2 — obras planeadas (2026-10-18, 112eec6)
+Goal: confirmar que la obra marcada por el jugador sobrevive y que el retiro
+automático de una obra NPC explica el motivo y conserva lo entregado.
+What was done: se añadió `m16-player-sites-not-dropped`, que deja avanzar diez
+días a una obra del jugador y otra NPC sin trabajo. No se cambió código de
+juego: las dos rutas ya funcionaban desde M15.
+Before and after: antes faltaba una prueba conjunta del ciclo natural de
+caducidad; después, la obra del jugador sigue, la NPC se retira con aviso y
+crónica, y los tres palos entregados se recuperan en el suelo. Prueba focal
+1/1; `typecheck` pasa.
+What turned out differently from the card: todo estaba corregido en M15; la
+fase cierra como «verified already fixed» por R22. No hubo cambio de UI.
+Screenshots: ninguno; no cambió la UI.
+
 ## M16 0.3 — Reglas y rama del hito (2026-10-16, `80af525`)
 
 Goal: dejar las reglas de M16 visibles desde `AGENTS.md` y fijar cómo se cierra
