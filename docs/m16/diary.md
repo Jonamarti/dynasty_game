@@ -1,5 +1,32 @@
 # M16 diary
 
+## M16 2.15 — fetch missing materials for ordered building (2026-10-18, `9434096`)
+
+Goal: verify N16/N40: a fresh hearth can be built from nearby ground materials,
+and an explicit player “Work on” order fetches and delivers what the site lacks.
+
+What was done: added capability coverage for NPC and player orders, monotone
+hearth progress, the unavailable-material refusal, and the Spanish names. The
+player order reuses `gather_for_site` and resumes building after delivery.
+NPC continuation remains unchanged. `Hearth` is «Hoguera»; `Fireplace` is
+«Hogar».
+
+Before and after: targeted verification passes 60/60 tests across six files;
+typecheck passes. Baseline fingerprints are unchanged. The hearths scenario
+keeps `earthworks-are-dug` and the five frozen R21 reds, with `perf-budget`
+under its floor at 444 steps/s. The full suite ended with one fixture timeout;
+that file passes alone in 126.23 s, with 120.34 s in tests.
+
+What turned out differently from the card: the existing gather selector is
+called only for an explicit player build order; the NPC's old plan-and-rescore
+flow is preserved. The baseline re-pin was identical, so no fixture changed.
+
+What is left open: the fixture test has almost no margin against its timeout;
+the full-suite timeout and the scenario performance budget are recorded in
+`docs/bugs.md`.
+
+Screenshots: `artifacts/screenshots/m16-2026-10-18-2.15/hearth-buildbar-es.png`.
+
 ## M16 0.1 — Freeze the M15 baseline (2026-10-16, `71e5729`)
 
 Goal: establish a fixed, reviewable starting point for M16.
