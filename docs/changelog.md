@@ -1,3 +1,22 @@
+## 2026-10-18 — M16 1.4b: mantener las fixtures de hierro dentro del mapa
+
+**Problema:** dos escenarios no podían guardarse porque el yunque de prueba
+quedaba más allá del borde del terreno de 48 × 48.
+
+**Causa:** las fixtures sumaban ocho casillas a la posición del herrero y
+creaban el edificio sin comprobar el mapa.
+
+**Cambio:** una función compartida busca un emplazamiento legal con
+`sim.canPlace`, manteniendo la posición original cuando está disponible. Se
+aplica a las tres fixtures de anvil; el mundo del jugador no cambia.
+
+**Verificación:** los 44 escenarios pasan diez pasos, se serializan y recargan
+(44/44); typecheck y las huellas con switches apagados pasan. Al completar el
+esquema del checkpoint, las huellas pasaron a `f268441f`, `a90f56fc` y
+`f8401ac8`: solo cambia la forma guardada de la configuración; el estado del
+mundo y el comportamiento antiguo quedan iguales. La suite completa se
+registra al cerrar la fase.
+
 ## 2026-10-18 — M16 1.4a: migrar las tecnologías iniciales de los escenarios
 
 **Problema:** `hearths`, `porters`, `scribes` y `conquest` no podían guardar su

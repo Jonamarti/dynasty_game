@@ -1,7 +1,7 @@
 /** Four supplied, ordered iron-tool charges; measures craft and readers, not economy. */
 import type { Simulation } from '../src/sim/core/Simulation.ts';
-import { Building, BUILDINGS } from '../src/sim/entities/Building.ts';
 import { telemetry } from '../src/sim/core/Telemetry.ts';
+import { placeHarnessAnvil } from './ironFixtures.ts';
 
 const TOOLS = [
   { recipe: 'iron_axe', iron: 1 },
@@ -14,11 +14,7 @@ export function setupIronTools(sim: Simulation): void {
   const workers = sim.livingPeople().filter(person => !person.isChild).slice(0, TOOLS.length);
   if (workers.length !== TOOLS.length) throw new Error('ironworkers needs four adults');
   const smith = workers[0]!;
-  const station = new Building(BUILDINGS.anvil!, Math.round(smith.x) + 8, Math.round(smith.y) + 8, smith.bandId, sim.ids);
-  station.complete = true;
-  sim.buildings.push(station);
-  sim.buildingsById.set(station.id, station);
-  sim.buildingHash.insert(station);
+  const station = placeHarnessAnvil(sim, smith);
 
   TOOLS.forEach(({ recipe, iron }, index) => {
     const worker = workers[index]!;

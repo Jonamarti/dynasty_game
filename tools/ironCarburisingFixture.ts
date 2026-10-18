@@ -1,17 +1,12 @@
 /** A supplied, ordered charge: measures carburising, not iron economics. */
 import type { Simulation } from '../src/sim/core/Simulation.ts';
-import { Building, BUILDINGS } from '../src/sim/entities/Building.ts';
 import { telemetry } from '../src/sim/core/Telemetry.ts';
+import { placeHarnessAnvil } from './ironFixtures.ts';
 
 export function setupIronCarburising(sim: Simulation): void {
   const smith = sim.livingPeople().find(person => !person.isChild && person.sex === 'male');
   if (!smith) throw new Error('carburisers needs an adult');
-  const def = BUILDINGS.anvil!;
-  const station = new Building(def, Math.round(smith.x) + 8, Math.round(smith.y) + 8, smith.bandId, sim.ids);
-  station.complete = true;
-  sim.buildings.push(station);
-  sim.buildingsById.set(station.id, station);
-  sim.buildingHash.insert(station);
+  const station = placeHarnessAnvil(sim, smith);
   smith.x = station.centerX;
   smith.y = station.centerY;
   smith.needs.hunger = smith.needs.thirst = smith.needs.cold = smith.needs.fatigue = 0;
