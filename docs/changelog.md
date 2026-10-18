@@ -1,3 +1,21 @@
+## 2026-10-18 — M16 1.3a: exportar la matriz de salud en JSON
+
+**Problema:** comparar resultados requería extraer a mano los estados de cada
+check del texto impreso, mezclando además la velocidad variable de la máquina.
+
+**Causa:** `sim:check:all` solo mostraba una tabla humana y no ofrecía una
+representación estable de los checks aplicables.
+
+**Cambio:** `npm run sim:check:all -- --json <path>` guarda, por escenario,
+`name`, `passed`, `failed` y `na`; el JSON omite la métrica de rendimiento.
+La construcción de esas filas tiene una prueba pequeña y determinista. No
+cambia el mundo ni la versión.
+
+**Verificación:** la prueba de `scenario-matrix.test.ts` y typecheck pasaron.
+La corrida completa registró 43 escenarios: 1.810 checks aprobados, 118
+fallidos y 2.268 `n/a`; cada fila coincide con la tabla impresa y el JSON no
+incluye velocidad. El comando conserva el código 1 por los fallos de baseline.
+
 ## 2026-10-18 — M16 1.2: cerrar las herramientas de prueba
 
 **Problema:** los ejecutores unitario y E2E necesitaban terminar con un

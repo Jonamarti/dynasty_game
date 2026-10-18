@@ -5,7 +5,10 @@
  * quietly breaks `harsh-winter` is exactly the kind of regression a single
  * scenario hides.
  */
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
 import { SCENARIOS, runScenario, formatReport, thousands, markMatrixRun } from './simcheck.ts';
+import { scenarioMatrixRecord, type ScenarioMatrixRecord } from './scenario-matrix.ts';
 
 // M11 phase 17d: wall-clock checks report and do not judge in the matrix.
 markMatrixRun();
@@ -13,6 +16,13 @@ markMatrixRun();
 const verbose = process.argv.includes('--verbose');
 const includeSlow = process.argv.includes('--slow');
 const rows: { name: string; passed: number; total: number; failed: string[]; stepsPerSecond: number }[] = [];
+const matrixRecords: ScenarioMatrixRecord[] = [];
+const jsonIndex = process.argv.indexOf('--json');
+const jsonPath = jsonIndex >= 0 ? process.argv[jsonIndex + 1] : undefined;
+if (jsonIndex >= 0 && (!jsonPath || jsonPath.startsWith('--'))) {
+  console.error('Usage: sim:check:all -- --json <path>');
+  process.exit(2);
+}
 
 for (const scenario of Object.values(SCENARIOS)) {
   if (scenario.slow && !includeSlow) continue;
@@ -20,6 +30,7 @@ for (const scenario of Object.values(SCENARIOS)) {
   if (verbose) console.log(formatReport(report));
   const failed = report.checks.filter(c => !c.ok);
   const applicable = report.checks.filter(c => !c.skipped);
+  matrixRecords.push(scenarioMatrixRecord(scenario.name, report.checks));
   rows.push({
     name: scenario.name,
     passed: applicable.length - failed.length,
@@ -27,6 +38,12 @@ for (const scenario of Object.values(SCENARIOS)) {
     failed: failed.map(c => c.id),
     stepsPerSecond: report.stepsPerSecond,
   });
+}
+
+if (jsonPath) {
+  const outputPath = resolve(jsonPath);
+  mkdirSync(dirname(outputPath), { recursive: true });
+  writeFileSync(outputPath, JSON.stringify(matrixRecords, null, 2) + '\n', 'utf8');
 }
 
 const pad = (s: string, n: number) => s.padEnd(n);
