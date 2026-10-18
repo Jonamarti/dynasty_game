@@ -1,3 +1,23 @@
+## 2026-10-18 — M16 1.4a: migrar las tecnologías iniciales de los escenarios
+
+**Problema:** `hearths`, `porters`, `scribes` y `conquest` no podían guardar su
+checkpoint porque el codec estricto no conocía dos claves reales de
+`PopulationConfig`.
+
+**Causa:** las claves opcionales `startingTechByBand` y `startingTechFew` se
+usaban al crear fundadores, pero no formaban parte del objeto por defecto ni
+del esquema serializado.
+
+**Cambio:** se incorporaron con listas vacías por defecto y se añadieron
+migraciones que preservan el comportamiento de partidas antiguas sin esas
+claves. La validación sigue rechazando valores con estructura incorrecta; el
+mundo y la versión no cambian.
+
+**Verificación:** typecheck y las pruebas de migración pasaron. La prueba de
+los 44 escenarios pasó para 42; quedan `carburisers` e `ironworkers`, cuyas
+fixtures colocan el yunque fuera del mapa. Ese hallazgo se corrige por separado
+en 1.4b. Log en `artifacts/verification/m16-1.4/after/`.
+
 ## 2026-10-18 — M16 1.3: cerrar la línea base comparable
 
 **Problema:** los bloques futuros necesitan detectar regresiones frente a un

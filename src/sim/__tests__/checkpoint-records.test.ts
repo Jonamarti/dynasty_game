@@ -60,6 +60,23 @@ describe('coordinated detached checkpoints', () => {
     expect(restored.config.otherBandThinkInterval).toBe(restored.config.thinkInterval);
   });
 
+  it('migrates absent founder-tech fixture keys and advances exactly like the complete config', () => {
+    const sim = fixture();
+    for (let tick = 0; tick < 10; tick++) sim.step();
+    const complete = wire(toCheckpointRecord(sim));
+    const legacy = wire(complete) as any;
+    delete legacy.config.population.startingTechByBand;
+    delete legacy.config.population.startingTechFew;
+
+    const expected = Simulation.fromCheckpointRecord(complete);
+    const migrated = Simulation.fromCheckpointRecord(legacy);
+    expect(migrated.config.population.startingTechByBand).toEqual([]);
+    expect(migrated.config.population.startingTechFew).toEqual([]);
+    expected.step();
+    migrated.step();
+    expect(toCheckpointRecord(migrated)).toEqual(toCheckpointRecord(expected));
+  });
+
   it('round trips an explicit false commitment-source bit in an old-compatible ledger', () => {
     const sim = fixture();
     sim.interruptions.push({ personId: sim.people[0]!.id, action: 'forage', reason: 'injured', recipe: null, autonomousCommitment: false });

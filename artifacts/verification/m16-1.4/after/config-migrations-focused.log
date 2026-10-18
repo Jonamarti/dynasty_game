@@ -1,0 +1,36 @@
+
+> dynasty@0.15.160-alpha test
+> vitest run --maxWorkers=1 --testTimeout=60000 src/sim/__tests__/checkpoint-records.test.ts src/sim/__tests__/m16-scenarios-checkpointable.test.ts
+
+
+ RUN  v4.1.11 C:/Users/Marty/Documents/Work/Programs/dynastyGame
+
+ ❯ src/sim/__tests__/m16-scenarios-checkpointable.test.ts (44 tests | 2 failed) 5811ms
+     × can save and reload 'carburisers' after setup 40ms
+     × can save and reload 'ironworkers' after setup 32ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/sim/__tests__/m16-scenarios-checkpointable.test.ts > M16 scenario checkpoints > can save and reload 'carburisers' after setup
+ FAIL  src/sim/__tests__/m16-scenarios-checkpointable.test.ts > M16 scenario checkpoints > can save and reload 'ironworkers' after setup
+TypeError: Invalid checkpoint record: world object outside terrain
+ ❯ invalid src/sim/persistence/CheckpointRecords.ts:37:49
+     35|   readonly ledgers: LedgerState;
+     36| }
+     37| function invalid(reason: string): never { throw new TypeError(`Invalid…
+       |                                                 ^
+     38| function object(value: unknown): value is Record<string, unknown> {
+     39|   return value !== null && typeof value === 'object' && !Array.isArray…
+ ❯ validateState src/sim/persistence/CheckpointRecords.ts:185:112
+ ❯ fromCheckpointRecord src/sim/persistence/CheckpointRecords.ts:246:3
+ ❯ toCheckpointRecord src/sim/persistence/CheckpointRecords.ts:220:3
+ ❯ src/sim/__tests__/m16-scenarios-checkpointable.test.ts:12:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+
+ Test Files  1 failed | 1 passed (2)
+      Tests  2 failed | 53 passed (55)
+   Start at  11:57:17
+   Duration  13.42s (transform 2.67s, setup 0ms, import 5.63s, tests 7.34s, environment 0ms)
+

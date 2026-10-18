@@ -50,6 +50,18 @@ function copyConfig(input: unknown): SimConfig {
       if (typeof value !== 'string' && !(typeof value === 'number' && Number.isFinite(value))) invalid(path);
       return value;
     }
+    if (path === 'config.population.startingTechByBand') {
+      if (!Array.isArray(value) || value.some(band => !Array.isArray(band) ||
+          band.some(tech => typeof tech !== 'string' || !Object.hasOwn(TECH, tech)))) invalid(path);
+      return value.map(band => [...band]);
+    }
+    if (path === 'config.population.startingTechFew') {
+      if (!Array.isArray(value) || value.some(entry => !object(entry) ||
+          Object.keys(entry).sort().join(',') !== 'perBand,tech' ||
+          typeof entry.tech !== 'string' || !Object.hasOwn(TECH, entry.tech) ||
+          !Number.isSafeInteger(entry.perBand) || (entry.perBand as number) < 0)) invalid(path);
+      return value.map(entry => ({ ...entry }));
+    }
     if (Array.isArray(template)) {
       if (!Array.isArray(value)) invalid(path);
       for (let index = 0; index < value.length; index++) {
@@ -74,6 +86,14 @@ function copyConfig(input: unknown): SimConfig {
   // nobody is slowed.
   if (object(input) && !Object.hasOwn(input, 'otherBandThinkInterval') && Object.hasOwn(input, 'thinkInterval')) {
     input = { ...input, otherBandThinkInterval: input.thinkInterval };
+  }
+  // Founder-tech fixtures were optional Config fields before checkpoints
+  // required a complete shape. Their absence meant no extra starting knowledge.
+  if (object(input) && object(input.population)) {
+    const population = { ...input.population };
+    if (!Object.hasOwn(population, 'startingTechByBand')) population.startingTechByBand = [];
+    if (!Object.hasOwn(population, 'startingTechFew')) population.startingTechFew = [];
+    input = { ...input, population };
   }
   // M15 B adds three AI settings. Only the exact earlier AI shape is migrated;
   // a partially missing or otherwise malformed config still fails the exact-key check.

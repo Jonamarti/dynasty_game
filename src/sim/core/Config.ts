@@ -598,6 +598,10 @@ export const DEFAULT_CONFIG: SimConfig = {
     peoplePerBand: 10,
     conceptionChance: 0.12,
     startingTech: [],
+    // Empty arrays preserve the old optional-field behaviour while giving
+    // checkpoint records a complete, strict config shape.
+    startingTechByBand: [],
+    startingTechFew: [],
   },
   knowledge: {
     // 0.06, not the 0.045 this shipped with. The owner asked for ideas to come
