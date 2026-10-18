@@ -1,3 +1,24 @@
+## 2026-10-18 — M16 1.2: cerrar las herramientas de prueba
+
+**Problema:** los ejecutores unitario y E2E necesitaban terminar con un
+resultado fiable antes de que M16 pudiera fijar herramientas de comparación.
+
+**Causa:** se estaban cerrando seis cambios independientes de 1.2; quedaba
+pendiente comprobar dos pasadas seguidas por suite, y la primera corrida E2E
+completa de esta verificación mostró un fallo intermitente de layout en el
+grafo de tribu.
+
+**Cambio:** se registró la fase como cerrada tras los commits T1, T3, T4, T5,
+E16 y T2. La intermitencia observada queda anotada en `docs/bugs.md`; no se
+cambió la interfaz ni la versión.
+
+**Verificación:** typecheck pasó. Vitest terminó dos veces con 321 archivos,
+2.340 pruebas aprobadas y una omitida. E2E terminó dos veces seguidas con
+186/186 y código 0; no quedó listener en 5399. La salida `tiny` confirma que
+corre 2.000 pasos; sus cuatro checks rojos son `moods-move-choices`,
+`materials-delivered`, `forest-is-used` y `perf-budget`. Logs:
+[`verificación 1.2`](../artifacts/verification/m16-1.2/after/).
+
 ## 2026-10-16 — M16 1.1: medir el coste de verificación
 
 **Problema:** las fases 1.5–1.7 necesitan saber qué parte de la verificación

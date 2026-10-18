@@ -102,3 +102,30 @@ códigos de salida 1 en ejecuciones aisladas no son una lectura de regresiones.
 El cierre del runner E2E todavía no tiene salida limpia.
 
 Screenshots: none; no UI change.
+
+## M16 1.2 — Corregir las herramientas de prueba (2026-10-18, `c4c14c2`)
+
+Goal: conseguir que las suites de Vitest y Playwright terminen por sí solas y
+que los fallos de tests no queden ignorados por CI.
+
+What was done: se cerraron seis cambios separados: guardia de regresión para
+`tiny`, timeouts locales para los tests lentos, propiedad del servidor Vite,
+aserciones de superficie en la gira de capturas, repetición de 50 inicios de
+personaje y retirada de `continue-on-error` en CI/Deploy. El plan y el triaje
+ahora reflejan el cierre.
+
+Before and after: Vitest pasó dos veces con 321 archivos y 2.340 pruebas
+aprobadas (una omitida); E2E pasó dos veces seguidas, 186/186, con código 0 y
+sin listener en 5399. `tiny` avanzó los 2.000 pasos previstos, frente al caso
+anterior de cero pasos. Sus cuatro checks rojos y el `perf-budget` general son
+fallos de salud heredados, no cambios de esta fase.
+
+What turned out differently from the card: la primera pasada E2E completa
+falló en `boundingBox()` del grafo de tribu; el caso aislado y las dos pasadas
+completas siguientes pasaron. Queda registrado como intermitente sin causa
+confirmada.
+
+What is left open: investigar si vuelve a aparecer la lectura nula de
+`boundingBox()`; no se modificó un test por una sola incidencia.
+
+Screenshots: none; no UI change.

@@ -1,3 +1,16 @@
+## 2026-10-18 — M16 1.2: intermitencia al medir el grafo de tribu en móvil
+
+Una corrida completa de `npm.cmd run e2e` falló una vez en
+`e2e/phase31-tribegraph-zoom.spec.ts:52`: tras confirmar que
+`.tribegraph-viewport` era visible, `boundingBox()` devolvió `null`. El caso
+aislado pasó, y las dos siguientes corridas completas pasaron 186/186 cada
+una; el servidor de Vite también terminó sin listener en 5399. No se confirmó
+la causa ni se cambió la aserción. Para reproducir, establecer
+`$env:DYNASTY_PORT='5399'` y ejecutar `npm.cmd run e2e`; la incidencia se vio
+una vez en tres corridas completas. Salidas en
+`artifacts/verification/m16-1.2/after/e2e-1.log` a `e2e-3.log` y
+`tribegraph-isolated.log`.
+
 ## 2026-10-16 — M15 41: KO corregido; atribución de `answered` aún abierta
 
 Se reprodujo y corrigió el golpe autónomo contra un adulto inconsciente. Ese
