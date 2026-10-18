@@ -210,3 +210,34 @@ What is left open: diagnosticar la duración de importación reportada por la
 pasada completa. No queda pendiente de la función de fixtures.
 
 Screenshots: none; no UI change.
+
+## M16 1.6 — Escenarios cortos desde fixtures (2026-10-18, `6055379`)
+
+Goal: ejecutar checks de área desde mundos vividos sin retirar ni acortar los
+escenarios completos.
+
+What was done: `Scenario` ahora acepta `world` y `areas`; `runScenario` carga
+el checkpoint y mide solo la continuación. Se agregaron cinco escenarios
+`-from`, cada uno con un tercio o menos de los pasos originales, y se etiquetó
+cada escenario con áreas permitidas. La prueba detecta tanto etiquetas
+ausentes como una fixture sin su continuación corta.
+
+Before and after: antes faltaban las etiquetas y los cinco `-from`; los dos
+checks de `scenario-areas.test.ts` fallaron como se esperaba. Después, la
+matriz ejecutó 48 escenarios: los 43 anteriores mantuvieron exactamente sus
+estados (1.810 aprobados, 118 fallidos, 2.268 `n/a`); los cinco nuevos suman
+siete aprobados, cero fallos y dos `n/a` explicados. `baseline:diff` no encontró
+cambios. Typecheck pasó y Vitest pasó 327 archivos (2.398 pruebas, una
+omitida) en 896,46 s.
+
+What turned out differently from the card: el sueño del escenario completo
+usa un montaje controlado que el checkpoint no conserva, así que
+`hearths-from` solo repite el check de refugio y frío. `opinions-diverge`
+requiere un asalto nuevo y `bands-take-sides` más tiempo para que se propague
+la postura; las descripciones explican por qué quedan `n/a` en los mundos
+cortos. La matriz completa tomó 16m12s.
+
+What is left open: nada de la fase. Los 118 checks rojos siguen coincidiendo
+con la base.
+
+Screenshots: none; no UI change.
