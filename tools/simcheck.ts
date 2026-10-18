@@ -48,6 +48,7 @@ import { setupIronMining } from './ironMiningFixture.ts';
 import { setupIronForging } from './ironForgingFixture.ts';
 import { setupIronCarburising } from './ironCarburisingFixture.ts';
 import { setupIronTools } from './ironToolsFixture.ts';
+import { loadWorld } from './fixtures.ts';
 import { setupIronPlough } from './ironPloughFixture.ts';
 import { setupSalters, observeSalters, saltersLosses } from './saltersFixture.ts';
 import { setupTailors, observeTailors, tailorsChecks } from './tailorsFixture.ts';
@@ -96,6 +97,10 @@ export interface Scenario {
   setup?: (sim: Simulation) => void;
   /** Short mechanism fixtures exercise these checks, not a whole year's economy. */
   checks?: readonly string[];
+  /** Start this area run from a reusable checkpoint instead of a fresh world. */
+  world?: string;
+  /** Areas this scenario exercises; used by the faster verification levels. */
+  areas?: string[];
 }
 
 /**
@@ -500,6 +505,11 @@ export const SCENARIOS: Record<string, Scenario> = {
     setup: setupConflicts,
     checks: ['opinions-diverge'],
   },
+  'conflicts-from': {
+    name: 'conflicts-from',
+    description: 'A short follow-up from the saved nearby rival bands. opinions-diverge is n/a here because it requires a new witnessed assault; the full conflicts run keeps that controlled setup.',
+    config: {}, world: 'two_rival_bands', steps: 26, checks: ['opinions-diverge'],
+  },
   tiny: {
     name: 'tiny',
     description: 'Small island, one band. Quick smoke run.',
@@ -515,6 +525,12 @@ export const SCENARIOS: Record<string, Scenario> = {
     description: 'The M1 default: two bands sharing an island.',
     config: { seed: 'band' },
     steps: 3000,
+  },
+  'band-from': {
+    name: 'band-from',
+    description: 'A short continuation from a band after winter; the longer band scenario remains the baseline economy check.',
+    config: {}, world: 'after_first_winter', steps: 1000,
+    checks: ['people-survive', 'ai-uses-many-actions', 'forest-is-used'],
   },
   crowded: {
     name: 'crowded',
@@ -610,6 +626,12 @@ export const SCENARIOS: Record<string, Scenario> = {
       },
     },
     steps: 16000,
+  },
+  'hearths-from': {
+    name: 'hearths-from',
+    description: 'A short continuation from two bands with established shelter. nights-are-slept keeps its controlled sleep setup in full hearths; this continuation checks whether shelter answers cold.',
+    config: {}, world: 'band_with_shelter', steps: 5000,
+    checks: ['shelter-answers-cold'],
   },
   porters: {
     name: 'porters',
@@ -1001,6 +1023,12 @@ export const SCENARIOS: Record<string, Scenario> = {
     },
     steps: 12000,
   },
+  'labour-from': {
+    name: 'labour-from',
+    description: 'A short continuation from a saved chiefdom with crafts; the full labour run retains its longer job-distribution checks.',
+    config: {}, world: 'village_with_crafts', steps: 4000,
+    checks: ['jobs-bias-work', 'heads-direct-work'],
+  },
   polity: {
     name: 'polity',
     description:
@@ -1055,6 +1083,12 @@ export const SCENARIOS: Record<string, Scenario> = {
         }
       }
     },
+  },
+  'polity-from': {
+    name: 'polity-from',
+    description: 'A short continuation from a chiefdom with surplus. bands-take-sides remains n/a until standing has time to spread; the full polity scenario retains the longer political check.',
+    config: {}, world: 'chiefdom_with_surplus', steps: 8000,
+    checks: ['the-temple-gathers', 'bands-take-sides'],
   },
   conquest: {
     name: 'conquest',
@@ -1268,6 +1302,33 @@ export const SCENARIOS: Record<string, Scenario> = {
     slow: true,
   },
 };
+
+// Kept as one explicit registry so adding a scenario without an area is a
+// visible omission in the metadata test, rather than an implicit `base` tag.
+const SCENARIO_AREAS: Record<string, string[]> = {
+  nights: ['shelter', 'world'], salters: ['objects'], tailors: ['objects', 'shelter'],
+  homes: ['objects', 'shelter'], ironsmiths: ['objects', 'player'], forgers: ['objects', 'player'],
+  ironminers: ['objects', 'player'], carburisers: ['objects', 'player'], ironworkers: ['objects', 'player'],
+  ploughmen: ['objects', 'world'], smiths: ['objects', 'discovery', 'bands'],
+  'frontier-cohort': ['world'], frontier: ['world'], 'food-news': ['world'],
+  conflicts: ['bands'], 'conflicts-from': ['bands'], tiny: ['base', 'world'],
+  band: ['base', 'foresight'], 'band-from': ['base', 'foresight'], crowded: ['base', 'bands'],
+  century: ['base', 'bands'], craft: ['objects', 'discovery', 'player'], wilds: ['world'],
+  emptied: ['world'], hearths: ['shelter', 'discovery'], 'hearths-from': ['shelter', 'assembly'],
+  porters: ['objects'], scribes: ['discovery'], 'harsh-winter': ['shelter', 'world'],
+  coast: ['world'], shallows: ['world'], traps: ['objects', 'world'], millers: ['objects'],
+  hunters: ['objects', 'world'], fishers: ['objects', 'world'], farmers: ['objects', 'base'],
+  herders: ['objects', 'bands'], feasts: ['bands', 'objects'], stewards: ['bands', 'objects'],
+  labour: ['assembly', 'objects', 'bands'], 'labour-from': ['assembly', 'objects'],
+  polity: ['assembly', 'bands'], 'polity-from': ['assembly', 'bands'], conquest: ['bands'],
+  culture: ['bands'], lean: ['shelter', 'base'], diggers: ['objects', 'world'],
+  orchard: ['objects', 'world'], generations: ['base', 'bands'],
+};
+for (const scenario of Object.values(SCENARIOS)) {
+  const areas = SCENARIO_AREAS[scenario.name];
+  if (!areas) throw new Error(`Scenario "${scenario.name}" has no M16 area tags`);
+  scenario.areas = areas;
+}
 
 // ---------------------------------------------------------------------------
 // Sampling
@@ -4564,8 +4625,17 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
   telemetry.enable();
 
   const steps = stepsOverride ?? scenario.steps;
-  const sim = scenario.create?.(scenario.config) ?? new Simulation(scenario.config);
-  scenario.setup?.(sim);
+  const sim = scenario.world
+    ? loadWorld(scenario.world, scenario.config)
+    : scenario.create?.(scenario.config) ?? new Simulation(scenario.config);
+  if (scenario.world) {
+    // A first load may have built a fixture, so discard its history counters;
+    // this report describes only the continuation being measured.
+    telemetry.reset();
+    telemetry.enable();
+  } else {
+    scenario.setup?.(sim);
+  }
   // The game always has a player, whose band thinks at full pace while every
   // other band takes its turns more slowly (`config.otherBandThinkInterval`, M15
   // step 0). This harness takes no body, so without a focus the checks would

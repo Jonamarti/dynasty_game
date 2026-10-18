@@ -1,3 +1,25 @@
+## 2026-10-18 — M16 1.6: ejecutar escenarios cortos desde mundos guardados
+
+**Problema:** cada check de área repetía la historia completa del escenario y
+el arnés no indicaba qué áreas cubría cada uno.
+
+**Causa:** los escenarios solo podían comenzar en un mundo nuevo; no había
+metadatos de áreas ni un camino común para continuar un checkpoint reutilizable.
+
+**Cambio:** `Scenario` admite `world` y `areas`; los escenarios con fixture
+cargan su mundo con `loadWorld`. Se añadieron cinco escenarios `-from`, uno por
+fixture, sin retirar los originales. Un registro explícito etiqueta todos los
+escenarios con áreas permitidas y falla al importar si falta alguna etiqueta.
+Las descripciones explican los checks `n/a` que necesitan un evento o más
+tiempo que la continuación corta.
+
+**Verificación:** typecheck limpio; Vitest pasó 327 archivos (2.398 pruebas,
+una omitida). La matriz de 48 escenarios conserva exactamente los estados de
+los 43 anteriores: 1.810 checks pasan, 118 fallan y 2.268 son `n/a`. Los cinco
+nuevos añaden siete checks aprobados, cero fallos y dos `n/a` explicados. La
+matriz duró 16m12s; `baseline:diff` informó que no hay cambios de estado. No
+cambia la simulación, versión ni interfaz.
+
 ## 2026-10-18 — M16 1.5: guardar mundos de prueba reutilizables
 
 **Problema:** los tests que necesitan un mundo de varios meses tenían que

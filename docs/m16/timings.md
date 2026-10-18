@@ -65,6 +65,18 @@ desactiva como medición de pared: por ejemplo, `coast` solo falla ese check
 (735 pasos/s frente al suelo de 2.066), aunque `coast` sale limpio en la
 matriz. No se interpreta como regresión.
 
+## Re-medición de la matriz — M16 1.6 (2026-10-18)
+
+La matriz combinada ejecutó los 43 escenarios originales y añadió cinco
+continuaciones desde fixture. Tardó 16m12s de pared; el informe mostró
+velocidades entre 293 y 3.960 pasos/s en esas continuaciones. Los cinco
+escenarios nuevos aportaron siete checks aprobados, cero fallidos y dos `n/a`:
+`opinions-diverge` espera un asalto nuevo y `bands-take-sides` espera que la
+postura se propague; ambas limitaciones están en las descripciones. El check
+`nights-are-slept` no se repite en `hearths-from` porque la continuación no usa
+el montaje de sueño controlado de `hearths`. `baseline:diff` no encontró
+ninguna transición en los 43 escenarios previos.
+
 ## Suite unitaria
 
 `npm.cmd test -- --maxWorkers=1 --testTimeout=15000`: 320 archivos, 2.339
