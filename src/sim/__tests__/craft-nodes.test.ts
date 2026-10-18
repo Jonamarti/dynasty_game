@@ -21,6 +21,7 @@ import { ITEMS } from '../entities/Item.ts';
 import { RECIPES } from '../entities/Recipe.ts';
 import { SICKENS } from '../entities/Body.ts';
 import type { Building } from '../entities/Building.ts';
+import { placeFixtureStation } from '../../../tools/territoryFixture.ts';
 
 const SMALL = {
   seed: 'craft-nodes',
@@ -159,7 +160,8 @@ describe('stone_boiling and the broth', () => {
     person.inventory.add('bone', 2);
     let hearth: Building | null = null;
     for (const [dx, dy] of [[4, 4], [-4, 4], [4, -4], [-4, -4], [6, 0], [0, 6]]) {
-      hearth = sim.place('hearth', Math.round(person.x) + dx!, Math.round(person.y) + dy!, person.bandId);
+      const x = Math.round(person.x) + dx!, y = Math.round(person.y) + dy!;
+      hearth = placeFixtureStation(sim, 'hearth', x, y, person.bandId);
       if (hearth) break;
     }
     expect(hearth).not.toBeNull();
@@ -271,7 +273,8 @@ describe('flatbread and the opening of Kitchen', () => {
     person.inventory.add('meal', 1);
     let hearth: Building | null = null;
     for (const [dx, dy] of [[4, 4], [-4, 4], [4, -4], [-4, -4], [6, 0], [0, 6]]) {
-      hearth = sim.place('hearth', Math.round(person.x) + dx!, Math.round(person.y) + dy!, person.bandId);
+      const x = Math.round(person.x) + dx!, y = Math.round(person.y) + dy!;
+      hearth = placeFixtureStation(sim, 'hearth', x, y, person.bandId);
       if (hearth) break;
     }
     expect(hearth).not.toBeNull();

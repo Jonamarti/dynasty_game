@@ -1,5 +1,38 @@
 # M16 diary
 
+## M16 2.22 — furniture without banners; stations respect territory (2026-10-18)
+
+Goal: close N45 and K6 by removing household ownership marks from furniture
+and requiring outdoor stations to use their band's territory under D-16.
+
+The renderer now omits the band ring and pennant for furniture and stations.
+`placementRefusal` rejects a station on another band's ground and rejects an
+unclaimed site unless the band has no territory and a finished own building is
+within eight tiles. Player placement and NPC placement share that check, and
+both refusal reasons have Spanish translations. Tests were written first and
+all four failed on the old code. Several older station fixtures now claim
+their test tile only during placement, then restore the territory map so the
+test setup does not alter later AI.
+
+Before and after: the full unit suite passes 340 files (2,419 passed, one
+skipped); typecheck and the focused E2E pass. The `craft` area remains at its
+four baseline failures. The full matrix has 118 failed checks in 48 scenarios,
+same as the before matrix, but `feasts` has status transitions. Disabling the
+new rule in a controlled run restores the prior status for `discovery-is-situated`
+and `hills-see-farther`; this is an observed consequence of the territory rule,
+recorded for block 10 calibration. Switch-off fingerprints remain
+`f268441f`, `a90f56fc`, `f8401ac8` after re-pinning. Logs, matrices and the
+control run are under `artifacts/verification/m16-2.22/`.
+
+What turned out differently from the card: the full matrix shows a measured
+world change in `feasts`, rather than identical check statuses. Furniture and
+station rendering changes are visible in both Spanish captures:
+`artifacts/screenshots/m16-2026-10-18-2.22/01-furnished-interior-es.png` and
+`artifacts/screenshots/m16-2026-10-18-2.22/02-outdoor-station-es.png`.
+
+What is left open: review the `feasts` matrix transition during block 10
+calibration; no threshold was tuned here.
+
 ## M16 2.19 — the map edge is not sea (2026-10-18)
 
 Goal: close N34, K1, K2, K8, E1, and measure N36 using capability tests.

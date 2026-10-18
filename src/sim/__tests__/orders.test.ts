@@ -10,6 +10,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { Simulation } from '../core/Simulation.ts';
+import { placeFixtureStation } from '../../../tools/territoryFixture.ts';
 import { RNG } from '../core/RNG.ts';
 import { ForestSystem } from '../systems/ForestSystem.ts';
 import { Tree } from '../entities/Tree.ts';
@@ -426,8 +427,8 @@ describe('crafting stations', () => {
     // it is searched for rather than assumed.
     let quern: Building | null = null;
     for (const [dx, dy] of [[6, 6], [-6, 6], [6, -6], [-6, -6], [8, 0], [0, 8], [4, 0], [0, 4]]) {
-      quern = sim.place('quern', Math.round(person.x) + dx!, Math.round(person.y) + dy!,
-        person.bandId);
+      const x = Math.round(person.x) + dx!, y = Math.round(person.y) + dy!;
+      quern = placeFixtureStation(sim, 'quern', x, y, person.bandId);
       if (quern) break;
     }
     expect(quern).not.toBeNull();

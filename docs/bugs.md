@@ -1,3 +1,16 @@
+## 2026-10-18 — M16 2.22: transiciones de la matriz en `feasts`
+
+Al comparar la matriz completa antes y después de hacer cumplir D-16, los 48
+escenarios mantienen 118 checks rojos en total, pero `feasts` cambia de estado:
+`discovery-is-situated` pasa de PASS a FAIL y `hills-see-farther` de n/a a
+FAIL; `generations-turn-over` y `population-persists` pasan a PASS, igual que
+dos checks que antes no se ejercitaban. En una ejecución de control del mismo
+escenario con la validación territorial temporalmente desactivada, los dos
+checks nuevos volvieron a sus estados previos. La política de colocación es el
+cambio que produce la divergencia; no se cambia el umbral de los checks ni se
+presenta como una mejora general. Queda registrada para revisión de calibración
+en el bloque 10. Detalles y matrices: `artifacts/verification/m16-2.22/`.
+
 ## 2026-10-18 — M16 2.19: borde de mapa y agua exterior
 
 N34/K1/K2/K8/E1 quedan cubiertos por las pruebas de borde: un mapa geográfico

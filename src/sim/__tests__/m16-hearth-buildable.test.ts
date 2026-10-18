@@ -3,6 +3,7 @@ import { Simulation } from '../core/Simulation.ts';
 import { Building } from '../entities/Building.ts';
 import { ResourceNode } from '../entities/ResourceNode.ts';
 import { RNG } from '../core/RNG.ts';
+import { placeFixtureStation } from '../../../tools/territoryFixture.ts';
 
 describe('m16-hearth-buildable', () => {
   it('finishes a hearth from ground materials with empty hands and monotone progress', () => {
@@ -21,7 +22,8 @@ describe('m16-hearth-buildable', () => {
     }
     let hearth: Building | null = null;
     for (const [dx, dy] of [[4, 4], [-4, 4], [4, -4], [-4, -4], [6, 0], [0, 6]]) {
-      hearth = sim.place('hearth', Math.round(worker.x) + dx!, Math.round(worker.y) + dy!, worker.bandId, player.id);
+      const x = Math.round(worker.x) + dx!, y = Math.round(worker.y) + dy!;
+      hearth = placeFixtureStation(sim, 'hearth', x, y, worker.bandId, player.id);
       if (hearth) break;
     }
     expect(hearth).not.toBeNull();

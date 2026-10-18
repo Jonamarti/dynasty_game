@@ -5166,6 +5166,24 @@ export class Simulation {
         return t('{thing} is already there', { thing: theNoun(existing.def.label.toLowerCase()) });
       }
     }
+    if (def.station && !def.furniture && bandId !== undefined) {
+      const owner = this.territoryOwnerAt(x, y);
+      if (owner !== bandId) {
+        const band = this.bands.find(candidate => candidate.id === bandId);
+        const noTerritory = (band?.claimedCells?.size ?? 0) === 0;
+        const stationX = x + def.width / 2;
+        const stationY = y + def.height / 2;
+        const besideOwnBuilding = noTerritory && owner === null &&
+          this.buildingHash.queryRadius(stationX, stationY, 16, this.placeBuildingCandidates).some(building =>
+            building.ownerBandId === bandId && building.complete && !building.ruined &&
+            Math.hypot(building.centerX - stationX, building.centerY - stationY) <= 8);
+        if (!besideOwnBuilding) {
+          return owner !== null
+            ? t('That ground belongs to another band')
+            : t('A station must be inside your territory or within eight tiles of one of your buildings');
+        }
+      }
+    }
     if (def.earthwork) {
       const why = this.earthworkRefusal(def, x, y);
       if (why) return why;

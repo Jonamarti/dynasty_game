@@ -1,0 +1,102 @@
+
+> dynasty@0.16.2-alpha test
+> vitest run --run src/render/__tests__/m16-furniture-unbannered.test.ts src/sim/__tests__/m16-outdoor-furniture-territory.test.ts --maxWorkers=1 --testTimeout=15000
+
+
+ RUN  v4.1.11 C:/Users/Marty/Documents/Work/Programs/dynastyGame
+
+ ❯ src/render/__tests__/m16-furniture-unbannered.test.ts (2 tests | 2 failed) 17ms
+     × does not draw a tribe ring around furniture or stations 10ms
+     × does not draw a tribe pennant on furniture or stations 4ms
+ ❯ src/sim/__tests__/m16-outdoor-furniture-territory.test.ts (2 tests | 2 failed) 69ms
+     × refuses a station in another band’s territory and accepts one in its own 51ms
+     × lets a band with no territory place beside its finished building, but refuses a distant site 15ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/render/__tests__/m16-furniture-unbannered.test.ts > M16 furniture and station building art > does not draw a tribe ring around furniture or stations
+AssertionError: expected "vi.fn()" to not be called at all, but actually been called 1 times
+
+Received:
+
+  1st vi.fn() call:
+
+    Array [
+      26,
+      36,
+      17.92,
+      16,
+      0,
+      0,
+      6.283185307179586,
+    ]
+
+
+Number of calls: 1
+
+ ❯ src/render/__tests__/m16-furniture-unbannered.test.ts:54:31
+     52|       const { renderer, ctx } = rendererHarness();
+     53|       expect(drawArt(renderer, building(id))).toBe(true);
+     54|       expect(ctx.ellipse).not.toHaveBeenCalled();
+       |                               ^
+     55|     }
+     56|     const { renderer, ctx } = rendererHarness();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  src/render/__tests__/m16-furniture-unbannered.test.ts > M16 furniture and station building art > does not draw a tribe pennant on furniture or stations
+AssertionError: expected [] to include 'banner/pole'
+ ❯ src/render/__tests__/m16-furniture-unbannered.test.ts:70:55
+     68|     const { renderer, drawAsset } = rendererHarness();
+     69|     drawSprite(renderer, building('mud_hut'));
+     70|     expect(drawAsset.mock.calls.map(call => call[1])).toContain('banne…
+       |                                                       ^
+     71|     expect(drawAsset.mock.calls.map(call => call[1])).toContain('banne…
+     72|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+ FAIL  src/sim/__tests__/m16-outdoor-furniture-territory.test.ts > m16-outdoor-furniture-territory > refuses a station in another band’s territory and accepts one in its own
+AssertionError: expected null to be truthy
+
+- Expected:
+true
+
++ Received:
+null
+
+ ❯ src/sim/__tests__/m16-outdoor-furniture-territory.test.ts:44:76
+     42|     other.claimedCells = new Set([key]);
+     43|
+     44|     expect(sim.placementRefusal(BUILDINGS.quern!, site.x, site.y, own.…
+       |                                                                            ^
+     45|
+     46|     own.claimedCells = new Set([key]);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+
+ FAIL  src/sim/__tests__/m16-outdoor-furniture-territory.test.ts > m16-outdoor-furniture-territory > lets a band with no territory place beside its finished building, but refuses a distant site
+AssertionError: expected null to be truthy
+
+- Expected:
+true
+
++ Received:
+null
+
+ ❯ src/sim/__tests__/m16-outdoor-furniture-territory.test.ts:63:75
+     61|
+     62|     const far = clearSite(sim, (x, y) => Math.hypot(x + 1.5 - house!.c…
+     63|     expect(sim.placementRefusal(BUILDINGS.quern!, far.x, far.y, band.i…
+       |                                                                           ^
+     64|   });
+     65| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
+
+
+ Test Files  2 failed (2)
+      Tests  4 failed (4)
+   Start at  20:12:31
+   Duration  7.05s (transform 2.74s, setup 0ms, import 6.23s, tests 85ms, environment 0ms)
+

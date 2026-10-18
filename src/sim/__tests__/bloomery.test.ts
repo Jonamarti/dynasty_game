@@ -9,6 +9,7 @@ import { type Building } from '../entities/Building.ts';
 import { TECH, ageIndex, techPower, type Tech } from '../knowledge/Tech.ts';
 import { wantedOreKinds } from '../knowledge/Ore.ts';
 import { sparkFires, type Notice } from '../knowledge/Synthesis.ts';
+import { placeFixtureStation } from '../../../tools/territoryFixture.ts';
 
 const SMALL = {
   seed: 'bloomery',
@@ -33,7 +34,8 @@ function worldKnowing(techs: string[], seed = 'bloomery'): Simulation {
 function furnaceNear(sim: Simulation, person: Person): Building {
   let furnace: Building | null = null;
   for (const [dx, dy] of [[6, 6], [-6, 6], [6, -6], [-6, -6], [8, 0], [0, 8], [4, 0], [0, 4]]) {
-    furnace = sim.place('furnace', Math.round(person.x) + dx!, Math.round(person.y) + dy!, person.bandId);
+    const x = Math.round(person.x) + dx!, y = Math.round(person.y) + dy!;
+    furnace = placeFixtureStation(sim, 'furnace', x, y, person.bandId);
     if (furnace) break;
   }
   expect(furnace, 'somewhere to put the furnace').not.toBeNull();

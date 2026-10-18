@@ -1,3 +1,34 @@
+## 2026-10-18 — M16 2.22: estaciones en terreno propio y muebles sin banderín
+
+**Problema:** muebles y estaciones heredaban el anillo y el banderín de las
+viviendas. Además, un grupo podía marcar una estación en suelo ajeno o en un
+lugar sin territorio propio ni edificios cercanos.
+
+**Causa:** el renderer identificaba toda obra por su banda, sin distinguir
+`furniture` ni `station`; la validación de emplazamiento no consultaba el
+territorio. D-16 permite la excepción de ocho casillas solo a una banda que
+aún no ha reclamado territorio y junto a un edificio propio terminado.
+
+**Cambio:** camas, hogar interior, quern y estaciones ya no muestran anillo ni
+banderín. Una estación exterior requiere terreno de su banda, o la excepción
+de D-16; los rechazos explican si el terreno es ajeno o queda demasiado lejos.
+La colocación del jugador y de los NPC pasa por el mismo predicado. Las
+fixtures de metalurgia, cocina y conservación reclaman temporalmente su casilla
+de prueba y restauran el mapa al terminar. Versión `0.16.3-alpha`.
+
+**Verificación:** las 340 suites pasan (2.419 pruebas, 1 omitida); `typecheck`
+y el e2e focal pasan. `craft` mantiene las cuatro rojas de referencia. La
+matriz conserva 118 checks fallidos en 48 escenarios; `baseline:diff` señala
+transiciones en `feasts` (`discovery-is-situated` pasa a rojo y
+`hills-see-farther` pasa de n/a a rojo, mientras dos checks rojos pasan y dos
+n/a pasan). Un control con la nueva restricción desactivada recupera para esos
+checks el estado anterior: efecto medido de la regla en ese mundo, no una
+regresión de los fingerprints de switches apagados. Los tres fingerprints
+clásicos permanecen `f268441f`, `a90f56fc`, `f8401ac8`. Capturas:
+`artifacts/screenshots/m16-2026-10-18-2.22/01-furnished-interior-es.png` y
+`artifacts/screenshots/m16-2026-10-18-2.22/02-outdoor-station-es.png`. Evidencia
+en `artifacts/verification/m16-2.22/`.
+
 ## 2026-10-18 — M16 2.19: el borde del mapa no es mar
 
 **Problema:** fuera de un mapa geográfico se devolvía agua: el borde completo

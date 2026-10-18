@@ -6,6 +6,7 @@ import { ResourceNode } from '../entities/ResourceNode.ts';
 import { RNG } from '../core/RNG.ts';
 import { Person } from '../entities/Person.ts';
 import { stopReasonLabel } from '../../render/Floaters.ts';
+import { placeFixtureStation } from '../../../tools/territoryFixture.ts';
 
 const SMALL = {
   seed: 'm16-work-on-fetches-materials',
@@ -38,7 +39,8 @@ function settle(person: Person): void {
 
 function placeHearth(sim: Simulation, worker: Person): Building {
   for (const [dx, dy] of [[4, 4], [-4, 4], [4, -4], [-4, -4], [6, 0], [0, 6]]) {
-    const hearth = sim.place('hearth', Math.round(worker.x) + dx!, Math.round(worker.y) + dy!, worker.bandId);
+    const x = Math.round(worker.x) + dx!, y = Math.round(worker.y) + dy!;
+    const hearth = placeFixtureStation(sim, 'hearth', x, y, worker.bandId);
     if (hearth) return hearth;
   }
   throw new Error('Could not place a hearth near the worker');

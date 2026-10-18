@@ -27,6 +27,7 @@ import { earthWorldGeography } from '../world/WorldGeography.ts';
 import { WORLD_FEATURE } from '../world/WorldFeatureSeeds.ts';
 import type { LoadedWorldMap } from '../world/WorldAtlas.ts';
 import { sparkFires, type Notice } from '../knowledge/Synthesis.ts';
+import { placeFixtureStation } from '../../../tools/territoryFixture.ts';
 
 const SMALL = {
   seed: 'metal',
@@ -66,7 +67,8 @@ function worldKnowing(techs: string[], seed = 'metal'): Simulation {
 function stationNear(sim: Simulation, person: Person, stationId: string): Building {
   let station: Building | null = null;
   for (const [dx, dy] of [[6, 6], [-6, 6], [6, -6], [-6, -6], [8, 0], [0, 8], [4, 0], [0, 4]]) {
-    station = sim.place(stationId, Math.round(person.x) + dx!, Math.round(person.y) + dy!, person.bandId);
+    const x = Math.round(person.x) + dx!, y = Math.round(person.y) + dy!;
+    station = placeFixtureStation(sim, stationId, x, y, person.bandId);
     if (station) break;
   }
   expect(station, 'somewhere to put the ' + stationId).not.toBeNull();

@@ -5,6 +5,7 @@ import { RECIPES } from '../src/sim/entities/Recipe.ts';
 import { ITEMS } from '../src/sim/entities/Item.ts';
 import { equipContainer } from '../src/sim/core/Carry.ts';
 import { bestFoodFor } from '../src/sim/core/Macros.ts';
+import { placeFixtureStation } from './territoryFixture.ts';
 
 /** Resolve this from the live catalog so a missing recipe cannot pass by using a stale cache. */
 export function isPreservedFood(itemId: string): boolean {
@@ -36,14 +37,14 @@ export function setupSalters(sim: Simulation): void {
   const maker = sim.livingPeople().find(person => person.bandId === knowing && !person.isChild)!;
   let pan = null;
   for (const tile of [...sim.world.shoreTiles].sort((a, b) => maker.distanceTo(a) - maker.distanceTo(b))) {
-    pan = sim.place('salt_pan', tile.x, tile.y, knowing); if (pan) break;
+    pan = placeFixtureStation(sim, 'salt_pan', tile.x, tile.y, knowing); if (pan) break;
   }
   if (!pan) throw new Error('salters needs a saltwater footprint');
   pan.complete = true; pan.durability = pan.def.workTicks;
   let rack = null, hearth = null;
   for (let y = pan.y - 3; y <= pan.y + 4; y++) for (let x = pan.x - 3; x <= pan.x + 4; x++) {
-    if (!rack) rack = sim.place('drying_rack', x, y, knowing);
-    if (!hearth && Math.hypot(x - pan.centerX, y - pan.centerY) <= 3) hearth = sim.place('hearth', x, y, knowing);
+    if (!rack) rack = placeFixtureStation(sim, 'drying_rack', x, y, knowing);
+    if (!hearth && Math.hypot(x - pan.centerX, y - pan.centerY) <= 3) hearth = placeFixtureStation(sim, 'hearth', x, y, knowing);
   }
   if (!rack || !hearth) throw new Error('salters needs rack and fire');
   for (const station of [rack, hearth]) { station.complete = true; station.durability = station.def.workTicks; }

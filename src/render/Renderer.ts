@@ -1782,15 +1782,18 @@ export class Renderer {
     if (!(('b/' + id + '/ext') in bm.keys)) return false;
     const { ctx } = this;
 
-    // Whose it is: a thin ring on the ground round the footprint, and (below) a pennant.
-    ctx.save();
-    ctx.strokeStyle = BAND_COLORS[this.colorIndexOfBand(building.ownerBandId)]!;
-    ctx.globalAlpha = 0.5;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.ellipse(px + w / 2, py + h / 2, w * 0.56, h * 0.5, 0, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.restore();
+    // A ring and pennant identify a household building. Furniture and work
+    // stations are shared-use places; marking them as owned was misleading.
+    if (!building.def.furniture && !building.def.station) {
+      ctx.save();
+      ctx.strokeStyle = BAND_COLORS[this.colorIndexOfBand(building.ownerBandId)]!;
+      ctx.globalAlpha = 0.5;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(px + w / 2, py + h / 2, w * 0.56, h * 0.5, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
 
     if (building.soundness < 1) {
       const barW = w * 0.8;
@@ -1837,7 +1840,7 @@ export class Renderer {
     const groundY = (plan ? bm.meta['planGroundY'] : bm.meta['groundY']) as number;
     const y0 = plan ? top + fh / 2 - (box.oy + box.h / 2) * u : bottom - groundY * u;
     art.drawAsset(ctx, 'buildings', key, x0, y0, u);
-    if (!plan) {
+    if (!plan && !building.def.furniture && !building.def.station) {
       // A pennant in the tribe's colour at the right-hand corner of the front edge.
       const bu = scale / 40;
       const bx = cx + fw * 0.46 - 6 * bu, by = bottom - 46 * bu;

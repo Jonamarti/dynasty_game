@@ -1,5 +1,7 @@
 /** Spanish for actions. Keys are the English templates; see `i18n.ts`. */
 export const ES_ACTIONS: Record<string, string> = {
+  'A station must be inside your territory or within eight tiles of one of your buildings': 'Un puesto debe estar dentro de tu territorio o a menos de ocho casillas de uno de tus edificios',
+  'That ground belongs to another band': 'Ese terreno pertenece a otra banda',
   'That house belongs to another band': 'Esa casa pertenece a otra banda',
   'You need salt water nearby': 'Necesitas agua salada cerca',
   'there was no salt water nearby': 'no había agua salada cerca',

@@ -4,6 +4,7 @@
  */
 import { describe, it, expect, vi } from 'vitest';
 import { Simulation } from '../core/Simulation.ts';
+import { placeFixtureStation } from '../../../tools/territoryFixture.ts';
 import { telemetry } from '../core/Telemetry.ts';
 
 telemetry.enable();
@@ -73,7 +74,8 @@ describe('predators', () => {
     let hearth: ReturnType<typeof sim.place> = null;
     for (let ring = 2; ring <= 12 && !hearth; ring++) {
       for (const [dx, dy] of [[ring, 0], [-ring, 0], [0, ring], [0, -ring], [ring, ring]]) {
-        hearth = sim.place('hearth', Math.round(person.x) + dx!, Math.round(person.y) + dy!, person.bandId);
+        const x = Math.round(person.x) + dx!, y = Math.round(person.y) + dy!;
+        hearth = placeFixtureStation(sim, 'hearth', x, y, person.bandId);
         if (hearth) break;
       }
     }

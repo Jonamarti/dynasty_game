@@ -1,0 +1,8 @@
+
+> dynasty@0.16.3-alpha baseline:diff
+> vite-node tools/baseline-diff.ts -- artifacts/verification/m16-2.22/before/matrix.json artifacts/verification/m16-2.22/after/matrix.json
+
+feasts: passed -> failed: discovery-is-situated
+feasts: failed -> passed: generations-turn-over, population-persists
+feasts: na -> passed: kin-outrank-strangers, the-pregnant-are-spared
+feasts: na -> failed: hills-see-farther

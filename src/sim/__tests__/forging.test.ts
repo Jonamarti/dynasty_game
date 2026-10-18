@@ -6,6 +6,7 @@ import { Building, BUILDINGS, isStation } from '../entities/Building.ts';
 import { ITEMS } from '../entities/Item.ts';
 import { RECIPES } from '../entities/Recipe.ts';
 import { TECH, ageIndex } from '../knowledge/Tech.ts';
+import { placeFixtureStation } from '../../../tools/territoryFixture.ts';
 
 const SMALL = {
   seed: 'forging',
@@ -28,7 +29,8 @@ function worldKnowing(techs: string[], seed = 'forging'): Simulation {
 function anvilNear(sim: Simulation, person: Person): Building {
   let anvil: Building | null = null;
   for (const [dx, dy] of [[6, 6], [-6, 6], [6, -6], [-6, -6], [8, 0], [0, 8], [4, 0], [0, 4]]) {
-    anvil = sim.place('anvil', Math.round(person.x) + dx!, Math.round(person.y) + dy!, person.bandId);
+    const x = Math.round(person.x) + dx!, y = Math.round(person.y) + dy!;
+    anvil = placeFixtureStation(sim, 'anvil', x, y, person.bandId);
     if (anvil) break;
   }
   expect(anvil, 'somewhere to put the anvil').not.toBeNull();
