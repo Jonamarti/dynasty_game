@@ -1,3 +1,23 @@
+## 2026-10-18 — M16 1.5: guardar mundos de prueba reutilizables
+
+**Problema:** los tests que necesitan un mundo de varios meses tenían que
+volver a simular toda su historia y no compartían una frontera guardada.
+
+**Causa:** el arnés tenía escenarios, pero no recetas reproducibles que
+generaran checkpoints reutilizables ni una señal para invalidarlos al cambiar
+el esquema.
+
+**Cambio:** `fixtures:build` guarda cinco mundos en `fixtures/worlds/`, que Git
+ignora. `loadWorld` comprueba el hash SHA-256 de la receta, su configuración,
+la versión del checkpoint y las rutas de configuración; reconstruye si falta
+el mundo o la clave quedó obsoleta, y aplica overrides sobre la copia cargada.
+Los cinco mundos superaron sus mínimos de población.
+
+**Verificación:** los cinco mundos guardados tienen 34, 23, 15, 13 y 28
+personas vivas. Los tests de carga determinista, clave obsoleta, archivo
+ausente y override pasaron; Vitest completo pasó (326 archivos, 2.391
+aprobadas y una omitida). No cambia el mundo, la versión ni la interfaz.
+
 ## 2026-10-18 — M16 1.4b: mantener las fixtures de hierro dentro del mapa
 
 **Problema:** dos escenarios no podían guardarse porque el yunque de prueba

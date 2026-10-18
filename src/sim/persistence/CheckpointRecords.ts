@@ -12,9 +12,12 @@ import { toWorldObjectRecord, fromWorldObjectRecord, type WorldObjectRecord, typ
 import { toLedgerRecord, fromLedgerRecord, type LedgerRecord, type LedgerState } from './LedgerRecords.ts';
 import type { World } from '../core/World.ts';
 
+/** Bump when the persisted checkpoint envelope changes incompatibly. */
+export const CHECKPOINT_RECORD_VERSION = 1 as const;
+
 export interface CheckpointRecord {
   readonly recordType: 'CheckpointRecord';
-  readonly version: 1;
+  readonly version: typeof CHECKPOINT_RECORD_VERSION;
   readonly lastAdvancedTick: number;
   readonly config: SimConfig;
   readonly ids: IdSpaceSnapshot;
@@ -209,7 +212,7 @@ export function toCheckpointRecord(sim: Simulation): CheckpointRecord {
   const normsByBand = (sim as unknown as { normsByBand: Map<number, unknown> }).normsByBand;
   if (sim.bands.some(band => normsByBand.get(band.id) !== band.norms)) invalid('source culture aliases disagree');
   const record: CheckpointRecord = {
-    recordType: 'CheckpointRecord', version: 1, lastAdvancedTick: tick,
+    recordType: 'CheckpointRecord', version: CHECKPOINT_RECORD_VERSION, lastAdvancedTick: tick,
     config: copyConfig(sim.config), ids: sim.idSnapshot(),
     roster: toRosterRecord(sim), execution: toExecutionRecord(sim),
     terrain: toWorldTerrainRecord(sim.world), objects: toWorldObjectRecord(sim),
@@ -226,7 +229,7 @@ export function toCheckpointRecord(sim: Simulation): CheckpointRecord {
 export function fromCheckpointRecord(input: unknown): CheckpointState {
   if (!object(input)) invalid('expected object');
   exact(input, ['recordType', 'version', 'lastAdvancedTick', 'config', 'ids', 'roster', 'execution', 'terrain', 'objects', 'ledgers']);
-  if (input.recordType !== 'CheckpointRecord' || input.version !== 1 ||
+  if (input.recordType !== 'CheckpointRecord' || input.version !== CHECKPOINT_RECORD_VERSION ||
       !Number.isSafeInteger(input.lastAdvancedTick) || (input.lastAdvancedTick as number) < 0) invalid('expected CheckpointRecord v1');
   const tick = input.lastAdvancedTick as number;
   for (const key of ['roster', 'execution', 'objects', 'ledgers'] as const) {

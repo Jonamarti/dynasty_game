@@ -1,0 +1,9 @@
+
+> dynasty@0.15.160-alpha fixtures:build
+> vite-node tools/fixtures-build.ts
+
+after_first_winter: saved at tick 10800 (34 alive)
+band_with_shelter: saved at tick 16000 (23 alive)
+village_with_crafts: saved at tick 12000 (15 alive)
+two_rival_bands: saved at tick 80 (13 alive)
+chiefdom_with_surplus: saved at tick 24000 (28 alive)

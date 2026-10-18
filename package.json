@@ -14,6 +14,7 @@
     "sim:check:all": "vite-node tools/scenarios.ts --",
     "baseline:diff": "vite-node tools/baseline-diff.ts --",
     "baseline:pin": "vite-node tools/baseline-pin.ts",
+    "fixtures:build": "vite-node tools/fixtures-build.ts",
     "sim:seeds": "vite-node tools/seeds.ts --",
     "range": "vite-node tools/range.ts --",
     "world:build": "vite-node tools/worlddata/run.ts",

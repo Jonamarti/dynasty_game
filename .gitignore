@@ -1,6 +1,7 @@
 node_modules/
 dist/
 artifacts/
+fixtures/worlds/
 *.local
 .DS_Store
 debug.log
