@@ -359,6 +359,7 @@ export const STOP_REASONS: Record<string, string> = {
   fruit_fallen: 'the fruit had fallen and gone over',
   nothing_to_haul: 'they carried nothing the site needed',
   site_needs_materials: 'the site still wants materials',
+  site_material_unavailable: 'nobody knew where to find the missing materials',
   already_built: 'it was already finished',
   not_a_store: 'it is not a store',
   // M11 phase 11b: `sabotage`'s own gate on `reachBuilding`, bundling every

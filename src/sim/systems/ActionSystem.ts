@@ -129,6 +129,8 @@ export interface ActionContext {
   onBuildingStateChanged?: (building: Building) => void;
   /** Places one carried furniture item at a clear floor tile in its host dwelling. */
   placeFurniture?: (person: Person, host: Building, itemId: string) => Building | null;
+  /** Lets an explicit player build order use the same scored source as NPC site work. */
+  onBuildNeedsMaterials?: (person: Person, site: Building) => 'started' | 'unavailable' | null;
   treesById: Map<number, Tree>;
   animalsById: Map<number, Animal>;
   /** Called when an animal is killed, so the world can take it out. */
@@ -2011,6 +2013,23 @@ export class ActionSystem {
           answers: feeds ? 'hunger' : answersColdProject(person, ctx) ? 'cold' : undefined,
         });
     if (stop) {
+      // `gather_for_site` is normally an NPC scoring decision and ends so the
+      // planner can choose haul/build on its next think. An explicit player
+      // build order keeps the same intent and routes the gathered load to its
+      // named site without asking manual autonomy to make another decision.
+      const site = person.isPlayer && ['gathered_enough', 'node_empty', 'hands_full'].includes(stop) &&
+        person.order === 'build' && person.targetBuildingId !== null
+        ? ctx.buildingsById.get(person.targetBuildingId) : undefined;
+      if (site && !site.complete && site.wants(person.inventory)) {
+        person.action = 'haul';
+        person.actionTimer = 0;
+        person.targetNodeId = null;
+        person.targetItemId = null;
+        person.targetItemCount = null;
+        person.targetX = site.centerX;
+        person.targetY = site.centerY;
+        return;
+      }
       this.stop(person, stop, ctx);
       return;
     }
@@ -2828,6 +2847,17 @@ export class ActionSystem {
     site.haulTrips++;
     telemetry.count('haul_trip_band_' + person.bandId);
     telemetry.count('haul_units_band_' + person.bandId, delivered);
+    // A player who explicitly chose “Work on” is still carrying out that
+    // order. NPCs get the same continuation from their backer score after a
+    // haul, but a manually steered player is never replanned for them.
+    if (person.isPlayer && person.order === 'build' && !site.complete) {
+      person.action = 'build';
+      person.actionTimer = 0;
+      person.targetBuildingId = site.id;
+      person.targetX = site.centerX;
+      person.targetY = site.centerY;
+      return;
+    }
     this.finish(person);
   }
 
@@ -2887,7 +2917,9 @@ export class ActionSystem {
         person.action = 'haul';
         return;
       }
-      this.abandon(person, 'site_needs_materials', ctx);
+      const fetch = person.order === 'build' ? ctx.onBuildNeedsMaterials?.(person, site) : null;
+      if (fetch === 'started') return;
+      this.abandon(person, fetch === 'unavailable' ? 'site_material_unavailable' : 'site_needs_materials', ctx);
       return;
     }
 

@@ -185,6 +185,7 @@ export const ES_ACTIONS: Record<string, string> = {
   "the fruit had fallen and gone over": "la fruta se había caído y estropeado",
   "they carried nothing the site needed": "no llevaba nada que la obra necesitara",
   "the site still wants materials": "a la obra aún le faltan materiales",
+  "nobody knew where to find the missing materials": "nadie sabía dónde encontrar los materiales que faltaban",
   "it was already finished": "ya estaba terminado",
   "it is not a store": "no es un almacén",
   "there was nothing standing there worth attacking": "allí no había nada en pie que valiera la pena atacar",

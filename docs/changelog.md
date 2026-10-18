@@ -17094,3 +17094,25 @@ resultado del job. No se ejecuta el flujo remoto desde esta rama.
 **Verificación:** ambos YAML ya no contienen `continue-on-error`; el cierre de
 1.2 requiere dos pasadas locales completas de Vitest y E2E.
 
+# 2026-10-18 — M16 2.15: «Trabajar en» reúne materiales y termina la hoguera
+
+**Problema:** N16/N40: una obra sin materiales apilados se quedaba en 0 %; el
+personaje del jugador no podía seguir la búsqueda autónoma.
+
+**Causa:** el planificador ya ofrecía `gather_for_site`, pero un jugador con
+autonomía manual no vuelve a planificar después de recoger o entregar la carga.
+
+**Cambio:** el jugador que ordenó construir usa la selección existente de
+`gather_for_site`, acarrea la carga al sitio y retoma la construcción. Si no hay
+fuente conocida, recibe el motivo visible `site_material_unavailable`. Se
+mantiene el comportamiento previo de los NPC. En español, `Hearth` ahora es
+«Hoguera» y `Fireplace` es «Hogar». Versión `0.16.0-alpha`.
+
+**Verificación:** las pruebas focales pasan (6 archivos, 60 pruebas) y
+`typecheck` pasa. `earthworks-are-dug` sigue pasando en `hearths`; la matriz
+mantiene los cinco rojos baseline del escenario y `perf-budget` queda por
+debajo del suelo (444 pasos/s frente a 2.066). La suite completa tuvo un único
+timeout en `fixtures.test.ts`; ejecutada sola, esa suite pasa 2/2 en 126,23 s,
+casi todo en sus pruebas (120,34 s). `baseline:pin` conserva los tres
+fingerprints previos. Captura: `artifacts/screenshots/m16-2026-10-18-2.15/hearth-buildbar-es.png`.
+

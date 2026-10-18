@@ -5146,11 +5146,18 @@ export class Brain {
         // `gather_for_site` is ordinary gathering aimed at a material a
         // construction site is short of; the action system does not need to
         // know the difference, only the scorer does.
-        if (action === 'gather_for_site') person.action = 'gather';
+        if (action === 'gather_for_site') {
+          telemetry.count('gather_for_site');
+          person.action = 'gather';
+        }
         if (action === 'gather_for_site' && found.site) {
           // Keep the named destination on the trip: the site crew instrument
           // must count a sponsor/backer gathering its materials as a worker.
           person.targetBuildingId = found.site.id;
+          if (person.isPlayer && person.order === 'build' && found.matNode) {
+            person.targetItemId = found.matNode.itemId;
+            person.targetItemCount = found.site.stillNeeds(found.matNode.itemId);
+          }
         } else if (action === 'gather_for_site' && found.fireplaceGatherHome &&
             found.fireplaceGatherItem && found.fireplaceGatherCount !== null) {
           person.targetBuildingId = found.fireplaceGatherHome.id;

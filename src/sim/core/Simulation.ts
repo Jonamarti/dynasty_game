@@ -6445,6 +6445,11 @@ export class Simulation {
       },
       placeFurniture: (person: Person, host: Building, itemId: string) =>
         this.placeFurniture(person, host, itemId),
+      onBuildNeedsMaterials: (person: Person) => {
+        if (!person.isPlayer) return null;
+        return this.brain.think(person, brainCtx, new Set(['gather_for_site'])) === 'gather_for_site'
+          ? 'started' : 'unavailable';
+      },
       treesById: this.treesById,
       animalsById: this.animalsById,
       onAnimalKilled: (animal: Animal) => this.removeAnimal(animal),

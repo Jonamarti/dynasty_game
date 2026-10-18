@@ -5838,3 +5838,15 @@ reported 4.79 seconds of import and 103.30 seconds of tests, so it does not
 reproduce the long import measurement by itself. The full output is in
 [`artifacts/verification/m16-1.5/after/unit-tests-full.log`](../artifacts/verification/m16-1.5/after/unit-tests-full.log).
 Cause remains unconfirmed; this is a timing anomaly, not a test failure.
+# M16 verification note — 2026-10-18
+
+The full Vitest suite on M16 2.15 ended with one timeout in
+`fixtures.test.ts` (`loads the same world twice and advances to the same
+checkpoint`); 330 other files passed. Running that file alone passed 2/2, but
+took 126.23 s overall, including 120.34 s inside tests. This is a near-limit
+test/runtime observation, not evidence that the build change caused it. Keep
+the full-suite timeout distinct from the passing isolated result. The M16
+2.15 hearth scenario also remains below the `perf-budget` floor at 444 steps/s
+(floor 2,066); the scenario's five other failed checks match the frozen R21
+baseline. The targeted earthwork check passed after limiting the continuation
+change to explicit player orders.
