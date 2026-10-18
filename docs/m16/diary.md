@@ -183,3 +183,30 @@ huellas pasan.
 What is left open: los 118 checks rojos heredados permanecen sin cambios.
 
 Screenshots: none; no UI change.
+
+## M16 1.5 — Mundos de fixture reutilizables (2026-10-18, `64aaef4`)
+
+Goal: guardar mundos vividos y volver a cargarlos sin simular de nuevo toda su
+historia cuando un test necesita ese punto de partida.
+
+What was done: se añadieron cinco recetas, un comando para construirlas y un
+cargador que verifica la receta, la configuración, sus campos y la versión del
+checkpoint antes de reutilizar el archivo. Si falta el mundo o cambió la clave,
+lo reconstruye; los overrides se aplican a la simulación cargada.
+
+Before and after: antes faltaban el módulo y el comando, y `fixtures.test.ts`
+fallaba al importarlos. Después, los cinco mundos quedaron con 34, 23, 15, 13
+y 28 personas vivas; cargar y avanzar dos copias 200 pasos dio el mismo hash,
+y tanto una clave obsoleta como un archivo borrado provocaron reconstrucción.
+Vitest pasó 326 archivos (2.391 aprobadas, una omitida).
+
+What turned out differently from the card: el codec solo tenía la versión `1`
+como literal, sin una constante exportada; se nombró para que la clave dependa
+de un único valor. El reporte completo de Vitest asignó 8.216,98 s a
+importación y 634,65 s a tests; el test focal importó en 4,79 s. No se confirmó
+la causa y quedó registrada en `docs/bugs.md`.
+
+What is left open: diagnosticar la duración de importación reportada por la
+pasada completa. No queda pendiente de la función de fixtures.
+
+Screenshots: none; no UI change.

@@ -313,7 +313,7 @@ A stage ends with the full level (§5) and a screenshot tour.
 | 5 | [1.2](phases/1.2-tool-fixes.md) | Fix the test tools (T1–T5, E15, E16) | done c4c14c2 |
 | 6 | [1.3](phases/1.3-comparable-baseline.md) | Comparable baseline and the "off equals before" test | done 2f3aefb |
 | 7 | [1.4](phases/1.4-checkpoint-scenario-keys.md) | Checkpoints of every scenario can be saved (E10) | done 9e567c5 |
-| 8 | [1.5](phases/1.5-fixture-worlds.md) | Fixture worlds | todo |
+| 8 | [1.5](phases/1.5-fixture-worlds.md) | Fixture worlds | done 64aaef4 |
 | 9 | [1.6](phases/1.6-from-scenarios.md) | Short scenarios that start from a fixture | todo |
 | 10 | [1.7](phases/1.7-run-levels.md) | Run levels `check:fast/area/full` | todo |
 | 11 | [1.8](phases/1.8-perf.md) | Performance command and budget | todo |

@@ -16,7 +16,9 @@ Los cinco mundos superaron sus mínimos de población.
 **Verificación:** los cinco mundos guardados tienen 34, 23, 15, 13 y 28
 personas vivas. Los tests de carga determinista, clave obsoleta, archivo
 ausente y override pasaron; Vitest completo pasó (326 archivos, 2.391
-aprobadas y una omitida). No cambia el mundo, la versión ni la interfaz.
+aprobadas y una omitida). El reporte separó 8.216 s de importación y 635 s de
+tests; la diferencia no tiene causa confirmada y queda anotada en `docs/bugs.md`.
+No cambia el mundo, la versión ni la interfaz.
 
 ## 2026-10-18 — M16 1.4b: mantener las fixtures de hierro dentro del mapa
 

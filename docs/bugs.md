@@ -5783,3 +5783,13 @@ The historical character creation spec once saw `.newgame-option` go from 3 to 0
 when switching to five tribes (98/99 passes). Repeating it 50 times with
 `--repeat-each=50` passed 50/50 in 6m24s. The issue did not reproduce; its cause
 is unknown, and no game behavior or assertion was changed.
+
+## 2026-10-18 — M16 1.5 Vitest reported an unusually long import phase
+
+`npm.cmd test -- --maxWorkers=1 --testTimeout=15000` passed all 326 files
+(2,391 passed, one skipped), but reported 8,216.98 seconds in import and
+634.65 seconds in tests (8,927.36 seconds total). The focused new fixture test
+reported 4.79 seconds of import and 103.30 seconds of tests, so it does not
+reproduce the long import measurement by itself. The full output is in
+[`artifacts/verification/m16-1.5/after/unit-tests-full.log`](../artifacts/verification/m16-1.5/after/unit-tests-full.log).
+Cause remains unconfirmed; this is a timing anomaly, not a test failure.
