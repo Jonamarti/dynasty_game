@@ -14,8 +14,10 @@ aplica a las tres fixtures de anvil; el mundo del jugador no cambia.
 (44/44); typecheck y las huellas con switches apagados pasan. Al completar el
 esquema del checkpoint, las huellas pasaron a `f268441f`, `a90f56fc` y
 `f8401ac8`: solo cambia la forma guardada de la configuración; el estado del
-mundo y el comportamiento antiguo quedan iguales. La suite completa se
-registra al cerrar la fase.
+mundo y el comportamiento antiguo quedan iguales. Vitest completo pasó (325
+archivos, 2.389 pruebas aprobadas, una omitida). La matriz quedó en 43
+escenarios, 1.810 checks aprobados, 118 fallidos y 2.268 `n/a`; `baseline:diff`
+no encontró cambios de estado frente a la matriz congelada.
 
 ## 2026-10-18 — M16 1.4a: migrar las tecnologías iniciales de los escenarios
 

@@ -155,3 +155,31 @@ What is left open: los 118 checks rojos siguen siendo baseline; no hubo nuevas
 regresiones conocidas.
 
 Screenshots: none; no UI change.
+
+## M16 1.4 — Guardar checkpoints de todos los escenarios (2026-10-18, `9e567c5`)
+
+Goal: comprobar que cada escenario del arnés puede guardarse y recargarse tras
+su configuración y sus primeros diez pasos.
+
+What was done: el codec reconoce las dos claves reales de tecnologías
+fundadoras, valida sus datos y migra checkpoints antiguos al valor vacío que
+ya tenían semánticamente. Las fixtures de yunque buscan un emplazamiento legal
+en el mapa. E10 queda cerrado.
+
+Before and after: la prueba inicial falló en seis escenarios: cuatro con
+`unknown or missing fields` y dos con `world object outside terrain`. Tras los
+cambios pasan los 44 escenarios y la prueba de migración demuestra que avanzar
+un checkpoint antiguo da el mismo resultado que avanzar la configuración
+completa. Vitest pasó 325 archivos (2.389 aprobadas, una omitida). La matriz
+conservó 1.810 aprobadas, 118 fallidas y 2.268 `n/a`; no hubo transiciones de
+estado contra la base.
+
+What turned out differently from the card: además de las cuatro claves
+previstas, `carburisers` e `ironworkers` situaban su yunque fuera del terreno.
+Se corrigió la fixture sin alterar sus checks. El cambio de forma del config
+movió las huellas completas R13; la línea base se volvió a fijar y las nuevas
+huellas pasan.
+
+What is left open: los 118 checks rojos heredados permanecen sin cambios.
+
+Screenshots: none; no UI change.
