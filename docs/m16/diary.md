@@ -179,7 +179,7 @@ baseline.
 
 Screenshots: none; no UI change.
 
-## M16 2.23 — Selección de personas en la costa (2026-10-18, commit registrado en el cierre)
+## M16 2.23 — Selección de personas en la costa (2026-10-18, `80ce45d`)
 
 Goal: seleccionar a una persona al pulsar sobre su dibujo en playa o agua somera y conservar la acción de beber en agua abierta.
 

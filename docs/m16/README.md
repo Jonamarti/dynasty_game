@@ -328,7 +328,7 @@ A stage ends with the full level (§5) and a screenshot tour.
 | 15 | [2.4](phases/2.4-pickup.md) | Picking up: right reason, nothing vanishes, rest of the pile (N8, N20, K3, K4) | done |
 | 16 | [2.19](phases/2.19-map-edge.md) | The map edge is not sea (N34, N36, K1, K2, K8, E1) | done |
 | 17 | [2.22](phases/2.22-furniture.md) | Furniture without banners; outdoor furniture inside territory (N45, K6) | done `63bc104` |
-| 18 | [2.23](phases/2.23-select-on-shore.md) | Select people standing on the shore (N46, K7) | done (commit recorded in closeout) |
+| 18 | [2.23](phases/2.23-select-on-shore.md) | Select people standing on the shore (N46, K7) | done `80ce45d` |
 | 19 | [2.27](phases/2.27-infants-cannot-dress.md) | Babies are not dressed (E9) | todo |
 | 20 | [2.29](phases/2.29-art-sheet.md) | `art:sheet` finishes (E14) | todo |
 | 21 | [11.5](phases/11.5-action-labels.md) | Every action says what it is doing, in both languages (N35, K5) | todo |
