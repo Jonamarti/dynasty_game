@@ -1,3 +1,16 @@
+## 2026-10-18 — M16 2.19: borde de mapa y agua exterior
+
+N34/K1/K2/K8/E1 quedan cubiertos por las pruebas de borde: un mapa geográfico
+no interpreta el exterior como mar, no agrega la orilla del perímetro ni
+envuelve un río oeste al este, y no trata las coordenadas externas como
+vadeables. La isla clásica conserva el mar exterior y sus fingerprints. N36
+se verificó ya corregido: viajar al este y volver al oeste conserva identidad
+y los árboles muestran personas vivas; no se modificó su código.
+
+Typecheck y Vitest pasan (338 archivos; 2.415 pruebas, 1 omitida). La matriz
+conserva las 118 rojas del baseline de M16 1.6 sin cambios de estado en 48
+escenarios. El registro completo está en `artifacts/verification/m16-2.19/`.
+
 ## 2026-10-18 — M16 2.4: recogida de objetos
 
 N8, K3 y K4 quedan cubiertos por pruebas de capacidad: el menú usa el mismo

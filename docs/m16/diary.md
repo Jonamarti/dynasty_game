@@ -1,5 +1,43 @@
 # M16 diary
 
+## M16 2.19 — the map edge is not sea (2026-10-18)
+
+Goal: close N34, K1, K2, K8, E1, and measure N36 using capability tests.
+
+The edge-specific tests were run red first: map perimeter tiles were reported
+as shore, a west-edge river wrapped to a phantom east-edge fresh shore,
+outside-map shallow water was true, and player movement at the east edge
+reported deep water. Classic-island behavior remains sea at the perimeter.
+Added `World.outsideIsSea`, map-bounds-safe shore and water-kind checks, and a
+movement query that keeps map edges out of the sea. The first full suite caught
+that applying the new bounds rule to classic `hasWaterOfKind` also changed its
+historical wrapped neighbor lookup; the classic branch now retains that exact
+lookup, while geographic maps stop before indexing. The specific water-source
+consumer test passes after this correction. Geographic terrain saves
+record the flag in schema v4; old records default to the prior sea-edge rule.
+Classic islands keep their v3 record shape. No RNG stream or switch was added.
+
+N36's scout east/return, family/tribe living-person views, active identity, and
+westward return test passed before any N36-related code change. Under R22 that
+is recorded as already fixed in M15 (`124c0a7`); this phase did not alter travel
+or those views.
+
+Before/after: the capability tests, persistence round trip, focused tests, and
+switch-off fingerprint check pass; the pinned classic fingerprints remain
+`f268441f`, `a90f56fc`, `f8401ac8`. Typecheck passes. The full unit suite
+passes 338 files (2,415 passed, one skipped). `sim:check:all` exits 1 with the
+inherited 118 failed checks; `baseline:diff` reports no check status changes
+against M16 1.6 across 48 scenarios. `tiny` retains the same four reds as its
+baseline (`moods-move-choices`, `materials-delivered`, `forest-is-used`,
+`perf-budget`). Logs and matrix are in `artifacts/verification/m16-2.19/`.
+Screenshot:
+`artifacts/screenshots/m16-2026-10-18-2.19/map-edge-no-false-swim-es.png`.
+
+What differed from the phase card: N36's suspected stale comarca identity and
+empty trees did not reproduce on the current build, so no speculative travel
+fix was made. Existing old saves need no migration because the new flag is
+absent from classic records and defaults to true when loading versions 1–3.
+
 ## M16 2.4 — pickup reasons and the rest of the pile (2026-10-18)
 
 Goal: close N8/N20 and the code findings K3/K4 with player-facing capability

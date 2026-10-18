@@ -1,0 +1,4 @@
+
+> dynasty@0.16.1-alpha typecheck
+> tsc --noEmit
+

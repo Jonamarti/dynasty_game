@@ -1,3 +1,27 @@
+## 2026-10-18 — M16 2.19: el borde del mapa no es mar
+
+**Problema:** fuera de un mapa geográfico se devolvía agua: el borde completo
+se convertía en orilla, un río al oeste podía generar orillas dulces fantasma
+al este y caminar hacia el perímetro mostraba una negativa falsa de nado.
+
+**Cambio:** `World.outsideIsSea` conserva el mar exterior de la isla clásica y
+lo desactiva en mapas geográficos. Orillas y consultas de agua comprueban los
+límite antes de indexar; movimiento comparte la regla. El terreno de mapas
+guarda el valor en registro v4; registros anteriores conservan el valor
+histórico. La consulta de agua dulce conserva en la isla clásica su índice
+envolvente histórico; el límite se aplica solo en mapas geográficos. La isla
+clásica mantiene su forma v3 serializada para proteger sus fingerprints. No
+se añadió flujo RNG ni switch. N36 (vuelta oeste, identidad y
+árboles vivos) ya pasaba antes del cambio; queda verificado como corregido en
+M15 (`124c0a7`) sin cambio de código en esta fase. Versión `0.16.2-alpha`.
+
+**Verificación:** fingerprints clásicos `f268441f`, `a90f56fc`, `f8401ac8`;
+typecheck y Vitest completo pasan (338 archivos, 2.415 pruebas, 1 omitida).
+`sim:check:all` mantiene 118 rojas; `baseline:diff` no encuentra cambios de
+estado frente a 1.6 en 48 escenarios. `tiny` conserva sus cuatro rojas de
+baseline. Salidas en `artifacts/verification/m16-2.19/`; captura
+`artifacts/screenshots/m16-2026-10-18-2.19/map-edge-no-false-swim-es.png`.
+
 ## 2026-10-18 — M16 2.4: recogida con motivo correcto y sin saltarse el montón
 
 **Problema:** N8 mostraba «manos llenas» al pedir un segundo hatillo aunque la

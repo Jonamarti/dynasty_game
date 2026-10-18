@@ -46,12 +46,14 @@ describe('geographic WorldState construction', () => {
         fishingSpots: 0, wildGrainPatches: 0, gameHerds: 2, predators: 0 },
     };
     const state = new WorldState(config, geographicStart());
+    expect(state.current.world.outsideIsSea).toBe(false);
     expect(state.geography.kind).toBe('earth');
     expect(state.current.people).toHaveLength(0);
     expect(state.current.animals.length).toBeGreaterThan(0);
     expect(state.current.nodes.filter(node => node.kind === 'berries').length).toBeGreaterThan(0);
     const record = toCheckpointRecord(state.current);
     const restored = Simulation.fromCheckpointRecord(JSON.parse(JSON.stringify(record)));
+    expect(restored.world.outsideIsSea).toBe(false);
     for (let i = 0; i < 12; i++) {
       state.current.step();
       restored.step();

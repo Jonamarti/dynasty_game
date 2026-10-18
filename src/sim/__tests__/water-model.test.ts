@@ -43,9 +43,9 @@ describe('local freshwater and saltwater semantics', () => {
   it('keeps geographic water classes and raised river surfaces through terrain records', () => {
     const world = geographicWorld();
     const record = toWorldTerrainRecord(world);
-    expect(record.version).toBe(3);
+    expect(record.version).toBe(4);
     const legacy = JSON.parse(JSON.stringify(record));
-    legacy.version = 2; delete legacy.tiles.baseWalkable;
+    legacy.version = 2; delete legacy.outsideIsSea; delete legacy.tiles.baseWalkable;
     const oldWorld = fromWorldTerrainRecord(legacy);
     expect(oldWorld.isDrinkingWater(1, 1)).toBe(true);
     expect(oldWorld.isDrinkingWater(4, 1)).toBe(false);
@@ -93,7 +93,7 @@ describe('local freshwater and saltwater semantics', () => {
     const y = Math.floor(waterIndex / world.width);
     expect(world.isDrinkingWater(x, y)).toBe(true);
     const legacy = JSON.parse(JSON.stringify(record));
-    legacy.version = 1; delete legacy.tiles.baseWalkable;
+    legacy.version = 1; delete legacy.outsideIsSea; delete legacy.tiles.baseWalkable;
     expect(fromWorldTerrainRecord(legacy).isDrinkingWater(x, y)).toBe(true);
     expect(world.saltShore).toEqual([]);
   });

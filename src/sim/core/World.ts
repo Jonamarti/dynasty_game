@@ -27,6 +27,8 @@ export const PROMINENCE_RADIUS = 5;
 export class World {
   readonly width: number;
   readonly height: number;
+  /** Whether the clipped edge is an actual sea boundary (classic island) or a map seam. */
+  outsideIsSea: boolean;
   readonly chunkSize: number;
   readonly chunksX: number;
   readonly chunksY: number;
@@ -120,6 +122,7 @@ export class World {
   constructor(private readonly config: WorldConfig, rng: RNG, localGeography?: LocalGeographySource) {
     this.width = config.width;
     this.height = config.height;
+    this.outsideIsSea = localGeography === undefined;
     this.chunkSize = config.chunkSize;
     this.chunksX = Math.ceil(this.width / this.chunkSize);
     this.chunksY = Math.ceil(this.height / this.chunkSize);
@@ -283,7 +286,18 @@ export class World {
 
   /** Water shallow enough to walk through; equality belongs to swimming. */
   isShallow(x: number, y: number): boolean {
+    if (!this.inBounds(x, y)) return this.waterOutside(x, y);
     return this.isWater(x, y) && this.depthAt(x, y) < this.config.wadeDepth;
+  }
+
+  /** Movement treats the clipped edge as water only on the classic island. */
+  isWaterForMovement(x: number, y: number): boolean {
+    return this.inBounds(x, y) ? this.isWater(x, y) : this.waterOutside(x, y);
+  }
+
+  /** `biomeAt` keeps returning water off-map for rendering; gameplay asks this instead. */
+  private waterOutside(x: number, y: number): boolean {
+    return !this.inBounds(x, y) && this.outsideIsSea;
   }
 
   /** Water tiles in the swim band; deeper water remains a future boat route. */
@@ -713,6 +727,12 @@ export class World {
 
   private hasWaterOfKind(x: number, y: number, kind: 1 | 2): boolean {
     const ownKind = (tx: number, ty: number): boolean => {
+      if (!this.inBounds(tx, ty)) {
+        if (!this.outsideIsSea) return false;
+        // The classic island historically resolves its off-edge neighbors
+        // through `index` (which wraps); preserve that seed-visible rule.
+        return this.waterKind ? this.waterKind[this.index(tx, ty)] === kind : kind === 1;
+      }
       if (!this.isWater(tx, ty)) return false;
       return this.waterKind ? this.waterKind[this.index(tx, ty)] === kind : kind === 1;
     };
@@ -1032,6 +1052,8 @@ export class World {
   }
 
   biomeAt(x: number, y: number): Biome {
+    // Keep the renderer's historical off-map fill; gameplay uses `waterOutside`
+    // so a clipped geographic map edge does not become a false sea.
     if (!this.inBounds(x, y)) return 'water';
     return BIOMES[this.biome[this.index(x, y)]!]!;
   }
@@ -1084,10 +1106,12 @@ export class World {
 
   /** True on a wadeable water tile or next to water — for drinking and shore work. */
   isShore(x: number, y: number): boolean {
+    const waterAt = (tx: number, ty: number): boolean => this.inBounds(tx, ty)
+      ? this.isWater(tx, ty) : this.waterOutside(tx, ty);
     return (
       this.isShallow(x, y) ||
-      this.isWater(x + 1, y) || this.isWater(x - 1, y) ||
-      this.isWater(x, y + 1) || this.isWater(x, y - 1)
+      waterAt(x + 1, y) || waterAt(x - 1, y) ||
+      waterAt(x, y + 1) || waterAt(x, y - 1)
     );
   }
 

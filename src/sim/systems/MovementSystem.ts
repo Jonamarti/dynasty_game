@@ -390,7 +390,7 @@ export class MovementSystem {
     const wantsBoat = (canUseRaft(person) && this.world.isBoatTile(fullX, fullY)) ||
       (canUseLogboat(person) && this.world.isLogboatTile(fullX, fullY));
     const wantsSwim = !wantsBoat && this.world.isSwimTile(fullX, fullY);
-    if (this.world.isWater(fullX, fullY) && !this.world.isWalkable(fullX, fullY) && !wantsSwim && !wantsBoat) {
+    if (this.world.isWaterForMovement(fullX, fullY) && !this.world.isWalkable(fullX, fullY) && !wantsSwim && !wantsBoat) {
       return 'too_deep';
     }
     const refusal = wantsSwim ? swimRefusal(person, this.world, fullX, fullY, this.world.drownAt) : null;

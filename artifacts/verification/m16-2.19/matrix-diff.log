@@ -1,0 +1,5 @@
+
+> dynasty@0.16.2-alpha baseline:diff
+> vite-node tools/baseline-diff.ts -- artifacts/verification/m16-1.6/after/matrix.json artifacts/verification/m16-2.19/after/matrix.json
+
+No check status changes.

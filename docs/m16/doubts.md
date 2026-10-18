@@ -1,5 +1,18 @@
 # M16 doubts
 
+## Phase 2.19 N36 travel and living-person views — 2026-10-18
+
+- **Phase:** 2.19 — N36 expected that after scouting east, the family/tribe
+  views would appear empty and returning west could report land under the sea.
+- **Found:** `m16-scout-roundtrip.test.ts` passes on the pre-N36-change code:
+  east travel keeps the active identity and living people in both views, and
+  west travel returns home without a refusal. The test in
+  `src/sim/__tests__/comarca-travel.test.ts:362` also documents that
+  `initialGeographicStart` must be set after `installCurrent`.
+- **Decision:** R22 classifies this as already fixed in M15 (`124c0a7`). The
+  card's suspected stale-start/view defect is not present on this build; no
+  travel or view code changed. Keep the regression coverage.
+
 ## Phase 1.7 fast-level duration — 2026-10-18
 
 - **Phase:** 1.7 — run levels `check:fast`, `check:area`, `check:full`.
