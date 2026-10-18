@@ -1,0 +1,5 @@
+
+> dynasty@0.15.160-alpha baseline:diff
+> vite-node tools/baseline-diff.ts -- artifacts/verification/m16-baseline/matrix.json artifacts/verification/m16-1.3/after/changed-matrix.json
+
+nights: passed -> failed: darkness-hides

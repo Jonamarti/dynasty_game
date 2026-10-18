@@ -1,3 +1,19 @@
+## 2026-10-18 — M16 1.3b: comparar dos matrices de checks
+
+**Problema:** después de guardar una matriz, faltaba una comparación que
+distinguiera deterioros de mejoras y de cambios sin riesgo.
+
+**Causa:** no había lector validado del formato ni una regla compartida para
+detectar los pasos pass → fail y pass → n/a.
+
+**Cambio:** se añadió `npm run baseline:diff -- before.json after.json`. El
+comando informa por escenario `pass -> fail`, `pass -> n/a`, `fail -> pass` y
+`n/a -> pass`; solo los dos primeros producen código 1. Se rechazan matrices
+mal formadas y checks duplicados. No cambia el mundo ni la versión.
+
+**Verificación:** dos pruebas del CLI verifican autocoincidencia (0) y un
+pass → fail sintético (1, con el identificador en la salida); typecheck pasa.
+
 ## 2026-10-18 — M16 1.3a: exportar la matriz de salud en JSON
 
 **Problema:** comparar resultados requería extraer a mano los estados de cada
