@@ -1,6 +1,6 @@
 # M16 diary
 
-## M16 2.22 — furniture without banners; stations respect territory (2026-10-18)
+## M16 2.22 — furniture without banners; stations respect territory (2026-10-18, `63bc104`)
 
 Goal: close N45 and K6 by removing household ownership marks from furniture
 and requiring outdoor stations to use their band's territory under D-16.
