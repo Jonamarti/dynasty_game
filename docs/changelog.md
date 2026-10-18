@@ -1,3 +1,21 @@
+## 2026-10-18 — M16 1.3c: fijar los checkpoints con los switches apagados
+
+**Problema:** los próximos bloques de IA necesitan una prueba que detecte
+cualquier alteración accidental del mundo cuando sus switches están apagados.
+
+**Causa:** la suite solo comprobaba determinismo entre dos ejecuciones de la
+misma versión; no comparaba el estado contra la línea base anterior.
+
+**Cambio:** `baseline:pin` regenera las huellas FNV-1a de los checkpoints
+completos de `band`, semillas 1–3 y 3.000 pasos. `switches-off.test.ts` compara
+las huellas con `fixtures/switches-off.json`; no se cambió el mundo ni la
+versión.
+
+**Verificación:** typecheck y las cuatro pruebas focales pasaron. R17 se probó
+subiendo temporalmente `HUNT_APPETITE` de 9 a 90: las tres huellas cambiaron y
+el test falló; al restaurar 9 volvió a pasar. Huellas: `37125c01`, `7bf8a322`,
+`1d3f0ade`.
+
 ## 2026-10-18 — M16 1.3b: comparar dos matrices de checks
 
 **Problema:** después de guardar una matriz, faltaba una comparación que

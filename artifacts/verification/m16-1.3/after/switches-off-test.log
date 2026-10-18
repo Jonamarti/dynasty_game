@@ -1,0 +1,13 @@
+
+> dynasty@0.15.160-alpha test
+> vitest run src/sim/__tests__/switches-off.test.ts --maxWorkers=1 --testTimeout=15000
+
+
+ RUN  v4.1.11 C:/Users/Marty/Documents/Work/Programs/dynastyGame
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  11:39:29
+   Duration  18.48s (transform 2.59s, setup 0ms, import 5.18s, tests 13.07s, environment 0ms)
+

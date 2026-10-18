@@ -1,0 +1,43 @@
+
+> dynasty@0.15.160-alpha test
+> vitest run src/sim/__tests__/switches-off.test.ts --maxWorkers=1 --testTimeout=15000
+
+
+ RUN  v4.1.11 C:/Users/Marty/Documents/Work/Programs/dynastyGame
+
+ ❯ src/sim/__tests__/switches-off.test.ts (1 test | 1 failed) 14369ms
+     × preserves the pinned checkpoint for seeds 1, 2, and 3 14367ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/sim/__tests__/switches-off.test.ts > M16 switches off > preserves the pinned checkpoint for seeds 1, 2, and 3
+AssertionError: expected { '1': '3fc5aa82', …(2) } to deeply equal { '1': '37125c01', …(2) }
+
+- Expected
++ Received
+
+  {
+-   "1": "37125c01",
+-   "2": "7bf8a322",
+-   "3": "1d3f0ade",
++   "1": "3fc5aa82",
++   "2": "23d3e203",
++   "3": "676bc560",
+  }
+
+ ❯ src/sim/__tests__/switches-off.test.ts:11:39
+      9|   it('preserves the pinned checkpoint for seeds 1, 2, and 3', () => {
+     10|     const expected = JSON.parse(readFileSync(resolve('fixtures/switche…
+     11|     expect(switchesOffFingerprints()).toEqual(expected);
+       |                                       ^
+     12|   }, 60_000);
+     13| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed (1)
+   Start at  11:39:59
+   Duration  19.43s (transform 2.60s, setup 0ms, import 4.83s, tests 14.37s, environment 0ms)
+
