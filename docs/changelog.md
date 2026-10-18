@@ -1,3 +1,21 @@
+## 2026-10-18 — M16 1.7: pausa por incompatibilidad de tiempos (R0)
+
+**Problema:** la tarjeta pide que `check:fast` ejecute typecheck y la suite
+completa de Vitest en menos de dos minutos.
+
+**Causa:** la suite completa tardó 896,46 s en la verificación de 1.6 y
+1.061,52 s en la medición de 1.1. Cumplir el límite requiere definir un
+subconjunto o cambiar el límite, decisiones que la tarjeta no especifica.
+
+**Cambio:** no se modificó el código de verificación. R0 deja la fase marcada
+como omitida y registra la discrepancia en `docs/m16/doubts.md`; la fase 1.9,
+que depende de 0.1, es la siguiente tarjeta independiente. La fase 1.8 queda
+pendiente de 1.7.
+
+**Verificación:** evidencia de tiempo en
+`artifacts/verification/m16-1.6/after/unit-tests-full.log` y
+`docs/m16/timings.md`. No hubo cambio funcional ni de interfaz.
+
 ## 2026-10-18 — M16 1.6: ejecutar escenarios cortos desde mundos guardados
 
 **Problema:** cada check de área repetía la historia completa del escenario y

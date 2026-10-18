@@ -1,5 +1,23 @@
 # M16 doubts
 
+## Phase 1.7 fast-level duration — 2026-10-18
+
+- **Phase:** 1.7 — run levels `check:fast`, `check:area`, `check:full`.
+- **Expected:** the card defines `check:fast` as `npm run typecheck && vitest
+  run` and requires it to complete in under two minutes.
+- **Found:** the required full Vitest suite took 896.46 seconds (14m56s) on the
+  phase 1.6 build: 327 files passed, 2,398 tests passed, one skipped. The same
+  machine's 1.1 timing recorded the unit suite at 1,061.52 seconds (17m42s).
+  Making the command faster would require changing which tests run or changing
+  the stated limit; neither choice is specified by the card.
+- **File:line:** `docs/m16/phases/1.7-run-levels.md:13-15,21-22`,
+  `docs/m16/timings.md:68-69`,
+  `artifacts/verification/m16-1.6/after/unit-tests-full.log`.
+- **Resolution:** R0: leave phase 1.7 unchanged and mark it skipped pending a
+  decision on whether `check:fast` means the full unit suite or a smaller,
+  named subset. Phase 1.8 depends on 1.7; phase 1.9 depends only on 0.1 and is
+  the next independent card.
+
 ## Phase order and phase protocol — 2026-10-16
 
 - **Phase:** 0.1 / 0.2 / 0.3

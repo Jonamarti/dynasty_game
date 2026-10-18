@@ -241,3 +241,25 @@ What is left open: nada de la fase. Los 118 checks rojos siguen coincidiendo
 con la base.
 
 Screenshots: none; no UI change.
+
+## M16 1.7 — Niveles de ejecución (2026-10-18, omitida por R0)
+
+Goal: separar las verificaciones rápidas, por área y completas.
+
+What was done: no se cambió el arnés. La evidencia previa ejecutó exactamente
+la suite completa de Vitest que la tarjeta prescribe para `check:fast`.
+
+Before and after: la suite tomó 896,46 s (14m56s) en el build de 1.6; la
+medición anterior de 1.1 registró 1.061,52 s (17m42s). Ambos exceden el límite
+de dos minutos. La fase queda marcada `skipped (R0; see doubts.md)`.
+
+What turned out differently from the card: su definición de `check:fast`
+incluye todos los tests y a la vez fija un máximo que las mediciones repetidas
+no cumplen. Elegir una suite más pequeña o cambiar el límite sería inventar un
+criterio.
+
+What is left open: decidir qué subconjunto nominal puede cubrir
+`check:fast`; la fase 1.8 depende de ello. Se continúa con 1.9 por ser
+independiente (depende de 0.1).
+
+Screenshots: none; no UI change.
