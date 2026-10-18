@@ -1,3 +1,15 @@
+## M16 2.2 — obras NPC retiradas y obras del jugador conservadas
+
+La nota N9 describía que el planificador cancelaba obras del jugador sin
+avisar. En el código actual, `BandSystem.dropStaleSites` excluye `playerPlaced`
+y `Simulation.abandonSite` informa el retiro NPC en el sitio y en la crónica
+del proponente. La prueba de capacidad
+`src/sim/__tests__/m16-player-sites-not-dropped.test.ts` lo ejercita con una
+obra del jugador intacta tras diez días y una obra NPC apartada del alcance de
+los habitantes: tras la caducidad, desaparece con aviso y crónica, y los tres
+palos entregados se recuperan en el suelo. Pasa en 1/1. N9 queda verificado
+como ya corregido por M15; no se encontró un fallo pendiente en esta fase.
+
 ## 2026-10-18 — M16 1.9: veredicto de los rojos congelados (E12/E13)
 
 Se volvieron a medir los cinco tests que E12 enumeraba. Los cinco archivos

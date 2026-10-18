@@ -1,3 +1,20 @@
+## 2026-10-18 — M16 2.2: comprobar la retirada de obras
+
+**Problema:** N9 preguntaba si el jugador pierde una obra planeada y si el
+planificador explica cuando retira una obra NPC.
+
+**Causa:** M15 ya añadió la protección de `playerPlaced`, el aviso en el lugar
+y la crónica del proponente, pero la prueba existente no verificaba el ciclo
+natural de caducidad ni conservaba materiales en esa ruta.
+
+**Cambio:** se añadió `m16-player-sites-not-dropped`, que avanza diez días,
+mantiene intacta la obra del jugador y verifica el retiro NPC, su aviso, la
+crónica y los tres palos entregados que aparecen en el suelo. No hizo falta
+cambiar código de juego.
+
+**Verificación:** la prueba focal pasa (1/1); el sitio NPC desaparece con el
+motivo visible y el conteo de palos recuperados coincide (3). Sin cambio de UI.
+
 ## 2026-10-18 — M16 1.9: veredictos de los tests y checks rojos
 
 **Problema:** E12 y E13 conservaban una lista de fallos tomada de

@@ -61,11 +61,13 @@ Los números de línea cambian; no te fíes de ellos.
 | N10 | El nivel de habilidad permite o bloquea edificios y tareas; hay que practicar; la división del trabajo sale de la destreza natural y de la práctica | B | 6.5 |
 | N11 | Los NPC ven el hatillo y no lo usan ni lo investigan. Quien conoce la técnica lo coge y se lo equipa; quien no, lo investiga y hace ingeniería inversa poco a poco. También con objetos de otra tribu | B | 6.3, 6.4 |
 
-**Respuesta a N9.** Se cancelan solos. `BandSystem.dropStaleSites` retira
-cualquier obra sin terminar que lleve `STALE_SITE_DAYS` (6 días) sin progreso
-ni materiales entregados, también las que coloca el jugador, y no avisa. No
-los cancela ningún NPC. Incumple la regla del proyecto de que todo abandono
-se explique en pantalla.
+**Respuesta a N9 (verificada en 2026-10-18, M16 2.2).** Una obra NPC sin
+progreso ni materiales durante seis días se retira por el planificador; deja un
+aviso en el lugar y una entrada en la crónica de quien la propuso. Una obra
+marcada por el jugador (`playerPlaced`) no se retira automáticamente. La prueba
+`m16-player-sites-not-dropped` avanzó diez días: la obra del jugador siguió en
+pie, la obra NPC desapareció con el motivo y sus tres palos entregados quedaron
+en un montón del suelo. Esto ya estaba corregido en M15; no se cambió código.
 
 **Hipótesis para N8 (sin confirmar).** `Carry.canTake` exige además que
 quepa "otro del mismo objeto". El hatillo declara una unidad por mano y es
@@ -150,7 +152,7 @@ contradice la columna «Causa probable» de 1b, manda esta.
 
 | ID | Qué se leyó | Conclusión | Consecuencia para la fase |
 |---|---|---|---|
-| N9 | `BandSystem.dropStaleSites` (~l. 1987) | M15 corrigió la causa: conserva las obras `playerPlaced` y avisa al proponente cuando retira una obra NPC. La prueba existente cubre que el jugador no pierde su obra; falta el capability test del aviso por retirada NPC que exige la matriz M16 | 2.2: revisar ambas mitades de la expectativa |
+| N9 | `BandSystem.dropStaleSites` (~l. 1987) | M15 ya conservaba las obras `playerPlaced` y avisaba al proponente cuando retira una obra NPC; M16 2.2 comprobó ambas rutas y la recuperación de materiales con `m16-player-sites-not-dropped` | verificado ya corregido en M15; sin cambio de juego |
 | N16, N40 | `ActionSystem.doBuild` (~l. 2861) | M15 añadió una búsqueda de materiales para el personaje asignado; el changelog registra que el test de órdenes termina la obra tras reunirlos. Aún falta el capability test de una hoguera con inventario vacío y el avance monótono / acotado | 2.15: conservar la extensión y verificar explícitamente los límites |
 | N8 | `Carry.itemCapacityFor`, `ITEMS.bundle`, `ActionCatalog` (`case 'pile'`) | El hatillo declara `hand: {perHand 1, perArms 1}`, va al hueco `shoulder` y solo acepta `long`. Con uno ya poseído, `itemCapacityFor('bundle')` da `max(1, ⌊1·vigor⌋ + 0 + 0)` = 1 y `canTake` niega el segundo. El menú, en cambio, habilita «Recoger» con la cuenta agregada (`carrying < carryCapacity`), y el texto de negativa que se ve es el genérico «manos llenas» | 2.4: decidir si un segundo hatillo se lleva en brazos (capacidad 2) o se niega con su motivo («ya llevas un hatillo al hombro»). El menú debe preguntar a `canTake` por objeto, no a la cuenta agregada |
 | N8 (2) | `Simulation.takeFromPile`, rama «todo» | Usa `break` cuando un montón no cabe: si el primer objeto del montón es un segundo hatillo, **no se intenta nada más**, aunque el resto quepa | 2.4: `continue`, con prueba. Cambia mundos (los NPC recogen montones con esta rama): `baseline:pin` |
@@ -183,7 +185,7 @@ contradice la columna «Causa probable» de 1b, manda esta.
 | ID | Dónde en `bugs.md` | Qué pasa | Etiqueta | Fase |
 |---|---|---|---|---|
 | A1 | "SeasonLore aprende «estéril» de un arbusto recogido" | se aprende que una especie no da en su propia temporada porque la banda la dejó pelada | A | 2.1 |
-| A2 | nota N9 | las obras se cancelan a los 6 días sin aviso, también las del jugador | A | 2.2 |
+| A2 | nota N9 | obras del jugador protegidas y aviso en retirada de obras NPC | verificado ya corregido en M15, capability test M16 2.2 | cerrado |
 | A3 | "M15 fase 20, tercera ronda" y nota N6 | la niebla conserva recuerdos de cosas que ya no están; obras planeadas visibles en la niebla | A | 2.3 |
 | A4 | nota N8 | "manos llenas" al recoger un hatillo | A | 2.4 |
 | A5 | "The radial menu's \"Pick up\" has no reach test" | Reproducido por lectura del flujo vigente: `ActionCatalog.ts` ofrece recoger solo según capacidad y `Simulation.takeFromPile` tampoco comprueba distancia | A | 2.5 |
