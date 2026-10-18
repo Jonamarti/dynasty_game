@@ -264,7 +264,7 @@ independiente (depende de 0.1).
 
 Screenshots: none; no UI change.
 
-## M16 1.9 — Veredictos de los rojos congelados (2026-10-18)
+## M16 1.9 — Veredictos de los rojos congelados (2026-10-18, `a40a6dc`)
 
 Goal: dar un veredicto respaldado por medidas a los fallos unitarios y de salud
 que E12/E13 atribuían a la base.
