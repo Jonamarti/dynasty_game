@@ -1,3 +1,31 @@
+## 2026-10-18 — M16 2.23: seleccionar personas en la costa
+
+**Problema:** al pulsar sobre un personaje que vadeaba, `candidatesAt` devolvía
+solo el suelo si la casilla era agua. En la playa, el redondeo del punto del
+clic podía asignarlo a la casilla de agua vecina aunque `World.index` la
+truncara a tierra.
+
+**Causa:** la ruta de agua terminaba la búsqueda antes de revisar entidades, y
+la UI tenía varias conversiones de coordenadas con `Math.round`, distintas de
+la convención del mapa.
+
+**Cambio:** ahora se recogen primero los objetivos bajo el clic; el agua abierta
+conserva la opción de beber cuando no hay nadie allí. `World.tileOf` comparte
+la conversión de `World.index` y la usan la selección y las acciones que llevan
+el punto del cursor a una casilla. Versión `0.16.4-alpha`.
+
+**Verificación:** `typecheck` pasa; las 3 e2e focales pasan (vadeo, playa y
+beber en agua abierta). La regresión de truncado se probó en rojo: al sustituir
+temporalmente la casilla truncada por `Math.round`, el anillo del suelo se
+desplazó de x=68 a x=69 y falló la aserción. La suite unitaria completa tuvo
+2.419 tests aprobados, 1 omitido y 1 fallo de hook: `afterEach` en
+`fixtures.test.ts` excedió 10 s al limpiar tras 17 min. Aislada con margen de
+hook ampliado, esa suite pasó 2/2 en 154 s. Sin cambios de simulación; se
+conserva la matriz anterior de 118 checks rojos en 48 escenarios. Capturas:
+`artifacts/screenshots/m16-2026-10-18-2.23/wading-npc-picker-es.png` y
+`artifacts/screenshots/m16-2026-10-18-2.23/beach-npc-picker-es.png`. Evidencia
+en `artifacts/verification/m16-2.23/`.
+
 ## 2026-10-18 — M16 2.22: estaciones en terreno propio y muebles sin banderín
 
 **Problema:** muebles y estaciones heredaban el anillo y el banderín de las

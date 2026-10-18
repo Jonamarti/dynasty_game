@@ -1287,15 +1287,9 @@ const PICKER_CAP = 6;
  */
 function candidatesAt(worldX: number, worldY: number, excludePlayer: boolean): ActionTarget[] {
   const scored: { target: ActionTarget; distance: number }[] = [];
+  const tile = sim.world.tileOf(worldX, worldY);
   const visibleToObserver = (x: number, y: number): boolean =>
     !renderer.fogEnabled || canSeePlace(sim.player, x, y, sim.config.sightRadius);
-
-  // A click on water is a click on water. Nothing stands in a lake, and letting
-  // a shoreline tree a tile and a half away capture the click meant clicking a
-  // lake offered you an axe instead of a drink.
-  if (sim.world.isWater(Math.round(worldX), Math.round(worldY))) {
-    return [{ kind: 'ground', x: Math.round(worldX), y: Math.round(worldY) }];
-  }
 
   /**
    * Keeps a candidate only if the click landed on the thing as it is drawn.
@@ -1392,7 +1386,12 @@ function candidatesAt(worldX: number, worldY: number, excludePlayer: boolean): A
     targets.push({ kind: 'person', x: self.x, y: self.y, person: self });
   }
 
-  targets.push({ kind: 'ground', x: Math.round(worldX), y: Math.round(worldY) });
+  // A person, animal, raft, or other visible thing in the water remains
+  // selectable. Open water keeps the drink target only when nothing was hit.
+  if (targets.length === 0 && sim.world.isWater(tile.x, tile.y)) {
+    return [{ kind: 'ground', x: tile.x, y: tile.y }];
+  }
+  targets.push({ kind: 'ground', x: tile.x, y: tile.y });
   return targets;
 }
 
@@ -1588,8 +1587,7 @@ function showBuildGhost(worldX: number, worldY: number): void {
   if (!buildMode || !activeDesign) return;
   const design = effectiveDesign();
   if (!design) return;
-  const x = Math.round(worldX);
-  const y = Math.round(worldY);
+  const { x, y } = sim.world.tileOf(worldX, worldY);
   const why = sim.placementRefusal(design, x, y, sim.player?.bandId);
   renderer.buildGhost = {
     x, y,
@@ -1792,8 +1790,7 @@ window.addEventListener('pointerup', event => {
   // shared gesture handler has confirmed that this ended as a plain click.
   if (buildMode && activeDesign && event.target === canvas) {
     const point = worldPoint(event);
-    const x = Math.round(point.x);
-    const y = Math.round(point.y);
+    const { x, y } = sim.world.tileOf(point.x, point.y);
     const design = effectiveDesign()!;
     const placed = sim.place(design.id, x, y, sim.player?.bandId ?? 0,
       sim.player?.id ?? null, true);

@@ -1,0 +1,86 @@
+
+Running 2 tests using 1 worker
+
+(node:6904) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  1 e2e\m16-select-on-shore.spec.ts:81:1 › selects an NPC wading on a shallow-water tile (27.4s)
+(node:25892) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  2 e2e\m16-select-on-shore.spec.ts:85:1 › selects a beach NPC when rounding the click would hit adjacent water (9.5s)
+
+
+  1) e2e\m16-select-on-shore.spec.ts:81:1 › selects an NPC wading on a shallow-water tile ──────────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator:  locator('.picker')
+    Expected: visible
+    Received: hidden
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for locator('.picker')
+        14 × locator resolved to <div hidden="" class="picker"></div>
+           - unexpected value "hidden"
+
+
+      68 |
+      69 |   const picker = page.locator('.picker');
+    > 70 |   await expect(picker).toBeVisible({ timeout: 5000 });
+         |                        ^
+      71 |   const personChoice = page.locator('.picker-item').filter({
+      72 |     has: page.locator('.picker-icon', { hasText: '👤' }),
+      73 |   }).first();
+        at clickPersonOnCoast (C:\Users\Marty\Documents\Work\Programs\dynastyGame\e2e\m16-select-on-shore.spec.ts:70:24)
+        at C:\Users\Marty\Documents\Work\Programs\dynastyGame\e2e\m16-select-on-shore.spec.ts:82:3
+
+    Error Context: artifacts\playwright\m16-select-on-shore-select-1df4a-ing-on-a-shallow-water-tile\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    artifacts\playwright\m16-select-on-shore-select-1df4a-ing-on-a-shallow-water-tile\trace.zip
+    Usage:
+
+        npx playwright show-trace artifacts\playwright\m16-select-on-shore-select-1df4a-ing-on-a-shallow-water-tile\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) e2e\m16-select-on-shore.spec.ts:85:1 › selects a beach NPC when rounding the click would hit adjacent water 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator:  locator('.picker')
+    Expected: visible
+    Received: hidden
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for locator('.picker')
+        14 × locator resolved to <div hidden="" class="picker"></div>
+           - unexpected value "hidden"
+
+
+      68 |
+      69 |   const picker = page.locator('.picker');
+    > 70 |   await expect(picker).toBeVisible({ timeout: 5000 });
+         |                        ^
+      71 |   const personChoice = page.locator('.picker-item').filter({
+      72 |     has: page.locator('.picker-icon', { hasText: '👤' }),
+      73 |   }).first();
+        at clickPersonOnCoast (C:\Users\Marty\Documents\Work\Programs\dynastyGame\e2e\m16-select-on-shore.spec.ts:70:24)
+        at C:\Users\Marty\Documents\Work\Programs\dynastyGame\e2e\m16-select-on-shore.spec.ts:86:3
+
+    Error Context: artifacts\playwright\m16-select-on-shore-select-c0666-ck-would-hit-adjacent-water\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    artifacts\playwright\m16-select-on-shore-select-c0666-ck-would-hit-adjacent-water\trace.zip
+    Usage:
+
+        npx playwright show-trace artifacts\playwright\m16-select-on-shore-select-c0666-ck-would-hit-adjacent-water\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2 failed
+    e2e\m16-select-on-shore.spec.ts:81:1 › selects an NPC wading on a shallow-water tile ───────────
+    e2e\m16-select-on-shore.spec.ts:85:1 › selects a beach NPC when rounding the click would hit adjacent water 

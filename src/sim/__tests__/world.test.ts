@@ -18,6 +18,15 @@ function makeWorld(seed = 'world') {
 }
 
 describe('World', () => {
+  it('maps fractional world points to the same tile as index truncation', () => {
+    const world = makeWorld();
+    expect(world.tileOf(12.75, 43.5)).toEqual({ x: 12, y: 43 });
+    expect(world.tileOf(12.75, 43.5)).toEqual({
+      x: world.index(12.75, 43.5) % world.width,
+      y: Math.trunc(world.index(12.75, 43.5) / world.width),
+    });
+  });
+
   it('produces a mix of land and water', () => {
     const counts = makeWorld().countBiomes();
     const total = 96 * 96;

@@ -1,0 +1,10 @@
+
+Running 3 tests using 1 worker
+
+(node:23636) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 1 e2e\m16-select-on-shore.spec.ts:89:1 › selects an NPC wading on a shallow-water tile (43.7s)
+  ok 2 e2e\m16-select-on-shore.spec.ts:93:1 › selects a beach NPC when rounding the click would hit adjacent water (4.3s)
+  ok 3 e2e\m16-select-on-shore.spec.ts:97:1 › an open-water click still offers drinking (6.8s)
+
+  3 passed (1.0m)

@@ -179,6 +179,20 @@ baseline.
 
 Screenshots: none; no UI change.
 
+## M16 2.23 — Selección de personas en la costa (2026-10-18, commit registrado en el cierre)
+
+Goal: seleccionar a una persona al pulsar sobre su dibujo en playa o agua somera y conservar la acción de beber en agua abierta.
+
+What was done: `candidatesAt` ahora examina los objetivos antes del fallback de agua. `World.tileOf` comparte el truncado de `World.index` en selección y colocación con el cursor. La e2e cubre vadeo, playa y agua abierta.
+
+Before and after: los casos de vadeo y playa fallaban antes del cambio; las tres e2e finales pasan. La prueba de truncado falla cuando se fuerza `Math.round` (x=69 en vez de x=68). Capturas: `artifacts/screenshots/m16-2026-10-18-2.23/`. La suite completa pasó 2.419 tests y omitió 1; el único fallo fue el hook `afterEach` de fixtures bajo carga, y el archivo aislado pasó 2/2 con timeout de hook ampliado.
+
+What turned out differently from the card: el test completo requirió 17 minutos y excedió el límite de 10 s de limpieza; la repetición aislada tardó 154 s. La fase no modifica simulación, por lo que se conserva la matriz previa de 118 fallos en 48 escenarios.
+
+What is left open: ninguno para N46/K7. Sin cambios de mundo, RNG, switch ni estado guardado.
+
+Screenshots: `artifacts/screenshots/m16-2026-10-18-2.23/wading-npc-picker-es.png` y `artifacts/screenshots/m16-2026-10-18-2.23/beach-npc-picker-es.png`.
+
 ## M16 2.2 — obras planeadas (2026-10-18, 112eec6)
 Goal: confirmar que la obra marcada por el jugador sobrevive y que el retiro
 automático de una obra NPC explica el motivo y conserva lo entregado.

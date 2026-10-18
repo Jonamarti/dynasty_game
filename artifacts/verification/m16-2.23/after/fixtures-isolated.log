@@ -1,0 +1,9 @@
+
+ RUN  v4.1.11 C:/Users/Marty/Documents/Work/Programs/dynastyGame
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  22:27:02
+   Duration  154.17s (transform 4.42s, setup 0ms, import 12.35s, tests 141.51s, environment 0ms)
+

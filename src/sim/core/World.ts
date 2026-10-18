@@ -1047,6 +1047,11 @@ export class World {
     return (y | 0) * this.width + (x | 0);
   }
 
+  /** The tile containing a world point, using the same truncation as `index`. */
+  tileOf(x: number, y: number): { x: number; y: number } {
+    return { x: x | 0, y: y | 0 };
+  }
+
   inBounds(x: number, y: number): boolean {
     return x >= 0 && y >= 0 && x < this.width && y < this.height;
   }
