@@ -1,3 +1,29 @@
+## 2026-10-18 — M16 2.4: recogida con motivo correcto y sin saltarse el montón
+
+**Problema:** N8 mostraba «manos llenas» al pedir un segundo hatillo aunque la
+persona tuviera espacio; K3 paraba «recoger todo» ante el primer objeto que no
+cabía. N20 afirmaba que podían desaparecer objetos al recogerlos.
+
+**Causa:** el menú de la pila decidía con la capacidad agregada, mientras que
+la acción valida cada objeto; además, la rama de recogida completa usaba
+`break` en el primer montón no transportable. La prueba de N20 ya conserva las
+cantidades con la ruta de transferencia existente, por lo que no se confirmó
+el caso de desaparición ni una causa para el reporte.
+
+**Cambio:** menú y acción comparten el motivo por objeto; al no caber el
+hatillo, se explica que ya hay uno en el hombro. «Recoger todo» continúa con
+los objetos posteriores. Se añadieron cuatro pruebas de capacidad. La versión
+pasa a `0.16.1-alpha`.
+
+**Verificación:** typecheck y Vitest completos pasan (335 archivos, 2.408
+pruebas, 1 omitida). La prueba de conservación pasa sin cambio específico para
+N20. `sim:check -- --scenario tiny` mantiene las cuatro rojas previas; los
+fingerprints fijados no cambian al volver a fijarlos. `sim:check:all` acaba con
+118 checks rojos; sus nombres coinciden con la matriz guardada de M16 1.6 en
+48 escenarios comparados (0 rojos añadidos o resueltos). Salida completa en
+`artifacts/verification/m16-2.4/after-sim-check-all.log`. Captura del motivo
+visible en `artifacts/screenshots/m16-2026-10-18-2.4/pickup-refusal-es.png`.
+
 ## 2026-10-18 — M16 2.2: comprobar la retirada de obras
 
 **Problema:** N9 preguntaba si el jugador pierde una obra planeada y si el

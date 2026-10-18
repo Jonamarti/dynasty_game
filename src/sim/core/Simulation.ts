@@ -3168,7 +3168,7 @@ export class Simulation {
       for (const [id, stackCount] of pile.contents.entries()) {
         const room = Math.min(person.carryCapacity - person.carrying - moved,
           itemCapacityFor(person, this.config.carry, id) - person.inventory.count(id));
-        if (room <= 0) break;
+        if (room <= 0) continue;
         const taken = pile.contents.transferTo(person.inventory, id, Math.min(stackCount, room));
         equipContainer(person, id);
         moved += taken;

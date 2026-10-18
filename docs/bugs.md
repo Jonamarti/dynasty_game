@@ -1,3 +1,15 @@
+## 2026-10-18 — M16 2.4: recogida de objetos
+
+N8, K3 y K4 quedan cubiertos por pruebas de capacidad: el menú usa el mismo
+motivo por objeto que la acción, y «recoger todo» salta un objeto no
+transportable para intentar los siguientes. N20 no se reprodujo: la prueba
+`m16-pickup-conserves-items` verifica suelo + inventario antes y después para
+cada tipo contenedor o equipo, y pasa con la transferencia existente. No se
+atribuye causa al reporte original. Typecheck y suite completa pasan; la matriz
+integral termina con 118 checks rojos cuyos nombres coinciden con la matriz
+guardada de M16 1.6 en 48 escenarios (no aparecen ni desaparecen fallos), como
+se ve en `artifacts/verification/m16-2.4/after-sim-check-all.log`.
+
 ## M16 2.2 — obras NPC retiradas y obras del jugador conservadas
 
 La nota N9 describía que el planificador cancelaba obras del jugador sin

@@ -57,7 +57,7 @@ import type { RNG } from '../core/RNG.ts';
 import { ITEMS } from '../entities/Item.ts';
 import { animalBlow } from '../entities/AnimalAttack.ts';
 import { claimTransportAnimal } from '../core/TransportAnimals.ts';
-import { canTake, equipContainer, itemCapacityFor, reconcileCarry, reconcileGarmentEquipment, stow } from '../core/Carry.ts';
+import { equipContainer, itemCapacityFor, pickupRefusal, reconcileCarry, reconcileGarmentEquipment, stow } from '../core/Carry.ts';
 import {
   changeGarment, equipFor as fitToolForAction, equipItemInSlot, manualEquipRefusal,
   manualEquipSlot, manualGarmentRefusal, planGarmentMending,
@@ -3229,12 +3229,15 @@ export class ActionSystem {
     // already full should be told so where they stand, not after crossing the
     // camp. The check after arrival is the one that matters, since a walk is
     // long enough for a pack to fill on the way.
-    const requestedItem = person.targetItemId ?? (person.targetPileId === null
-      ? null
-      : ctx.pilesById.get(person.targetPileId)?.contents.entries()[0]?.[0] ?? null);
-    if (person.carrying >= person.carryCapacity ||
-      (requestedItem !== null && !canTake(person, ctx.carry, requestedItem, 1))) {
-      this.abandon(person, 'hands_full', ctx);
+    const aimedPile = person.targetPileId === null ? null : ctx.pilesById.get(person.targetPileId) ?? null;
+    const pickupReasons = person.targetItemId !== null
+      ? [pickupRefusal(person, ctx.carry, person.targetItemId)]
+      : aimedPile?.contents.entries().map(([itemId]) => pickupRefusal(person, ctx.carry, itemId)) ?? [];
+    const blocked = pickupReasons.find(reason => reason === null) === undefined
+      ? (pickupReasons[0] ?? (person.carrying >= person.carryCapacity ? 'pickup_full' : null))
+      : null;
+    if (blocked) {
+      this.abandon(person, blocked, ctx);
       return;
     }
 
@@ -3266,7 +3269,11 @@ export class ActionSystem {
       requested ?? undefined,
       person.targetItemCount ?? undefined);
     if (moved === 0) {
-      this.abandon(person, 'hands_full', ctx);
+      const reason = requested !== null
+        ? pickupRefusal(person, ctx.carry, requested)
+        : pile.contents.entries().map(([itemId]) => pickupRefusal(person, ctx.carry, itemId))
+          .find(candidate => candidate !== null) ?? 'pickup_full';
+      this.abandon(person, reason ?? 'pickup_full', ctx);
       return;
     }
     // M15 phase 11b. `requested` is the only item id known here without

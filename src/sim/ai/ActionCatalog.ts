@@ -54,6 +54,7 @@ import {
 } from '../core/ToolEquipment.ts';
 import { torchIgnitionRefusal, torchRefusalText, transferableUnits, burningTorchRefusalText } from '../core/Torch.ts';
 import { fatLampRefusal, fatLampRefusalText } from '../core/FatLamp.ts';
+import { pickupRefusalText, type PickupRefusal } from '../core/Carry.ts';
 
 export type TargetKind =
   'ground' | 'person' | 'node' | 'building' | 'tree' | 'pile' | 'animal' | 'inscription' | 'corpse';
@@ -147,6 +148,8 @@ export interface ActionOption {
 
 export interface CatalogContext {
   world: World;
+  /** The same item-by-item carrying rule used when a pickup order executes. */
+  pickupRefusal?: (person: Person, itemId: string) => PickupRefusal | null;
   /** Swim fatality threshold for the disabled-option explanation. */
   drownAt?: number;
   /** True if the actor is standing close enough to water to drink. */
@@ -457,14 +460,20 @@ function optionsFor(
     // subject, so the capacity asked about belongs to whoever would actually
     // walk over and bend down.
     case 'pile': {
-      const room = actor.carrying < actor.carryCapacity;
+      const entries = target.pile?.contents.entries() ?? [];
+      const check = ctx.pickupRefusal ?? ((_person: Person, _itemId: string): PickupRefusal | null =>
+        actor.carrying < actor.carryCapacity ? null : 'pickup_full');
+      const reasons = entries.map(([itemId]) => check(actor, itemId));
+      const blocked = reasons.find(reason => reason === null) === undefined
+        ? (entries.length ? reasons[0] ?? 'pickup_full' : 'pickup_full')
+        : null;
+      const room = entries.length ? blocked === null : actor.carrying < actor.carryCapacity;
       return [{
         id: 'pickup',
         label: t('Pick up'),
         icon: '\u{1F91A}',
         enabled: room,
-        reason: room ? undefined
-          : ctx.commanding ? t('Their hands are full') : t('Your hands are full'),
+        reason: room ? undefined : pickupRefusalText(blocked ?? 'pickup_full'),
       }];
     }
     case 'animal': return animalActions(actor, target.animal!);

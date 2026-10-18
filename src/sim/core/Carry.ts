@@ -7,6 +7,7 @@ import type { CarryConfig } from './Config.ts';
 import { carryFactor } from '../knowledge/Tech.ts';
 import { telemetry } from './Telemetry.ts';
 import { garmentPocketCapacity } from './GarmentPockets.ts';
+import { t } from '../../i18n/i18n.ts';
 
 const BARE_HANDS = 10;
 
@@ -63,6 +64,27 @@ export function canTake(person: Person, config: CarryConfig, itemId: string, n: 
   if (config.legacyPack) return person.carrying + n <= capacityFor(person, config);
   return person.carrying + n <= capacityFor(person, config) &&
     person.inventory.count(itemId) + n <= itemCapacityFor(person, config, itemId);
+}
+
+export type PickupRefusal = 'pickup_full' | 'bundle_on_shoulder' | 'item_capacity';
+
+/** One answer for the pile menu and the action that carries its order out. */
+export function pickupRefusal(
+  person: Person, config: CarryConfig, itemId: string,
+): PickupRefusal | null {
+  if (person.carrying >= person.carryCapacity) return 'pickup_full';
+  if (canTake(person, config, itemId, 1)) return null;
+  if (itemId === 'bundle' && person.equipment.shoulder?.item === 'bundle') return 'bundle_on_shoulder';
+  return 'item_capacity';
+}
+
+/** The menu and the stop floater share the same translated refusal wording. */
+export function pickupRefusalText(reason: PickupRefusal): string {
+  switch (reason) {
+    case 'pickup_full': return t('There is no room to carry another item');
+    case 'bundle_on_shoulder': return t('A bundle is already on the shoulder');
+    case 'item_capacity': return t('This item has reached its carrying limit');
+  }
 }
 
 /** Place one container in its intended slot when it is crafted or picked up. */

@@ -1,5 +1,35 @@
 # M16 diary
 
+## M16 2.4 — pickup reasons and the rest of the pile (2026-10-18)
+
+Goal: close N8/N20 and the code findings K3/K4 with player-facing capability
+tests.
+
+What was done: the pile menu and pickup action now use the same per-item
+refusal rule and translated reason. A second bundle explains that one is
+already on the shoulder. “Take all” skips a stack that cannot fit and checks
+the remaining stacks. No new RNG stream was needed; `baseline:pin` kept all
+three switch-off fingerprints unchanged.
+
+Before and after: all four capability tests pass; typecheck passes; the full
+Vitest suite passes 335 files (2,408 passed, one skipped). The `tiny` scenario
+retains its four pre-existing reds. `sim:check:all` exits 1 with 118 failing
+checks; their names match the M16 1.6 saved matrix across 48 scenarios, with
+no checks added or resolved. The full report is saved under
+`artifacts/verification/m16-2.4/`. N20's conservation test passed before an
+N20-specific fix, so the owner report was not reproduced and its cause remains
+unknown.
+
+What turned out differently from the card: the first item in a pile needs to
+be skipped only in the take-everything path; explicit single-item pickups keep
+their existing selection. The conservation test found no loss in
+`transferTo`/inventory handling.
+
+What is left open: the original N20 disappearance report is unconfirmed; the
+full health matrix's failures remain baseline/open work.
+
+Screenshots: `artifacts/screenshots/m16-2026-10-18-2.4/pickup-refusal-es.png`.
+
 ## M16 2.15 — fetch missing materials for ordered building (2026-10-18, `9434096`)
 
 Goal: verify N16/N40: a fresh hearth can be built from nearby ground materials,

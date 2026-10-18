@@ -13,6 +13,7 @@ import { deserializeSave, serializeSave, SaveError, type SaveSummary } from './s
 import { SaveStore, describeSaveFailure } from './ui/SaveStore.ts';
 import { earthWorldGeography, randomWorldGeography, type EarthWorldGeography, type RandomWorldGeography } from './sim/world/WorldGeography.ts';
 import { RNG } from './sim/core/RNG.ts';
+import { pickupRefusal } from './sim/core/Carry.ts';
 import { saltSourceNear } from './sim/core/Preservation.ts';
 import { loadWorldAtlas, type LoadedWorldMap } from './sim/world/WorldAtlas.ts';
 import { findNearestStart, findStartInRegion, findWateredGlobeStart, localWorldConfig, measureWindow, MIN_LAND_SHARE, startInComarca, type StartPlace } from './sim/world/StartPlace.ts';
@@ -1922,6 +1923,7 @@ function openRadial(actor: Person, target: ActionTarget, screenX: number, screen
   const subject = commanding && commanding.alive ? commanding : actor;
   const options = availableActions(subject, target, {
     world: sim.world, nearWater, saltWater, drownAt: sim.config.world.drownAt, commanding,
+    pickupRefusal: (person, itemId) => pickupRefusal(person, sim.config.carry, itemId),
     buildings: sim.buildings,
     homeBuildingId: subject.householdId === null ? null
       : sim.householdsById.get(subject.householdId)?.homeBuildingId ?? null,

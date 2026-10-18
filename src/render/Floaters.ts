@@ -281,6 +281,9 @@ export function actionLabel(
 export const STOP_REASONS: Record<string, string> = {
   // Ran out of room, need or patience.
   hands_full: 'their hands are full',
+  pickup_full: 'There is no room to carry another item',
+  bundle_on_shoulder: 'A bundle is already on the shoulder',
+  item_capacity: 'This item has reached its carrying limit',
   item_not_owned: 'they no longer had that item',
   unknown_item: 'that was not something they could equip',
   wrong_slot: 'that item did not fit there',
