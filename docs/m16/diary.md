@@ -1,5 +1,27 @@
 # M16 diary
 
+## M16 2.27 — Los bebés no se visten solos (2026-10-20, `c25b967`)
+
+Goal: impedir que los bebés reciban o elijan órdenes para vestirse antes de la
+etapa infantil.
+
+What was done: una función compartida de etapa de vida ahora controla la ropa
+que elige la IA y las órdenes manuales. El menú muestra el motivo en español;
+los adultos todavía pueden vestirse solos.
+
+Before and after: la prueba de capacidad falló antes del cambio y pasa después.
+Typecheck y Vitest pasan; la e2e española pasa 1/1. Las huellas de las semillas
+1–3 no cambiaron y la matriz conserva sus 118 fallos heredados sin transiciones.
+El chequeo corto mantiene el único rojo conocido, `perf-budget`.
+
+What turned out differently from the card: el fallo de rendimiento sigue
+siendo el baseline medido, no una regresión de esta fase.
+
+What is left open: la calibración de `perf-budget` y los 118 checks de baseline
+siguen abiertos según R21.
+
+Screenshots: `artifacts/screenshots/m16-2026-10-18-2.27/01-infant-wear-refusal-es.png`.
+
 ## M16 2.22 — furniture without banners; stations respect territory (2026-10-18, `63bc104`)
 
 Goal: close N45 and K6 by removing household ownership marks from furniture

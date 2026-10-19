@@ -1,3 +1,26 @@
+## 2026-10-20 — M16 2.27: los bebés no se visten solos
+
+**Problema:** la edad de `Person` se mide en días, pero las reglas de ropa
+trataban `age >= 1` como si significara que ya había empezado la etapa infantil.
+Un bebé de dos días podía recibir una orden de vestirse y el menú no explicaba
+por qué no debía hacerlo.
+
+**Causa:** Brain y la prevalidación del equipo usaban umbrales de edad
+independientes y demasiado bajos, sin consultar la etapa de vida.
+
+**Cambio:** `LifeStage.canDressSelf` centraliza el límite: los bebés nunca se
+visten solos; desde la etapa infantil sí pueden hacerlo. Brain y la orden
+manual usan la misma regla. La versión pasa a `0.16.5-alpha`; E9 queda cerrado
+por `c25b967`.
+
+**Verificación:** la prueba de capacidad falló antes del arreglo y pasa después;
+typecheck pasó, Vitest pasó (341 archivos, 2.421 aprobados y 1 omitido) y la e2e
+en español pasó 1/1. La matriz conserva los mismos 118 checks rojos heredados en
+48 escenarios, sin cambios de estado. La prueba inicial mantiene el fallo ya
+conocido de `perf-budget` (615 pasos/s frente al umbral de 1.678), sin regresión
+nueva. Captura: `artifacts/screenshots/m16-2026-10-18-2.27/01-infant-wear-refusal-es.png`.
+Evidencia: `artifacts/verification/m16-2.27/`.
+
 ## 2026-10-18 — M16 2.23: seleccionar personas en la costa
 
 **Problema:** al pulsar sobre un personaje que vadeaba, `candidatesAt` devolvía
