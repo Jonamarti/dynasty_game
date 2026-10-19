@@ -1,66 +1,5 @@
 # M16 diary
 
-## M16 11.5 — Etiquetas y tarjeta de costa (2026-10-20; skipped: R0)
-
-Goal: etiquetar cada acción con su objetivo, en inglés y español, y respetar la
-decisión D-19 de la tarjeta de costa.
-
-What was done: no se modificó código. La tarjeta pide avisar que puede no haber
-una orilla accesible, mientras el selector actual asegura que se empezará en
-la orilla.
-
-Before and after: se confirmó la diferencia en `src/ui/WorldPicker.ts:388` y
-`src/i18n/es/ui.ts:174`. El baseline rápido empezó antes de revisar los archivos;
-el resultado se conserva en `artifacts/verification/m16-11.5/before/`.
-
-What turned out differently from the card: las dos frases hacen afirmaciones
-distintas y el plan no dice cuál debe regir; R0 impide elegir una sin respaldo.
-
-What is left open: resolver la intención de D-19; después se puede retomar toda
-la fase 11.5.
-
-Screenshots: none; no UI change.
-
-## M16 2.29 — `art:sheet` termina (2026-10-20; ya corregido)
-
-Goal: confirmar que la hoja de contacto de `dig` se compone sin un lienzo vacío.
-
-What was done: no se cambió código porque el fallo descrito no ocurre en este
-build. El generador terminó y produjo la hoja de `dig` con poses de varias
-edades y direcciones.
-
-Before and after: `npm.cmd run art:sheet` terminó con código 0 y la imagen
-`artifacts/art/contact-dig.png` se revisó visualmente.
-
-What turned out differently from the card: R22 encontró el comportamiento ya
-corregido; no se añadió otra prueba ni se modificó el generador.
-
-What is left open: nada para E14; no se atribuye cuándo se corrigió.
-
-Screenshots: none; no game UI change.
-
-## M16 2.27 — Los bebés no se visten solos (2026-10-20, `c25b967`)
-
-Goal: impedir que los bebés reciban o elijan órdenes para vestirse antes de la
-etapa infantil.
-
-What was done: una función compartida de etapa de vida ahora controla la ropa
-que elige la IA y las órdenes manuales. El menú muestra el motivo en español;
-los adultos todavía pueden vestirse solos.
-
-Before and after: la prueba de capacidad falló antes del cambio y pasa después.
-Typecheck y Vitest pasan; la e2e española pasa 1/1. Las huellas de las semillas
-1–3 no cambiaron y la matriz conserva sus 118 fallos heredados sin transiciones.
-El chequeo corto mantiene el único rojo conocido, `perf-budget`.
-
-What turned out differently from the card: el fallo de rendimiento sigue
-siendo el baseline medido, no una regresión de esta fase.
-
-What is left open: la calibración de `perf-budget` y los 118 checks de baseline
-siguen abiertos según R21.
-
-Screenshots: `artifacts/screenshots/m16-2026-10-18-2.27/01-infant-wear-refusal-es.png`.
-
 ## M16 2.22 — furniture without banners; stations respect territory (2026-10-18, `63bc104`)
 
 Goal: close N45 and K6 by removing household ownership marks from furniture
@@ -560,3 +499,83 @@ abiertos; los mecanismos que no se confirmaron permanecen documentados sin
 atribución causal.
 
 Screenshots: none; no UI change.
+
+## M16 2.1 — Un arbusto cosechado no enseña una estación estéril (2026-10-20, `19cd284`)
+
+Goal: evitar que una cosecha haga creer que la especie no da fruto en esa
+estación.
+
+What was done: el comportamiento ya estaba corregido en M15. La observación
+solo enseña esterilidad cuando la especie está realmente fuera de temporada;
+la prueba existente protege el caso de un arbusto agotado al recogerlo.
+
+Before and after: typecheck pasó; el conjunto completo pasó con 2.421 pruebas y
+1 omitida; `season-lore.test.ts` pasó 8/8. No se cambió código ni se re-pinneó.
+
+What turned out differently from the card: R22 confirmó la corrección previa
+en `19cd284`; se conserva la cobertura como regresión.
+
+What is left open: nada para A1.
+
+Screenshots: none; no UI change.
+
+## M16 11.5 — Etiquetas y tarjeta de costa (2026-10-20; skipped: R0)
+
+Goal: etiquetar cada acción con su objetivo, en inglés y español, y respetar la
+decisión D-19 de la tarjeta de costa.
+
+What was done: no se modificó código. La tarjeta pide avisar que puede no haber
+una orilla accesible, mientras el selector actual asegura que se empezará en
+la orilla.
+
+Before and after: se confirmó la diferencia en `src/ui/WorldPicker.ts:388` y
+`src/i18n/es/ui.ts:174`. El baseline rápido empezó antes de revisar los archivos;
+el resultado se conserva en `artifacts/verification/m16-11.5/before/`.
+
+What turned out differently from the card: las dos frases hacen afirmaciones
+distintas y el plan no dice cuál debe regir; R0 impide elegir una sin respaldo.
+
+What is left open: resolver la intención de D-19; después se puede retomar toda
+la fase 11.5.
+
+Screenshots: none; no UI change.
+
+## M16 2.29 — `art:sheet` termina (2026-10-20; ya corregido)
+
+Goal: confirmar que la hoja de contacto de `dig` se compone sin un lienzo vacío.
+
+What was done: no se cambió código porque el fallo descrito no ocurre en este
+build. El generador terminó y produjo la hoja de `dig` con poses de varias
+edades y direcciones.
+
+Before and after: `npm.cmd run art:sheet` terminó con código 0 y la imagen
+`artifacts/art/contact-dig.png` se revisó visualmente.
+
+What turned out differently from the card: R22 encontró el comportamiento ya
+corregido; no se añadió otra prueba ni se modificó el generador.
+
+What is left open: nada para E14; no se atribuye cuándo se corrigió.
+
+Screenshots: none; no game UI change.
+
+## M16 2.27 — Los bebés no se visten solos (2026-10-20, `c25b967`)
+
+Goal: impedir que los bebés reciban o elijan órdenes para vestirse antes de la
+etapa infantil.
+
+What was done: una función compartida de etapa de vida ahora controla la ropa
+que elige la IA y las órdenes manuales. El menú muestra el motivo en español;
+los adultos todavía pueden vestirse solos.
+
+Before and after: la prueba de capacidad falló antes del cambio y pasa después.
+Typecheck y Vitest pasan; la e2e española pasa 1/1. Las huellas de las semillas
+1–3 no cambiaron y la matriz conserva sus 118 fallos heredados sin transiciones.
+El chequeo corto mantiene el único rojo conocido, `perf-budget`.
+
+What turned out differently from the card: el fallo de rendimiento sigue
+siendo el baseline medido, no una regresión de esta fase.
+
+What is left open: la calibración de `perf-budget` y los 118 checks de baseline
+siguen abiertos según R21.
+
+Screenshots: `artifacts/screenshots/m16-2026-10-18-2.27/01-infant-wear-refusal-es.png`.

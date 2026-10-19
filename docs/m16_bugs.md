@@ -184,7 +184,7 @@ contradice la columna «Causa probable» de 1b, manda esta.
 
 | ID | Dónde en `bugs.md` | Qué pasa | Etiqueta | Fase |
 |---|---|---|---|---|
-| A1 | "SeasonLore aprende «estéril» de un arbusto recogido" | se aprende que una especie no da en su propia temporada porque la banda la dejó pelada | A | 2.1 |
+| A1 | "SeasonLore aprende «estéril» de un arbusto recogido" | se aprende que una especie no da en su propia temporada porque la banda la dejó pelada | cerrado en M15 `19cd284`; verificado de nuevo en M16 2.1 el 2026-10-20 (test 8/8; sin cambio de código) | 2.1 |
 | A2 | nota N9 | obras del jugador protegidas y aviso en retirada de obras NPC | verificado ya corregido en M15, capability test M16 2.2 | cerrado |
 | A3 | "M15 fase 20, tercera ronda" y nota N6 | la niebla conserva recuerdos de cosas que ya no están; obras planeadas visibles en la niebla | A | 2.3 |
 | A4 | nota N8 | "manos llenas" al recoger un hatillo | A | 2.4 |

@@ -1,3 +1,20 @@
+## 2026-10-20 — M16 2.1: un arbusto cosechado no enseña una temporada estéril
+
+**Problema:** al recoger toda la fruta durante la estación de fruto, dos
+observaciones anuales podían enseñar que esa especie no produce en esa
+temporada.
+
+**Causa:** el aprendizaje anterior contaba cualquier arbusto vacío como
+evidencia de esterilidad, aunque la banda hubiera recogido su cosecha.
+
+**Cambio:** ya estaba corregido por M15 `19cd284`: `observePlaces` consulta
+`bushPhase` y solo registra la ausencia cuando la especie está realmente fuera
+de temporada. R22 conserva la prueba existente y no se volvió a tocar código.
+
+**Verificación:** typecheck pasó; Vitest pasó (341 archivos, 2.421 aprobados y
+1 omitido); `season-lore.test.ts` pasó 8/8. No se re-pinneó porque no hubo
+cambio de comportamiento. Evidencia: `artifacts/verification/m16-2.1/`.
+
 ## 2026-10-20 — M16 11.5: discrepancia en el texto de costa (R0)
 
 **Problema:** la tarjeta 11.5 pide «Coast: there may be no reachable shore»,
