@@ -1,3 +1,21 @@
+## 2026-10-20 — M16 11.5: discrepancia en el texto de costa (R0)
+
+**Problema:** la tarjeta 11.5 pide «Coast: there may be no reachable shore»,
+pero el selector actual promete «Coast: you will begin on the shore».
+
+**Causa:** no está claro si la tarjeta debe cambiar el texto actual o si el
+texto actual representa una decisión posterior. Las dos frases expresan
+condiciones distintas sobre la costa alcanzable.
+
+**Cambio:** se aplicó R0. No se tocaron las etiquetas de acciones ni el texto de
+la costa; la fase queda registrada como omitida hasta resolver el conflicto.
+El detalle está en `docs/m16/doubts.md`.
+
+**Verificación:** se confirmó la divergencia en `src/ui/WorldPicker.ts:388` y
+`src/i18n/es/ui.ts:174`. La línea base de typecheck y Vitest se estaba
+ejecutando al registrar la duda; su resultado queda en
+`artifacts/verification/m16-11.5/before/`.
+
 ## 2026-10-20 — M16 2.29: la hoja de arte ya termina correctamente
 
 **Problema:** un informe anterior indicaba que `art:sheet` abortaba al dibujar

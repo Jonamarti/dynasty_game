@@ -1,5 +1,20 @@
 # M16 doubts
 
+## Phase 11.5 — D-19 coast-card wording (2026-10-20)
+
+- **Phase:** 11.5 — action labels in both languages, including the coast-card
+  copy required by D-19.
+- **Expected:** the phase card's step 5 and D-19 require the comarca card to say
+  “Coast: there may be no reachable shore.”
+- **Found:** `WorldPicker.ts:388` currently says “Coast: you will begin on the
+  shore.” Its Spanish entry at `src/i18n/es/ui.ts:174` says “Costa: empezarás
+  en la orilla.” These statements make different promises about access to a
+  reachable shore; the card does not explain whether the wording was intended
+  to change or which copy reflects the owner's decision.
+- **Resolution:** R0. No 11.5 implementation was started. The labels work and
+  coast-card copy are left untouched; the phase is marked skipped pending a
+  decision. Continue with the next independent phase, 2.1.
+
 ## Phase 2.19 N36 travel and living-person views — 2026-10-18
 
 - **Phase:** 2.19 — N36 expected that after scouting east, the family/tribe

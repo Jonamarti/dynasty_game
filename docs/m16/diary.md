@@ -1,5 +1,26 @@
 # M16 diary
 
+## M16 11.5 — Etiquetas y tarjeta de costa (2026-10-20; skipped: R0)
+
+Goal: etiquetar cada acción con su objetivo, en inglés y español, y respetar la
+decisión D-19 de la tarjeta de costa.
+
+What was done: no se modificó código. La tarjeta pide avisar que puede no haber
+una orilla accesible, mientras el selector actual asegura que se empezará en
+la orilla.
+
+Before and after: se confirmó la diferencia en `src/ui/WorldPicker.ts:388` y
+`src/i18n/es/ui.ts:174`. El baseline rápido empezó antes de revisar los archivos;
+el resultado se conserva en `artifacts/verification/m16-11.5/before/`.
+
+What turned out differently from the card: las dos frases hacen afirmaciones
+distintas y el plan no dice cuál debe regir; R0 impide elegir una sin respaldo.
+
+What is left open: resolver la intención de D-19; después se puede retomar toda
+la fase 11.5.
+
+Screenshots: none; no UI change.
+
 ## M16 2.29 — `art:sheet` termina (2026-10-20; ya corregido)
 
 Goal: confirmar que la hoja de contacto de `dig` se compone sin un lienzo vacío.

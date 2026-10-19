@@ -331,7 +331,7 @@ A stage ends with the full level (§5) and a screenshot tour.
 | 18 | [2.23](phases/2.23-select-on-shore.md) | Select people standing on the shore (N46, K7) | done `80ce45d` |
 | 19 | [2.27](phases/2.27-infants-cannot-dress.md) | Babies are not dressed (E9) | done `c25b967` |
 | 20 | [2.29](phases/2.29-art-sheet.md) | `art:sheet` finishes (E14) | verified already fixed |
-| 21 | [11.5](phases/11.5-action-labels.md) | Every action says what it is doing, in both languages (N35, K5) | todo |
+| 21 | [11.5](phases/11.5-action-labels.md) | Every action says what it is doing, in both languages (N35, K5) | skipped: R0, see doubts.md |
 | 22 | [2.1](phases/2.1-season-lore-barren.md) | A stripped bush is not learnt as barren (A1) | todo |
 | 23 | [2.3](phases/2.3-fog-and-memory.md) | Fog is saved, dimmed not black, and forgets what is gone (N6, N12, E4) | todo |
 | 24 | [2.5](phases/2.5-pickup-reach.md) | Picking up a far pile walks there first (A5) | todo |
