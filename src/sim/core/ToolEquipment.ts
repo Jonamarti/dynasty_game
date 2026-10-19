@@ -1,5 +1,6 @@
 /** M15 phase 11d: move the tool an action needs into the hands doing it. */
 import type { Person } from '../entities/Person.ts';
+import { canDressSelf } from '../entities/LifeStage.ts';
 import type { GarmentUnit } from '../entities/Item.ts';
 import { GARMENT_SLOTS } from '../entities/Equipment.ts';
 import { ITEMS } from '../entities/Item.ts';
@@ -152,7 +153,7 @@ export function manualGarmentRefusal(
 ): ManualGarmentReason | null {
   const garment = ITEMS[itemId]?.garment;
   if (!garment) return 'unknown_garment';
-  if (person.age < 1) return 'too_young_to_wear';
+  if (!canDressSelf(person)) return 'too_young_to_wear';
   if (person.inventory.count(itemId) <= 0) return 'garment_not_owned';
   const worn = person.equipment[garment.slot]?.item === itemId;
   if (verb === 'wear_garment' && worn) return 'garment_already_worn';

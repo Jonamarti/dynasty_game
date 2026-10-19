@@ -37,6 +37,11 @@ export function isBabyInArms(person: Person, childhood: ChildhoodConfig): boolea
   return !canWalk(person, childhood);
 }
 
+/** Dressing is self-care for a child, never for a baby in arms (D-18). */
+export function canDressSelf(person: Person): boolean {
+  return !person.isInfant;
+}
+
 /** Moves by itself at all: crawling, then walking. */
 export function canCrawl(person: Person, childhood: ChildhoodConfig): boolean {
   return person.age >= childhood.crawlYears * person.daysPerYear;

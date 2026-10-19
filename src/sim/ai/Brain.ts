@@ -102,7 +102,7 @@ import { anchorOf, childRadius, reachOf, withinReach, type Anchor } from './Anch
 import { cryOf, infantNeedingNursing } from './Nursing.ts';
 import type { PlaceRecord } from '../social/PlaceMemory.ts';
 import { CHILD_FEED_AT, feederRole, starvingInCare } from './Feeding.ts';
-import { canForage, canHunt, isNursling } from '../entities/LifeStage.ts';
+import { canDressSelf, canForage, canHunt, isNursling } from '../entities/LifeStage.ts';
 import { HEAVY_ACTIONS, trimesterOf } from '../entities/Pregnancy.ts';
 import { expectationRatio, garmentWarmthGain, techAppeal } from './Beliefs.ts';
 import { bondBetween } from './Bond.ts';
@@ -1154,7 +1154,7 @@ export class Brain {
     // estimates within the same slot, with a bounded curiosity trial for
     // untested layers. Replacing a layer leaves the displaced item in inventory.
     // The action is short and remains below every lethal need.
-    if (person.needs.cold > 10 && person.age >= 1) {
+    if (person.needs.cold > 10 && canDressSelf(person)) {
       let bestGain = 0;
       for (const [itemId, count] of person.inventory.entries()) {
         const garment = count > 0 ? ITEMS[itemId]?.garment : undefined;
@@ -1173,7 +1173,7 @@ export class Brain {
     // Preserve hide clothing before it wears out, but only spend real fat on
     // a physical unit the person can treat. The action banks work on that unit,
     // so interruption and later resumption do not waste the investment.
-    if (!person.isPlayer && person.age >= 1 && person.knownTech.has('hide_dressing') &&
+    if (!person.isPlayer && canDressSelf(person) && person.knownTech.has('hide_dressing') &&
         person.inventory.has('fat') && !pressedByNeed(person, ctx.needs.workLimits)) {
       let bestRemaining = 0;
       for (const [itemId, count] of person.inventory.entries()) {
@@ -1218,7 +1218,7 @@ export class Brain {
     const garmentHeatTemperature = ctx.garmentHeatTemperature ?? DEFAULT_CONFIG.ai.garmentHeatTemperature;
     const garmentHeatCold = ctx.garmentHeatCold ?? DEFAULT_CONFIG.ai.garmentHeatCold;
     const garmentHeatWeight = ctx.garmentHeatWeight ?? DEFAULT_CONFIG.ai.garmentHeatWeight;
-    if (!person.isPlayer && person.age >= 1 && person.needs.cold <= garmentHeatCold &&
+    if (!person.isPlayer && canDressSelf(person) && person.needs.cold <= garmentHeatCold &&
         ctx.time.temperature >= garmentHeatTemperature) {
       let mostUsefulLayer = 0;
       for (const slot of GARMENT_SLOTS) {
