@@ -1,3 +1,19 @@
+## 2026-10-20 — M16 2.29: la hoja de arte ya termina correctamente
+
+**Problema:** un informe anterior indicaba que `art:sheet` abortaba al dibujar
+la sección `dig` por un lienzo vacío (`InvalidStateError`).
+
+**Causa:** no se pudo atribuir el arreglo previo a un cambio concreto. En la
+versión actual, la hoja ya se genera con poses válidas.
+
+**Cambio:** verificado como ya corregido según R22; no se modificó código ni se
+añadió contenido. La hoja de contacto de `dig` se conserva como observación de
+regresión, con las poses de todas las direcciones y edades.
+
+**Verificación:** `npm.cmd run art:sheet` terminó con código 0. Se revisó
+visualmente `artifacts/art/contact-dig.png`; incluye «Dig: raise, strike,
+recover» y sus poses. No hubo cambios de interfaz del juego ni de simulación.
+
 ## 2026-10-20 — M16 2.27: los bebés no se visten solos
 
 **Problema:** la edad de `Person` se mide en días, pero las reglas de ropa

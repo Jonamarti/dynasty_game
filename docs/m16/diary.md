@@ -1,5 +1,23 @@
 # M16 diary
 
+## M16 2.29 — `art:sheet` termina (2026-10-20; ya corregido)
+
+Goal: confirmar que la hoja de contacto de `dig` se compone sin un lienzo vacío.
+
+What was done: no se cambió código porque el fallo descrito no ocurre en este
+build. El generador terminó y produjo la hoja de `dig` con poses de varias
+edades y direcciones.
+
+Before and after: `npm.cmd run art:sheet` terminó con código 0 y la imagen
+`artifacts/art/contact-dig.png` se revisó visualmente.
+
+What turned out differently from the card: R22 encontró el comportamiento ya
+corregido; no se añadió otra prueba ni se modificó el generador.
+
+What is left open: nada para E14; no se atribuye cuándo se corrigió.
+
+Screenshots: none; no game UI change.
+
 ## M16 2.27 — Los bebés no se visten solos (2026-10-20, `c25b967`)
 
 Goal: impedir que los bebés reciban o elijan órdenes para vestirse antes de la
