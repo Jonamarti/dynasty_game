@@ -1,3 +1,12 @@
+## 2026-10-20 — Regla de integración al cerrar sesión
+
+El propietario autoriza integrar en `master` cada lote terminado y verificado
+al cerrar sesión, sin esperar al cierre completo de M16 ni pedir otra
+confirmación. Se actualizan `AGENTS.md` y el protocolo M16. Una comprobación
+todavía en curso o una regresión nueva debe señalarse expresamente como bloqueo;
+los rojos heredados se evalúan mediante comparación. No autoriza push.
+Cambio solo de documentación; no requiere repetir la suite del juego.
+
 ## 2026-10-20 — M16 2.16: retirar equipo de manos y contenedores
 
 **Problema:** había rutas para equipar herramientas y contenedores, pero el

@@ -262,10 +262,18 @@ Do not run the full level or cohorts unless your phase card asks for it.
 suite passed. `e2e:ui` excludes the browser render/population budgets for a
 focused UI run; `e2e` and `check:full` retain those assertions.
 
-**Milestone integration:** complete the milestone's full verification and
-closeout on its work branch, then merge that branch into `master`. The owner
-pushes `master` to GitHub for the remote test run; do not push on the owner's
-behalf unless explicitly asked.
+**Integrate at session close, not only at milestone close.** Before ending a
+work session, complete the current batch's required verification and merge its
+finished, committed changes from the work branch into `master`. Do not wait
+for the entire milestone to finish, and do not ask for merge permission again:
+this is the owner's standing authorization (2026-10-20). Keep one commit per
+functionality with its docs and any required UI captures. Investigate new
+failures before merging; inherited documented red checks are not a reason to
+withhold integration when the comparison shows no new unexplained regression.
+If verification is still running or a new regression blocks integration,
+state the exact pending check or blocker and leave an explicit handoff; never
+silently omit the merge. Milestone close still requires its full verification
+and closeout. The owner pushes `master` to GitHub; never push unless asked.
 
 **New e2e spec:** add its path to the explicit list in `package.json` under
 `scripts.e2e` (M16 R26), or the standard suite will not execute it.

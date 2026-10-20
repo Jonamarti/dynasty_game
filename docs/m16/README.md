@@ -218,9 +218,13 @@ the next agent needs to find any bug you ran into. So:
    Closes: <triage IDs>|none
    ```
    followed by the attribution lines your harness requires.
-9. **Milestone close:** after all phases and full verification are complete,
-   merge the M16 work branch into `master`. The owner pushes `master` to
-   GitHub for the remote run; do not push on the owner's behalf.
+9. **Session integration (owner update, 2026-10-20):** verify the finished
+   batch and merge its committed changes into `master` before ending the
+   session, without waiting for all of M16 or asking permission again. Follow
+   the session-close integration rule in `AGENTS.md`; explicitly report any
+   pending verification or new regression that blocks the merge. Milestone
+   close still requires all phases and full verification. The owner pushes
+   `master` to GitHub; do not push on the owner's behalf.
 
 ### 4.4 If you get stuck
 
