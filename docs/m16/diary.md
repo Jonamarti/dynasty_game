@@ -766,3 +766,31 @@ M15, but no capability test guarded the walk-before-transfer behavior.
 What is left open: nothing for A5. The baseline `perf-budget` remains open.
 
 Screenshots: none; no game UI change.
+## M16 2.11 — Nobody starts a chat they will abandon for thirst (2026-10-20)
+
+Goal: verify that a character already past the thirst work limit does not start
+a conversation.
+
+What was done: `m16-talk-under-thirst` checks both sides of the behavior: a
+comfortable character has a conversation option, and a thirsty character does
+not. The test passed before any game code changed; M12 phase 2c already removes
+`talk` from the score when `pressedByNeed` is true. A11 is therefore verified
+already fixed, with no game code or version change.
+
+Before and after: the `band` report records `talked_thirsty=12` and
+`talked_hungry=13` both times. Those counters include conversations stopped
+after a need rises during the action; the capability test confirms that a new
+conversation is filtered when the need is already past its line. The known
+`moods-move-choices` and `perf-budget` checks remain red.
+
+What turned out differently from the card: it expected a missing per-action
+gate, but the shared M12 phase 2c filter already covers `talk`.
+
+What is left open: nothing for A11; interruptions after a need crosses its
+limit during an active conversation remain expected.
+
+Verification: typecheck passes; full suite: 346 files, 2,435 passed and 1
+skipped. `sim:check:all` has 48 scenarios and the same 152 failing checks as
+2.10; no failure sets changed.
+
+Screenshots: none; no UI change.

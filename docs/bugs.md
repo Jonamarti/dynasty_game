@@ -3593,19 +3593,15 @@ measuring rather than reading.
 
 ### A sixth of all conversations are broken off for thirst
 
-`doTalk` gained an interruption check in this phase, because the longest rung is
-ninety ticks and `AGENTS.md` is explicit about long actions with no way into
-them. It fires a great deal: a century run reports 663 conversations stopped by
-thirst against 3,251 completed, so roughly one exchange in six ends with
-somebody walking off to the river.
-
-That is the check doing its job — they really are thirsty, and `thirsty` is in
-`RESUMABLE_STOPS` so the conversation is picked up again — but it is also a
-great deal of walking spent on conversations that do not happen. Worth knowing
-before anyone concludes the rungs are not being used: they are, and a sixth of
-them are abandoned. The likely cause is that `Brain` scores `talk` without
-consulting `pressedByNeed`, unlike `play`, `tend` and `tame`, which are gated on
-it for precisely this reason.
+The M16 2.11 capability test checked that a person can score `talk` while
+comfortable but cannot score it when thirst is above `workLimit`. It already
+passed before the phase changed anything. The reason is the shared end-of-score
+filter added in M12 phase 2c: `talk` belongs to `CUT_OFF_AT_ONCE`, which is
+removed whenever `pressedByNeed` is true. The 663 interruptions in the century
+measurement are conversations that began before thirst crossed the limit;
+they do not show that the scorer starts a new conversation while thirst is
+already pressing. A11 is closed by M16 2.11; the regression test records the
+existing behavior.
 
 ### Technologies known moved from 11.0 to 10.1 and did not come back
 

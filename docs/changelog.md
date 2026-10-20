@@ -1,3 +1,26 @@
+## 2026-10-20 — M16 2.11: verificada la charla bajo sed
+
+**Problema:** A11 afirmaba que se iniciaban conversaciones que la sed
+interrumpía en el siguiente ciclo.
+
+**Causa:** la tarjeta apuntaba a una falta de filtro en la puntuación individual
+de `talk`, pero M12 fase 2c ya añadía `talk` a `CUT_OFF_AT_ONCE`. El filtro común
+de `Brain.score` elimina esas opciones cuando `pressedByNeed` es verdadero.
+
+**Cambio:** se añadió `m16-talk-under-thirst`, una prueba de regresión que
+comprueba que una persona cómoda puede conversar y que una persona con sed por
+encima de `workLimit` no recibe esa opción. R22 confirma que la conducta ya
+estaba corregida; no cambió código del juego ni la versión. La medición `band`
+antes y después mantiene `talked_thirsty=12` y `talked_hungry=13`; son las
+interrupciones que todavía ocurren cuando la necesidad cruza el límite durante
+la conversación, no al empezarla.
+
+**Verificación:** prueba de fase 1/1; typecheck y suite completa pasan (346
+archivos, 2.435 pruebas correctas y una omitida). El área `band` mantiene los
+fallos conocidos `moods-move-choices` y `perf-budget` (494 pasos/s, mínimo
+1.678). `sim:check:all` sigue rojo en 48 escenarios con los mismos conjuntos
+de fallos y 152 fallos que 2.10. Sin cambios de UI; no se necesita captura.
+
 ## 2026-10-20 — M16 2.10: los menús de desconocidos no revelan su saber
 
 **Problema:** las opciones `teach` y `discuss` se habilitaban según las
