@@ -1,6 +1,6 @@
 # M16 diary
 
-## M16 2.10 — El menú no revela la tecnología de un desconocido (2026-10-20)
+## M16 2.10 — El menú no revela la tecnología de un desconocido (2026-10-20, `f94c77e`)
 
 Goal: ensure the action menu does not read a stranger's known technologies or
 skills, while explicit social actions still explain why they cannot help.
