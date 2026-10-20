@@ -1,6 +1,6 @@
 # M16 diary
 
-## M16 2.9 — La armadura de piel respeta `leatherwork` (2026-10-20)
+## M16 2.9 — La armadura de piel respeta `leatherwork` (2026-10-20, `c3a2a98`)
 
 Goal: comprobar los tres efectos de A9 y hacer que la armadura de piel dependa
 de la tecnología que la produce.
