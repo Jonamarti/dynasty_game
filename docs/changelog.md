@@ -1,3 +1,26 @@
+## 2026-10-20 — M16 2.10: los menús de desconocidos no revelan su saber
+
+**Problema:** las opciones `teach` y `discuss` se habilitaban según las
+tecnologías y habilidades privadas de la otra persona. Un menú sobre un
+desconocido podía decir qué sabía antes de hablar con ella.
+
+**Cambio:** `ActionCatalog` consulta `knowledgeOfPerson`; si el personaje
+jugador aún no conoce el carácter de esa persona, el estado de `teach` y
+`discuss` no depende de sus datos privados. El intento de `discuss` conserva su
+rechazo `partner_ignorant`; una orden explícita de `teach` que no puede
+transmitir nada se detiene con `learned_nothing`. `KnowledgeSystem` comparte la
+misma comprobación de tecnologías enseñables. No cambia la IA autónoma ni el
+mundo. Versión `0.16.10-alpha`.
+
+**Verificación:** `m16-stranger-menu-does-not-reveal-known-tech` fallaba antes
+del cambio y ahora compara menús idénticos; las tres pruebas de fase pasan
+(incluidos los dos rechazos visibles). Typecheck pasa; suite completa: 345/345
+archivos, 2.434 pruebas correctas y una omitida. El tour de capturas pasa 19/19.
+La matriz `sim:check:all` termina con 48 escenarios y 152 fallos, con los mismos
+conjuntos de fallos que la medición completa de 2.9; no añade ninguno.
+
+**Captura:** `artifacts/screenshots/m16-2026-10-20-2.10/08-stranger-actions.png`.
+
 ## 2026-10-20 — M16 2.9: la armadura de piel respeta `leatherwork`
 
 **Problema:** la fase M15 37i conectó la protección con `techPower`, pero una

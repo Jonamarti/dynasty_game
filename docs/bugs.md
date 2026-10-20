@@ -3650,11 +3650,12 @@ player exactly which technologies that stranger holds.
 
 The `ask` verb added in the same pass deliberately does *not* do this — it is
 offered unconditionally and the refusals are spoken by `doAsk` — so the shape
-of the fix is already in the file. Doing the same for `teach` and `discuss`
-means offering them always and letting the action refuse, which costs the
-player a greyed-out tooltip and buys back the knowledge gate. Not done here
-because it changes what the AI-facing half of the catalogue reports and wants
-measuring on its own.
+of the fix was already in the file. **Closed by M16 2.10 (2026-10-20):**
+`ActionCatalog` now consults `knowledgeOfPerson` before reading a target's
+skills or technologies, and leaves `teach` and `discuss` available while the
+character is unknown. The actions refuse with a visible reason when there is
+nothing to teach or discuss. A capability test proves two strangers with
+different technologies receive identical action ids and enabled flags.
 
 ### Nobody ever picks anything up off the ground but the player — partial fix, M15 11d
 

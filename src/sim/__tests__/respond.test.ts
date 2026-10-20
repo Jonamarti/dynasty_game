@@ -68,6 +68,9 @@ describe('a blow reaches somebody committed to something', () => {
     const [teacher, pupil] = sim.livingPeople().filter(p => p.bandId === 0 && !p.isChild);
     const striker = sim.livingPeople().find(p => p.bandId === 1 && !p.isChild)!;
     for (const p of [teacher!, pupil!, striker]) settled(p);
+    // This fixture exercises interruption during a real lesson; explicit
+    // teaching now refuses before starting when there is nothing they can pass on.
+    teacher!.knownTech.add('firemaking');
     pupil!.x = teacher!.x + 1;
     pupil!.y = teacher!.y;
     striker.x = teacher!.x - 1;

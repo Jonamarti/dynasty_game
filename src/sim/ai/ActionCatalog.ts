@@ -37,6 +37,7 @@ import type { Inscription } from '../entities/Inscription.ts';
 import type { Animal } from '../entities/Animal.ts';
 import type { RelationshipGraph } from '../social/Relationships.ts';
 import type { PropertyUse } from '../social/Property.ts';
+import { knowledgeOfPerson } from '../social/Knowledge.ts';
 import {
   CONVERSATION_MODES, MODE_LADDER, modeAllowed, whyNotYet, type ConversationMode,
 } from '../social/Conversation.ts';
@@ -665,17 +666,25 @@ function personActions(actor: Person, other: Person, ctx: CatalogContext): Actio
   // and the one `ask` follows over what is in somebody's head.
   const blind = ctx.relationships === undefined;
   const rel = ctx.relationships?.peek(actor.id, other.id) ?? null;
+  // Skills and known techniques are private in the same way as needs and
+  // condition: only read them after Knowledge says this observer knows the
+  // person's character. A stranger still gets the verbs; trying them is how
+  // they find out whether the other person can help.
+  const knowsCharacter = !!ctx.relationships &&
+    knowledgeOfPerson(actor, other, ctx.relationships).knowsCharacter;
   const tick = ctx.tick ?? 0;
   // Something they could actually take in. `KnowledgeSystem.teach` drops any
   // technology whose prerequisites the pupil is missing, so a menu that only
   // asked "do they lack it?" offered a lesson that would quietly fail — and
   // since children can be taught, the pupil who lacks the scaffolding is now
   // the common case rather than the rare one.
-  const teachable = [...actor.knownTech].some(t =>
-    TECH[t as Tech] !== undefined &&
-    !other.knownTech.has(t) &&
-    prerequisitesMet(t as Tech, other.knownTech));
-  const onlyGroundwork = !teachable && actor.knownTech.size > 0 &&
+  const teachable = knowsCharacter
+    ? [...actor.knownTech].some(t =>
+      TECH[t as Tech] !== undefined &&
+      !other.knownTech.has(t) &&
+      prerequisitesMet(t as Tech, other.knownTech))
+    : actor.knownTech.size > 0;
+  const onlyGroundwork = knowsCharacter && !teachable && actor.knownTech.size > 0 &&
     [...actor.knownTech].some(t => !other.knownTech.has(t));
 
   // Talking a problem over with somebody who knows something about it. Offered
@@ -690,10 +699,9 @@ function personActions(actor: Person, other: Person, ctx: CatalogContext): Actio
     .filter(candidate => candidate.stage !== 'prototyped' && candidate.insight < 1)
     .map(candidate => {
       const def = TECH[candidate.tech];
-      const informed = !other.isChild && (
+      const informed = !other.isChild && (!knowsCharacter ||
         other.skills[def.skill] >= 12 ||
-        def.requires.some(required => other.knownTech.has(required))
-      );
+        def.requires.some(required => other.knownTech.has(required)));
       return {
         id: 'discuss',
         techId: candidate.tech,

@@ -823,17 +823,7 @@ export class KnowledgeSystem {
     // until they are grown — which is also why the world's `knownTech` is
     // counted from adults. Knowing a thing and being able to explain it are
     // separated by about ten years.
-    if (teacher.isChild) return null;
-
-    const teachable: Tech[] = [];
-    for (const tech of teacher.knownTech) {
-      if (pupil.knownTech.has(tech)) continue;
-      const def = TECH[tech as Tech];
-      if (!def) continue;
-      if (!def.requires.every(r => pupil.knownTech.has(r))) continue;
-      if (only !== undefined && tierOf(tech as Tech) !== only) continue;
-      teachable.push(tech as Tech);
-    }
+    const teachable = this.teachableTechs(teacher, pupil, only);
     if (teachable.length === 0) return null;
 
     const ranked = teachable.map(tech => ({ tech, appeal: techAppeal(teacher, tech) }));
@@ -887,6 +877,25 @@ export class KnowledgeSystem {
     teacher.chronicle.push({ tick, ageDays: teacher.age, text, kind: 'did' });
     pupil.chronicle.push({ tick, ageDays: pupil.age, text, kind: 'milestone' });
     return tech;
+  }
+
+  /** Whether a lesson has any possible subject, without spending an RNG draw. */
+  canTeach(teacher: Person, pupil: Person): boolean {
+    return this.teachableTechs(teacher, pupil).length > 0;
+  }
+
+  private teachableTechs(teacher: Person, pupil: Person, only?: TechTier): Tech[] {
+    if (teacher.isChild) return [];
+    const teachable: Tech[] = [];
+    for (const tech of teacher.knownTech) {
+      if (pupil.knownTech.has(tech)) continue;
+      const def = TECH[tech as Tech];
+      if (!def) continue;
+      if (!def.requires.every(r => pupil.knownTech.has(r))) continue;
+      if (only !== undefined && tierOf(tech as Tech) !== only) continue;
+      teachable.push(tech as Tech);
+    }
+    return teachable;
   }
 
   /**

@@ -4976,6 +4976,13 @@ export class ActionSystem {
     const pupil = this.approach(person, ctx);
     if (!pupil) return;
 
+    // The catalogue cannot know what a stranger already remembers. Offer the
+    // lesson and discover this only once they have tried to sit down together.
+    if (person.order !== null && !ctx.knowledge.canTeach(person, pupil)) {
+      this.abandon(person, 'learned_nothing', ctx);
+      return;
+    }
+
     if (person.actionTimer <= 0) {
       person.actionTimer = TEACH_TICKS;
       return;

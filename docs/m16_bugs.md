@@ -193,7 +193,7 @@ contradice la columna «Causa probable» de 1b, manda esta.
 | A7 | "Sueño animal pendiente" | el signo de alarma animal sigue tras expirar | cerrado por M16 2.7 (2026-10-20) | 2.7 |
 | A8 | "M15 fase 26c: lo que las obras de tierra no hacen" | un foso que se llena aísla casillas pendientes y deja la obra a medias | cerrado por M16 2.8 (2026-10-20) | 2.8 |
 | A9 | "Two effects bypass `techPower`" | `doHunt` ya usa el alcance del arma (M8.1) y `axeFactor` escala la tala por `hafting` (M11); quedó un hueco: `hide_armour` no declaraba `armourTech: leatherwork`, por lo que no aplicaba la escala de armadura | cerrado por M16 2.9 (2026-10-20); pruebas de arco, armadura y hacha |
-| A10 | "The catalogue reads a stranger's knowledge" | Reproducido por lectura del flujo vigente: `personActions` consulta `other.knownTech` y `other.skills` para habilitar y describir `teach`/`discuss`; `Knowledge.ts` no media esa consulta | A | 2.10 |
+| A10 | "The catalogue reads a stranger's knowledge" | `personActions` consultaba `other.knownTech` y `other.skills` para habilitar y describir `teach`/`discuss`; el test `m16-stranger-menu-does-not-reveal-known-tech` reproduce la diferencia | cerrado por M16 2.10 (2026-10-20); rechazo de `teach`/`discuss` cubierto | 2.10 |
 | A11 | "A sixth of all conversations are broken off for thirst" | `talk` no consulta si la sed ya aprieta antes de empezar | A | 2.11 |
 | A12 | "Floaters do not follow the entity" | los rótulos se quedan atrás | A, baja | 2.12 |
 | A13 | "M15 equipamiento: matriz roja y cobertura perdida" | 15 fallos nuevos y 12 pérdidas de aplicabilidad sin causa establecida | A | 0.1, 2.13 |

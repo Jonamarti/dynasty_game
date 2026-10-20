@@ -1,5 +1,37 @@
 # M16 diary
 
+## M16 2.10 — El menú no revela la tecnología de un desconocido (2026-10-20)
+
+Goal: ensure the action menu does not read a stranger's known technologies or
+skills, while explicit social actions still explain why they cannot help.
+
+What was done: `ActionCatalog` now asks `knowledgeOfPerson` whether the player
+knows the target's character before reading their skills or technologies. If
+not, `teach` and any discussion about the player's idea stay enabled; the
+attempt itself decides. An explicit lesson with nothing transmissible stops
+with `learned_nothing`, and discussion keeps `partner_ignorant`. The teach
+eligibility check is shared with `KnowledgeSystem`. NPC-autonomous lessons and
+the world are unchanged.
+
+Before and after: `m16-stranger-menu-does-not-reveal-known-tech` failed before
+the change because `discuss` and `teach` differed between two strangers; it
+now passes. Two action tests confirm a visible refusal for empty lessons and
+uninformed discussion. The former interruption fixture now supplies a lesson
+that can actually be taught. Typecheck passes; full Vitest passes (345 files,
+2,434 passed, one skipped); the screenshot tour passes 19/19. `sim:check:all`
+still reports 48 scenarios and 152 failures, exactly the same failed-check
+sets as the full 2.9 matrix. No new failure appeared.
+
+What turned out differently from the card: `discuss` already refused an
+uninformed partner with a visible reason; the live bug was that the menu
+revealed the reason ahead of the conversation. `teach` needed an explicit
+refusal before waiting through a lesson that could not transfer anything.
+
+What is left open: A10 is closed. The inherited scenario matrix remains red;
+it is unchanged from the preceding full M16 phase run.
+
+Screenshots: `artifacts/screenshots/m16-2026-10-20-2.10/08-stranger-actions.png`.
+
 ## M16 2.9 — La armadura de piel respeta `leatherwork` (2026-10-20, `c3a2a98`)
 
 Goal: comprobar los tres efectos de A9 y hacer que la armadura de piel dependa

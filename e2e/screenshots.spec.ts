@@ -961,3 +961,53 @@ test('earth moved', async ({ page }) => {
   await page.waitForTimeout(300);
   await capture(page, DIR + '/m15-phase26-2026-10-02/m15-26-trench-and-mound.png', 'canvas#view');
 });
+
+test('M16 2.10 stranger knowledge does not grey out social actions', async ({ page }) => {
+  await page.goto('/?seed=m16-stranger-menu-shot&skipIntro=1');
+  await expect(page.locator('.hud-clock')).not.toBeEmpty({ timeout: 15_000 });
+  await page.locator('.hud-button', { hasText: 'Pause' }).click();
+  const point = await page.evaluate(() => {
+    const d = (window as never as { __dynasty: {
+      sim: {
+        player: { id: number; x: number; y: number; knownTech: Set<string>;
+          ideas: unknown[]; memory: { entries: unknown[] } } | null;
+        livingPeople: () => { id: number; x: number; y: number; isChild: boolean;
+          knownTech: Set<string> }[];
+        relationships: { edges: Map<number, Map<number, unknown>> };
+      };
+      camera: { snapTo: (x: number, y: number) => void; following: boolean;
+        worldToScreenX: (x: number) => number; worldToScreenY: (y: number) => number };
+    } }).__dynasty;
+    const player = d.sim.player;
+    const stranger = d.sim.livingPeople().find(person => person.id !== player?.id && !person.isChild);
+    if (!player || !stranger) return null;
+
+    // Stage a genuine stranger with a discussable idea so the frame shows both
+    // verbs enabled, even though the target has not revealed their knowledge.
+    d.sim.relationships.edges.clear();
+    player.memory.entries.length = 0;
+    player.knownTech.clear();
+    player.knownTech.add('firemaking');
+    player.knownTech.add('hafting');
+    player.ideas.splice(0, player.ideas.length, {
+      tech: 'spear', stage: 'researching', insight: 0.5,
+      story: 'a test idea', conceivedTick: 0, effort: 0, discussedWith: [],
+      trials: 0, proof: 0, failedTests: 0, tries: 0,
+    });
+    stranger.knownTech.clear();
+    stranger.x = player.x + 1;
+    stranger.y = player.y;
+    d.camera.snapTo(stranger.x, stranger.y);
+    d.camera.following = false;
+    return { x: d.camera.worldToScreenX(stranger.x), y: d.camera.worldToScreenY(stranger.y) };
+  });
+  expect(point).not.toBeNull();
+  await page.evaluate(() => new Promise<void>(resolve => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+  }));
+  await clickThrough(page, point!.x, point!.y, '\u{1F464}', 'right');
+  const group = page.locator('.radial-item', { hasText: 'Teach and learn' });
+  await expect(group).toBeVisible();
+  await expect(group).toBeEnabled();
+  await capture(page, DIR + '/08-stranger-actions.png', '.radial');
+});
