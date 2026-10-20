@@ -1,3 +1,30 @@
+## 2026-10-20 — M16 1.7: reducir el coste de la verificación cotidiana
+
+**Problema:** ejecutar unas 2.435 pruebas y reconstruir mundos largos por cada
+commit hacía que la verificación unitaria tardara alrededor de quince minutos.
+El propietario autorizó una selección rápida y el cierre completo por fase.
+
+**Causa:** se mezclaban reglas cortas, simulaciones de varias semanas y
+presupuestos de renderizado. Había además montajes geográficos repetidos.
+
+**Cambio:** `check:fast` ejecuta typecheck y una selección explícita de nueve
+archivos de reglas/determinismo; `npm test` conserva toda la cobertura.
+`check:area -- <área>` filtra las etiquetas existentes y rechaza áreas
+desconocidas; `check:full` conserva toda la suite e incluye escenarios lentos.
+Los presupuestos de navegador se mantienen registrados en `e2e`; dos casos
+ArtAtlas comparten página y conservan sus dos cachés independientes y todas las
+aserciones. `e2e:ui` permite excluir esos presupuestos en una pasada de interfaz.
+En `start-place`, los montajes aleatorios bajan de 29 a 14 y los atlas Earth de
+dos a uno; la prueba de repetibilidad sigue generando mapas independientes.
+
+**Verificación:** typecheck pasa; selección rápida 46/46 (Vitest 18,47 s);
+selección nueva de herramientas/render 5/5; los dos casos de presupuesto de
+navegador pasan. `start-place` conserva sus 17 casos: 37,77 s antes y 39,78 s
+después, sin mejora de pared demostrada; domina su simulación de treinta días.
+No se han relajado umbrales ni eliminado comprobaciones. El cierre de fase
+con la suite completa y los tiempos de cada área se registra por separado.
+Sin cambio de juego, versión o UI. Evidencia: `artifacts/verification/m16-test-costs/`.
+
 ## 2026-10-20 — M16 2.11: verificada la charla bajo sed
 
 **Problema:** A11 afirmaba que se iniciaban conversaciones que la sed

@@ -240,10 +240,17 @@ Until phase 1.7 exists, use the left column.
 
 | Level | Before 1.7 | From 1.7 | When |
 |---|---|---|---|
-| **Fast** | `npm.cmd run typecheck` then `npm.cmd test -- --maxWorkers=1 --testTimeout=15000` | `npm.cmd run check:fast` | every change |
+| **Fast** | `npm.cmd run typecheck` then `npm.cmd test -- --maxWorkers=1 --testTimeout=15000` | `npm.cmd run check:fast` (typecheck + explicit rules subset) | every change |
 | **Area** | `npm.cmd run sim:check -- --scenario <name>` (the card names it) | `npm.cmd run check:area -- <area>` | end of each phase |
 | **Full** | `npm.cmd run verify` | `npm.cmd run check:full` | end of each stage (section 7) |
 | **Cohort** | `npm.cmd run sim:seeds -- --scenario <name> --seeds 20` (flag form only; add `--set motivation.<switch>=true` for the on-arm) | same | only at block gates, one at a time (R27) |
+
+Owner update, 2026-10-20: reduce repeated test cost first; run the complete
+unit suite once per M16 phase, not per functionality commit. `check:fast`
+now means the explicit small rules gate in `vitest.fast.config.ts`, as
+authorized by that request; it does not claim full-suite coverage. All
+integration replays stay in `npm test` and `check:full`. Focused area checks
+keep their inherited failures; no health threshold is weakened.
 
 **How a gate is measured (blocks 4, 5, 7, 8):**
 
@@ -315,7 +322,7 @@ A stage ends with the full level (§5) and a screenshot tour.
 | 7 | [1.4](phases/1.4-checkpoint-scenario-keys.md) | Checkpoints of every scenario can be saved (E10) | done 9e567c5 |
 | 8 | [1.5](phases/1.5-fixture-worlds.md) | Fixture worlds | done 64aaef4 |
 | 9 | [1.6](phases/1.6-from-scenarios.md) | Short scenarios that start from a fixture | done 6055379 |
-| 10 | [1.7](phases/1.7-run-levels.md) | Run levels `check:fast/area/full` | skipped (R0; see doubts.md) |
+| 10 | [1.7](phases/1.7-run-levels.md) | Run levels `check:fast/area/full` | commands implemented 2026-10-20; full/area timing closeout pending |
 | 11 | [1.8](phases/1.8-perf.md) | Performance command and budget | todo |
 | 12 | [1.9](phases/1.9-red-test-verdicts.md) | A verdict for each known red test (E12) | done a40a6dc |
 
@@ -342,7 +349,7 @@ A stage ends with the full level (§5) and a screenshot tour.
 | 29 | [2.10](phases/2.10-stranger-knowledge-menu.md) | The menu does not reveal a stranger's techs (A10) | done `f94c77e`; see diary |
 | 30 | [2.11](phases/2.11-talk-under-thirst.md) | Nobody starts a chat they will abandon for thirst (A11) | verified already fixed `35a4cafd` (M12 phase 2c) |
 | 31 | [2.12](phases/2.12-floaters-follow.md) | Floating labels follow their entity (A12) | todo |
-| 32 | [2.14](phases/2.14-defend-from-predators.md) | Bandmates defend someone bitten by a predator (A14) | todo |
+| 32 | [2.14](phases/2.14-defend-from-predators.md) | Bandmates defend someone bitten by a predator (A14) | skipped (R0; animal assailant contract, see doubts.md) |
 | 33 | [2.16](phases/2.16-equip-unequip.md) | Everything with a slot can be equipped and removed (N18) — **partly done in M15, verify** | todo |
 | 34 | [2.17](phases/2.17-search-food-water.md) | Hungry or thirsty people search farther (N21, N44, E2, E3) — **partly done in M15, verify** | todo |
 | 35 | [2.18](phases/2.18-mud-markers.md) | You can see which shore tiles give mud (N32) | todo |

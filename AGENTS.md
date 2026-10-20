@@ -247,6 +247,21 @@ do not describe a failing verification run as passing.
 Four layers, fastest first. `npm run verify` chains them. Run at least the
 first three before you claim anything works.
 
+M16 verification levels (owner instruction, 2026-10-20): run focused checks
+per functionality, and the complete unit suite once per phase, not per commit.
+Do not run the full level or cohorts unless your phase card asks for it.
+
+| Level | Command | When |
+|---|---|---|
+| Fast | `npm.cmd run check:fast` | each change; typecheck plus the explicit rules subset in `vitest.fast.config.ts` |
+| Area | `npm.cmd run check:area -- <area>` | phase close; scenario tags, inherited reds still fail |
+| Unit | `npm.cmd test -- --maxWorkers=1 --testTimeout=15000` | once per phase; all unit and integration tests |
+| Full | `npm.cmd run check:full` (alias `verify`) | stage close; typecheck, all tests, matrix including slow scenarios, all E2E |
+
+`check:fast` is deliberately a named subset, not evidence that the complete
+suite passed. `e2e:ui` excludes the browser render/population budgets for a
+focused UI run; `e2e` and `check:full` retain those assertions.
+
 **Milestone integration:** complete the milestone's full verification and
 closeout on its work branch, then merge that branch into `master`. The owner
 pushes `master` to GitHub for the remote test run; do not push on the owner's

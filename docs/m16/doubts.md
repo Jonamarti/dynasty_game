@@ -1,5 +1,37 @@
 # M16 doubts
 
+## Phase 2.14 — predator bites as defence targets (2026-10-20)
+
+- **Phase:** 2.14 — a bandmate answers a predator biting someone in their band.
+- **Expected:** step 1 asks a witness to score a defensive action against the
+  wolf; step 2 says to make the bite an assault that existing `Defence` can
+  see and reuse the human-attack structure (`phases/2.14-defend-from-predators.md:22-28`).
+- **Found:** the card cites `src/sim/core/AnimalAttack.ts`, but the current
+  module is `src/sim/entities/AnimalAttack.ts` (`Simulation.ts:21`). More
+  substantially, `animalBlow` updates `lastHarmedTick` but not
+  `lastHarmedBy` (`entities/AnimalAttack.ts:50`). `Simulation.animalBites`
+  directly sends the bitten person toward a fire or away and applies witness
+  fear; it never registers an attacker (`core/Simulation.ts:4215-4244`). The
+  wildlife callback does carry `(animal, person)` (`systems/WildlifeSystem.ts:162,593`),
+  but `Defence.assailantOf` resolves and returns a `Person`
+  (`social/Defence.ts:311-320`). Brain's kin-defence route only scans child
+  victims with a `lastHarmedBy` person ID and calls that resolver
+  (`ai/Brain.ts:3000-3012`). The existing fixture likewise assigns a human
+  aggressor (`__tests__/kin_defence.test.ts:19-20`). No
+  `defended_from_predator` counter exists; the nearby
+  `predator_kept_off_by_guard` counter measures pre-bite patrol avoidance
+  (`systems/WildlifeSystem.ts:569`). The underlying gap is still listed as
+  open in `docs/bugs.md:1389-1390`.
+- **File:line:** `phases/2.14-defend-from-predators.md:18-28`,
+  `entities/AnimalAttack.ts:50`, `core/Simulation.ts:4215-4244`,
+  `systems/WildlifeSystem.ts:162,593`, `social/Defence.ts:311-320`,
+  `ai/Brain.ts:3000-3012`.
+- **Resolution:** R0. The actual module path is a name correction, but
+  `assailantOf` and the attack target model are person-only, so the card's
+  reuse instruction does not define how an animal becomes a defensive target.
+  Do not invent a second response path; leave phase 2.14 until the animal
+  attacker/target representation is decided.
+
 ## Phase 2.6 — roofed and roofless art line up (2026-10-20)
 
 - **Phase:** 2.6 — N7, the house image with its roof lifted.
@@ -48,6 +80,12 @@
   travel or view code changed. Keep the regression coverage.
 
 ## Phase 1.7 fast-level duration — 2026-10-18
+
+**Resolved direction, 2026-10-20:** the owner explicitly requested reducing
+test costs and running full suites per phase rather than per commit. A named
+small rules subset is therefore authorized for `check:fast`; every existing
+integration replay remains in `npm test` and in the full gate. This removes
+the ambiguity recorded below without claiming a full unit run takes <2 min.
 
 - **Phase:** 1.7 — run levels `check:fast`, `check:area`, `check:full`.
 - **Expected:** the card defines `check:fast` as `npm run typecheck && vitest

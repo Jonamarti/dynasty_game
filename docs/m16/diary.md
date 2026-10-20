@@ -794,3 +794,16 @@ skipped. `sim:check:all` has 48 scenarios and the same 152 failing checks as
 2.10; no failure sets changed.
 
 Screenshots: none; no UI change.
+
+## M16 1.7 — Verification cost (2026-10-20)
+Goal: shorten the edit loop while retaining the full regression coverage.
+What was done: added explicit fast, area and full commands under the owner's new instruction. Shared repeated geographic fixture setup and combined the two ArtAtlas page boots into named steps with independent atlases.
+Before and after: fast Vitest 9 files/46 tests in 18.47s versus the historical full run near fifteen minutes; these are different, explicitly named levels. Start-place retains all 17 tests and independent seed repeatability, but its measured wall time did not improve (37.77s to 39.78s). Browser budgets retain all assertions with one fewer page navigation.
+What turned out differently from the card: the owner authorized a small fast subset, resolving R0. Complete unit coverage remains in npm test and check:full.
+What is left open: full phase verification and measured five-minute area budgets; no claim that the complete suite meets the fast budget.
+Screenshots: none; tooling only.
+
+## M16 2.14 — Animal assailant mismatch (2026-10-20)
+Goal: make bandmates answer a predator bite using the common defence rules.
+What was found: the shared defence helper and action targets accept people only; bites record no typed animal assailant. This exceeds the card's file-name mismatch.
+Resolution: R0 recorded in doubts.md; no game code changed. Continue to independent 2.16. A14 remains open.

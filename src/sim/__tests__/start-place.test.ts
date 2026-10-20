@@ -14,18 +14,32 @@ import { gridFromGeography, regionOfStart } from '../world/PeopleWorld.ts';
 const SPAN = 4;
 const config = localWorldConfig();
 const SEEDS = ['wp-a', 'wp-b', 'wp-c', 'wp-d', 'wp-e', 'wp-f'];
+const randomGeographies = new Map<string, ReturnType<typeof randomWorldGeography>>();
+
+function randomGeography(seed: string): ReturnType<typeof randomWorldGeography> {
+  let geography = randomGeographies.get(seed);
+  if (!geography) {
+    geography = randomWorldGeography(seed);
+    randomGeographies.set(seed, geography);
+  }
+  return geography;
+}
 
 function earth(): EarthWorldGeography {
   const raster = decodeWorldRaster(new Uint8Array(readFileSync(resolve('public/world/earth-12000-bce.bin'))));
   return earthWorldGeography({ entry: { id: 'earth-12000-bce', title: 'Earth', file: 'earth-12000-bce.bin', seaLevelMeters: -60, recommended: true }, raster }, 10);
 }
 
+// Both Earth test groups query the same read-only atlas; decoding it twice at
+// module load added setup cost without giving either group an isolated world.
+const earthGeography = earth();
+
 describe('where a game may begin: with fresh water to drink (phase 33)', () => {
   it('the old pick (open temperate country by its flags) often had no water at all: the bug this guards', () => {
     // Measured against the build that made four dead worlds in a row: unless some seed here ended up with too little water the
     // test below proves nothing, so it asserts the failure exists.
     const dry = SEEDS.filter(seed => {
-      const geography = randomWorldGeography(seed);
+      const geography = randomGeography(seed);
       const start = findGlobeStart(geography, SPAN);
       return start === null || measureWindow(geography, start.x, start.y, SPAN, config).fresh < MIN_FRESH_TILES;
     });
@@ -34,7 +48,7 @@ describe('where a game may begin: with fresh water to drink (phase 33)', () => {
 
   it('every generated world begins where a measured river or lake runs, on mostly dry land', () => {
     for (const seed of SEEDS) {
-      const geography = randomWorldGeography(seed);
+      const geography = randomGeography(seed);
       const start = findWateredGlobeStart(geography, SPAN, config, seed);
       expect(start, seed).not.toBeNull();
       const report = measureWindow(geography, start!.x, start!.y, SPAN, config);
@@ -44,7 +58,7 @@ describe('where a game may begin: with fresh water to drink (phase 33)', () => {
 
   it('and the simulation built there has water to drink and a band to drink it', () => {
     for (const seed of SEEDS.slice(0, 3)) {
-      const geography = randomWorldGeography(seed);
+      const geography = randomGeography(seed);
       const start = findWateredGlobeStart(geography, SPAN, config, seed)!;
       const state = new WorldState({ seed, population: { bands: 1, peoplePerBand: 6 } },
         { geography, start: { x: start.x, y: start.y }, comarcasWide: SPAN, comarcasHigh: SPAN, peoples: false });
@@ -55,8 +69,11 @@ describe('where a game may begin: with fresh water to drink (phase 33)', () => {
 
   it('is a function of the seed, and different seeds begin in different places and kinds of country', () => {
     const where = (seed: string) => {
-      const start = findWateredGlobeStart(randomWorldGeography(seed), SPAN, config, seed)!;
-      return { x: start.x, y: start.y, terrain: worldTerrainOf(randomWorldGeography(seed).profileAt(start.x, start.y)) };
+      // Build independently on each call so the repeated-seed assertion still
+      // proves that a fresh map from the same seed chooses the same start.
+      const geography = randomWorldGeography(seed);
+      const start = findWateredGlobeStart(geography, SPAN, config, seed)!;
+      return { x: start.x, y: start.y, terrain: worldTerrainOf(geography.profileAt(start.x, start.y)) };
     };
     expect(where('wp-a')).toEqual(where('wp-a'));
     const all = SEEDS.map(where);
@@ -71,7 +88,7 @@ describe('every band camps by the water, and drinks it', () => {
   // thirst in twenty days.
   it('no band is camped away from fresh water, and nobody dies of thirst in a month', () => {
     const seed = 'wp-c';
-    const geography = randomWorldGeography(seed);
+    const geography = randomGeography(seed);
     const start = findWateredGlobeStart(geography, SPAN, config, seed)!;
     const sim = new WorldState({ seed }, { geography, start: { x: start.x, y: start.y }, comarcasWide: SPAN, comarcasHigh: SPAN, peoples: false }).current;
     expect(sim.bands.length).toBeGreaterThan(1);
@@ -87,7 +104,7 @@ describe('every band camps by the water, and drinks it', () => {
 });
 
 describe('beginning on the Earth', () => {
-  const geography = earth();
+  const geography = earthGeography;
 
   it('a region with a river begins in itself, with water measured in the window', () => {
     expect(regionWater(geography, 30, 24)).toBe('river');
@@ -142,7 +159,7 @@ describe('beginning on the Earth', () => {
 });
 
 describe('M15 "begin anywhere" (2026-10-07): a coastal region is selectable, and a start without water is a choice', () => {
-  const geography = earth();
+  const geography = earthGeography;
 
   it('a coastal region is told apart from open ocean: both are classed "ocean", only one borders dry land', () => {
     // 46,10 sits on a coastline in the fixture atlas (verified by scanning the whole globe for a region whose own centre
@@ -189,7 +206,7 @@ describe('M15 "begin anywhere" (2026-10-07): a coastal region is selectable, and
 describe('one comarca per map (owner, 2026-10-08)', () => {
   it('a start for a one-comarca map is the middle of a whole comarca, measured, with fresh water in it', () => {
     for (const seed of SEEDS.slice(0, 4)) {
-      const geography = randomWorldGeography(seed);
+      const geography = randomGeography(seed);
       const start = findWateredGlobeStart(geography, 1, config, seed);
       expect(start, seed).not.toBeNull();
       // The map IS a comarca of the globe: its origin is a whole comarca, not a window straddling four of them.
@@ -201,7 +218,7 @@ describe('one comarca per map (owner, 2026-10-08)', () => {
 
   it('the simulation built there is that one comarca: every tile is in it', () => {
     const seed = SEEDS[0]!;
-    const geography = randomWorldGeography(seed);
+    const geography = randomGeography(seed);
     const start = findWateredGlobeStart(geography, 1, config, seed)!;
     const state = new WorldState({ seed, population: { bands: 1, peoplePerBand: 6 } },
       { geography, start: { x: start.x, y: start.y }, comarcasWide: 1, comarcasHigh: 1, peoples: false });

@@ -9,12 +9,22 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { SCENARIOS, runScenario, formatReport, thousands, markMatrixRun } from './simcheck.ts';
 import { scenarioMatrixRecord, type ScenarioMatrixRecord } from './scenario-matrix.ts';
+import { selectScenarios } from './scenario-selection.ts';
 
 // M11 phase 17d: wall-clock checks report and do not judge in the matrix.
 markMatrixRun();
 
 const verbose = process.argv.includes('--verbose');
 const includeSlow = process.argv.includes('--slow');
+const areaIndex = process.argv.indexOf('--area');
+const area = areaIndex >= 0 ? process.argv[areaIndex + 1] : undefined;
+if (areaIndex >= 0 && (!area || area.startsWith('--'))) {
+  console.error('Usage: check:area -- <area> [--slow]');
+  process.exit(2);
+}
+let selected: typeof SCENARIOS[string][];
+try { selected = selectScenarios(Object.values(SCENARIOS), area, includeSlow); }
+catch (error) { console.error((error as Error).message); process.exit(2); }
 const rows: { name: string; passed: number; total: number; failed: string[]; stepsPerSecond: number }[] = [];
 const matrixRecords: ScenarioMatrixRecord[] = [];
 const jsonIndex = process.argv.indexOf('--json');
@@ -24,8 +34,7 @@ if (jsonIndex >= 0 && (!jsonPath || jsonPath.startsWith('--'))) {
   process.exit(2);
 }
 
-for (const scenario of Object.values(SCENARIOS)) {
-  if (scenario.slow && !includeSlow) continue;
+for (const scenario of selected) {
   const report = runScenario(scenario);
   if (verbose) console.log(formatReport(report));
   const failed = report.checks.filter(c => !c.ok);
