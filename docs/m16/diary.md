@@ -612,3 +612,27 @@ What is left open: la calibración de `perf-budget` y los 118 checks de baseline
 siguen abiertos según R21.
 
 Screenshots: `artifacts/screenshots/m16-2026-10-18-2.27/01-infant-wear-refusal-es.png`.
+
+## M16 2.5 — Picking up a far pile walks there first (2026-10-20)
+
+Goal: verify that selecting a distant pile does not transfer its contents
+before the directed character reaches it.
+
+What was done: `m16-pickup-reach` checks that the first tick leaves the pile and
+inventory unchanged while the person starts walking, then checks that the
+contents transfer on arrival. The current `doPickup` already uses `travel`
+before `takeFromPile`; R22 records the behavior as already fixed by M15
+`3b8a57b` on 2026-09-11. No game code changed.
+
+Before and after: typecheck passes; the test passes 1/1. For the R17 negative
+control, omitting the `travel` call makes the test fail because `sticks` enter
+the inventory on the first tick; restoring the call makes it pass. The `band`
+area baseline has only the known `perf-budget` failure (546 steps/s, floor
+1,678); it was not re-run because the phase changed no game behavior.
+
+What turned out differently from the card: the fix was already present since
+M15, but no capability test guarded the walk-before-transfer behavior.
+
+What is left open: nothing for A5. The baseline `perf-budget` remains open.
+
+Screenshots: none; no game UI change.

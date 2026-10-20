@@ -334,7 +334,7 @@ A stage ends with the full level (§5) and a screenshot tour.
 | 21 | [11.5](phases/11.5-action-labels.md) | Every action says what it is doing, in both languages (N35, K5) | skipped: R0, see doubts.md |
 | 22 | [2.1](phases/2.1-season-lore-barren.md) | A stripped bush is not learnt as barren (A1) | verified already fixed `19cd284` |
 | 23 | [2.3](phases/2.3-fog-and-memory.md) | Fog is saved, dimmed not black, and forgets what is gone (N6, N12, E4) | done; see diary |
-| 24 | [2.5](phases/2.5-pickup-reach.md) | Picking up a far pile walks there first (A5) | todo |
+| 24 | [2.5](phases/2.5-pickup-reach.md) | Picking up a far pile walks there first (A5) | verified already fixed `3b8a57b` |
 | 25 | [2.6](phases/2.6-roof-art.md) | Roofed and roofless art line up (N7) | todo |
 | 26 | [2.7](phases/2.7-animal-alarm-sign.md) | The animal alarm sign ends with the alarm (A7) | todo |
 | 27 | [2.8](phases/2.8-earthworks-isolated.md) | Earthworks cut off by water close with a reason (A8) | todo |

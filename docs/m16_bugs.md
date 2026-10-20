@@ -188,7 +188,7 @@ contradice la columna «Causa probable» de 1b, manda esta.
 | A2 | nota N9 | obras del jugador protegidas y aviso en retirada de obras NPC | verificado ya corregido en M15, capability test M16 2.2 | cerrado |
 | A3 | "M15 fase 20, tercera ronda" y nota N6 | la niebla conserva recuerdos de cosas que ya no están; obras planeadas visibles en la niebla | A | 2.3 |
 | A4 | nota N8 | "manos llenas" al recoger un hatillo | A | 2.4 |
-| A5 | "The radial menu's \"Pick up\" has no reach test" | Reproducido por lectura del flujo vigente: `ActionCatalog.ts` ofrece recoger solo según capacidad y `Simulation.takeFromPile` tampoco comprueba distancia | A | 2.5 |
+| A5 | "The radial menu's \"Pick up\" has no reach test" | Verificado ya corregido en M15 `3b8a57b`; `m16-pickup-reach` confirma el paseo antes de transferir | cerrado 2.5 (2026-10-20) |
 | A6 | nota N7 | arte de edificios con y sin tejado desalineado | A | 2.6 |
 | A7 | "Sueño animal pendiente" | el signo de alarma animal sigue tras expirar | A | 2.7 |
 | A8 | "M15 fase 26c: lo que las obras de tierra no hacen" | un foso que se llena aísla casillas pendientes y deja la obra a medias | A | 2.8 |

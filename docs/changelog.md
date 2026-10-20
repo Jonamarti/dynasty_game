@@ -1,3 +1,26 @@
+## 2026-10-20 — M16 2.5: recoger una pila lejana requiere caminar
+
+**Problema:** la nota A5 decía que «Recoger» entregaba objetos de una pila
+lejana sin que el personaje caminara hasta ella.
+
+**Causa:** el reporte describía el comportamiento antiguo, pero M15 ya había
+convertido la recogida en una orden de personaje que usa `travel` antes de
+transferir objetos.
+
+**Cambio:** R22 verificó el comportamiento existente. Se añadió la prueba de
+capacidad `m16-pickup-reach`: después del primer tick, inventario y pila siguen
+iguales mientras la persona ya camina; al llegar, el objeto pasa al inventario.
+No se modificó código de juego ni se re-fijó el baseline.
+
+**Verificación:** la prueba falla en el control negativo al omitir la llamada a
+`travel` (el objeto aparece en el inventario en el primer tick) y pasa tras
+restaurarla (1/1). Typecheck pasa. El baseline de `sim:check -- --scenario
+band` conserva el único fallo conocido, `perf-budget` (546 pasos/s frente a
+1.678); no hubo corrida posterior porque R22 encontró la función ya corregida.
+La corrección original está en M15 `3b8a57b` (2026-09-11).
+
+**Capturas:** ninguna; no cambia la interfaz.
+
 ## 2026-10-20 — M16 2.3: niebla persistente y memoria de lugares
 
 **Problema:** la niebla explorada no sobrevivía a guardar y cargar; las celdas

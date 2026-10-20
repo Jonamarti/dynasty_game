@@ -4544,15 +4544,11 @@ simulation already owns.
 
 ### The radial menu's "Pick up" has no reach test
 
-`ActionCatalog.ts`'s `case 'pile':` gates the option on `actor.carrying <
-actor.carryCapacity` alone — nothing checks the actor is actually near the
-pile. `Simulation.takeFromPile` does not check distance either. A pile visible
-on screen but far from the player's character currently offers "Pick up" as
-enabled and, if clicked, hands over the goods with no walk and no distance
-check at all — every other radial verb that acts at range routes through an
-order and a walk first. Not touched in the M7 pass, which only widened
-`takeFromPile`'s signature (M9.3, `issuePickup`) without changing when the
-option is offered.
+**Verified already fixed by M15 `3b8a57b` (2026-09-11); regression test added in
+M16 2.5 (2026-10-20).** `doPickup` calls `travel` before `takeFromPile`, so the
+first tick of a distant pickup leaves the pile and inventory unchanged while
+the character walks. `m16-pickup-reach` passes on the current build and fails
+when the `travel` call is temporarily omitted. No game code changed in M16 2.5.
 
 ### `heel` has no stuck handling at all
 
