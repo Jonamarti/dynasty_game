@@ -19,6 +19,9 @@ import { t, aNoun } from '../i18n/i18n.ts';
 export interface Floater {
   x: number;
   y: number;
+  /** The person or animal this label moves with, when it describes one. */
+  followId?: number;
+  followKind?: 'person' | 'animal';
   text: string;
   color: string;
   /** Seconds elapsed. */
@@ -39,10 +42,13 @@ export class Floaters {
     x: number,
     y: number,
     text: string,
-    options: { color?: string; ttl?: number; boxed?: boolean } = {}
+    options: {
+      color?: string; ttl?: number; boxed?: boolean;
+      followId?: number; followKind?: 'person' | 'animal';
+    } = {}
   ): void {
     this.items.push({
-      x, y, text,
+      x, y, text, followId: options.followId, followKind: options.followKind ?? 'person',
       color: options.color ?? '#f0ede8',
       age: 0,
       ttl: options.ttl ?? 2.6,
@@ -62,7 +68,11 @@ export class Floaters {
     this.items.length = 0;
   }
 
-  draw(ctx: CanvasRenderingContext2D, camera: Camera): void {
+  draw(
+    ctx: CanvasRenderingContext2D,
+    camera: Camera,
+    positionOf?: (id: number, kind: 'person' | 'animal') => { x: number; y: number } | undefined,
+  ): void {
     if (this.items.length === 0) return;
 
     ctx.save();
@@ -70,6 +80,12 @@ export class Floaters {
     ctx.textBaseline = 'middle';
 
     for (const item of this.items) {
+      // Keep the last world position on the floater itself: an entity may leave
+      // this simulation, and its final label should fade where it was last seen.
+      if (item.followId !== undefined) {
+        const at = positionOf?.(item.followId, item.followKind ?? 'person');
+        if (at) { item.x = at.x; item.y = at.y; }
+      }
       const progress = item.age / item.ttl;
       // Hold at full opacity for the first third, then fade out. A label that
       // starts fading immediately is hard to read at speed.

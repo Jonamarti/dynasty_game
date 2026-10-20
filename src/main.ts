@@ -332,13 +332,13 @@ const worldMap = new WorldMapOverlay(document.body, (action, edge) => {
   const actor = sim.player;
   if (!actor) return;
   if (!sim.order(actor, action, { edge, ...(action === 'propose' ? { recipeId: 'migration' } : {}) })) {
-    renderer.floaters.push(actor.x, actor.y, sim.lastRefusal ?? t('There is no way across'), { color: '#ff8c82', boxed: true });
+    renderer.floaters.push(actor.x, actor.y, sim.lastRefusal ?? t('There is no way across'), { color: '#ff8c82', boxed: true, followId: actor.id });
   }
 }, destination => {
   const actor = sim.player;
   if (!actor) return;
   const refusal = worldState.startJourney(destination);
-  if (refusal) renderer.floaters.push(actor.x, actor.y, refusal, { color: '#ff8c82', boxed: true });
+  if (refusal) renderer.floaters.push(actor.x, actor.y, refusal, { color: '#ff8c82', boxed: true, followId: actor.id });
   else syncActiveSimulation();
 }, destination => {
   const refusal=worldState.dispatchCaravanForPlayer(destination);
@@ -404,7 +404,7 @@ const succession = new SuccessionOverlay(document.body, heir => {
   selected = { kind: 'person', person: heir };
   camera.recentre(heir.x, heir.y);
   renderer.floaters.push(heir.x, heir.y, t('you are now {name}', { name: heir.name }), {
-    color: '#ffd35c', boxed: true, ttl: 4,
+    color: '#ffd35c', boxed: true, ttl: 4, followId: heir.id,
   });
 });
 
@@ -421,7 +421,7 @@ const hud = new Hud(hudRoot, {
     camera.following = false;
     renderer.floaters.push(person.x, person.y,
       knowledgeOfPerson(sim.player ?? person, person, sim.relationships).displayName,
-      { color: '#7fd4ff', boxed: true, ttl: 2 });
+      { color: '#7fd4ff', boxed: true, ttl: 2, followId: person.id });
   },
   onPickDesign: def => {
     activeDesign = def;
@@ -450,7 +450,7 @@ const hud = new Hud(hudRoot, {
     const near = building.contains(actor.x, actor.y, 2);
     if (!near) {
       renderer.floaters.push(actor.x, actor.y, t('Come closer to inspect the store'), {
-        color: '#e0705c', boxed: true, ttl: 3.2,
+        color: '#e0705c', boxed: true, ttl: 3.2, followId: actor.id,
       });
       return;
     }
@@ -465,7 +465,7 @@ const hud = new Hud(hudRoot, {
     renderer.floaters.push(actor.x, actor.y,
       ok ? t('construction cancelled; materials are on the ground')
         : (reason ?? t('cannot do that')),
-      { color: ok ? '#ffd35c' : '#e66464', boxed: true, ttl: 3.6 });
+      { color: ok ? '#ffd35c' : '#e66464', boxed: true, ttl: 3.6, followId: actor.id });
     if (ok && selected?.kind === 'building' && selected.building.id === building.id) {
       selected = null;
     }
@@ -491,7 +491,7 @@ const hud = new Hud(hudRoot, {
         : (why
           ? t('{name} does not: {why}', { name: person.name, why })
           : t('{name} does not', { name: person.name })),
-      { color: ok ? '#7ddc96' : '#e0705c', boxed: true, ttl: 3.4 });
+      { color: ok ? '#7ddc96' : '#e0705c', boxed: true, ttl: 3.4, followId: person.id });
   },
   onSetTaxRate: rate => {
     // M15 phase 38b. Refused out loud, like every order: `setTaxRate` writes
@@ -517,7 +517,7 @@ const hud = new Hud(hudRoot, {
       ok
         ? (kind === 'war' ? t('War with the {band}', { band: name }) : t('Peace with the {band}', { band: name }))
         : (why ?? t('Nothing is declared')),
-      { color: ok ? (kind === 'war' ? '#e0705c' : '#7ddc96') : '#e0705c', boxed: true, ttl: 3.4 });
+      { color: ok ? (kind === 'war' ? '#e0705c' : '#7ddc96') : '#e0705c', boxed: true, ttl: 3.4, followId: sim.player.id });
   },
   onSubmit: bandId => {
     // M15 phase 39d.
@@ -528,7 +528,7 @@ const hud = new Hud(hudRoot, {
     const name = sim.bands.find(b => b.id === bandId)?.name ?? '';
     renderer.floaters.push(sim.player.x, sim.player.y,
       ok ? t('Your people will pay the {band} tribute', { band: name }) : (why ?? t('Nothing is declared')),
-      { color: ok ? '#e0b055' : '#e0705c', boxed: true, ttl: 3.4 });
+      { color: ok ? '#e0b055' : '#e0705c', boxed: true, ttl: 3.4, followId: sim.player.id });
   },
   onOpenMenu: () => { if (!menuOpen()) openMenu(); },
   onToggleBuild: () => setBuildMode(!buildMode),
@@ -545,7 +545,7 @@ const hud = new Hud(hudRoot, {
     commanding = commanding?.id === person?.id ? null : person;
     if (commanding) {
       renderer.floaters.push(commanding.x, commanding.y,
-        t('commanding {name}', { name: commanding.name }), { color: '#7fd4ff', boxed: true });
+        t('commanding {name}', { name: commanding.name }), { color: '#7fd4ff', boxed: true, followId: commanding.id });
     }
   },
   onAutonomy: mode => setAutonomy(mode),
@@ -762,11 +762,11 @@ function settleOnEarth(found: StartPlace, region: { x: number; y: number }, warn
   worldPicker.close();
   const moved = Math.max(Math.abs(found.region.x - region.x), Math.abs(found.region.y - region.y));
   if (moved > 0 && player) {
-    renderer.floaters.push(player.x, player.y, t('Starting {n} regions from the place you chose, at the nearest fresh water', { n: moved }), { boxed: true });
+    renderer.floaters.push(player.x, player.y, t('Starting {n} regions from the place you chose, at the nearest fresh water', { n: moved }), { boxed: true, followId: player.id });
   }
   if (warnNoWater && player) {
     renderer.floaters.push(player.x, player.y,
-      t('There is no river or lake near here — you will need to look further for water.'), { boxed: true, color: '#e66464' });
+      t('There is no river or lake near here — you will need to look further for water.'), { boxed: true, color: '#e66464', followId: player.id });
   }
   settingsScreen.open(sim, settings, 'start');
 }
@@ -904,7 +904,7 @@ function handleItemAction(
 ): void {
   const say = (text: string, good: boolean) =>
     renderer.floaters.push(person.x, person.y, text,
-      { color: good ? '#7ddc96' : '#e66464', boxed: true });
+      { color: good ? '#7ddc96' : '#e66464', boxed: true, followId: person.id });
   const label = t(ITEMS[itemId]?.label ?? itemId);
   // What the floaters call the item. English has always printed the id here,
   // which for every item but raw meat is the label in lower case; a
@@ -1031,13 +1031,13 @@ function possess(person: Person): void {
   if (worldState.frontier.pendingJourney?.playerTravelling) {
     const refusal = t('You cannot take control of someone else during your journey');
     sim.lastRefusal = refusal;
-    renderer.floaters.push(person.x, person.y, refusal, { color: '#ff8c82', boxed: true });
+    renderer.floaters.push(person.x, person.y, refusal, { color: '#ff8c82', boxed: true, followId: person.id });
     return;
   }
   sim.possess(person);
   selected = { kind: 'person', person };
   renderer.floaters.push(person.x, person.y, t('you are now {name}', { name: person.name }), {
-    color: '#ffd35c', boxed: true, ttl: 3,
+    color: '#ffd35c', boxed: true, ttl: 3, followId: person.id,
   });
 }
 
@@ -1062,7 +1062,7 @@ function setAutonomy(mode: Autonomy, announce = true): void {
   hud.setAutonomy(mode);
   if (announce && sim.player) {
     renderer.floaters.push(sim.player.x, sim.player.y,
-      t(AUTONOMY_LABELS[mode]).toLowerCase(), { color: '#9fd8a0', boxed: true, ttl: 2.4 });
+      t(AUTONOMY_LABELS[mode]).toLowerCase(), { color: '#9fd8a0', boxed: true, ttl: 2.4, followId: sim.player.id });
   }
 }
 
@@ -1096,7 +1096,7 @@ function reportAutonomyStall(): void {
   toldAboutStall = stall;
   if (stall === null || !sim.player) return;
   renderer.floaters.push(sim.player.x, sim.player.y, stall,
-    { color: '#e0b055', boxed: true, ttl: 3.4 });
+    { color: '#e0b055', boxed: true, ttl: 3.4, followId: sim.player.id });
 }
 
 // ---------------------------------------------------------------------------
@@ -2006,7 +2006,7 @@ function issue(
   const actionId = option.id;
   if (actionId === 'follow_me' && target.person) {
     const accepted = sim.command(actor, target.person, 'follow_me', { personId: actor.id });
-    if (!accepted) renderer.floaters.push(target.person.x, target.person.y, sim.lastRefusal ?? t('The request was refused'), { color: '#ff8c82', boxed: true });
+    if (!accepted) renderer.floaters.push(target.person.x, target.person.y, sim.lastRefusal ?? t('The request was refused'), { color: '#ff8c82', boxed: true, followId: target.person.id });
     return;
   }
   if (actionId === 'possess' && target.person) {
@@ -2017,14 +2017,16 @@ function issue(
     const subject = commanding && commanding.alive ? commanding : actor;
     const mode = actionId === 'transport_pack' ? 'pack' : 'riding';
     if (!sim.claimTransportAnimalFor(subject.id, target.animal.id, mode)) {
-      renderer.floaters.push(target.animal.x, target.animal.y, sim.lastRefusal ?? t('The request was refused'), { color: '#ff8c82', boxed: true });
+      renderer.floaters.push(target.animal.x, target.animal.y, sim.lastRefusal ?? t('The request was refused'), {
+        color: '#ff8c82', boxed: true, followId: target.animal.id, followKind: 'animal',
+      });
     }
     return;
   }
   if (actionId === 'release_transport') {
     const subject = commanding && commanding.alive ? commanding : actor;
     if (!sim.releaseTransportAnimalFor(subject.id)) {
-      renderer.floaters.push(subject.x, subject.y, sim.lastRefusal ?? t('The request was refused'), { color: '#ff8c82', boxed: true });
+      renderer.floaters.push(subject.x, subject.y, sim.lastRefusal ?? t('The request was refused'), { color: '#ff8c82', boxed: true, followId: subject.id });
     }
     return;
   }
@@ -2097,7 +2099,7 @@ function issue(
         : why
           ? t('{name} refuses: {why}', { name: subordinate.name, why })
           : t('{name} refuses', { name: subordinate.name }),
-      { color: obeyed ? '#7ddc96' : '#e0705c', boxed: true, ttl: 3.4 });
+      { color: obeyed ? '#7ddc96' : '#e0705c', boxed: true, ttl: 3.4, followId: subordinate.id });
     return;
   }
 
@@ -2109,7 +2111,7 @@ function issue(
   renderer.floaters.push(actor.x, actor.y,
     ok ? actionId === 'place_furniture' ? option.label : actionLabel(actionId, option.recipeId, option.mode)
       : (reason ?? t('cannot do that')),
-    { color: ok ? '#ffd35c' : '#e66464', boxed: true, ttl: ok ? 2.6 : 3.6 });
+    { color: ok ? '#ffd35c' : '#e66464', boxed: true, ttl: ok ? 2.6 : 3.6, followId: actor.id });
 }
 
 /** Issues a `take` order, reporting the outcome the same way `issue` does. */
@@ -2121,7 +2123,7 @@ function orderTake(
   sim.lastRefusal = null;
   renderer.floaters.push(actor.x, actor.y,
     ok ? actionLabel('take') : (reason ?? t('cannot do that')),
-    { color: ok ? '#ffd35c' : '#e66464', boxed: true, ttl: ok ? 2.6 : 3.6 });
+    { color: ok ? '#ffd35c' : '#e66464', boxed: true, ttl: ok ? 2.6 : 3.6, followId: actor.id });
 }
 
 /**
@@ -2183,7 +2185,7 @@ function orderThreaten(
   sim.lastRefusal = null;
   renderer.floaters.push(actor.x, actor.y,
     ok ? actionLabel('threaten') : (reason ?? t('cannot do that')),
-    { color: ok ? '#ffd35c' : '#e66464', boxed: true, ttl: ok ? 2.6 : 3.6 });
+    { color: ok ? '#ffd35c' : '#e66464', boxed: true, ttl: ok ? 2.6 : 3.6, followId: actor.id });
 }
 
 /**
@@ -2229,7 +2231,7 @@ function orderStore(
   sim.lastRefusal = null;
   renderer.floaters.push(actor.x, actor.y,
     ok ? actionLabel('store') : (reason ?? t('cannot do that')),
-    { color: ok ? '#ffd35c' : '#e66464', boxed: true, ttl: ok ? 2.6 : 3.6 });
+    { color: ok ? '#ffd35c' : '#e66464', boxed: true, ttl: ok ? 2.6 : 3.6, followId: actor.id });
 }
 
 /**
@@ -2298,7 +2300,7 @@ function orderPickup(
         : why
           ? t('{name} refuses: {why}', { name: subordinate.name, why })
           : t('{name} refuses', { name: subordinate.name }),
-      { color: obeyed ? '#7ddc96' : '#e0705c', boxed: true, ttl: 3.4 });
+      { color: obeyed ? '#7ddc96' : '#e0705c', boxed: true, ttl: 3.4, followId: subordinate.id });
     return;
   }
 
@@ -2307,7 +2309,7 @@ function orderPickup(
   sim.lastRefusal = null;
   renderer.floaters.push(subject.x, subject.y,
     ok ? actionLabel('pickup') : (reason ?? t('cannot do that')),
-    { color: ok ? '#ffd35c' : '#e66464', boxed: true, ttl: ok ? 2.6 : 3.6 });
+    { color: ok ? '#ffd35c' : '#e66464', boxed: true, ttl: ok ? 2.6 : 3.6, followId: subject.id });
 }
 
 /**
@@ -2326,7 +2328,7 @@ function issuePickup(
 ): void {
   if (subject.carrying >= subject.carryCapacity) {
     renderer.floaters.push(subject.x, subject.y, t('hands full'),
-      { color: '#e66464', boxed: true });
+      { color: '#e66464', boxed: true, followId: subject.id });
     return;
   }
 
@@ -2428,7 +2430,7 @@ function reportInterruptions(): void {
         action: actionLabel(notice.action, notice.recipe), reason: stopReasonLabel(notice.reason),
       });
     renderer.floaters.push(person.x, person.y, text,
-      { color: '#e0b055', boxed: true, ttl: 3.4 });
+      { color: '#e0b055', boxed: true, ttl: 3.4, followId: person.id });
     hud.noteStop(person.id, stopReasonLabel(notice.reason));
   }
 }
@@ -2453,7 +2455,7 @@ function reportHelpCalls(): void {
       caller.id === listener.id
         ? t('You call for help')
         : t('{name} calls for help!', { name: name.charAt(0).toUpperCase() + name.slice(1) }),
-      { color: '#e0705c', boxed: true, ttl: 3.4 });
+      { color: '#e0705c', boxed: true, ttl: 3.4, followId: caller.id });
   }
 }
 
@@ -2479,7 +2481,7 @@ function reportWatched(): void {
     if (!mine) continue;
     renderer.floaters.push(person.x, person.y,
       t('Seen: {why}', { why: explainPropertyUse(observer, notice.use, sim.relationships) }),
-      { color: '#e0b055', boxed: true, ttl: 3.4 });
+      { color: '#e0b055', boxed: true, ttl: 3.4, followId: person.id });
   }
 }
 
@@ -2533,7 +2535,10 @@ function reportInsights(): void {
     const color = notice.kind === 'setback' ? '#e0705c'
       : notice.kind === 'gain' ? '#c88ad8' : '#8ab4d8';
     renderer.floaters.push(x, y, notice.text,
-      { color, boxed: person.isPlayer, ttl: 3.4 });
+      { color, boxed: person.isPlayer, ttl: 3.4,
+        // Site notices name the place where work stopped, rather than the
+        // proposer who may already be across the map.
+        followId: notice.x === undefined && notice.y === undefined ? person.id : undefined });
   }
 }
 
@@ -2550,6 +2555,7 @@ function updateFloaters(): void {
     renderer.floaters.push(person.x, person.y, actionLabel(person.action, person.targetRecipe), {
       color: person.isPlayer ? '#ffd35c' : '#7fd4ff',
       boxed: person.isPlayer,
+      followId: person.id,
     });
   }
 
@@ -2598,7 +2604,7 @@ function updateFloaters(): void {
         : t('No one else knows yet.');
       renderer.floaters.push(observer.x, observer.y,
         describeEvent(event.type, actorName, victimName) + ' ' + note,
-        { color: '#bfa0ff', boxed: true, ttl: 4 });
+        { color: '#bfa0ff', boxed: true, ttl: 4, followId: observer.id });
       continue;
     }
     renderer.floaters.push(event.x, event.y,

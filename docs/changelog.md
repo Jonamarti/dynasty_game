@@ -1,3 +1,22 @@
+## 2026-10-20 — M16 2.12: los rótulos siguen al personaje o animal
+
+**Problema:** un texto de acción se quedaba en las coordenadas donde nació
+cuando su personaje seguía andando.
+
+**Causa:** `Floaters` guardaba una posición fija y no una referencia al sujeto.
+
+**Cambio:** los textos de personas y animales siguen su posición dibujada,
+incluida la interpolación. La referencia incluye el tipo porque ambas clases
+pueden compartir el mismo ID numérico. Si desaparecen o salen de la vista,
+el rótulo se desvanece en su última posición visible. Los avisos que señalan
+una obra o lugar mantienen sus coordenadas. Versión `0.16.11-alpha`.
+
+**Verificación:** la prueba de capacidad fallaba antes y pasa tras el cambio;
+cubre desplazamiento, colisión de IDs y desaparición. El navegador comprueba
+el seguimiento, la visibilidad y la interpolación en un mismo recorrido.
+Capturas: `artifacts/screenshots/m16-2026-10-20-2.12/`.
+La comprobación completa del lote se registra en el cierre de verificación.
+
 ## 2026-10-20 — M16 1.7: reducir el coste de la verificación cotidiana
 
 **Problema:** ejecutar unas 2.435 pruebas y reconstruir mundos largos por cada

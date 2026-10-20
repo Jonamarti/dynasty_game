@@ -989,7 +989,13 @@ export class Renderer {
 
     // Floaters last, over the night overlay: an action label that dims with
     // nightfall is exactly the label you most need to read.
-    this.floaters.draw(ctx, camera);
+    this.floaters.draw(ctx, camera, (id, kind) => {
+      const entity = kind === 'animal' ? sim.animalsById.get(id) : sim.peopleById.get(id);
+      // A label stops following once its subject leaves sight; otherwise its
+      // motion would reveal where an unseen person or animal went.
+      if (!entity || !inSight(entity.x, entity.y)) return undefined;
+      return this.interpolator.at(kind, entity, alpha);
+    });
   }
 
   /** Tint the finished scene, then erase a linear light falloff on this layer only. */

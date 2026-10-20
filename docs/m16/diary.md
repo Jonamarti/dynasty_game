@@ -807,3 +807,11 @@ Screenshots: none; tooling only.
 Goal: make bandmates answer a predator bite using the common defence rules.
 What was found: the shared defence helper and action targets accept people only; bites record no typed animal assailant. This exceeds the card's file-name mismatch.
 Resolution: R0 recorded in doubts.md; no game code changed. Continue to independent 2.16. A14 remains open.
+
+## M16 2.12 — Labels follow their subject (2026-10-20)
+Goal: keep action labels over moving people and animals.
+What was done: optional typed entity references resolve the drawn, interpolated position each frame. Unseen/missing subjects retain their last visible anchor, and explicit site notices remain at their site.
+Before and after: the original capability test drew at x=10 rather than x=60 and failed; the corrected test passes and also checks colliding person/animal IDs. Browser coverage checks visibility and interpolation in the same journey.
+What turned out differently from the card: numeric IDs need a kind because each entity type allocates independently; this is part of resolving the intended subject.
+What is left open: full verification closure recorded with this batch.
+Screenshots: artifacts/screenshots/m16-2026-10-20-2.12/.
