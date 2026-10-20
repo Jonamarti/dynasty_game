@@ -1,3 +1,21 @@
+## 2026-10-20 — M16 1.8: medianas de rendimiento reproducibles
+
+**Problema:** faltaba una orden que repitiese las mediciones y resumiese el
+coste de 30 y 300 personas sin mezclar tiempos inclusivos.
+
+**Cambio:** `npm run perf` compone tres pasadas seriales del perfilador existente,
+valida su equivalencia de estado y muestra medianas por paso. Un helper probado
+rechaza informes incompletos y divide cada método por los pasos ejecutados.
+Se corrigió una carrera del primer frame del perfilador que podía adelantar un
+tick durante una carga lenta; no cambia el bucle del juego.
+
+**Verificación:** tres repeticiones de 480 pasos por brazo, controles de estado
+y RNG correctos en ambas poblaciones. Mediana global sin wrappers: 1,4781 ms/paso
+con 30 personas y 16,1854 con 300. El presupuesto de simulación a cinco pasos/s
+es 200 ms por paso; no demuestra FPS. Tabla y límites en `docs/m16/baseline.md`;
+salida en `artifacts/verification/m16-test-costs/after/perf-final.log`.
+Pruebas puras de agregación 3/3. Sin cambio de versión o UI.
+
 ## 2026-10-20 — M16 2.12: los rótulos siguen al personaje o animal
 
 **Problema:** un texto de acción se quedaba en las coordenadas donde nació

@@ -77,3 +77,32 @@ system profile, both seed cohorts and the E2E run. The matrix CSV records each
 scenario's applicable count and failed check names. E2E rewrote 127 tracked
 historical screenshots; they were restored after the run because this phase
 did not change the UI.
+
+## M16 1.8 — Performance budget, 2026-10-20
+
+D-6: 300 detailed people at normal speed. The normal configured rate is five
+simulation ticks per second, giving 200 ms per tick as a simulation-only hard
+ceiling (rendering/input/other work still need their own share of real time).
+This is not a 60 FPS claim or a full browser frame budget.
+
+Three serial browser profiles, 480 steps per arm, seed profile-4:
+
+| Population | Median unprofiled mean ms/step | Inclusive wrapped Simulation.step ms/step |
+|---|---:|---:|
+| 30 | 1.4781 | 1.6183 |
+| 300 | 16.1854 | 20.2817 |
+
+The 300-person unprofiled simulation consumes approximately 8.1% of the
+200 ms tick interval in this short fixture. Profile wrapper time includes
+measurement overhead; inclusive subsystem timings overlap and must not be
+summed. This does not establish long-term population balance or FPS.
+
+All three repetitions passed the same-start/same-end checkpoint comparison
+between unprofiled, profiled and counted arms at both populations, with the
+existing person/RNG negative controls retained. An initial invalid attempt
+started one arm at tick 1; freezing the presentation clock through its only
+initial frame fixes that bootstrap race, without changing the game loop.
+
+Command: npm.cmd run perf. Raw profiles:
+artifacts/verification/m16-perf-2026-10-20T17-58-14-739Z/run-01 through run-03.
+Medians: artifacts/verification/m16-test-costs/after/perf-final.log.

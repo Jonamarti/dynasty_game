@@ -815,3 +815,11 @@ Before and after: the original capability test drew at x=10 rather than x=60 and
 What turned out differently from the card: numeric IDs need a kind because each entity type allocates independently; this is part of resolving the intended subject.
 What is left open: full verification closure recorded with this batch.
 Screenshots: artifacts/screenshots/m16-2026-10-20-2.12/.
+
+## M16 1.8 — Serial performance medians (2026-10-20)
+Goal: make the 30/300-person simulation budget measurable with one command.
+What was done: npm run perf repeats the existing browser profiler three times serially, validates its state equivalence evidence, and reports median overall and inclusive method cost per simulation step. A pure report helper tests the divisor and rejects missing/equivalence-invalid runs. A discovered initial-frame clock race is fixed in the profiler only.
+Before and after: median unprofiled mean 1.4781 ms/step at 30 people and 16.1854 at 300. The default five ticks/second allows a 200 ms simulation tick interval; this is not an FPS claim.
+What turned out differently from the card: profile:systems already runs both populations, so the new runner composes it instead of adding a redundant population flag.
+What is left open: long-run and full frame budgets; no game coefficients changed.
+Screenshots: none; measurement tooling only.

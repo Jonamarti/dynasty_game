@@ -5,12 +5,16 @@ import { chromium, type Page } from '@playwright/test';
 import { createServer } from 'vite';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { bandDistribution, perceptionEstimate, summarizeDurations, unitCostFromBlocks } from './profile-stats.ts';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-const out = join(root, 'artifacts/verification', `m15-systems-${stamp}`);
+// `perf` supplies an isolated directory for each repeat so its driver can read
+// the machine-readable report without parsing console output.
+const out = process.env.PROFILE_OUTPUT
+  ? resolve(root, process.env.PROFILE_OUTPUT)
+  : join(root, 'artifacts/verification', `m15-systems-${stamp}`);
 mkdirSync(out, { recursive: true });
 const steps = Number(process.env.PROFILE_STEPS ?? 480);
 if (!Number.isInteger(steps) || steps < 240) throw new Error('PROFILE_STEPS must be an integer >= 240 to include the daily passes');
@@ -24,10 +28,19 @@ const setup = async (page: Page, url: string, wanted: number, mode: Mode) => {
   // Calling that frame asynchronously with near-zero delta starts at tick 0.
   await page.addInitScript(() => {
     let started = false;
+    // Module/art loading may take over one game tick. Freeze the presentation
+    // clock until its sole initial frame, otherwise a slow boot advances one
+    // arm before profiling and the same-seed comparison starts at tick 1.
+    const realNow = performance.now.bind(performance);
+    const initialNow = realNow();
+    performance.now = () => initialNow;
     window.requestAnimationFrame = ((callback: FrameRequestCallback) => {
       if (!started) {
         started = true;
-        setTimeout(() => callback(performance.now()), 0);
+        setTimeout(() => {
+          try { callback(initialNow); }
+          finally { performance.now = realNow; }
+        }, 0);
       }
       return 0;
     }) as typeof requestAnimationFrame;

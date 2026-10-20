@@ -323,7 +323,7 @@ A stage ends with the full level (§5) and a screenshot tour.
 | 8 | [1.5](phases/1.5-fixture-worlds.md) | Fixture worlds | done 64aaef4 |
 | 9 | [1.6](phases/1.6-from-scenarios.md) | Short scenarios that start from a fixture | done 6055379 |
 | 10 | [1.7](phases/1.7-run-levels.md) | Run levels `check:fast/area/full` | commands implemented 2026-10-20; full/area timing closeout pending |
-| 11 | [1.8](phases/1.8-perf.md) | Performance command and budget | todo |
+| 11 | [1.8](phases/1.8-perf.md) | Performance command and budget | implemented and measured 2026-10-20; full phase verification pending |
 | 12 | [1.9](phases/1.9-red-test-verdicts.md) | A verdict for each known red test (E12) | done a40a6dc |
 
 ### Stage 2 — Correctness (cheapest and most visible first)
