@@ -86,6 +86,7 @@ describe('weapons', () => {
 describe('armour', () => {
   it('turns aside part of a blow, per part, and only the best piece counts', () => {
     const person = fighter('padded');
+    person.knownTech.add('leatherwork');
     expect(armourOf(person)).toBe(0);
     for (const part of BODY_PARTS) expect(protectionOf(person, part)).toBe(0);
 
@@ -106,6 +107,7 @@ describe('armour', () => {
 
   it('is, averaged over where blows land, the 0.3 the single number used to be', () => {
     const person = fighter('averaged');
+    person.knownTech.add('leatherwork');
     person.inventory.add('hide_armour', 1);
     person.equipment.torso = { item: 'hide_armour', count: 1 };
     expect(armourOf(person)).toBeCloseTo(0.3, 1);

@@ -200,6 +200,9 @@ export const ITEMS: Record<string, ItemDef> = {
     // piece turned aside as a single number before 21f: torso 0.5, arms 0.25,
     // legs 0.2, head bare.
     protects: { torso: 0.5, left_arm: 0.25, right_arm: 0.25, left_leg: 0.2, right_leg: 0.2 },
+    // M16 2.9: unlike the newer helmets, this garment had never named the
+    // technique that makes its protection scale with its wearer's knowledge.
+    armourTech: 'leatherwork',
     class: 'bulky', hand: { perHand: 1, perArms: 1, hands: 1 },
     garment: { slot: 'torso', warmth: 0.1, wearPerDay: 0.005, material: 'hide' },
   },

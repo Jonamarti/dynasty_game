@@ -41,6 +41,27 @@ function quietWildlife(sim: Simulation, target: Animal): void {
 }
 
 describe('sling ammunition', () => {
+  it('m16-bow-lets-a-hunter-shoot-from-outside-hand-reach', () => {
+    const sim = new Simulation(SMALL);
+    const hare = sim.animals.find(animal => animal.species === 'hare')!;
+    quietWildlife(sim, hare);
+    const person = ready(sim, hare, 'bow');
+    person.inventory.add('arrow', 1);
+    hare.x = person.x + 2.5;
+    hare.y = person.y;
+    sim['rebuildHashes']();
+    expect(sim.order(person, 'hunt', { animalId: hare.id })).toBe(true);
+
+    const shot = vi.spyOn(sim['actionRng'], 'chance').mockReturnValue(true);
+    vi.spyOn(sim['wildlifeSystem'], 'update').mockImplementation(() => {});
+    for (let i = 0; i < 4 && shot.mock.calls.length === 0; i++) sim.step();
+
+    expect(shot, `action=${person.action} distance=${person.distanceTo(hare)} arrow=${person.inventory.count('arrow')}`)
+      .toHaveBeenCalled();
+    expect(hare.health).toBeLessThan(hare.def.health);
+    expect(person.inventory.count('arrow')).toBe(0);
+  });
+
   it('declares separate crafted arrows and atlatl darts from existing materials', () => {
     expect(ITEMS.bow!.weapon!.ammo).toBe('arrow');
     expect(ITEMS.atlatl!.weapon!.ammo).toBe('atlatl_dart');

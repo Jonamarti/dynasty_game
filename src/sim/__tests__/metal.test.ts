@@ -1038,6 +1038,21 @@ describe('bronze arms', () => {
     expect(protectionOf(smith, 'head')).toBeLessThan(1);
   });
 
+  it('m16-hide-armour-protects-better-for-someone-who-knows-leatherwork', () => {
+    const wearer = adult('wearer');
+    const leatherworker = adult('leatherworker');
+    for (const person of [wearer, leatherworker]) {
+      person.inventory.add('hide_armour', 1);
+      person.equipment.torso = { item: 'hide_armour', count: 1 };
+    }
+    teach(leatherworker, 'leatherwork');
+
+    expect(protectionOf(wearer, 'torso'))
+      .toBeCloseTo(ITEMS.hide_armour!.protects!.torso! * 0.75, 12);
+    expect(protectionOf(leatherworker, 'torso'))
+      .toBe(ITEMS.hide_armour!.protects!.torso);
+  });
+
   it('uses the declared protection of a garment actually worn', () => {
     const wearer = adult('wearer');
     wearer.inventory.add('hide_armour', 1);

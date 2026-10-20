@@ -192,7 +192,7 @@ contradice la columna «Causa probable» de 1b, manda esta.
 | A6 | nota N7 | arte de edificios con y sin tejado desalineado | A | 2.6 |
 | A7 | "Sueño animal pendiente" | el signo de alarma animal sigue tras expirar | cerrado por M16 2.7 (2026-10-20) | 2.7 |
 | A8 | "M15 fase 26c: lo que las obras de tierra no hacen" | un foso que se llena aísla casillas pendientes y deja la obra a medias | cerrado por M16 2.8 (2026-10-20) | 2.8 |
-| A9 | "Two effects bypass `techPower`" | Verificado ya corregido en M15: `armourOf` pasa por `techPower` (37i), `doHunt` usa el alcance del arma y el rendimiento del hacha se escala por `hafting`; `combat.test.ts`, `craft-nodes.test.ts` y pruebas de metales cubren los consumidores actuales | cerrado en M15; pruebas de combate y herramientas |
+| A9 | "Two effects bypass `techPower`" | `doHunt` ya usa el alcance del arma (M8.1) y `axeFactor` escala la tala por `hafting` (M11); quedó un hueco: `hide_armour` no declaraba `armourTech: leatherwork`, por lo que no aplicaba la escala de armadura | cerrado por M16 2.9 (2026-10-20); pruebas de arco, armadura y hacha |
 | A10 | "The catalogue reads a stranger's knowledge" | Reproducido por lectura del flujo vigente: `personActions` consulta `other.knownTech` y `other.skills` para habilitar y describir `teach`/`discuss`; `Knowledge.ts` no media esa consulta | A | 2.10 |
 | A11 | "A sixth of all conversations are broken off for thirst" | `talk` no consulta si la sed ya aprieta antes de empezar | A | 2.11 |
 | A12 | "Floaters do not follow the entity" | los rótulos se quedan atrás | A, baja | 2.12 |

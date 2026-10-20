@@ -1,5 +1,43 @@
 # M16 diary
 
+## M16 2.9 — La armadura de piel respeta `leatherwork` (2026-10-20)
+
+Goal: comprobar los tres efectos de A9 y hacer que la armadura de piel dependa
+de la tecnología que la produce.
+
+What was done: el arco y la tala ya usaban el alcance del arma y `axeFactor`;
+las pruebas negativas confirmaron que ambos fallan si se retira esa integración.
+La armadura de piel era la excepción: no declaraba `armourTech`, así que el
+lector compartido omitía `leatherwork`. Se añadió el vínculo y una prueba para
+cada expectativa visible: alcance del arco, protección de piel y tala con hacha.
+
+Before and after: la prueba de armadura observó 100% de protección en una
+persona sin el oficio; ahora recibe 75%, mientras que una persona que sabe
+curtir recibe el valor completo. Typecheck y cuatro suites enfocadas pasan
+(155/155). El baseline de semillas 1–3 no cambió (`c61a6bd8`, `98d972e4`,
+`988c035e`). El health report mantiene los dos fallos ya presentes antes del
+cambio (`moods-move-choices`, `perf-budget`) y 27 acciones en la misma
+distribución. La primera suite completa detectó dos tests de ropa que asumían
+protección completa sin conocer `leatherwork`; corregidos los fixtures, las
+seis suites enfocadas pasan (175/175) y la suite completa pasa (344/344
+archivos, 2.431 pruebas correctas y una omitida); typecheck y la suite de
+armadura pasan (89/89). La matriz completa termina con 48 escenarios y 152
+fallos. La referencia M16 congelada en `0.15.160-alpha` tiene 43 escenarios y
+118 fallos; 23 escenarios compartidos ahora tienen distintos conjuntos de
+fallos, así que esa comparación histórica no atribuye la divergencia a 2.9.
+El informe centrado `band` mantiene los mismos dos fallos anteriores
+(`moods-move-choices`, `perf-budget`; 525 pasos/s frente al suelo de 1.678).
+La matriz global no se presenta como verde.
+
+What turned out differently from the card: A9 ya figuraba cerrado en M15; el
+test de capacidad encontró que el dato de `hide_armour` faltaba aunque
+`armourOf` ya delegaba en `protectionOf` y `armourFit`.
+
+What is left open: `moods-move-choices` y `perf-budget` siguen en rojo en la
+matriz de referencia; no se cambiaron los pesos de IA.
+
+Screenshots: `artifacts/screenshots/m16-2026-10-20-2.9/01-start.png`.
+
 ## M16 2.8 — El agua cierra el foso aislado con un motivo (2026-10-20)
 
 Goal: prevent water from leaving a moat with unreachable pending tiles and no explanation.

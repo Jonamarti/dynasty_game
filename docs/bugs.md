@@ -4087,6 +4087,13 @@ Every technology effect is supposed to read the seam. Three do not:
   bow's `reach: 1.6` does nothing while hunting — the one place it should matter
   most. `doAttack` applies reach correctly; only the hunt path misses it.
 
+**Estado comprobado en M16 2.9 (2026-10-20):** `doHunt` ya suma el alcance del
+arma (M8.1) y `doChop` usa `axeFactor` para escalar la tala con `hafting` (M11).
+La protección también pasaba por `protectionOf` y `armourFit`, pero a
+`ITEMS.hide_armour` le faltaba `armourTech: 'leatherwork'`; esa omisión dejaba
+el defecto original vivo para la armadura de piel. M16 añade el vínculo y una
+prueba donde falla sin él. Véase el changelog de M16 2.9.
+
 ## Reported from play, 2026-09-02 — fixed
 
 Five defects reported by the project owner after M6a. **All five are fixed**;

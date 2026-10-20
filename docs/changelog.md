@@ -1,3 +1,43 @@
+## 2026-10-20 — M16 2.9: la armadura de piel respeta `leatherwork`
+
+**Problema:** la fase M15 37i conectó la protección con `techPower`, pero una
+persona sin conocimientos de cuero seguía recibiendo toda la protección de la
+armadura de piel.
+
+**Causa:** `protectionOf` solo escala prendas que nombran su técnica; la entrada
+`hide_armour` no tenía `armourTech`, así que `leatherwork` nunca llegaba al
+cálculo. Las otras dos partes de A9 ya estaban corregidas: `doHunt` usa el
+alcance del arma desde M8.1 y `doChop` usa el factor de tala escalado desde M11.
+
+**Cambio:** `hide_armour` declara `armourTech: 'leatherwork'`. La protección sin
+conocimiento queda en 75% y alcanza el valor completo con el oficio aprendido;
+se añadieron pruebas de capacidad con nombres ligados a arco, armadura y hacha.
+Versión `0.16.9-alpha`; baseline re-pinned sin cambios (semillas 1–3:
+`c61a6bd8`, `98d972e4`, `988c035e`). No se ajustaron pesos de IA.
+
+**Verificación:** typecheck y las seis suites enfocadas pasan (175/175).
+La comprobación negativa quitando temporalmente el alcance del arco hizo fallar
+la nueva prueba y tres regresiones de munición; la línea se restauró. El health
+report `band` conserva los dos fallos de referencia (2/147):
+`moods-move-choices` y `perf-budget`. `ai-uses-many-actions` sigue en 27 verbos,
+con el mismo reparto: sleep=15824, forage=13417, go_home=9834, rest=9125,
+romp=7699, gather=6940, talk=4806, drink=4748, spar=4201, idle=3294,
+chop=3127, pick=1979, dig=1721, give=1126, reflect=960, explore=919,
+ponder=737, store=476, build=414, wander=380, nurse=276, propose=228,
+discuss=213, haul=211, eat=197, cut_grass=117 y take=31. La suite completa
+detectó dos tests de ropa que esperaban protección completa sin conocimiento;
+sus fixtures ahora conocen `leatherwork`. La suite repetida pasa: 344/344
+archivos, 2.431 pruebas correctas y una omitida; typecheck y la suite de
+armadura (89 pruebas) pasan. `sim:check:all` terminó con 48 escenarios y 152
+fallos. La matriz M16 congelada en `0.15.160-alpha` tenía 43 escenarios y 118
+fallos; 23 escenarios compartidos tienen conjuntos distintos, por lo que esta
+comparación histórica no permite atribuir esas divergencias a 2.9. En la
+medición centrada `band` se mantienen sus dos fallos anteriores:
+`moods-move-choices` y `perf-budget` (525 pasos/s frente al suelo de 1.678).
+No se presenta la matriz global como verde.
+
+**Captura:** `artifacts/screenshots/m16-2026-10-20-2.9/01-start.png`.
+
 ## 2026-10-20 — M16 2.8: foso aislado por el agua
 
 **Problema:** el trabajador podía elegir la casilla pendiente más cercana

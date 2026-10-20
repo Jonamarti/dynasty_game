@@ -372,7 +372,7 @@ describe('M11 phase 10: axe, sickle and adze', () => {
     expect(axeFactor(knower)).toBe(1);
   });
 
-  it('halves the work with a hand axe and more with a polished one, and never breaks the double gate', () => {
+  it('m16-known-and-refined-hafting-make-a-carried-axe-fell-faster', () => {
     const handaxeOnly = someone();
     handaxeOnly.knownTech.add('hafting');
     handaxeOnly.inventory.add('handaxe', 1);

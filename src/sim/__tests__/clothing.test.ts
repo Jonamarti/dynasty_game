@@ -101,6 +101,7 @@ describe('M15 phase 14a: wearable garments', () => {
 
   it('counts garment armour only while its owned layer is worn', () => {
     const wearer = person();
+    wearer.knownTech.add('leatherwork');
     wearer.inventory.add('hide_armour', 1);
     expect(protectionOf(wearer, 'torso')).toBe(0);
     wearer.equipment.torso = { item: 'hide_armour', count: 1 };

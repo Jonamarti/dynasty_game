@@ -37,6 +37,7 @@ describe('garment wear', () => {
 
   it('scales garment armour with the condition of the worn unit', () => {
     const { person } = fixture();
+    person.knownTech.add('leatherwork');
     person.inventory.add('hide_armour', 1);
     const unit = person.inventory.garmentUnitsOf('hide_armour')[0]!;
     expect(changeGarment(person, 'hide_armour', 'wear_garment')).toBeNull();
