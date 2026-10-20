@@ -340,7 +340,7 @@ A stage ends with the full level (§5) and a screenshot tour.
 | 27 | [2.8](phases/2.8-earthworks-isolated.md) | Earthworks cut off by water close with a reason (A8) | done; see diary |
 | 28 | [2.9](phases/2.9-techpower.md) | Hunting, armour and chopping read `techPower` (A9) | done `c3a2a98`; see diary |
 | 29 | [2.10](phases/2.10-stranger-knowledge-menu.md) | The menu does not reveal a stranger's techs (A10) | done `f94c77e`; see diary |
-| 30 | [2.11](phases/2.11-talk-under-thirst.md) | Nobody starts a chat they will abandon for thirst (A11) | verified already fixed (M12 phase 2c) |
+| 30 | [2.11](phases/2.11-talk-under-thirst.md) | Nobody starts a chat they will abandon for thirst (A11) | verified already fixed `35a4cafd` (M12 phase 2c) |
 | 31 | [2.12](phases/2.12-floaters-follow.md) | Floating labels follow their entity (A12) | todo |
 | 32 | [2.14](phases/2.14-defend-from-predators.md) | Bandmates defend someone bitten by a predator (A14) | todo |
 | 33 | [2.16](phases/2.16-equip-unequip.md) | Everything with a slot can be equipped and removed (N18) — **partly done in M15, verify** | todo |

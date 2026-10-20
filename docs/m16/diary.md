@@ -766,7 +766,7 @@ M15, but no capability test guarded the walk-before-transfer behavior.
 What is left open: nothing for A5. The baseline `perf-budget` remains open.
 
 Screenshots: none; no game UI change.
-## M16 2.11 — Nobody starts a chat they will abandon for thirst (2026-10-20)
+## M16 2.11 — Nobody starts a chat they will abandon for thirst (2026-10-20, `35a4cafd`)
 
 Goal: verify that a character already past the thirst work limit does not start
 a conversation.
