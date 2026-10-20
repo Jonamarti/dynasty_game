@@ -1,3 +1,39 @@
+## 2026-10-20 — M16 2.3: niebla persistente y memoria de lugares
+
+**Problema:** la niebla explorada no sobrevivía a guardar y cargar; las celdas
+recordadas podían quedar negras, el borde del radio no se revelaba y la memoria
+seguía dibujando entidades que el personaje ya había visto desaparecer.
+
+**Causa:** `FogReveal` era estado de presentación no serializado. La exploración
+de `PlaceMemory` solo se actualizaba al pensar, no al cruzar celdas durante una
+acción comprometida; además, las observaciones no retiraban marcadores de
+entidades ausentes.
+
+**Cambio:** los guardados usan formato v2 y conservan la cuadrícula exacta de
+`FogReveal`; la carga v1 migra con una cuadrícula inactiva. Las celdas que el
+radio toca, incluidos los bordes, se revelan y las recordadas fuera de vista se
+dibujan atenuadas. Una persona que camina registra las celdas exploradas sin
+interferir con el refresco diario de recursos. Al volver a observar un lugar,
+se retiran marcadores de árboles, edificios terminados, personas, recursos,
+hatillos y manadas que ya no están; el agua sigue siendo un dato del mapa.
+El fixture e2e de luz de hogar también reclama temporalmente su casilla, según
+la regla territorial añadida en M16 2.22.
+
+**Verificación:** typecheck pasó; Vitest pasó (342 archivos, 2.425 tests y 1
+omitido); las cuatro pruebas enfocadas y las tres pruebas e2e de niebla pasan.
+`hearth-light.spec.ts` pasa después de actualizar su fixture territorial.
+R13 quedó re-fijada con `73931030`, `d60a58d5` y `8c971f70`. `sim:check:all`
+recorrió 48 escenarios y 4.205 checks: 1.805 pasaron, 134 fallaron y 2.266
+fueron `n/a`, frente a 1.820/118/2.267 antes. La comparación registra 45
+transiciones de PASS a FAIL, 27 de FAIL a PASS, 25 de PASS a `n/a`, 6 de FAIL a
+`n/a`, 28 de `n/a` a PASS y 4 de `n/a` a FAIL. La fase cambia memoria que lee
+la IA, por lo que altera las decisiones de los mundos; los checks rojos no se
+presentan como una matriz verde ni como fallos corregidos. El informe completo
+está en `artifacts/verification/m16-2.3/after/`.
+
+**Capturas:** `artifacts/screenshots/m16-2026-10-20-2.3-final/` y
+`artifacts/screenshots/m16-2026-10-20-2.3-switch-verified/`.
+
 ## 2026-10-20 — M16 2.1: un arbusto cosechado no enseña una temporada estéril
 
 **Problema:** al recoger toda la fruta durante la estación de fruto, dos

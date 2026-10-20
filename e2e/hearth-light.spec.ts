@@ -17,9 +17,21 @@ test('visible hearth light softens night without changing the paused world or pi
     d.sim.time.tick = 0;
     d.sim.knownTech.add('firemaking');
     let hearth: any = null;
+    const band = d.sim.bands.find((candidate: any) => candidate.id === p.bandId);
+    const originalClaims = band.claimedCells ?? new Set<string>();
+    band.claimedCells ??= new Set<string>();
     for (let ring = 4; ring < 22 && !hearth; ring++) {
       for (const [dx, dy] of [[ring, 0], [-ring, 0], [0, ring], [0, -ring], [ring, ring]]) {
-        hearth = d.sim.place('hearth', Math.round(p.x + dx), Math.round(p.y + dy), p.bandId, null);
+        const x = Math.round(p.x + dx), y = Math.round(p.y + dy);
+        const key = `${Math.floor(x / 8)},${Math.floor(y / 8)}`;
+        const claimedTemporarily = d.sim.territoryOwnerAt(x, y) === null;
+        if (claimedTemporarily) band.claimedCells.add(key);
+        try {
+          hearth = d.sim.place('hearth', x, y, p.bandId, null);
+        } finally {
+          if (claimedTemporarily) band.claimedCells.delete(key);
+          if (originalClaims.size === 0 && band.claimedCells.size === 0) band.claimedCells = originalClaims;
+        }
         if (hearth) break;
       }
     }

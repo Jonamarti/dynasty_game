@@ -9,7 +9,7 @@
  */
 import './style.css';
 import { WorldState } from './sim/world/WorldState.ts';
-import { deserializeSave, serializeSave, SaveError, type SaveSummary } from './sim/persistence/SaveFile.ts';
+import { deserializeSaveRecord, serializeSave, SaveError, type FogRevealRecord, type SaveSummary } from './sim/persistence/SaveFile.ts';
 import { SaveStore, describeSaveFailure } from './ui/SaveStore.ts';
 import { earthWorldGeography, randomWorldGeography, type EarthWorldGeography, type RandomWorldGeography } from './sim/world/WorldGeography.ts';
 import { RNG } from './sim/core/RNG.ts';
@@ -149,6 +149,7 @@ function makeWorldState(overrides: Record<string, unknown>): WorldState {
 const SAVE_SLOT = 'manual';
 const IMPORT_SLOT = 'imported';
 let loadedWorld: WorldState | null = null;
+let loadedFogReveal: FogRevealRecord | null = null;
 let bootLoadFailure: string | null = null;
 const loadSlot = params.get('load');
 if (loadSlot) {
@@ -156,7 +157,9 @@ if (loadSlot) {
     const store = await SaveStore.open();
     const text = await store.get(loadSlot).finally(() => store.close());
     if (text === null) throw new SaveError('not_a_save');
-    loadedWorld = deserializeSave(text);
+    const loaded = deserializeSaveRecord(text);
+    loadedWorld = loaded.world;
+    loadedFogReveal = loaded.fogReveal;
   } catch (error) {
     bootLoadFailure = describeSaveFailure(error);
   }
@@ -184,6 +187,7 @@ const camera = new Camera();
 if (player) camera.snapTo(player.x, player.y);
 
 const renderer = new Renderer(canvas, sim, camera);
+if (loadedFogReveal) renderer.restoreFogReveal(loadedFogReveal);
 // The committed art (public/art, made by `npm run art:build`). If the sheets
 // cannot be fetched the renderer falls back to the procedural figures it always
 // had, so a missing file never blanks the game.
@@ -616,7 +620,7 @@ async function refreshSaveInfo(): Promise<void> {
 
 async function saveGame(): Promise<void> {
   try {
-    const text = serializeSave(worldState, Date.now());
+    const text = serializeSave(worldState, Date.now(), renderer.fogRevealSnapshot());
     const store = await SaveStore.open();
     const summary = await store.put(SAVE_SLOT, text).finally(() => store.close());
     pauseMenu.setLoadable(describeSave(summary));
@@ -629,7 +633,7 @@ async function saveGame(): Promise<void> {
 /** A file with the whole game in it, for a backup or another machine. */
 function exportGame(): void {
   try {
-    const text = serializeSave(worldState, Date.now());
+    const text = serializeSave(worldState, Date.now(), renderer.fogRevealSnapshot());
     const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
     const link = document.createElement('a');
     link.href = url;
@@ -647,7 +651,7 @@ function exportGame(): void {
 /** Read the whole file before touching anything: a bad file must leave this game exactly as it was. */
 async function importGame(text: string): Promise<void> {
   try {
-    deserializeSave(text);
+    deserializeSaveRecord(text);
     const store = await SaveStore.open();
     await store.put(IMPORT_SLOT, text).finally(() => store.close());
     reloadInto(IMPORT_SLOT);

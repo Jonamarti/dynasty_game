@@ -1,5 +1,38 @@
 # M16 diary
 
+## M16 2.3 — Fog is saved, dimmed not black, and forgets what is gone (2026-10-20)
+
+The save envelope is version 2 and records the exact `FogReveal` observer and
+cell grid. Version 1 loads with inactive fog. A committed walker now records
+explored cells through a cursor separate from the daily static-place refresh;
+observing an empty place drops stale entity markers while water remains a map
+fact. Touched rim cells reveal, remembered cells outside sight stay dim, and
+remembered places draw without requiring the current observer to have revealed
+them.
+
+Typecheck passes. The complete Vitest suite passes (342 files; 2,425 passed,
+one skipped); `m16-fog-forgets-removed`, `m16-memory-while-walking`,
+`m16-fog-saved`, `m16-fog-dimmed`, `fog-on-switch` pass. E2E captures are in
+`artifacts/screenshots/m16-2026-10-20-2.3-final/` and
+`artifacts/screenshots/m16-2026-10-20-2.3-switch-verified/`.
+
+R13 was re-pinned after the final memory-cursor fix: seeds 1–3 are
+`73931030`, `d60a58d5`, `8c971f70`. The complete matrix is still red (134 failed
+checks versus 118 in the comparison matrix); 45 checks moved PASS→FAIL and 27
+moved FAIL→PASS, with other transitions to or from `n/a`. This phase deliberately
+changes AI-readable memory, so it changes subsequent choices and world states.
+The run is recorded separately at `artifacts/verification/m16-2.3/after/`; no
+matrix check is represented as passing when it failed.
+
+What turned out differently from the card: the per-cell walk cursor had to be
+separate from `placeMemoryStaticCell`; sharing it suppressed daily discovery of
+new resource nodes in a cell. The manual-build regression test exposed this.
+
+What remains open: review the 45 PASS→FAIL transitions against their individual
+mechanisms; the aggregate run does not establish a direct regression for each.
+
+Screenshots: see the two M16 directories above.
+
 ## M16 2.22 — furniture without banners; stations respect territory (2026-10-18, `63bc104`)
 
 Goal: close N45 and K6 by removing household ownership marks from furniture

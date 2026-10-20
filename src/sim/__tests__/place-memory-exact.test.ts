@@ -8,7 +8,9 @@
  * of the cells inside the spatial hashes, because `findNearest` breaks ties by
  * walking them and a save writes them out. So this test runs the real class and
  * a frozen copy of the old one through the same random operations and compares
- * every private field, in order, after each one.
+ * every private storage field after each one. M16 intentionally changes the
+ * exploration footprint at the rim, so that grid and its revision counter are
+ * checked by the dedicated fog tests instead of the frozen M15 reference.
  */
 import { describe, expect, it } from 'vitest';
 import { PlaceMemory } from '../social/PlaceMemory.ts';
@@ -28,6 +30,13 @@ function snapshot(value: unknown, seen = new Set<object>()): unknown {
   for (const key of Object.keys(value).sort()) out[key] = snapshot((value as Record<string, unknown>)[key], seen);
   seen.delete(value);
   return out;
+}
+
+/** M16 deliberately changes which boundary cells `observe` marks as explored. */
+function snapshotBeforeM16Rim(memory: PlaceMemory | PlaceMemoryReference): unknown {
+  const state = snapshot(memory) as Record<string, unknown>;
+  const { explored: _explored, exploredCount: _exploredCount, revisionValue: _revisionValue, ...rest } = state;
+  return rest;
 }
 
 const KINDS = ['resource:berries', 'resource:flint', 'tree', 'water', 'herd:deer', 'person', 'person', 'person'];
@@ -72,13 +81,14 @@ function drive(seed: string, cap: number, size: number, steps: number): void {
     // Compare after every operation, not at the end: a divergence that heals
     // itself by the end is still a divergence.
     if (i % 7 === 0 || i === steps - 1) {
-      expect(snapshot(fresh), `operation ${i} (seed ${seed}, cap ${cap})`).toEqual(snapshot(old));
+      expect(snapshotBeforeM16Rim(fresh), `operation ${i} (seed ${seed}, cap ${cap})`)
+        .toEqual(snapshotBeforeM16Rim(old));
     }
   }
-  expect(snapshot(fresh)).toEqual(snapshot(old));
+  expect(snapshotBeforeM16Rim(fresh)).toEqual(snapshotBeforeM16Rim(old));
 }
 
-describe('PlaceMemory speed-ups are exact', () => {
+describe('PlaceMemory storage remains exact outside M16 rim exploration', () => {
   it('matches the frozen reference through thousands of random operations', () => {
     for (const [seed, cap, size] of [['a', 4, 48], ['b', 6, 64], ['c', 48, 64], ['d', 2, 32], ['e', 9, 80]] as const) {
       drive(seed, cap, size, 1500);

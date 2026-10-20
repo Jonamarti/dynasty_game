@@ -79,7 +79,7 @@ export class PlaceMemory {
     }
   }
 
-  /** Mark the cells whose centres fall within the person's current sight. */
+  /** Mark every cell touched by the person's current sight, including its rim. */
   observe(x: number, y: number, radius: number, day: number): void {
     const safeDay = this.safeDay(day);
     const minX = Math.max(0, Math.floor((x - radius) / PLACE_CELL_SIZE));
@@ -90,9 +90,13 @@ export class PlaceMemory {
     let changed = false;
     for (let cy = minY; cy <= maxY; cy++) {
       for (let cx = minX; cx <= maxX; cx++) {
-        const centerX = cx * PLACE_CELL_SIZE + PLACE_CELL_SIZE / 2;
-        const centerY = cy * PLACE_CELL_SIZE + PLACE_CELL_SIZE / 2;
-        if ((centerX - x) ** 2 + (centerY - y) ** 2 > radius2) continue;
+        const left = cx * PLACE_CELL_SIZE;
+        const top = cy * PLACE_CELL_SIZE;
+        const right = Math.min(this.width, left + PLACE_CELL_SIZE);
+        const bottom = Math.min(this.height, top + PLACE_CELL_SIZE);
+        const dx = Math.max(left - x, 0, x - right);
+        const dy = Math.max(top - y, 0, y - bottom);
+        if (dx * dx + dy * dy > radius2) continue;
         const index = cy * this.cols + cx;
         if (this.explored[index] === 0) this.exploredCount++;
         if (this.explored[index] !== safeDay) changed = true;
@@ -233,6 +237,31 @@ export class PlaceMemory {
   /** A copy keeps renderer and UI callers from changing the person's private map. */
   allRecords(): PlaceRecord[] {
     return [...this.places.values()].flatMap(records => [...records.values()].map(record => ({ ...record })));
+  }
+
+  /** Existing visual markers close enough to compare with the live spatial indexes. */
+  recordsNear(x: number, y: number, radius: number): PlaceRecord[] {
+    return this.allPlacesHash.queryRadius(x, y, radius).map(record => ({ ...record }));
+  }
+
+  /** Forget one visible marker after the observer sees that it is no longer there. */
+  forget(kind: string, x: number, y: number): boolean {
+    const records = this.places.get(kind);
+    if (!records) return false;
+    const cell = Math.floor(y / PLACE_CELL_SIZE) * this.cols + Math.floor(x / PLACE_CELL_SIZE);
+    let key = records.has(cell) ? cell : undefined;
+    if (key === undefined) {
+      // People use their id as a key so a person who moves across cells leaves
+      // one marker, not a trail. This short fallback also avoids a second index.
+      for (const [candidateKey, record] of records) {
+        if (record.x === x && record.y === y) { key = candidateKey; break; }
+      }
+    }
+    if (key === undefined) return false;
+    this.deleteRecord(kind, records, key);
+    if (records.size === 0) this.places.delete(kind);
+    this.revisionValue++;
+    return true;
   }
 
   exploredFraction(): number {

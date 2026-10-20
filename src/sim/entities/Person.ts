@@ -398,6 +398,8 @@ export class Person {
   declare worldNews?: WorldNews;
   placeMemoryStaticCell = -1;
   placeMemoryStaticDay = -1;
+  /** Cell where committed movement last added exploration, separate from static refresh. */
+  placeMemoryWalkCell = -1;
   /** Evidence accumulator for the current food gathering attempt. */
   actionTicks = 0;
   yieldKey: string | null = null;

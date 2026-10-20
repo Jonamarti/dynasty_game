@@ -118,7 +118,9 @@ describe('saving the whole game (phase 33c)', () => {
     const reason = (t: string) => { try { deserializeSave(t); } catch (e) { return (e as SaveError).reason; } return 'loaded'; };
     expect(reason('not json {')).toBe('not_json');
     expect(reason('{"hello":1}')).toBe('not_a_save');
-    expect(reason(text.replace('"version":1', '"version":9'))).toBe('newer_version');
+    const newer = JSON.parse(text);
+    newer.version = 9;
+    expect(reason(JSON.stringify(newer))).toBe('newer_version');
     const damaged = JSON.parse(text);
     damaged.world.peoples.regionOfPeople[0][1] = -7;
     expect(reason(JSON.stringify(damaged))).toBe('corrupt');

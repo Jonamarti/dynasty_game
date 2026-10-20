@@ -15,6 +15,7 @@ import { pickGaussianTile } from '../world/GaussianPlacement.ts';
  *     harness run exactly the code the browser runs.
  */
 import { trustEachOther } from '../social/Factions.ts';
+import { PLACE_CELL_SIZE } from '../social/PlaceMemory.ts';
 import { advanceGrass, grassBuried, CUT_ABOVE } from './Grass.ts';
 import { canDigBankMud, DIG_TO, PILE_TO, digTool, digToolFailure, earthworkWorkRefusal } from './Earth.ts';
 import { animalBlow } from '../entities/AnimalAttack.ts';
@@ -6810,6 +6811,13 @@ export class Simulation {
       // schedule. The player's score still runs with an order, so their view
       // advances alongside that HUD update.
       stepMark?.('loop: sightOf');
+      const placeCell = Math.floor(person.y / PLACE_CELL_SIZE) * Math.ceil(this.world.width / PLACE_CELL_SIZE) +
+        Math.floor(person.x / PLACE_CELL_SIZE);
+      const enteredPlaceCell = person.placeMemoryWalkCell !== placeCell;
+      if (enteredPlaceCell) {
+        person.placeMemoryWalkCell = placeCell;
+        person.placeMemory.observe(person.x, person.y, this.config.sightRadius, this.time.day);
+      }
       if (scheduledThink && (!actionCommitted || person.isPlayer)) this.observePlaces(person);
       stepMark?.('loop: observePlaces');
       const needsThink = !committed && (scheduledThink || person.action === 'idle');
@@ -6975,10 +6983,10 @@ export class Simulation {
         }
       }
       for (const building of this.buildingHash.queryRadius(person.x, person.y, radius + 4, this.placeBuildingCandidates)) {
-        if (near(building.centerX, building.centerY)) {
+        if (building.complete && !building.ruined && near(building.centerX, building.centerY)) {
           memory.remember(`building:${building.def.id}`, building.centerX, building.centerY, day,
-            building.complete ? 2 : 1, 'seen', {
-              type: 'building', id: building.def.id, complete: building.complete,
+            2, 'seen', {
+              type: 'building', id: building.def.id, complete: true,
             });
         }
       }
@@ -7021,6 +7029,38 @@ export class Simulation {
           memory.remember(`pile:${item}`, pile.x, pile.y, day, amount > 5 ? 2 : 1);
         }
       }
+    }
+    // Seeing a place empty is evidence that the remembered marker is gone.
+    // Query the entity indexes around each bounded remembered marker; walking
+    // entity arrays here made a 300-person observation quadratic.
+    for (const place of memory.recordsNear(person.x, person.y, radius)) {
+      if (!near(place.x, place.y) || place.kind === 'water') continue;
+      let present = true;
+      if (place.visual?.type === 'tree') {
+        present = this.treeHash.queryRadius(place.x, place.y, 1, this.placeTreeCandidates)
+          .some(tree => tree.standing && Math.hypot(tree.x - place.x, tree.y - place.y) <= 1);
+      } else if (place.visual?.type === 'building') {
+        const visual = place.visual;
+        present = visual.complete && this.buildingHash.queryRadius(place.x, place.y, 1, this.placeBuildingCandidates)
+          .some(building => building.complete && !building.ruined && building.def.id === visual.id &&
+            Math.hypot(building.centerX - place.x, building.centerY - place.y) <= 1);
+      } else if (place.visual?.type === 'person') {
+        const known = this.peopleById.get(place.visual.id);
+        present = !!known?.alive && Math.hypot(known.x - place.x, known.y - place.y) <= 1;
+      } else if (place.kind.startsWith('resource:')) {
+        const kind = place.kind.slice('resource:'.length);
+        present = this.nodeHash.queryRadius(place.x, place.y, 1, this.placeNodeCandidates)
+          .some(node => node.kind === kind && Math.hypot(node.x - place.x, node.y - place.y) <= 1);
+      } else if (place.kind.startsWith('pile:')) {
+        const item = place.kind.slice('pile:'.length);
+        present = this.pileHash.queryRadius(place.x, place.y, 1, this.placePileCandidates)
+          .some(pile => pile.contents.count(item) > 0 && Math.hypot(pile.x - place.x, pile.y - place.y) <= 1);
+      } else if (place.kind.startsWith('herd:')) {
+        const species = place.kind.slice('herd:'.length);
+        present = this.animalHash.queryRadius(place.x, place.y, 1, this.placeAnimalCandidates)
+          .some(animal => animal.alive && animal.species === species && Math.hypot(animal.x - place.x, animal.y - place.y) <= 1);
+      }
+      if (!present) memory.forget(place.kind, place.x, place.y);
     }
     if (telemetry.isEnabled()) {
       telemetry.count(`place_exploration_fraction_band_${person.bandId}`, memory.exploredFraction());

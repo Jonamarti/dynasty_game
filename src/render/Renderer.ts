@@ -18,6 +18,7 @@ import type { Person } from '../sim/entities/Person.ts';
 import { ITEMS } from '../sim/entities/Item.ts';
 import type { PlaceRecord, PlaceVisual } from '../sim/social/PlaceMemory.ts';
 import { FogReveal } from './FogReveal.ts';
+import type { FogRevealRecord } from '../sim/persistence/SaveFile.ts';
 import type { World } from '../sim/core/World.ts';
 import { BIOMES, type Biome } from '../sim/core/World.ts';
 import type { Season } from '../sim/core/TimeManager.ts';
@@ -405,6 +406,14 @@ export class Renderer {
   private fogRecords: PlaceRecord[] = [];
   /** Observer mode is an explicit presentation choice, never simulation state. */
   fogEnabled = true;
+
+  /** Save/load owns these presentation cells; they are not simulation inputs. */
+  fogRevealSnapshot(): FogRevealRecord { return this.fogReveal.snapshot(); }
+
+  restoreFogReveal(record: FogRevealRecord): void {
+    this.fogReveal.restore(record, this.sim.world.width, this.sim.world.height);
+    this.fogLayerKey = '';
+  }
   /** The `World.earthVersion` the terrain bake was made at. */
   private earthSeen = 0;
 
@@ -1089,8 +1098,9 @@ export class Renderer {
         for (let cx = 0; cx < memory.cols; cx++) {
           const x = cx * cell;
           const y = cy * cell;
-          fog.fillStyle = memory.seenDayAt(x + cell / 2, y + cell / 2) > 0 &&
-            reveal.shows(x + cell / 2, y + cell / 2)
+          const remembered = memory.seenDayAt(x + cell / 2, y + cell / 2) > 0;
+          const exploredThisLife = reveal.active && reveal.shows(x + cell / 2, y + cell / 2);
+          fog.fillStyle = FogReveal.cellAppearance(remembered, exploredThisLife) === 'dimmed'
             ? 'rgba(10, 16, 40, 0.28)' : '#000000';
           fog.fillRect(x * TILE, y * TILE,
             Math.min(cell, sim.world.width - x) * TILE,
@@ -1104,7 +1114,7 @@ export class Renderer {
       for (const place of this.fogRecords) {
         // A rumour can name an unvisited place. Keep the knowledge, but the
         // owner's never-visited map must remain visually black.
-        if (memory.seenDayAt(place.x, place.y) === 0 || !reveal.shows(place.x, place.y)) continue;
+        if (memory.seenDayAt(place.x, place.y) === 0) continue;
         this.drawRememberedPlace(place, fog, place.x * TILE, place.y * TILE, TILE * 0.26);
       }
       this.fogLayerKey = key;

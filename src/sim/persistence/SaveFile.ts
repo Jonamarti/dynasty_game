@@ -14,7 +14,18 @@ import { toWorldStateRecord, fromWorldStateRecord, type WorldStateRecord } from 
 import type { WorldState } from '../world/WorldState.ts';
 
 export const SAVE_FORMAT = 'dynasty-save' as const;
-export const SAVE_VERSION = 1 as const;
+export const SAVE_VERSION = 2 as const;
+
+/** Renderer-owned explored cells. Kept in the save envelope, outside simulation state. */
+export interface FogRevealRecord {
+  readonly observerId: number | null;
+  readonly active: boolean;
+  readonly cols: number;
+  readonly rows: number;
+  readonly cells: readonly number[];
+}
+
+const INACTIVE_FOG: FogRevealRecord = { observerId: null, active: false, cols: 0, rows: 0, cells: [] };
 
 /** What a list of saves shows without loading any of them. */
 export interface SaveSummary {
@@ -34,6 +45,7 @@ export interface SaveEnvelope {
   readonly version: typeof SAVE_VERSION;
   readonly summary: SaveSummary;
   readonly world: WorldStateRecord;
+  readonly fogReveal: FogRevealRecord;
 }
 
 /** Why a text is not a save, in a sentence the UI can show (the caller wraps it in `t`). */
@@ -52,8 +64,8 @@ export function summaryOf(state: WorldState, savedAt: number): SaveSummary {
   };
 }
 
-export function serializeSave(state: WorldState, savedAt: number): string {
-  const envelope: SaveEnvelope = { format: SAVE_FORMAT, version: SAVE_VERSION, summary: summaryOf(state, savedAt), world: toWorldStateRecord(state) };
+export function serializeSave(state: WorldState, savedAt: number, fogReveal: FogRevealRecord = INACTIVE_FOG): string {
+  const envelope: SaveEnvelope = { format: SAVE_FORMAT, version: SAVE_VERSION, summary: summaryOf(state, savedAt), world: toWorldStateRecord(state), fogReveal };
   return JSON.stringify(envelope);
 }
 
@@ -71,12 +83,32 @@ function parseEnvelope(text: string): SaveEnvelope {
   if (envelope.version > SAVE_VERSION) throw new SaveError('newer_version', String(envelope.version));
   const s = envelope.summary;
   if (!s || typeof s.seed !== 'string' || !Number.isSafeInteger(s.tick) || typeof s.label !== 'string' || !envelope.world) throw new SaveError('not_a_save');
-  return envelope;
+  const fogReveal = (raw as { version: number }).version === 1 ? INACTIVE_FOG : validateFogReveal((raw as SaveEnvelope).fogReveal);
+  return { ...envelope, version: SAVE_VERSION, fogReveal } as SaveEnvelope;
+}
+
+function validateFogReveal(value: unknown): FogRevealRecord {
+  if (value === null || typeof value !== 'object') throw new SaveError('corrupt', 'missing fog reveal');
+  const record = value as Partial<FogRevealRecord>;
+  const validObserver = record.observerId === null || Number.isSafeInteger(record.observerId) && record.observerId! >= 0;
+  const validDims = Number.isSafeInteger(record.cols) && record.cols! >= 0 && Number.isSafeInteger(record.rows) && record.rows! >= 0 &&
+    ((record.cols === 0 && record.rows === 0 && record.cells?.length === 0) ||
+      (record.cols! > 0 && record.rows! > 0 && record.cols! * record.rows! === record.cells?.length && record.cells!.length <= 4_000_000));
+  if (!validObserver || typeof record.active !== 'boolean' || record.active && record.observerId === null || !validDims || !Array.isArray(record.cells) ||
+    record.cells.some(cell => cell !== 0 && cell !== 1)) throw new SaveError('corrupt', 'invalid fog reveal');
+  return { observerId: record.observerId!, active: record.active, cols: record.cols!, rows: record.rows!, cells: [...record.cells!] };
 }
 
 /** Rebuild the whole world. Throws `SaveError` (never half a world): the record readers reject what they do not understand. */
 export function deserializeSave(text: string): WorldState {
   const envelope = parseEnvelope(text);
   try { return fromWorldStateRecord(envelope.world); }
+  catch (error) { throw new SaveError('corrupt', error instanceof Error ? error.message : String(error)); }
+}
+
+/** Load the simulation and the renderer's presentation state together. */
+export function deserializeSaveRecord(text: string): { world: WorldState; fogReveal: FogRevealRecord } {
+  const envelope = parseEnvelope(text);
+  try { return { world: fromWorldStateRecord(envelope.world), fogReveal: envelope.fogReveal }; }
   catch (error) { throw new SaveError('corrupt', error instanceof Error ? error.message : String(error)); }
 }

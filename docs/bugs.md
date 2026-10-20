@@ -1,3 +1,16 @@
+## 2026-10-20 — M16 2.3: transiciones en la matriz de escenarios (seguimiento abierto)
+
+La matriz completa recorrió 48 escenarios y 4.205 checks. Frente al artefacto
+de comparación M16 2.27, los fallos aumentaron de 118 a 134: 45 checks pasaron
+de PASS a FAIL y 27 de FAIL a PASS; además hubo 25 PASS→n/a, 6 FAIL→n/a,
+28 n/a→PASS y 4 n/a→FAIL. M16 2.3 cambia `PlaceMemory`, que la IA consulta, así
+que cambian los recuerdos y decisiones que conducen cada mundo. La comparación
+agregada no demuestra que cada check cambiado sea un efecto directo del cambio;
+no se ajustaron umbrales ni se atribuyó cada transición. Revisar los casos
+nuevos con sus mecanismos antes de cerrar la observación. Logs y matriz en
+`artifacts/verification/m16-2.3/after/baseline-diff-final.log` y
+`matrix-final.json`.
+
 ## 2026-10-18 — M16 2.22: transiciones de la matriz en `feasts`
 
 Al comparar la matriz completa antes y después de hacer cumplir D-16, los 48
@@ -453,7 +466,7 @@ Los pendientes históricos de cruce/coordinador, libro abandonado y residentes c
 `CompactBandFood` conserva raciones y registra déficits, pero no los aplica todavía a `CompactBody`. El `IntakeModel` anterior muestrea alivio de hambre sin retirar stock y no puede usarse en paralelo a este presupuesto. Falta un único dueño del reparto finito y de la producción de todas las bandas que compartan una comarca (un perfil no puede gastarse entero una vez por banda). El potencial no mide cosecha por trabajador; las tasas deben aportarse explícitamente y medirse por fuente/técnicas antes de activar el modelo. Agricultura, deterioro del stock, modificaciones de `TileLedger`, demografía e invención quedan pendientes. Esta entrega no activa LOD; no hay orden del jugador que falle silenciosamente. Correspondencia y economía siguen sin calibrar; cohortes/matriz diferidas por AGENTS.md. La suite conjunta de esta entrega reproduce los dos fallos heredados con cifras idénticas: craft/delta 23,401 puntos de hambre (>15) y difusión 0,81 (≥0,6); `sim:check` conserva dieta y presupuesto. No aparece una regresión nueva en las 15 pruebas del ledger/calendario.
 ## M15 paso 0 (D): la niebla de un personaje recién tomado no se guarda (2026-10-08)
 
-`FogReveal` (presentación) se reinicia al cambiar de observador y no se serializa: tras recargar una partida se ve el mapa recordado completo del personaje que se carga, aunque se hubiera tomado ese mismo día. Dejado a propósito: guardarlo exigiría un campo nuevo en el guardado y la regla del propietario no lo pide. Además, las celdas del borde del círculo cuyo centro queda fuera del radio no se desvelan, y al alejarse se oscurecen del todo en vez de quedar atenuadas.
+**Cerrado en M16 2.3 (2026-10-20):** `FogReveal` ahora guarda el observador y la cuadrícula exacta en el save v2; los saves v1 migran con niebla inactiva. También revela las celdas tocadas por el borde del círculo y mantiene atenuadas las celdas vistas fuera de alcance. Cobertura: `m16-fog-saved`, `m16-fog-dimmed` y `fog-on-switch`.
 
 ## M15 paso 0: lo que sigue cuadrático es de diseño (2026-10-08)
 

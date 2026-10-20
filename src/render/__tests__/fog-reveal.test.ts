@@ -3,6 +3,13 @@ import { FogReveal } from '../FogReveal.ts';
 
 /** M15 step 0 D: the fog rule when the player changes character. */
 describe('FogReveal', () => {
+  it('m16-fog-dimmed: a place remembered by the observer stays dim outside the new reveal', () => {
+    const chooseFogCell = (FogReveal as any).cellAppearance as ((remembered: boolean, revealed: boolean) => string) | undefined;
+    expect(chooseFogCell?.(true, false)).toBe('dimmed');
+    expect(chooseFogCell?.(false, false)).toBe('black');
+    expect(chooseFogCell?.(false, true)).toBe('dimmed');
+  });
+
   it('lets everything through for the character the game began with', () => {
     const fog = new FogReveal();
     fog.follow(1);
@@ -23,6 +30,15 @@ describe('FogReveal', () => {
     expect(fog.shows(30, 10)).toBe(true);
     expect(fog.shows(10, 10)).toBe(true);
     expect(fog.shows(20, 40)).toBe(false);
+  });
+
+  it('reveals rim cells touched after moving within the same coarse cell', () => {
+    const fog = new FogReveal();
+    fog.follow(1); fog.follow(2);
+    fog.observe(7, 4, 0.5, 64, 64);
+    expect(fog.shows(8.5, 4)).toBe(false);
+    fog.observe(7.8, 4, 0.5, 64, 64);
+    expect(fog.shows(8.5, 4)).toBe(true);
   });
 
   it('starts over on every change, and ignores nobody-at-the-moment', () => {
