@@ -1,3 +1,22 @@
+## 2026-10-20 — M16 2.16: retirar equipo de manos y contenedores
+
+**Problema:** había rutas para equipar herramientas y contenedores, pero el
+inventario no ofrecía retirarlos. Las prendas y la armadura ya tenían su ruta.
+
+**Cambio:** las cinco ranuras manuales ofrecen retirada mediante la misma
+orden que ejecuta la simulación. La comprobación de capacidad no modifica el
+estado al abrir el menú; retirar una herramienta de una mano conserva la otra,
+y los objetos de dos manos se liberan juntos. Si falta capacidad o la antorcha
+está encendida se explica el rechazo y se conservan objetos y combustible.
+Etiquetas y rechazos están traducidos. Versión `0.16.12-alpha`.
+
+**Verificación:** la capacidad fallaba antes por la ausencia de órdenes; ahora
+pasan cuatro casos que recorren los objetos equipables, conservan inventario,
+comprueban que el menú solo lee y cubren capacidad, dos hachas y antorcha.
+El recorrido E2E equipa y retira bolsa de piel y armadura en el inventario.
+Capturas: `artifacts/screenshots/m16-2026-10-20-2.16/`.
+El cierre conjunto de verificación queda en `artifacts/verification/m16-session-2026-10-20/`.
+
 ## 2026-10-20 — M16 1.8: medianas de rendimiento reproducibles
 
 **Problema:** faltaba una orden que repitiese las mediciones y resumiese el

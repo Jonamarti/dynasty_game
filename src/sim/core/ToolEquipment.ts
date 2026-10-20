@@ -6,8 +6,9 @@ import { GARMENT_SLOTS } from '../entities/Equipment.ts';
 import { ITEMS } from '../entities/Item.ts';
 import { axeItemOf, weaponItemOf } from '../knowledge/Tech.ts';
 import type { CarryConfig } from './Config.ts';
-import { reconcileCarry } from './Carry.ts';
+import { capacityFor, itemCapacityFor, reconcileCarry } from './Carry.ts';
 import { t } from '../../i18n/i18n.ts';
+import { burningTorchRefusalText } from './Torch.ts';
 
 export type ManualEquipmentSlot = 'left' | 'right' | 'back' | 'belt' | 'shoulder';
 export type ManualEquipReason =
@@ -20,6 +21,62 @@ export function manualEquipSlot(action: string): ManualEquipmentSlot | null {
   if (action === 'equip_back') return 'back';
   if (action === 'equip_belt') return 'belt';
   if (action === 'equip_shoulder') return 'shoulder';
+  return null;
+}
+
+export function manualUnequipSlot(action: string): ManualEquipmentSlot | null {
+  if (action === 'unequip_left') return 'left';
+  if (action === 'unequip_right') return 'right';
+  if (action === 'unequip_back') return 'back';
+  if (action === 'unequip_belt') return 'belt';
+  if (action === 'unequip_shoulder') return 'shoulder';
+  return null;
+}
+
+export type ManualUnequipReason = 'unknown_item' | 'item_not_owned' | 'not_equipped' | 'load_too_heavy' | 'lit_torch';
+
+function unequipTargets(itemId: string, slot: ManualEquipmentSlot): ManualEquipmentSlot[] {
+  return ITEMS[itemId]?.hand.hands === 2 && (slot === 'left' || slot === 'right')
+    ? ['left', 'right'] : [slot];
+}
+
+/** Preflight the exact slot and preserve every carried item before releasing capacity. */
+export function manualUnequipRefusal(
+  person: Person, itemId: string, slot: ManualEquipmentSlot, config: CarryConfig,
+): ManualUnequipReason | null {
+  if (!ITEMS[itemId]) return 'unknown_item';
+  if (person.inventory.count(itemId) <= 0) return 'item_not_owned';
+  if (person.equipment[slot]?.item !== itemId) return 'not_equipped';
+  const targets = unequipTargets(itemId, slot);
+  if (targets.some(target => (person.equipment[target]?.lit ?? 0) > 0)) return 'lit_torch';
+  const projected = Object.create(person) as Person;
+  projected.equipment = { ...person.equipment };
+  for (const target of targets) delete projected.equipment[target];
+  const tooHeavy = projected.carrying > capacityFor(projected, config) ||
+    projected.inventory.entries().some(([carriedId, count]) =>
+      count > itemCapacityFor(projected, config, carriedId));
+  return tooHeavy ? 'load_too_heavy' : null;
+}
+
+export function manualUnequipReasonText(reason: ManualUnequipReason): string {
+  switch (reason) {
+    case 'unknown_item': return t('That is not something you can remove');
+    case 'item_not_owned': return t('You no longer have that item');
+    case 'not_equipped': return t('That item is not equipped there');
+    case 'load_too_heavy': return t('Put down some items before removing that container');
+    case 'lit_torch': return burningTorchRefusalText();
+  }
+}
+
+/** Slot references point into inventory; a two-handed item is cleared atomically. */
+export function unequipItemFromSlot(
+  person: Person, itemId: string, slot: ManualEquipmentSlot, config: CarryConfig,
+): ManualUnequipReason | null {
+  const refusal = manualUnequipRefusal(person, itemId, slot, config);
+  if (refusal) return refusal;
+  const container = ITEMS[itemId]?.container;
+  for (const target of unequipTargets(itemId, slot)) delete person.equipment[target];
+  if (container) person.carryContainerCapacity = Math.max(0, person.carryContainerCapacity - container.capacity);
   return null;
 }
 

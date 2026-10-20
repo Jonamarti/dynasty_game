@@ -34,6 +34,7 @@ import { ITEMS, Inventory, type GarmentUnit } from '../entities/Item.ts';
 import { equipContainer, itemCapacityFor, reconcileCarry } from './Carry.ts';
 import {
   manualEquipReasonText, manualEquipRefusal, manualEquipSlot,
+  manualUnequipReasonText, manualUnequipRefusal, manualUnequipSlot,
   manualGarmentReasonText, manualGarmentRefusal, planGarmentMending,
   garmentMendingReasonText, planHideDressing, hideDressingReasonText, planGarmentDye, garmentDyeReasonText,
   type GarmentMendingMethod,
@@ -4419,7 +4420,7 @@ export class Simulation {
     this.assertExecutionAuthority();
     this.assertCanonical(this.peopleById, person, 'person');
     if (!person.alive) {
-      if (action.startsWith('equip_')) this.lastRefusal = t('That owner is no longer alive');
+      if (action.startsWith('equip_') || action.startsWith('unequip_')) this.lastRefusal = t('That owner is no longer alive');
       return false;
     }
     if (!canWalk(person, this.config.childhood)) {
@@ -4437,6 +4438,18 @@ export class Simulation {
       }
       if (refusal) {
         this.lastRefusal = manualEquipReasonText(refusal);
+        return false;
+      }
+    }
+    const unequipmentSlot = manualUnequipSlot(action);
+    if (action.startsWith('unequip_')) {
+      if (!unequipmentSlot) {
+        this.lastRefusal = t('That is not an equipment slot');
+        return false;
+      }
+      const refusal = manualUnequipRefusal(person, target.itemId ?? '', unequipmentSlot, this.config.carry);
+      if (refusal) {
+        this.lastRefusal = manualUnequipReasonText(refusal);
         return false;
       }
     }

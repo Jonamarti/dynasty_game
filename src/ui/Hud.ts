@@ -1142,7 +1142,7 @@ export class Hud {
 
       if (!own) continue;
       const verbs = itemActions(person, itemId, nearby.length, soleRecipientName, nearbyStore,
-        sim.hearthNear(person.x, person.y, 2));
+        sim.hearthNear(person.x, person.y, 2), sim.config.carry);
       rows.push('<div class="hud-item-verbs">' +
         verbs.map(v =>
           '<button class="hud-verb' + (v.enabled ? '' : ' is-disabled') + '"' +

@@ -937,6 +937,17 @@ function handleItemAction(
       say(ordered ? t('changing equipment') : reason ?? t('could not equip that item'), ordered);
       break;
     }
+    case 'unequip_left':
+    case 'unequip_right':
+    case 'unequip_back':
+    case 'unequip_belt':
+    case 'unequip_shoulder': {
+      const ordered = sim.order(person, verb, { itemId });
+      const reason = ordered ? null : sim.lastRefusal;
+      if (!ordered) sim.lastRefusal = null;
+      say(ordered ? t('changing equipment') : reason ?? t('could not remove that item'), ordered);
+      break;
+    }
     case 'wear_garment':
     case 'take_off_garment': {
       const ordered = sim.order(person, verb, { itemId });

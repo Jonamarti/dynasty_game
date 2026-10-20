@@ -10,9 +10,8 @@ test('a real chop order renders the fitted axe and keeps the packed spear out of
   await page.locator('.hud-button', { hasText: 'Pause' }).click();
   await page.waitForFunction(() => !!(window as any).__dynasty?.renderer?.art);
 
-  const shots = process.env.DYNASTY_CAPTURE_DIR ??
-    'artifacts/screenshots/m15-tools-' + new Date().toISOString().replace(/[:.]/g, '-');
-  mkdirSync(shots, { recursive: true });
+  const shots = process.env.DYNASTY_CAPTURE_DIR;
+  if (shots) mkdirSync(shots, { recursive: true });
   await page.evaluate(() => {
     const d = (window as any).__dynasty, person = d.sim.player;
     if (!person) throw new Error('No player fixture');
@@ -34,6 +33,7 @@ test('a real chop order renders the fitted axe and keeps the packed spear out of
     person.inventory.add('handaxe', 1);
     person.inventory.add('hide_bag', 1);
     person.inventory.add('bundle', 1);
+    person.inventory.add('hide_armour', 1);
     if (!d.sim.order(person, 'chop', { treeId: target.id })) throw new Error('Simulation refused chop fixture order');
     for (let tick = 0; tick < 24 && person.equipment.right?.item !== 'handaxe' && person.equipment.left?.item !== 'handaxe'; tick++) d.sim.step();
     if (person.action !== 'chop' || (person.equipment.right?.item !== 'handaxe' && person.equipment.left?.item !== 'handaxe')) {
@@ -76,7 +76,7 @@ test('a real chop order renders the fitted axe and keeps the packed spear out of
   });
   expect(rendered).toMatchObject({ held: 'handaxe', action: 'chop', axeInHand: true, spearPacked: 1 });
   expect(rendered.pose).toMatch(/^c[0-3]$/);
-  await page.screenshot({ path: `${shots}/01-axe-fitted-spear-packed.png` });
+  if (shots) await page.screenshot({ path: `${shots}/01-axe-fitted-spear-packed.png` });
   await page.locator('.hud-tab[data-tab="kit"]').click();
   await expect(page.locator('.hud-tab[data-tab="kit"]')).toHaveClass(/is-active/);
   const manual = page.locator('.hud-item-verbs [data-item="spear"][data-verb="equip_right"]');
@@ -94,7 +94,7 @@ test('a real chop order renders the fitted axe and keeps the packed spear out of
       displacedOnGround: d.sim.piles.some((pile: any) => pile.contents.count('handaxe') > 0) };
   });
   expect(manuallyEquipped).toEqual({ action: 'idle', right: 'spear', spearStillOwned: 1, displacedOnGround: true });
-  await page.screenshot({ path: `${shots}/02-fitted-hand-in-kit.png` });
+  if (shots) await page.screenshot({ path: `${shots}/02-fitted-hand-in-kit.png` });
 
   for (const [item, slot] of [['hide_bag', 'equip_belt'], ['bundle', 'equip_shoulder']]) {
     const equip = page.locator(`.hud-item-verbs [data-item="${item}"][data-verb="${slot}"]`);
@@ -118,7 +118,39 @@ test('a real chop order renders the fitted axe and keeps the packed spear out of
   await expect(page.locator('.hud-panel')).toContainText('belt: Hide bag ×1');
   await expect(page.locator('.hud-panel')).toContainText('shoulder: Bundle ×1');
   await page.evaluate(() => (window as any).__dynasty.renderer.floaters.clear());
-  await page.screenshot({ path: `${shots}/03-container-slots-in-kit.png` });
+  if (shots) await page.screenshot({ path: `${shots}/03-container-slots-in-kit.png` });
+
+  const removePouch = page.locator('.hud-item-verbs [data-item="hide_bag"][data-verb="unequip_belt"]');
+  await expect(removePouch).toBeVisible();
+  await removePouch.click();
+  await page.evaluate(() => {
+    const d = (window as any).__dynasty;
+    for (let tick = 0; tick < d.sim.config.carry.equipTicks; tick++) d.sim.step();
+    d.renderer.render(null, 0);
+  });
+  const wearArmour = page.locator('.hud-item-verbs [data-item="hide_armour"][data-verb="wear_garment"]');
+  await expect(wearArmour).toBeVisible();
+  await wearArmour.click();
+  await page.evaluate(() => {
+    const d = (window as any).__dynasty;
+    for (let tick = 0; tick < d.sim.config.carry.equipTicks; tick++) d.sim.step();
+    d.renderer.render(null, 0);
+  });
+  const takeOffArmour = page.locator('.hud-item-verbs [data-item="hide_armour"][data-verb="take_off_garment"]');
+  await expect(takeOffArmour).toBeVisible();
+  await takeOffArmour.click();
+  await page.evaluate(() => {
+    const d = (window as any).__dynasty;
+    for (let tick = 0; tick < d.sim.config.carry.equipTicks; tick++) d.sim.step();
+    d.renderer.render(null, 0);
+  });
+  const removal = await page.evaluate(() => {
+    const p = (window as any).__dynasty.sim.player;
+    return { belt: p.equipment.belt?.item ?? null, torso: p.equipment.torso?.item ?? null,
+      pouchOwned: p.inventory.count('hide_bag'), armourOwned: p.inventory.count('hide_armour') };
+  });
+  expect(removal).toEqual({ belt: null, torso: null, pouchOwned: 1, armourOwned: 1 });
+  if (shots) await page.screenshot({ path: `${shots}/04-hide-pouch-and-armour-removed.png` });
 
   const ablation = await page.evaluate(() => {
     const d = (window as any).__dynasty;

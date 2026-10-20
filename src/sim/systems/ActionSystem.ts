@@ -60,7 +60,8 @@ import { claimTransportAnimal } from '../core/TransportAnimals.ts';
 import { equipContainer, itemCapacityFor, pickupRefusal, reconcileCarry, reconcileGarmentEquipment, stow } from '../core/Carry.ts';
 import {
   changeGarment, equipFor as fitToolForAction, equipItemInSlot, manualEquipRefusal,
-  manualEquipSlot, manualGarmentRefusal, planGarmentMending,
+  manualEquipSlot, manualUnequipRefusal, manualUnequipSlot, unequipItemFromSlot,
+  manualGarmentRefusal, planGarmentMending,
   planHideDressing, hideDressingReasonText, planGarmentDye, garmentDyeReasonText,
   type ToolAction, type ManualGarmentVerb,
 } from '../core/ToolEquipment.ts';
@@ -820,6 +821,11 @@ export class ActionSystem {
       case 'equip_back':
       case 'equip_belt':
       case 'equip_shoulder': this.doManualEquip(person, ctx); break;
+      case 'unequip_left':
+      case 'unequip_right':
+      case 'unequip_back':
+      case 'unequip_belt':
+      case 'unequip_shoulder': this.doManualUnequip(person, ctx); break;
       case 'wear_garment':
       case 'take_off_garment': this.doChangeGarment(person, ctx); break;
       case 'mend_garment': this.doMendGarment(person, ctx); break;
@@ -1621,6 +1627,42 @@ export class ActionSystem {
       return;
     }
     telemetry.count('manual_item_equipped');
+    this.finish(person);
+  }
+
+  private doManualUnequip(person: Person, ctx: ActionContext): void {
+    const slot = manualUnequipSlot(person.action);
+    const itemId = person.targetItemId;
+    if (!slot || itemId === null) {
+      this.abandon(person, 'equipment_order_lost', ctx);
+      return;
+    }
+    const interrupted = this.interruption(person, ctx, { ignoreLaden: true });
+    if (interrupted) {
+      this.stop(person, interrupted, ctx);
+      return;
+    }
+    if (person.toolChangeAction !== person.action) {
+      const refusal = manualUnequipRefusal(person, itemId, slot, ctx.carry);
+      if (refusal) {
+        this.abandon(person, refusal, ctx);
+        return;
+      }
+      person.toolChangeAction = person.action;
+      person.toolChangeTicks = Math.max(0, ctx.carry.equipTicks - 1);
+      person.actionTimer = person.toolChangeTicks;
+      person.actionTotal = 0;
+    } else if (person.toolChangeTicks > 0) {
+      person.toolChangeTicks--;
+      person.actionTimer = person.toolChangeTicks;
+    }
+    if (person.toolChangeTicks > 0) return;
+    const result = unequipItemFromSlot(person, itemId, slot, ctx.carry);
+    if (result) {
+      this.abandon(person, result, ctx);
+      return;
+    }
+    telemetry.count('manual_item_unequipped');
     this.finish(person);
   }
 

@@ -823,3 +823,11 @@ Before and after: median unprofiled mean 1.4781 ms/step at 30 people and 16.1854
 What turned out differently from the card: profile:systems already runs both populations, so the new runner composes it instead of adding a redundant population flag.
 What is left open: long-run and full frame budgets; no game coefficients changed.
 Screenshots: none; measurement tooling only.
+
+## M16 2.16 — Equip and remove all slots (2026-10-20)
+Goal: let the owner remove tools and fitted containers through the inventory.
+What was done: shared preflight and timed orders for five non-garment slots, with localized feedback. Menus use a projected equipment view and do not mutate saved state. Linked two-handed slots clear together; independent one-handed tools stay independent, and lit-torch removal refuses without losing fuel.
+Before and after: pre-change capability 2/2 failed because removal actions were absent; final focused tests 4/4 pass. Existing equipment browser flow now also removes a hide pouch and hide armour.
+What turned out differently from the card: garments and armour already had removal; only other slots needed implementation. Over-capacity removal refuses with a reason rather than discarding owned goods.
+What is left open: full batch verification closes this phase below.
+Screenshots: artifacts/screenshots/m16-2026-10-20-2.16/.

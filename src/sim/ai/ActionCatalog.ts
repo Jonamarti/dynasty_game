@@ -43,19 +43,21 @@ import {
 } from '../social/Conversation.ts';
 import { t, aNoun, theNoun, language, joinAnd } from '../../i18n/i18n.ts';
 import { capitalise } from '../../i18n/i18n.ts';
-import type { ChildhoodConfig } from '../core/Config.ts';
+import type { ChildhoodConfig, CarryConfig } from '../core/Config.ts';
 import { canWalk, isNursling } from '../entities/LifeStage.ts';
 import { tooHeavyForHer } from '../entities/Pregnancy.ts';
 import { mayNurse } from './Nursing.ts';
 import { swimRefusal, swimRouteRefusal, swimRefusalText } from '../core/Swimming.ts';
 import { houseInteriorContains, houseInteriorTiles } from '../world/HouseInterior.ts';
 import {
-  manualGarmentReasonText, manualGarmentRefusal, planGarmentMending, garmentMendingReasonText,
+  manualGarmentReasonText, manualGarmentRefusal, manualUnequipReasonText, manualUnequipRefusal,
+  planGarmentMending, garmentMendingReasonText,
   planHideDressing, hideDressingReasonText, planGarmentDye, garmentDyeReasonText,
 } from '../core/ToolEquipment.ts';
 import { torchIgnitionRefusal, torchRefusalText, transferableUnits, burningTorchRefusalText } from '../core/Torch.ts';
 import { fatLampRefusal, fatLampRefusalText } from '../core/FatLamp.ts';
 import { pickupRefusalText, type PickupRefusal } from '../core/Carry.ts';
+import { DEFAULT_CONFIG } from '../core/Config.ts';
 
 export type TargetKind =
   'ground' | 'person' | 'node' | 'building' | 'tree' | 'pile' | 'animal' | 'inscription' | 'corpse';
@@ -284,6 +286,7 @@ export function itemActions(
   soleRecipientName: string | null,
   nearbyStore: Building | null,
   torchNearFire = false,
+  carry: CarryConfig = DEFAULT_CONFIG.carry,
 ): ActionOption[] {
   const def = ITEMS[itemId];
   const edible = (def?.nutrition ?? 0) > 0;
@@ -294,6 +297,10 @@ export function itemActions(
   const garmentRefusal = garmentVerb
     ? manualGarmentRefusal(actor, itemId, garmentVerb)
     : null;
+  const unequipSlots = [
+    ['left', 'Left hand'], ['right', 'Right hand'], ['back', 'Back slot'],
+    ['belt', 'Belt slot'], ['shoulder', 'Shoulder slot'],
+  ] as const;
 
   const options: ActionOption[] = [
     {
@@ -359,6 +366,18 @@ export function itemActions(
       reason: def?.container?.slot === 'shoulder' ? undefined : t('That item does not fit there'),
     },
   ];
+  for (const [slot, slotLabel] of unequipSlots) {
+    if (actor.equipment[slot]?.item !== itemId) continue;
+    const action = `unequip_${slot}`;
+    const refusal = manualUnequipRefusal(actor, itemId, slot, carry);
+    options.push({
+      id: action,
+      label: t('Remove from {slot}', { slot: t(slotLabel) }),
+      icon: '\u{1F9F9}',
+      enabled: refusal === null,
+      reason: refusal ? manualUnequipReasonText(refusal) : undefined,
+    });
+  }
   if (garmentVerb) options.push({
     id: garmentVerb,
     label: garmentVerb === 'wear_garment' ? t('Wear') : t('Take off'),
