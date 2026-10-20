@@ -1,5 +1,24 @@
 # M16 doubts
 
+## Phase 2.6 — roofed and roofless art line up (2026-10-20)
+
+- **Phase:** 2.6 — N7, the house image with its roof lifted.
+- **Expected:** the card says the exterior (`ext`) and floor plan (`plan`) are
+  the two house views to compare and correct in the generators.
+- **Found:** the current houses with interiors do not switch between those two
+  layers. `Renderer.drawBuildingArt` draws `floor` and `walls` when the roof
+  lifts, then `front` in the depth pass (`src/render/Renderer.ts:1821-1831,
+  1863-1880`). The `ext`/`plan` path still serves roof-lifted buildings without
+  interior layers, such as the granary and library. The existing roof-lift
+  e2e exercises the room layers instead (`e2e/roof-lift.spec.ts:44-58`).
+- **Evidence:** `npm.cmd exec playwright -- test e2e/roof-lift.spec.ts` passes
+  1/1; `npm.cmd run art:sheet` exits 0 and shows that generated plans are still
+  separate assets from the house interior layers. The room implementation
+  arrived in M15 commit `74cedae` (2026-10-10).
+- **Resolution:** R0. Do not rewrite generators against a renderer contract
+  that the house path no longer uses. Leave N7 open; phase 2.6 is marked
+  skipped, and work proceeds to independent phase 2.7.
+
 ## Phase 11.5 — D-19 coast-card wording (2026-10-20)
 
 - **Phase:** 11.5 — action labels in both languages, including the coast-card

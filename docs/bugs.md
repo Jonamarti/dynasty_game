@@ -5897,3 +5897,15 @@ the full-suite timeout distinct from the passing isolated result. The M16
 (floor 2,066); the scenario's five other failed checks match the frozen R21
 baseline. The targeted earthwork check passed after limiting the continuation
 change to explicit player orders.
+## 2026-10-20 — M16 2.6: comparación de cubierta y vista abierta pendiente
+
+N7 no se cierra: la ruta actual de las viviendas sustituye la cubierta por
+superficies interiores (`floor`, `walls`, `front`), no por el `plan` descrito
+en la tarjeta antigua. Reproducir con `?seed=roof-lift&skipIntro=1`, colocar o
+usar una vivienda terminada y alternar `V` con la persona dentro; la
+`e2e/roof-lift.spec.ts` existente verifica esas capas, pero no compara el
+contorno del exterior con el interior. `npm.cmd run art:sheet` también muestra
+las variantes generadas. La fase 2.6 queda omitida por R0; no se cambió el arte
+ni se atribuye la diferencia a un generador concreto. Detalle en
+`docs/m16/doubts.md`.
+

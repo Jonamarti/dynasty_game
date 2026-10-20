@@ -1,3 +1,21 @@
+## 2026-10-20 — M16 2.6: discrepancia de la tarjeta de cubiertas registrada
+
+**Problema:** N7 pide alinear la fachada `ext` con el plano `plan` de una casa
+al levantar su cubierta.
+
+**Causa:** desde M15 `74cedae`, las viviendas que tienen interior muestran las
+capas generadas `floor`, `walls` y `front`; la tarjeta apunta a la ruta vieja
+`ext/plan` para esas viviendas.
+
+**Cambio:** R0 deja 2.6 omitida, conserva N7 abierto y registra qué comparación
+falta definir en `docs/m16/doubts.md` y `docs/bugs.md`. No se cambió arte ni
+código de juego.
+
+**Verificación:** `npm.cmd exec playwright -- test e2e/roof-lift.spec.ts`
+termina 1/1; `npm.cmd run art:sheet` termina con código 0. Sin baseline nuevo.
+
+**Capturas:** ninguna; no cambia la interfaz.
+
 ## 2026-10-20 — M16 2.5: recoger una pila lejana requiere caminar
 
 **Problema:** la nota A5 decía que «Recoger» entregaba objetos de una pila

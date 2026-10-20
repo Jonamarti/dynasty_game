@@ -591,6 +591,27 @@ What is left open: nada para E14; no se atribuye cuándo se corrigió.
 
 Screenshots: none; no game UI change.
 
+## M16 2.6 — Cubiertas y vistas sin cubierta (2026-10-20, skipped: R0)
+
+Goal: comprobar que la vista de una vivienda con cubierta y al levantarla
+mantiene las paredes alineadas.
+
+What was done: se revisó la ruta actual de dibujo de viviendas y se ejecutó la
+prueba de roof lift. El renderer usa superficies interiores generadas (`floor`,
+`walls`, `front`); la pareja `ext/plan` de la tarjeta corresponde a otra ruta.
+
+Before and after: `roof-lift.spec.ts` pasa 1/1 y `npm.cmd run art:sheet` termina
+correctamente. No hubo cambio de juego ni de arte.
+
+What turned out differently from the card: las viviendas con interior ya no
+levantan la cubierta mostrando `plan`; el interior fue implementado en M15
+`74cedae`.
+
+What is left open: N7. R0 deja la fase omitida hasta que una tarjeta defina la
+comparación entre el exterior y las superficies interiores actuales.
+
+Screenshots: none; no game UI change.
+
 ## M16 2.27 — Los bebés no se visten solos (2026-10-20, `c25b967`)
 
 Goal: impedir que los bebés reciban o elijan órdenes para vestirse antes de la
