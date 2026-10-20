@@ -949,14 +949,27 @@ arranque vengan ya cavados, o `git revert` del commit del silo.
   la lleva a `pitDepth`: `clearLostGround` lo pone a salvo y su orden se corta
   con `ground_gave_way`. Es visible y no se pierde trabajo; no se ha medido
   con cuadrillas grandes.
-- **Un foso que se llena puede aislar casillas pendientes** (el agua corta el
+- **RESUELTO en M16 2.8 (2026-10-20):** un foso que se llena podía aislar casillas pendientes (el agua corta el
   camino hasta ellas): la orden se niega con «no hay paso» y la obra queda a
   medias. En un mapa abierto se trabaja desde fuera y no ocurre; junto al borde del
   mapa sí. Ver `earthwork-results` en `earthworks.test.ts`, que elige un sitio
-  con tierra alrededor por esta razón.
+  con tierra alrededor por esta razón. `earthwork-results` ahora incluye
+  `m16-earthwork-water-cutoff`: la obra sin un banco alcanzable se retira, deja
+  los materiales en el suelo y explica el corte por agua.
 - **El hoyo es tan hondo (16 unidades, 2,6 m) que una persona sola tarda
   semanas** con palo de cavar; es deliberado (lo hondo es lo difícil), pero
   conviene mirarlo con el escenario `diggers`.
+
+## M16 2.8: la banda se agrupa en el escenario `diggers` (2026-10-20)
+
+Al ejecutar `npm run sim:check -- --scenario diggers`, la variante final que
+selecciona bancos alcanzables informa que el hash de personas tiene 10 de 11
+personas en dos celdas (`spatial-hash-spreads`). El control con la selección
+anterior daba 3 de 11 en nueve celdas. En ambos informes se termina la zanja;
+el final registra 58 lifts y 11/12 personas vivas. La estructura del hash no
+cambió. No se confirmó por qué la disposición del escenario queda más agrupada;
+no se ajusta el límite del check para hacerla pasar. Revisar con más escenarios
+antes de atribuirlo a una regresión general.
 
 ## M15 fase 26d: agua que entra, cosas que quedan debajo — RESUELTO (2026-10-04)
 

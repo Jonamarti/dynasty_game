@@ -6469,6 +6469,13 @@ export class Simulation {
         return this.brain.think(person, brainCtx, new Set(['gather_for_site'])) === 'gather_for_site'
           ? 'started' : 'unavailable';
       },
+      onEarthworkCutOff: (person: Person, site: Building, reason: string) => {
+        this.removeBuilding(site);
+        const text = reason === 'earthwork_water_cutoff'
+          ? t('Water cut off the rest of the earthwork')
+          : t('Nobody could reach the rest of the earthwork');
+        this.noteInsight(person, text, 'setback');
+      },
       treesById: this.treesById,
       animalsById: this.animalsById,
       onAnimalKilled: (animal: Animal) => this.removeAnimal(animal),

@@ -1,5 +1,20 @@
 # M16 diary
 
+## M16 2.8 — El agua cierra el foso aislado con un motivo (2026-10-20)
+
+Goal: prevent water from leaving a moat with unreachable pending tiles and no explanation.
+
+What was done: earthwork selection now checks that a working bank is connected to the worker and keeps the same walking target between ticks. When no pending tile has a reachable bank, the unfinished site is removed, delivered materials return to the ground, and the player sees the water cutoff reason in the stop notice and insight.
+
+Before and after: `m16-earthwork-water-cutoff` failed on the former generic `cannot_reach` path and passes with the change. Both water-specific and general-reachability closure tests pass; typecheck passes; earthworks and `diggers` checks pass 19/19; stop-reason and i18n tests pass 6/6. Full Vitest passes (344 files, 2,429 tests, one skipped). The final `diggers` report finishes one ditch with 58 lifts and 11/12 people alive; `spatial-hash-spreads` is a new open failure (10 of 11 people in two cells), recorded in `docs/bugs.md`. The craft health scenario had 5 unrelated failures.
+
+What turned out differently from the card: it names `Earth.ts` and `World.updateShore`; the defect was in earthwork target selection, and existing region labels already tracked flooded connectivity. Re-pinned the switched-off baseline: seeds 1–3 are `c61a6bd8`, `98d972e4`, `988c035e`.
+
+What is left open: the `diggers` scenario's clustered-person spatial-hash warning remains to be checked outside this focused earthwork world. The screenshot tour captured the new reason but one unrelated tree-menu frame failed to open its radial menu (17/18).
+
+Screenshots: `artifacts/screenshots/m16-2026-10-20-2.8/14-earthwork-water-cutoff.png`.
+
+
 ## M16 2.3 — Fog is saved, dimmed not black, and forgets what is gone (2026-10-20)
 
 The save envelope is version 2 and records the exact `FogReveal` observer and

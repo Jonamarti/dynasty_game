@@ -337,7 +337,7 @@ A stage ends with the full level (§5) and a screenshot tour.
 | 24 | [2.5](phases/2.5-pickup-reach.md) | Picking up a far pile walks there first (A5) | verified already fixed `3b8a57b` |
 | 25 | [2.6](phases/2.6-roof-art.md) | Roofed and roofless art line up (N7) | skipped: R0, see doubts.md |
 | 26 | [2.7](phases/2.7-animal-alarm-sign.md) | The animal alarm sign ends with the alarm (A7) | done; see diary |
-| 27 | [2.8](phases/2.8-earthworks-isolated.md) | Earthworks cut off by water close with a reason (A8) | todo |
+| 27 | [2.8](phases/2.8-earthworks-isolated.md) | Earthworks cut off by water close with a reason (A8) | done; see diary |
 | 28 | [2.9](phases/2.9-techpower.md) | Hunting, armour and chopping read `techPower` (A9) | todo |
 | 29 | [2.10](phases/2.10-stranger-knowledge-menu.md) | The menu does not reveal a stranger's techs (A10) | todo |
 | 30 | [2.11](phases/2.11-talk-under-thirst.md) | Nobody starts a chat they will abandon for thirst (A11) | todo |

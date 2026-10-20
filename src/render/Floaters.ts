@@ -515,6 +515,8 @@ export const STOP_REASONS: Record<string, string> = {
   dug_deep_enough: 'the hole is as deep as a person can climb out of',
   water_came_in: 'water came into the hole and filled it',
   earthwork_done: 'the earthwork is finished',
+  earthwork_water_cutoff: 'water cut off the rest of the earthwork',
+  earthwork_bank_unreachable: 'nobody could reach the rest of the earthwork',
   ground_gave_way: 'the ground they stood on was dug away or flooded',
   no_earth: 'they were carrying no earth',
   nowhere_to_put_the_earth: 'there was nowhere to put the earth',

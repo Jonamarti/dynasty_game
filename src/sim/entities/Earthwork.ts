@@ -259,15 +259,18 @@ const AROUND: readonly (readonly [number, number])[] = [
  * worked from its rim). Null if there is nowhere to stand.
  */
 export function standingFor(
-  world: World, tile: { x: number; y: number }, fromX: number, fromY: number
+  world: World, tile: { x: number; y: number }, fromX: number, fromY: number,
+  reachableFrom?: { x: number; y: number }
 ): { x: number; y: number } | null {
-  if (world.isWalkable(tile.x, tile.y)) return { x: tile.x, y: tile.y };
+  if (world.isWalkable(tile.x, tile.y) && (!reachableFrom ||
+      world.sameRegion(reachableFrom.x, reachableFrom.y, tile.x, tile.y))) return { x: tile.x, y: tile.y };
   let best: { x: number; y: number } | null = null;
   let bestDistance = Infinity;
   for (const [dx, dy] of AROUND) {
     const nx = tile.x + dx;
     const ny = tile.y + dy;
     if (!world.isWalkable(nx, ny)) continue;
+    if (reachableFrom && !world.sameRegion(reachableFrom.x, reachableFrom.y, nx, ny)) continue;
     const distance = Math.abs(nx - fromX) + Math.abs(ny - fromY);
     if (distance < bestDistance) {
       best = { x: nx, y: ny };
@@ -344,7 +347,7 @@ function nearbyTile(
  */
 export function standingForRim(
   world: World, tile: { x: number; y: number }, fromX: number, fromY: number,
-  plan: readonly EarthworkTile[]
+  plan: readonly EarthworkTile[], reachableFrom?: { x: number; y: number }
 ): { x: number; y: number } | null {
   let best: { x: number; y: number } | null = null;
   let bestDistance = Infinity;
@@ -352,6 +355,7 @@ export function standingForRim(
     const nx = tile.x + dx;
     const ny = tile.y + dy;
     if (!world.isWalkable(nx, ny)) continue;
+    if (reachableFrom && !world.sameRegion(reachableFrom.x, reachableFrom.y, nx, ny)) continue;
     if (plan.some(t => t.x === nx && t.y === ny && t.kind === 'dig' && t.progress < t.goal)) continue;
     const distance = Math.abs(nx - fromX) + Math.abs(ny - fromY);
     if (distance < bestDistance) {

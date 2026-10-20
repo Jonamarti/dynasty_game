@@ -40,7 +40,7 @@ import { activeDraftLease, availableDraftHeads, claimDraftTeam, findDraftPen, ha
 import { COMPOST_ORGANIC } from '../core/Soil.ts';
 import { CUT_ABOVE, CUT_BITE, CUT_FLOOR, THATCH_PER_HEIGHT } from '../core/Grass.ts';
 import { DIG_TICKS, canDigBankMud, DIG_TO, EARTH_UNIT, LIFT, PILE_TICKS, PILE_TO, TOPSOIL_ITEMS, digTool, digToolFailure, earthworkWorkRefusal, liftKind } from '../core/Earth.ts';
-import { BORROW_DEPTH, borrowTile, nearestTile, pendingTiles, spoilTile, standingFor, standingForRim, type EarthworkTile } from '../entities/Earthwork.ts';
+import { BORROW_DEPTH, borrowTile, pendingTiles, spoilTile, standingFor, standingForRim, type EarthworkTile } from '../entities/Earthwork.ts';
 import { SNOW_BURY_AT } from '../core/Snow.ts';
 import type { Tree, TreeSpecies } from '../entities/Tree.ts';
 import { PLANT_TICKS, plantable, plantingRefusal } from '../entities/Orchard.ts';
@@ -131,6 +131,10 @@ export interface ActionContext {
   placeFurniture?: (person: Person, host: Building, itemId: string) => Building | null;
   /** Lets an explicit player build order use the same scored source as NPC site work. */
   onBuildNeedsMaterials?: (person: Person, site: Building) => 'started' | 'unavailable' | null;
+  /** Removes an earthwork whose remaining tiles have no reachable working bank. */
+  onEarthworkCutOff?: (
+    person: Person, site: Building, reason: 'earthwork_water_cutoff' | 'earthwork_bank_unreachable'
+  ) => void;
   treesById: Map<number, Tree>;
   animalsById: Map<number, Animal>;
   /** Called when an animal is killed, so the world can take it out. */
@@ -2416,12 +2420,49 @@ export class ActionSystem {
     let task: Task;
     let tile: { x: number; y: number };
     let planTile: EarthworkTile | null = null;
+    let plannedStand: { x: number; y: number } | null = null;
+    const reachable = (tiles: readonly EarthworkTile[], rimFor?: (tile: EarthworkTile) => boolean) => {
+      let best: { tile: EarthworkTile; stand: { x: number; y: number }; distance: number } | null = null;
+      for (const candidate of tiles) {
+        const rim = rimFor?.(candidate) ?? false;
+        const stand = rim
+          ? standingForRim(world, candidate, person.x, person.y, site.earth!,
+            { x: Math.floor(person.x), y: Math.floor(person.y) })
+          : standingFor(world, candidate, person.x, person.y,
+            { x: Math.floor(person.x), y: Math.floor(person.y) });
+        if (!stand) continue;
+        // The action is re-evaluated every tick. Keep walking toward the same
+        // bank while it remains useful; otherwise a nearer tile can replace
+        // the target on each step and make the worker wander between banks.
+        const alreadyHeadingThere = person.targetX === stand.x && person.targetY === stand.y &&
+          (Math.floor(person.x) !== stand.x || Math.floor(person.y) !== stand.y);
+        const distance = alreadyHeadingThere ? -1
+          : Math.abs(candidate.x - person.x) + Math.abs(candidate.y - person.y);
+        if (!best || distance < best.distance) best = { tile: candidate, stand, distance };
+      }
+      return best;
+    };
+    const cutOff = (): void => {
+      const waterAtTheBank = [...digs, ...heaps].some(candidate =>
+        [-1, 0, 1].some(dy => [-1, 0, 1].some(dx => (dx !== 0 || dy !== 0) &&
+          world.isWater(candidate.x + dx, candidate.y + dy))));
+      const reason = waterAtTheBank ? 'earthwork_water_cutoff' : 'earthwork_bank_unreachable';
+      telemetry.count(reason);
+      ctx.onEarthworkCutOff?.(person, site, reason);
+      this.abandon(person, reason, ctx);
+    };
     if (carried > 0 && heaps.length > 0) {
       task = 'pile';
-      planTile = nearestTile(heaps, person.x, person.y)!;
+      const choice = reachable(heaps);
+      if (!choice) { cutOff(); return; }
+      planTile = choice.tile;
+      plannedStand = choice.stand;
       tile = planTile;
     } else if (digs.length > 0) {
-      planTile = nearestTile(digs, person.x, person.y)!;
+      const choice = reachable(digs, candidate => candidate.goal * EARTH_UNIT >= world.pitDepth - 1e-9);
+      if (!choice) { cutOff(); return; }
+      planTile = choice.tile;
+      plannedStand = choice.stand;
       if (world.isWater(planTile.x, planTile.y)) {
         // Water has been into this tile already and done the digging.
         this.finishTile(person, site, planTile, planTile.goal - planTile.progress);
@@ -2473,9 +2514,9 @@ export class ActionSystem {
     // hole that is about to stop being ground. The rim is a walkable neighbour
     // that is not itself a tile still waiting to be dug.
     const rim = task === 'dig' && planTile !== null && planTile.goal * EARTH_UNIT >= world.pitDepth - 1e-9;
-    const stand = rim
+    const stand = plannedStand ?? (rim
       ? standingForRim(world, tile, person.x, person.y, site.earth)
-      : standingFor(world, tile, person.x, person.y);
+      : standingFor(world, tile, person.x, person.y));
     if (!stand) {
       this.abandon(person, 'cannot_reach', ctx);
       return;

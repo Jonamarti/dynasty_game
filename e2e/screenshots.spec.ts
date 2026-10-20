@@ -58,6 +58,20 @@ test('tour', async ({ page }) => {
   await page.waitForTimeout(800);
   await capture(page, DIR + '/01-start.png', '.hud-clock');
 
+  // M16 2.8's refusal is the new visible outcome when water cuts off every
+  // working bank. The simulation capability is tested separately; this tour
+  // frame keeps the player-facing explanation in the dated visual record.
+  await page.evaluate(() => {
+    const d = (window as never as {
+      __dynasty: { sim: { player: { id: number } | null; interruptions: unknown[] } };
+    }).__dynasty;
+    if (d.sim.player) d.sim.interruptions.push({
+      personId: d.sim.player.id, action: 'dig', reason: 'earthwork_water_cutoff', recipe: null,
+    });
+  });
+  await page.waitForTimeout(250);
+  await capture(page, DIR + '/14-earthwork-water-cutoff.png', '#view');
+
   // The radial menu over open ground.
   await page.locator('#view').click({ button: 'right', position: { x: 700, y: 430 } });
   await page.waitForTimeout(250);

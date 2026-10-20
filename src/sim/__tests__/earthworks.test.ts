@@ -194,6 +194,62 @@ describe('earthwork orders', () => {
 });
 
 describe('earthwork results', () => {
+  it('m16-earthwork-water-cutoff closes a moat when water leaves no reachable bank', () => {
+    const sim = simWithEarthworks();
+    const w = sim.world;
+    let spot: { x: number; y: number } | null = null;
+    for (const s of w.shoreTiles) {
+      for (const [ox, oy] of [[0, 0], [0, 5], [5, 0], [5, 5]] as const) {
+        const x = s.x - ox, y = s.y - oy;
+        let ok = true;
+        let wetMargin = 0;
+        for (let j = -2; j < 8 && ok; j++) for (let i = -2; i < 8 && ok; i++) {
+          const inside = i >= 0 && i < 6 && j >= 0 && j < 6;
+          if (!inside) { if (!w.isWalkable(x + i, y + j) && ++wetMargin > 10) ok = false; continue; }
+          if (!w.isWalkable(x + i, y + j) || w.biomeAt(x + i, y + j) === 'rock' ||
+              sim.buildingAt(x + i, y + j)) ok = false;
+        }
+        if (ok) { spot = { x, y }; break; }
+      }
+      if (spot) break;
+    }
+    expect(spot).not.toBeNull();
+    const site = sim.place('moat', spot!.x, spot!.y, 0, null, true);
+    expect(site).not.toBeNull();
+    const person = worker(sim);
+    person.x = spot!.x + 2.5;
+    person.y = spot!.y + 3.5;
+    expect(sim.order(person, 'dig', { buildingId: site!.id })).toBe(true);
+    // Simulate the water advancing across the remaining working bank. The
+    // controlled barrier keeps this capability test independent of coastline.
+    person.x = spot!.x - 2.5;
+    for (let y = 0; y < w.height; y++) {
+      w.biome[w.index(spot!.x - 1, y)] = 0;
+      w.setWalkable(spot!.x - 1, y, false);
+    }
+    expect(w.sameRegion(Math.floor(person.x), Math.floor(person.y), spot!.x, spot!.y)).toBe(false);
+    sim.step();
+    expect(sim.buildingsById.has(site!.id)).toBe(false);
+    expect(sim.interruptions.some(n => n.personId === person.id && n.reason === 'earthwork_water_cutoff')).toBe(true);
+    expect(sim.insights.some(n => n.personId === person.id && n.text === 'Water cut off the rest of the earthwork')).toBe(true);
+  });
+
+  it('closes unreachable earthworks with a general reason when no water caused the cutoff', () => {
+    const sim = simWithEarthworks();
+    const spot = openGround(sim, 6, 1);
+    const site = sim.place('ditch', spot.x, spot.y, 0, null, true)!;
+    const person = worker(sim);
+    person.x = spot.x + 2.5;
+    person.y = spot.y + 0.5;
+    expect(sim.order(person, 'dig', { buildingId: site.id })).toBe(true);
+    person.x = spot.x - 2.5;
+    for (let y = 0; y < sim.world.height; y++) sim.world.setWalkable(spot.x - 1, y, false);
+    sim.step();
+    expect(sim.buildingsById.has(site.id)).toBe(false);
+    expect(sim.interruptions.some(n => n.personId === person.id && n.reason === 'earthwork_bank_unreachable')).toBe(true);
+    expect(sim.insights.some(n => n.personId === person.id && n.text === 'Nobody could reach the rest of the earthwork')).toBe(true);
+  });
+
   it('a pit is worked from its rim and ends as ground nobody can cross', () => {
     const sim = simWithEarthworks();
     const spot = openGround(sim, 8, 8);

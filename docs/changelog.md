@@ -1,3 +1,35 @@
+## 2026-10-20 — M16 2.8: foso aislado por el agua
+
+**Problema:** el trabajador podía elegir la casilla pendiente más cercana
+aunque su banco caminable estuviera al otro lado del agua. La orden daba un
+«no hay paso» genérico y el foso seguía a medias.
+
+**Causa:** `standingFor` comprobaba que existiera un vecino caminable, pero no
+que estuviera en la región alcanzable del trabajador; al reevaluar cada tick
+también podía cambiar el destino entre bancos.
+
+**Cambio:** se seleccionan casillas con banco en la misma región y se conserva
+el destino de marcha mientras siga pendiente. Si ningún tile restante tiene un
+banco alcanzable, se retira la obra, los materiales entregados vuelven al suelo
+y la parada explica que el agua cortó el resto. Se añadieron las frases en
+español; versión `0.16.8-alpha`; baseline re-pinned (semillas 1–3: `c61a6bd8`,
+`98d972e4`, `988c035e`).
+
+**Verificación:** typecheck; Vitest completa (344 archivos, 2.429 pruebas
+correctas, 1 omitida); pruebas de earthworks, `diggers` y motivos de parada
+(19/19); i18n (6/6). El escenario
+`diggers` terminó ambas obras en la variante inicial, pero agrupó 10/11 personas
+en dos celdas; se ajustó el seguimiento de destino y la ejecución final termina
+una zanja (58 lifts), con 11/12 personas vivas. `spatial-hash-spreads` sigue
+fallando (hallazgo abierto en `docs/bugs.md`). `sim:check --scenario craft` tuvo 5/150 checks fallidos
+(`nights-are-slept`, `shelter-answers-cold`, `sub-webs-are-climbed`,
+`discovery-is-situated`, `perf-budget`), un área que no ejercita earthworks.
+El recorrido `shots` capturó el motivo, pero terminó 17/18: el menú radial de
+una toma de árbol quedó oculto (`screenshots.spec.ts:206`); la captura de esta
+fase sí está guardada.
+
+**Captura:** `artifacts/screenshots/m16-2026-10-20-2.8/14-earthwork-water-cutoff.png`.
+
 ## 2026-10-20 — M16 2.7: la alarma animal termina a tiempo
 
 **Problema:** el indicador «alarmado» y el estado «huyendo» seguían visibles
