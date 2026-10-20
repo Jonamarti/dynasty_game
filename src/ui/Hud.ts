@@ -812,7 +812,7 @@ export class Hud {
           this.recordRows(observer, selection.inscription, sim).join('');
         break;
       case 'animal':
-        this.panelBodyEl.innerHTML = this.animalRows(observer, selection.animal).join('');
+        this.panelBodyEl.innerHTML = this.animalRows(observer, selection.animal, sim.time.tick).join('');
         break;
     }
   }
@@ -1745,7 +1745,7 @@ export class Hud {
    * field is none of those. What a hunter reads off it is whether it has seen
    * them, and that is legible to anyone with eyes.
    */
-  private animalRows(observer: Person, animal: Animal): string[] {
+  private animalRows(observer: Person, animal: Animal, tick: number): string[] {
     const rows: string[] = [];
     const distance = observer.distanceTo(animal);
     const notice = noticeRadius(animal, observer);
@@ -1755,7 +1755,7 @@ export class Hud {
       t('{d} tiles away · notices you at {n}', { d: distance.toFixed(1), n: notice.toFixed(1) }) +
       '</div>');
     rows.push('<div class="hud-doing">' +
-      (animal.alarmed ? t('bolting') : distance <= notice ? t('has seen you') : t('grazing')) +
+      (animal.isAlarmed(tick) ? t('bolting') : distance <= notice ? t('has seen you') : t('grazing')) +
       '</div>');
 
     rows.push('<div class="hud-section">' + t('The hunt') + '</div>');

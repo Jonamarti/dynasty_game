@@ -336,7 +336,7 @@ A stage ends with the full level (§5) and a screenshot tour.
 | 23 | [2.3](phases/2.3-fog-and-memory.md) | Fog is saved, dimmed not black, and forgets what is gone (N6, N12, E4) | done; see diary |
 | 24 | [2.5](phases/2.5-pickup-reach.md) | Picking up a far pile walks there first (A5) | verified already fixed `3b8a57b` |
 | 25 | [2.6](phases/2.6-roof-art.md) | Roofed and roofless art line up (N7) | skipped: R0, see doubts.md |
-| 26 | [2.7](phases/2.7-animal-alarm-sign.md) | The animal alarm sign ends with the alarm (A7) | todo |
+| 26 | [2.7](phases/2.7-animal-alarm-sign.md) | The animal alarm sign ends with the alarm (A7) | done; see diary |
 | 27 | [2.8](phases/2.8-earthworks-isolated.md) | Earthworks cut off by water close with a reason (A8) | todo |
 | 28 | [2.9](phases/2.9-techpower.md) | Hunting, armour and chopping read `techPower` (A9) | todo |
 | 29 | [2.10](phases/2.10-stranger-knowledge-menu.md) | The menu does not reveal a stranger's techs (A10) | todo |

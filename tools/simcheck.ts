@@ -4957,7 +4957,7 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
             else watch.fledAndStayedClose++;
           }
           threatened.delete(animal.id);
-        } else if (animal.alarmed) {
+        } else if (animal.isAlarmed(sim.time.tick)) {
           const near = sim.peopleHash.findNearest(animal.x, animal.y, 40, p => p.alive);
           if (near) {
             threatened.set(animal.id, {

@@ -1138,15 +1138,18 @@ desktop/móvil pasan. Las entradas históricas de abajo se conservan como regist
 Captura: `artifacts/screenshots/m15-menu-2026-10-03T-review/teaching-menu.png`.
 
 
-## Sueño animal pendiente y costes con 300 humanos (2026-10-03)
+## Sueño animal pendiente y costes con 300 humanos (2026-10-03; actualización 2026-10-20)
 
 La AI animal todavía no tiene sueño ni horarios por especie. Las poses de
 dormir son una referencia de arte y el renderer no las activa al estar quieto
 o de noche. Comer, correr y atacar sí corresponden a eventos reales. Las
 marcas temporales son observacionales y no deben alimentar decisiones de AI.
-El signo de alarma existente usa `alarmedUntil > 0`, incluso tras expirar, y
-también aparece en la pausa de un depredador tras morder; no se usa ese getter
-para decidir una animación de carrera. Corregir su semántica visual sigue pendiente.
+M16 2.7 corrige el signo y el estado «huyendo»: `Animal.isAlarmed(tick)` ahora
+compara el plazo con el reloj. La prueba `m16-animal-alarm-sign` verifica los
+ticks 120, 209, 210 y 211; su control negativo reproduce el indicador pegado.
+Se corrigió el HUD, el renderer, el selector de objetivos y la telemetría.
+Ninguna decisión de simulación leía el getter anterior. No cambia el sueño
+animal, que sigue pendiente. Detalle y capturas: `docs/changelog.md`, M16 2.7.
 
 El perfil de 300 humanos registra 61/1.057 frames con más de 33,34 ms entre
 dibujos; un paso de simulación cuesta 20,80 ms de media (41,80 ms p95), frente

@@ -2424,7 +2424,7 @@ export class Renderer {
 
     if (this.art && this.drawArtAnimal(this.art, animal, at, px, py, w, h)) {
       if (animal.transportedBy !== null) this.drawTransportTack(px, py, w, h, animal.transportMode);
-      if (animal.alarmed) {
+      if (animal.isAlarmed(this.sim.time.tick)) {
         ctx.fillStyle = '#ffd35c';
         ctx.fillRect(px - 1, py - h / 2 - scale * 0.42, 2, scale * 0.2);
       }
@@ -2445,7 +2445,7 @@ export class Renderer {
 
     // An alarmed animal is the single most useful thing to see on this map:
     // it is the difference between a stalk that is working and one that is not.
-    if (animal.alarmed) {
+    if (animal.isAlarmed(this.sim.time.tick)) {
       ctx.fillStyle = '#ffd35c';
       ctx.fillRect(px - 1, py - h / 2 - scale * 0.42, 2, scale * 0.2);
     }

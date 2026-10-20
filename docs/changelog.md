@@ -1,3 +1,28 @@
+## 2026-10-20 — M16 2.7: la alarma animal termina a tiempo
+
+**Problema:** el indicador «alarmado» y el estado «huyendo» seguían visibles
+después de que terminara la alarma del animal.
+
+**Causa:** la presentación consultaba `alarmedUntil > 0` sin compararlo con el
+reloj actual. La simulación ya guardaba un tick de expiración y ningún
+comportamiento de IA dependía del getter.
+
+**Cambio:** `Animal.isAlarmed(tick)` compara el plazo con el tick actual. El
+renderer, el inspector, el selector de objetivos y la telemetría de
+`sim:check` usan esa lectura temporal; se añadió una prueba de expiración y una
+e2e registrada en `scripts.e2e`. La versión alpha avanza a `0.16.7`. No cambian
+decisiones, RNG ni baseline.
+
+**Verificación:** typecheck; Vitest (344 archivos, 2.427 pruebas correctas,
+1 omitida); e2e dirigida (1/1). `sim:check:all` sigue rojo por el baseline:
+48 escenarios, 1.805 correctos, 134 fallos y 2.266 n/a, sin transiciones
+respecto a 2.3. El comando terminó sin `--json`; la comparación se reconstruyó
+del resumen guardado y el JSON de 2.3, dejando el método documentado en
+`artifacts/verification/m16-2.7/after/`.
+
+**Capturas:** `artifacts/screenshots/m16-2026-10-20-2.7-verified/` muestra la
+señal antes y después del vencimiento con la versión final.
+
 ## 2026-10-20 — M16 2.6: discrepancia de la tarjeta de cubiertas registrada
 
 **Problema:** N7 pide alinear la fachada `ext` con el plano `plan` de una casa

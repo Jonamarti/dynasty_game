@@ -1452,7 +1452,7 @@ function describeCandidate(observer: Person, target: ActionTarget): string {
       return t(target.tree!.def.label) + ' — ' + knowledgeOfTree(observer, target.tree!).estimate;
     case 'animal':
       // No knowledge gating: a deer is a deer to anyone who has seen one.
-      return t(target.animal!.label) + (target.animal!.alarmed ? ' — ' + t('alarmed') : '');
+      return t(target.animal!.label) + (target.animal!.isAlarmed(sim.time.tick) ? ' — ' + t('alarmed') : '');
     case 'pile':
       // `ItemPile.label` already exists and used to go unread here — the
       // picker said "dropped goods" for a stack of six flints and a fish.

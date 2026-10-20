@@ -591,6 +591,30 @@ What is left open: nada para E14; no se atribuye cuándo se corrigió.
 
 Screenshots: none; no game UI change.
 
+## M16 2.7 — El indicador de alarma desaparece al vencer (2026-10-20)
+
+Goal: hacer que el signo visual y el inspector dejen de mostrar a un animal
+alarmado una vez alcanzado `alarmedUntil`.
+
+What was done: `Animal.isAlarmed(tick)` reemplaza la lectura que solo comprobaba
+si el plazo era positivo. El renderer, el HUD, el selector y el contador del
+sim-check pasan el reloj actual; el test negativo reproduce el fallo antiguo.
+
+Before and after: Typecheck y Vitest pasan (344 archivos; 2.427 correctas, una
+omitida); la e2e pasa 1/1. La matriz completa conserva 1.805 aprobadas, 134
+fallidas y 2.266 n/a sin transiciones respecto a 2.3. El log no incluyó JSON;
+la comparación guardada reconstruye los estados desde su resumen y el JSON de
+2.3. La matriz continúa roja por sus fallos heredados.
+
+What turned out differently from the card: el código de simulación nunca
+consultaba el getter antiguo; también había que corregir el HUD y la
+telemetría de escenario. No hizo falta re-fijar el baseline.
+
+What is left open: los 134 fallos de salud del baseline siguen abiertos; N7 de
+2.6 sigue pendiente por R0.
+
+Screenshots: `artifacts/screenshots/m16-2026-10-20-2.7-verified/`.
+
 ## M16 2.6 — Cubiertas y vistas sin cubierta (2026-10-20, skipped: R0)
 
 Goal: comprobar que la vista de una vivienda con cubierta y al levantarla

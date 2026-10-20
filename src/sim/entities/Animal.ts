@@ -243,8 +243,9 @@ export class Animal {
     this.temperament = rng.range(0, 1);
   }
 
-  get alarmed(): boolean {
-    return this.alarmedUntil > 0;
+  /** The alarm is a simulation deadline; presentation must compare it to the current clock. */
+  isAlarmed(tick: number): boolean {
+    return this.alarmedUntil > tick;
   }
 
   /** The label a person would use. No knowledge gating: a deer is a deer. */
