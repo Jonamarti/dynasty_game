@@ -1939,6 +1939,7 @@ function openRadial(actor: Person, target: ActionTarget, screenX: number, screen
     buildings: sim.buildings,
     homeBuildingId: subject.householdId === null ? null
       : sim.householdsById.get(subject.householdId)?.homeBuildingId ?? null,
+    furnitureRemovalRefusal: (person, furniture) => sim.furnitureRemovalRefusal(person, furniture),
     backersWanted: sim.config.motivation.backersWanted,
     stationFor: (stationId, requiresFire, requiresSaltWater) => nearestStation(subject, stationId, requiresFire, requiresSaltWater),
     hearthNear: (x, y, radius) => sim.hearthNear(x, y, radius),

@@ -209,6 +209,8 @@ export interface CatalogContext {
   buildings?: readonly Building[];
   /** Current household's home, for the interior-furniture placement verb. */
   homeBuildingId?: number | null;
+  /** Refusal for removing a household sleep surface. */
+  furnitureRemovalRefusal?: (person: Person, furniture: Building) => string | null;
   /**
    * Where the actor could hold a feast right now, or null — M15 phase 38a.
    * Precomputed by the caller with `Simulation.feastVenueFor`, the rule the
@@ -1097,6 +1099,22 @@ function buildingActions(
     const watched = property?.watched
       ? ctx.explainProperty?.(property) ?? t('someone from its band is watching')
       : undefined;
+    if (building.hostId !== null && (building.def.sleepQuality ?? 0) > 0) {
+      const host = (ctx.buildings ?? []).find(candidate => candidate.id === building.hostId);
+      const isHome = host?.id === ctx.homeBuildingId;
+      const refusal = ctx.furnitureRemovalRefusal?.(actor, building) ?? null;
+      options.push({
+        id: 'sleep', label: t('Sleep here'), icon: '\u{1F6CC}', enabled: isHome && !!host,
+        buildingId: host?.id,
+        reason: !isHome ? t('That is not your household’s home') : undefined,
+      });
+      options.push({
+        id: 'take_furniture', itemId: building.def.id, buildingId: building.id,
+        label: t('Pick up {thing}', { thing: t(building.def.label).toLowerCase() }),
+        icon: '\u{1F4E6}', enabled: refusal === null,
+        reason: refusal ?? undefined,
+      });
+    }
     // M11 phase 11b. Repair reuses `build` rather than getting a verb of its
     // own — see `ActionSystem.doBuild`'s own note on why — so the one thing
     // this menu has to add is the *option*: nothing else here offers `build`

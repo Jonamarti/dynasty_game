@@ -57,7 +57,7 @@ import type { RNG } from '../core/RNG.ts';
 import { ITEMS } from '../entities/Item.ts';
 import { animalBlow } from '../entities/AnimalAttack.ts';
 import { claimTransportAnimal } from '../core/TransportAnimals.ts';
-import { equipContainer, itemCapacityFor, pickupRefusal, reconcileCarry, reconcileGarmentEquipment, stow } from '../core/Carry.ts';
+import { canTake, equipContainer, itemCapacityFor, pickupRefusal, reconcileCarry, reconcileGarmentEquipment, stow } from '../core/Carry.ts';
 import {
   changeGarment, equipFor as fitToolForAction, equipItemInSlot, manualEquipRefusal,
   manualEquipSlot, manualUnequipRefusal, manualUnequipSlot, unequipItemFromSlot,
@@ -130,6 +130,7 @@ export interface ActionContext {
   onBuildingStateChanged?: (building: Building) => void;
   /** Places one carried furniture item at a clear floor tile in its host dwelling. */
   placeFurniture?: (person: Person, host: Building, itemId: string) => Building | null;
+  takeFurniture?: (person: Person, furniture: Building) => string | null;
   /** Lets an explicit player build order use the same scored source as NPC site work. */
   onBuildNeedsMaterials?: (person: Person, site: Building) => 'started' | 'unavailable' | null;
   /** Removes an earthwork whose remaining tiles have no reachable working bank. */
@@ -844,6 +845,7 @@ export class ActionSystem {
       case 'make_peace': this.doMakePeace(person, ctx); break;
       case 'craft': this.doCraft(person, ctx); break;
       case 'place_furniture': this.doPlaceFurniture(person, ctx); break;
+      case 'take_furniture': this.doTakeFurniture(person, ctx); break;
       case 'refuel_lamp': this.doRefuelLamp(person, ctx); break;
       case 'inscribe': this.doInscribe(person, ctx); break;
       case 'read': this.doRead(person, ctx); break;
@@ -4629,6 +4631,30 @@ export class ActionSystem {
     person.handled.set(itemId, ctx.tick);
     telemetry.count('furniture_placed_' + itemId);
     if (!person.isPlayer) telemetry.count('homes_furniture_placed_' + itemId);
+    this.finish(person);
+  }
+
+  /** Return a household sleep surface to its owner's inventory. */
+  private doTakeFurniture(person: Person, ctx: ActionContext): void {
+    const interrupted = this.interruption(person, ctx, { ignoreLaden: true });
+    if (interrupted) { this.stop(person, interrupted, ctx, 'furniture_'); return; }
+    const furniture = this.reachBuilding(person, ctx, {
+      ok: building => building.hostId !== null && (building.def.sleepQuality ?? 0) > 0,
+      reason: 'furniture_gone',
+    }, 'trespass');
+    if (!furniture) return;
+    // Check before removing the object so a full pack cannot destroy it.
+    if (!canTake(person, ctx.carry, furniture.def.id, 1)) {
+      this.abandon(person, t('You cannot carry any more'), ctx);
+      return;
+    }
+    const refusal = ctx.takeFurniture
+      ? ctx.takeFurniture(person, furniture)
+      : t('That is not your household’s home');
+    if (refusal) { this.abandon(person, refusal, ctx); return; }
+    const itemId = furniture.def.id;
+    person.inventory.add(itemId, 1);
+    telemetry.count('furniture_removed_' + itemId);
     this.finish(person);
   }
 

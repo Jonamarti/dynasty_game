@@ -1,3 +1,23 @@
+## 2026-10-21 — M16 2.20: usar y retirar el lecho
+
+**Problema:** la cama se colocaba y los NPC podían dormir en ella, pero el
+jugador no tenía órdenes para usarla o recuperarla.
+
+**Causa:** el catálogo ofrecía dormir solo en edificios con refugio; los
+muebles interiores de descanso no tenían opciones de sueño ni retirada.
+
+**Cambio:** al seleccionar una cama o lecho del hogar aparecen «Dormir aquí» y
+«Recoger lecho». La retirada comprueba propiedad, ocupación y capacidad de
+carga; el mueble vuelve al inventario. Versión `0.16.14-alpha`.
+
+**Verificación:** typecheck y E2E 1/1 pasaron; prueba de capacidad 2/2 y
+`check:fast` 46/46 pasaron. La suite unitaria completa dio 352 archivos
+correctos y uno fallido: faltaba traducir «You cannot carry any more»; tras
+añadir la traducción, i18n pasó 6/6. En `check:area -- objects`, `homes` pasó
+7/7; los demás escenarios conservaron rojos heredados (p. ej. `nights-are-slept`
+y `moods-move-choices`). Capturas:
+`artifacts/screenshots/m16-2026-10-21-2.20/`.
+
 ## 2026-10-21 — M16 2.18: señalar las orillas de barro
 
 **Problema:** el menú solo ofrecía cavar barro en una orilla válida, sin

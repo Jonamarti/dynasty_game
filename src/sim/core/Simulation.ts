@@ -31,7 +31,7 @@ import { makeConfig, type SimConfig, type DeepPartial } from './Config.ts';
 import { ADULT_YEARS, Person } from '../entities/Person.ts';
 import { IdSpace, type IdSpaceSnapshot } from './IdSpace.ts';
 import { ITEMS, Inventory, type GarmentUnit } from '../entities/Item.ts';
-import { equipContainer, itemCapacityFor, reconcileCarry } from './Carry.ts';
+import { canTake, equipContainer, itemCapacityFor, reconcileCarry } from './Carry.ts';
 import {
   manualEquipReasonText, manualEquipRefusal, manualEquipSlot,
   manualUnequipReasonText, manualUnequipRefusal, manualUnequipSlot,
@@ -4494,6 +4494,11 @@ export class Simulation {
       const refusal = this.furniturePlacementRefusal(person, host, target.itemId ?? '');
       if (refusal) { this.lastRefusal = refusal; return false; }
     }
+    if (action === 'take_furniture') {
+      const furniture = target.buildingId === undefined ? null : this.buildingsById.get(target.buildingId) ?? null;
+      const refusal = this.furnitureRemovalRefusal(person, furniture);
+      if (refusal) { this.lastRefusal = refusal; return false; }
+    }
     if (action === 'refuel_lamp') {
       const lamp = target.buildingId === undefined ? null : this.buildingsById.get(target.buildingId) ?? null;
       const homeId = person.householdId === null ? null
@@ -5137,6 +5142,28 @@ export class Simulation {
     this.buildingHash.insert(furniture);
     telemetry.count('furniture_placed');
     return furniture;
+  }
+
+  /** The player may reclaim only an unoccupied sleep surface in their home. */
+  furnitureRemovalRefusal(person: Person, furniture: Building | null): string | null {
+    if (!furniture || furniture.hostId === null || (furniture.def.sleepQuality ?? 0) <= 0) {
+      return t('That furniture cannot be picked up');
+    }
+    const household = person.householdId === null ? null : this.householdsById.get(person.householdId) ?? null;
+    const host = this.buildingsById.get(furniture.hostId);
+    if (!household || household.homeBuildingId !== host?.id) return t('That is not your household’s home');
+    if (!canTake(person, this.config.carry, furniture.def.id, 1)) return t('You cannot carry any more');
+    const occupants = this.peopleHash.queryRadius(furniture.centerX, furniture.centerY, 0.6)
+      .some(other => other.id !== person.id && other.alive && Math.hypot(other.x - furniture.centerX,
+        other.y - furniture.centerY) < 0.6);
+    return occupants ? t('Someone is using that furniture') : null;
+  }
+
+  private takeFurniture(person: Person, furniture: Building): string | null {
+    const refusal = this.furnitureRemovalRefusal(person, furniture);
+    if (refusal) return refusal;
+    this.removeBuilding(furniture);
+    return null;
   }
 
   /**
@@ -6477,6 +6504,7 @@ export class Simulation {
       },
       placeFurniture: (person: Person, host: Building, itemId: string) =>
         this.placeFurniture(person, host, itemId),
+      takeFurniture: (person: Person, furniture: Building) => this.takeFurniture(person, furniture),
       onBuildNeedsMaterials: (person: Person) => {
         if (!person.isPlayer) return null;
         return this.brain.think(person, brainCtx, new Set(['gather_for_site'])) === 'gather_for_site'
