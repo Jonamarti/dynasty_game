@@ -832,6 +832,14 @@ What turned out differently from the card: garments and armour already had remov
 What is left open: full batch verification closes this phase below.
 Screenshots: artifacts/screenshots/m16-2026-10-20-2.16/.
 
+## M16 2.18 — Marcar orillas donde se extrae barro (2026-10-21, `e9bb7f36`)
+Goal: señalar en el mapa las casillas transitables junto al agua dulce donde cavar produce barro.
+What was done: se añadió un borde terroso en esas casillas y la opción de cavar barro queda visible y desactivada en otras, con su motivo traducido. El indicador no depende de explorar previamente.
+Before and after: antes no había marcador y la acción desaparecía de casillas secas; ahora el test compara exactamente los marcadores con `canDigBankMud` y la opción presenta el motivo en inglés/español. N32 queda cerrado.
+What turned out differently from the card: elegí mostrar el indicador siempre, incluso sin conocer barro, para que la orilla enseñe dónde se encuentra el recurso.
+What is left open: nada de 2.18.
+Screenshots: `artifacts/screenshots/m16-2026-10-21-2.18/01-mud-bank-action-es.png`.
+
 ## M16 2.17 — Búsqueda urgente de comida y agua (2026-10-21; R0)
 Goal: verificar que el hambre y la sed graves desencadenan búsqueda y que una ruta no se aleja del agua conocida.
 What was done: las pruebas focales con nombre confirman exploración con hambre sin fuente, aviso al personaje dirigido sin agua conocida, comida antes de volver a casa y prioridad del agua durante una ruta. No se cambió código del juego.

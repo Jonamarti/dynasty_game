@@ -356,7 +356,7 @@ A stage ends with the full level (§5) and a screenshot tour.
 | 32 | [2.14](phases/2.14-defend-from-predators.md) | Bandmates defend someone bitten by a predator (A14) | skipped (R0; animal assailant contract, see doubts.md) |
 | 33 | [2.16](phases/2.16-equip-unequip.md) | Everything with a slot can be equipped and removed (N18) — **partly done in M15, verify** | implemented 2026-10-20; full phase verification pending |
 | 34 | [2.17](phases/2.17-search-food-water.md) | Hungry or thirsty people search farther (N21, N44, E2, E3) — **partly done in M15, verify** | skipped (R0; NPC no-water notice contract, see doubts.md) |
-| 35 | [2.18](phases/2.18-mud-markers.md) | You can see which shore tiles give mud (N32) | todo |
+| 35 | [2.18](phases/2.18-mud-markers.md) | You can see which shore tiles give mud (N32) | done `e9bb7f36` |
 | 36 | [2.20](phases/2.20-bedding-player.md) | The player can use and remove bedding (N38) | todo |
 | 37 | [2.21](phases/2.21-sudden-flood.md) | No sudden floods; night does not recolour the ground (N39) | todo |
 | 38 | [2.24](phases/2.24-load-keeps-sharing.md) | Loading keeps shared objects shared (E5) | todo |
