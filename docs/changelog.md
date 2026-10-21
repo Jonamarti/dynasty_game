@@ -1,3 +1,25 @@
+## 2026-10-22 — M16 2.24: localizar pérdida de identidad al cargar
+
+**Problema:** E5 reporta que guardar, cargar y avanzar separa objetos que
+seguían compartidos en la partida continua.
+
+**Causa:** aún no localizada. La tarjeta histórica sospecha el evento
+`share_food`, pero la primera diferencia visible en el grafo aparece al
+serializar `corpsesById`; no hay evidencia suficiente para atribuirla a ese
+evento.
+
+**Cambio:** se añadió la prueba de capacidad `m16-load-keeps-sharing` y se
+registró el hallazgo en `docs/bugs.md` y `docs/m16/doubts.md`. R0 detiene la
+fase antes de tocar el cargador.
+
+**Verificación:** la prueba falla de forma reproducible: 3.048 nodos en la
+partida continua y 3.049 tras carga y avance de 20 días. `check:fast` pasó
+(9 archivos, 46 pruebas). La matriz `sim:check:all` disponible corresponde a
+otro commit (`0.16.15-alpha`) y no sirve como comparación para este checkout
+`0.16.12-alpha`; no se atribuyen sus diferencias a esta investigación. Para
+mantener la suite general utilizable mientras E5 sigue abierto, el test queda
+como fallo esperado en Vitest; ejecución focal: 1 fallo esperado.
+
 ## 2026-10-20 — Regla de integración al cerrar sesión
 
 El propietario autoriza integrar en `master` cada lote terminado y verificado

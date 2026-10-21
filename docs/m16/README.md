@@ -359,7 +359,7 @@ A stage ends with the full level (§5) and a screenshot tour.
 | 35 | [2.18](phases/2.18-mud-markers.md) | You can see which shore tiles give mud (N32) | todo |
 | 36 | [2.20](phases/2.20-bedding-player.md) | The player can use and remove bedding (N38) | todo |
 | 37 | [2.21](phases/2.21-sudden-flood.md) | No sudden floods; night does not recolour the ground (N39) | todo |
-| 38 | [2.24](phases/2.24-load-keeps-sharing.md) | Loading keeps shared objects shared (E5) | todo |
+| 38 | [2.24](phases/2.24-load-keeps-sharing.md) | Loading keeps shared objects shared (E5) | skipped: R0, identity mismatch not localized; see doubts.md |
 | 39 | [2.25](phases/2.25-compact-ration.md) | Parked comarcas: ration `RangeError` and block advance (E6, E7) — **E7 done in M15, verify** | todo |
 | 40 | [2.26](phases/2.26-torch-transfer.md) | Handing over a lit torch keeps its fuel (E8) | todo |
 | 41 | [2.G](phases/2.G-gate.md) | Block 2 gate: new baseline | todo |
