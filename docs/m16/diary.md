@@ -862,7 +862,7 @@ checks heredados documentados.
 
 Capturas: `artifacts/screenshots/m16-2026-10-21-2.20/`.
 
-## M16 2.21 — Estabilizar el tinte nocturno; inundación sin reproducir (2026-10-21)
+## M16 2.21 — Estabilizar el tinte nocturno; inundación sin reproducir (2026-10-21; `ab6a9308`)
 
 Goal: mantener el color del suelo estable entre noches equivalentes y
 encontrar una causa para la inundación repentina reportada.
