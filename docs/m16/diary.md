@@ -847,3 +847,18 @@ Before and after: `check:fast` pasó (46 pruebas); las cuatro capacidades focale
 What turned out differently from the card: N44 exige un aviso diario para miembros NPC; el código solo registra telemetría al agotarse la frontera y el aviso actual solo cubre al personaje dirigido. El contrato de presentación/persistencia no está definido; R0 deja N44 abierto.
 What is left open: aviso N44 para NPC y medición de la banda entre aguas. N21 se verifica como ya corregido; E2/E3 quedan cubiertos por pruebas de regresión.
 Screenshots: ninguna; no cambió la UI.
+
+## M16 2.20 — Usar y retirar el lecho (2026-10-21; `76ce70d6`)
+
+El menú del lecho y la cama de la vivienda permite dormir allí y
+recuperar el mueble. La retirada da el motivo si pertenece a otra casa, alguien
+lo ocupa o el personaje no puede cargarlo. N38 queda cerrado. No se cambió el
+mundo ni se añadió estado persistente o RNG.
+
+La primera suite completa encontró la clave española de capacidad de carga que
+faltaba. Se tradujo y pasó i18n 6/6; `check:fast` terminó 46/46. En la matriz
+`objects`, el escenario `homes` quedó 7/7; los fallos restantes corresponden a
+checks heredados documentados.
+
+Capturas: `artifacts/screenshots/m16-2026-10-21-2.20/`.
+
