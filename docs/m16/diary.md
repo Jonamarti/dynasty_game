@@ -832,7 +832,7 @@ What turned out differently from the card: garments and armour already had remov
 What is left open: full batch verification closes this phase below.
 Screenshots: artifacts/screenshots/m16-2026-10-20-2.16/.
 
-## M16 2.25 — Parked rations and batch arrival (2026-10-22)
+## M16 2.25 — Parked rations and batch arrival (2026-10-22, 269222fe)
 Goal: verify that off-map rationing stays within the requested relief and that a host batch crossing the journey arrival tick produces a valid destination save.
 What was done: named R22 capability tests cover the six-person `repro-scout-cross` crossing and a batch that advances past journey arrival. Both behaviours were already present in the M15 implementation; no game code changed.
 Before and after: focused checks pass 9/9, `frontier` passes 2/2, and `check:fast` passes 9 files / 46 tests. The complete unit suite reported 349 files passed, one failed (known E5), 2,444 passed, and one skipped.
