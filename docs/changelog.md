@@ -1,3 +1,20 @@
+## 2026-10-21 — M16 2.18: señalar las orillas de barro
+
+**Problema:** el menú solo ofrecía cavar barro en una orilla válida, sin
+señalar dónde encontrarlo ni explicar por qué una casilla seca no servía.
+
+**Causa:** la acción ya tenía un predicado preciso de banco de agua dulce,
+pero el terreno no lo presentaba y el catálogo ocultaba la opción inválida.
+
+**Cambio:** el mapa marca, incluso sin explorar antes, exactamente las casillas
+transitables junto a agua dulce donde se puede extraer barro. El menú conserva
+«Cavar barro de la orilla» desactivado en otra casilla y da el motivo en inglés
+y español. Versión `0.16.13-alpha`.
+
+**Verificación:** `check:fast` 46/46; pruebas de barro/marker 5/5; E2E 1/1;
+suite unitaria 352 archivos, 2.450 aprobadas y una omitida. Captura:
+`artifacts/screenshots/m16-2026-10-21-2.18/01-mud-bank-action-es.png`.
+
 ## 2026-10-21 — M16 2.17: búsqueda urgente de comida y agua
 
 **Problema:** hambre y sed sin fuente cercana podían dejar a la gente esperando;

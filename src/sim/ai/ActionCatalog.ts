@@ -1427,9 +1427,11 @@ function groundActions(
         enabled: reason === undefined,
         reason,
       });
-      if (canDigBankMud(ctx.world, target.x, target.y)) options.push({
+      const mudBank = canDigBankMud(ctx.world, target.x, target.y);
+      options.push({
         id: 'dig_mud', label: t('Dig mud from the bank'), icon: '⛏️',
-        enabled: reason === undefined, reason,
+        enabled: mudBank && reason === undefined,
+        reason: reason ?? (mudBank ? undefined : t('there is no freshwater mud bank there')),
       });
       if (actor.inventory.count('earth') > 0) {
         const high = -dug >= PILE_TO - 1e-9;

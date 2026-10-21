@@ -33,6 +33,7 @@ import type { Tree } from '../sim/entities/Tree.ts';
 import type { TreeSpecies } from '../sim/entities/Tree.ts';
 import { workProgressOf } from '../sim/core/Progress.ts';
 import { DIG_TO } from '../sim/core/Earth.ts';
+import { mudBankMarkerIndices } from './TerrainMarkers.ts';
 import { expressionOf, type Expression } from '../sim/core/Mood.ts';
 import { canSeePlace, knowsPersonCondition } from '../sim/social/Knowledge.ts';
 import { Camera, TILE } from './Camera.ts';
@@ -507,6 +508,7 @@ export class Renderer {
     if (!ctx) throw new Error('2D canvas context unavailable');
     const { season, frost, heat } = visual;
     this.earthSeen = world.earthVersion;
+    const mudBanks = mudBankMarkerIndices(world);
 
     for (let y = 0; y < world.height; y++) {
       for (let x = 0; x < world.width; x++) {
@@ -536,6 +538,20 @@ export class Renderer {
           const strength = Math.min(0.7, Math.abs(moved) / DIG_TO * 0.7);
           ctx.fillStyle = moved < 0 ? `rgba(120,78,44,${strength})` : `rgba(226,204,156,${strength})`;
           ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
+        }
+
+        // The bank marker is presentation-only and intentionally visible
+        // without prior discovery: otherwise the player can reach the water
+        // and still have no way to tell which bank yields mud.
+        if (mudBanks.has(world.index(x, y))) {
+          ctx.fillStyle = 'rgba(116, 78, 43, 0.18)';
+          ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
+          ctx.strokeStyle = 'rgba(74, 52, 31, 0.72)';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(x * TILE + 2, y * TILE + 2, TILE - 4, TILE - 4);
+          ctx.fillStyle = 'rgba(74, 52, 31, 0.8)';
+          ctx.fillRect(x * TILE + 5, y * TILE + 6, 2, 2);
+          ctx.fillRect(x * TILE + 9, y * TILE + 9, 2, 2);
         }
 
         // Relief, M15 phase 25a: the sun in the north-west. A tile whose ground
