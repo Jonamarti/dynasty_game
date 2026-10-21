@@ -39,6 +39,13 @@ import { canSeePlace, knowsPersonCondition } from '../sim/social/Knowledge.ts';
 import { Camera, TILE } from './Camera.ts';
 import { waterColors } from './WaterColor.ts';
 
+/** Repeat the same ground tint at the same hour; seasonal daylight made equal
+ * night hours drift from day to day and looked like the terrain was changing. */
+function nightTintDarkness(dayFraction: number): number {
+  const solar = Math.sin(dayFraction * Math.PI * 2 - Math.PI / 2) * 0.5 + 0.5;
+  return (1 - Math.max(0, Math.min(1, solar))) * 0.55;
+}
+
 /**
  * How hard the relief shows: elevation differences between neighbouring tiles
  * are about 0.013 at the median and 0.045 at the 99th percentile, so this puts
@@ -1018,7 +1025,7 @@ export class Renderer {
   private drawNightOverlay(sources: readonly { source: LightSource; centerLight: number }[]): void {
     const { camera, sim, ctx } = this;
     const daylight = sim.time.daylight;
-    const darkness = (1 - daylight) * 0.55;
+    const darkness = nightTintDarkness(sim.time.dayFraction);
     if (darkness <= 0.02) return;
     const width = Math.ceil(camera.viewWidth), height = Math.ceil(camera.viewHeight);
     if (!this.nightLayer || this.nightLayer.width !== width || this.nightLayer.height !== height) {

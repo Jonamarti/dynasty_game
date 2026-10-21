@@ -17669,3 +17669,23 @@ timeout en `fixtures.test.ts`; ejecutada sola, esa suite pasa 2/2 en 126,23 s,
 casi todo en sus pruebas (120,34 s). `baseline:pin` conserva los tres
 fingerprints previos. Captura: `artifacts/screenshots/m16-2026-10-18-2.15/hearth-buildbar-es.png`.
 
+# 2026-10-21 — M16 2.21: estabilizar el tinte nocturno y vigilar inundaciones
+
+**Problema:** el terreno cambiaba de tono en noches equivalentes de días
+distintos; además seguía pendiente el reporte de una inundación repentina.
+
+**Causa:** la opacidad nocturna usaba la luz diurna ajustada por estación, así
+que variaba aunque la hora nocturna fuera igual. La inundación no se reprodujo
+en las semillas disponibles.
+
+**Cambio:** el tinte se calcula desde la fracción del día. Una prueba de
+regresión compara el color de la capa en noches consecutivas. El monitor de
+cinco días cubre tres semillas clásicas y dos mapas y exige causa para toda
+conversión tierra-agua. No se cambió hidrología: N39 sigue abierto a la espera
+de la semilla y los detalles de excavación o viaje.
+
+**Verificación:** pruebas focales 2/2; E2E 1/1; `check:fast` 46/46; suite
+completa 355 archivos, 2.454 aprobadas y una omitida. La matriz `world`
+conservó su lista heredada de fallos sin regresiones nuevas. Capturas:
+`artifacts/screenshots/m16-2026-10-21-2.21/`.
+

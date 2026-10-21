@@ -1,5 +1,24 @@
 # M16 doubts
 
+## Phase 2.21 — seed and actions for the reported flood (2026-10-21)
+
+- **Phase:** 2.21 — N39, delayed land-to-water conversion.
+- **Expected:** the five-day guard covers classic seeds 1–3 and two map seeds;
+  a reported flood should be attributable to digging, rain, or comarca travel
+  (`phases/2.21-sudden-flood.md:22-29`).
+- **Found:** no unknown land-to-water transition was recorded in five days on
+  those five fixed starts. Runtime water conversion in `World` currently occurs
+  in `floodFrom` after a below-water-level dig (`src/sim/core/World.ts:604-652`);
+  map water is built at installation. No supplied seed reproduced the reported
+  delayed river or trapped people/animals.
+- **Question for the owner:** which seed reproduces it, and in that game did
+  anyone dig a trench/well or travel to another comarca before the water
+  appeared? Please provide the save or seed and approximate day if available.
+- **Resolution:** leave the cause open. Keep `m16-no-sudden-flood` as a guard;
+  do not change hydrology without a reproduction. The separate night-colour
+  report was traced to `Renderer.drawNightOverlay` using season-adjusted
+  `TimeManager.daylight`; its tint now uses only the time-of-day fraction.
+
 ## Phase 2.17 — visible water-search failure for band members (2026-10-21)
 
 - **Phase:** 2.17 — N21/N44/E2/E3 hunger and thirst search.

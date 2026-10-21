@@ -862,3 +862,23 @@ checks heredados documentados.
 
 Capturas: `artifacts/screenshots/m16-2026-10-21-2.20/`.
 
+## M16 2.21 — Estabilizar el tinte nocturno; inundación sin reproducir (2026-10-21)
+
+Goal: mantener el color del suelo estable entre noches equivalentes y
+encontrar una causa para la inundación repentina reportada.
+What was done: el oscurecimiento nocturno se calcula solo con la hora del día.
+La prueba de capacidad comparaba el color de la capa a la misma hora en días
+consecutivos y fallaba antes del arreglo. El monitor observó cinco días en
+tres mundos clásicos y dos mapas, anotando el origen de los cambios de terreno.
+Before and after: la prueba nocturna y la E2E pasan; el monitor no encontró
+transiciones sin causa. El informe de inundación no se reprodujo sin la semilla
+ni saber si hubo excavación o viaje. La matriz `world` no añadió fallos frente
+al baseline. `check:fast`: 46/46; suite unitaria: 355 archivos, 2.454
+aprobadas y una omitida.
+What turned out differently from the card: no se encontró una conversión de
+terreno que justifique cambiar la hidrología; queda pendiente el dato del
+propietario.
+What is left open: N39, inundación repentina, pendiente de semilla y actividad
+previa. El tinte nocturno queda cerrado.
+Screenshots: `artifacts/screenshots/m16-2026-10-21-2.21/`.
+
