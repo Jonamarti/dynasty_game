@@ -1,3 +1,23 @@
+## 2026-10-22 — M16 2.25: verificar raciones aparcadas y llegada por lotes
+
+**Problema:** E6 y E7 ya tenían arreglos parciales en M15, pero faltaba
+comprobar el cruce de seis personas, el crédito fraccionario y un avance que
+salta el tick de llegada.
+
+**Causa:** E7 se corrigió en M15 fase 35. E6 no volvió a reproducirse en el
+caso original tras los cambios de crédito fraccionario de M15; no se atribuye
+una causa exacta al `RangeError` histórico.
+
+**Cambio:** se nombraron las pruebas de capacidad R22 para E6 y E7. No cambió
+el comportamiento del juego; las pruebas confirman la reparación previa.
+
+**Verificación:** 9/9 pruebas focales y 2/2 checks aplicables del escenario
+`frontier` pasaron. `check:fast` pasó (9 archivos, 46 pruebas). La suite
+completa reportó 349 archivos aprobados y un fallo (2.444 pruebas aprobadas,
+una omitida): la regresión E5 conocida (`m16-load-keeps-sharing`) confirma
+3.049 nodos frente a 3.048. Se conserva como fallo esperado (`it.fails`); su
+ejecución focal pasa como fallo esperado. Log: `artifacts/verification/m16-2.25/after/unit-full.log`.
+
 ## 2026-10-22 — M16 2.24: localizar pérdida de identidad al cargar
 
 **Problema:** E5 reporta que guardar, cargar y avanzar separa objetos que

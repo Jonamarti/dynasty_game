@@ -21,7 +21,7 @@ describe('parked comarca ration callback regression', () => {
     expect(food.count('berries')).toBe(1);
   });
 
-  it('advances a six-person comarca after a resident crosses the frontier', () => {
+  it('m16-parked-rations-remain-within-relief-request: advances a six-person comarca after crossing', () => {
     const state = new WorldState({ seed: 'repro-scout-cross', world: { width: 32, height: 32 },
       population: { bands: 1, peoplePerBand: 6, conceptionChance: 0 },
       time: { ticksPerDay: 40, daysPerSeason: 20, startDay: 0 }, needs: { coldRate: 0 } },
