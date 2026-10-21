@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { createHash } from 'node:crypto';
 import { randomWorldGeography } from '../world/WorldGeography.ts';
 import { findGlobeStart } from '../world/WorldTerrain.ts';
 import { WorldState } from '../world/WorldState.ts';
@@ -81,6 +82,20 @@ describe('saving the whole game (phase 33c)', () => {
     world.simulation.objects.graph = expand(world.simulation.objects.graph);
     return JSON.stringify(world);
   };
+
+  it.fails('m16-load-keeps-sharing: save, load, and advance preserves the exact object graph', () => {
+    const live = globe('wsp-1');
+    live.current.possessFirst();
+    days(live, 4);
+    const loaded = deserializeSave(serializeSave(live, 1234));
+    days(live, 20);
+    days(loaded, 20);
+    const liveGraph = JSON.parse(serializeSave(live, 0)).world.simulation.objects.graph;
+    const loadedGraph = JSON.parse(serializeSave(loaded, 0)).world.simulation.objects.graph;
+    expect(loadedGraph.nodes.length).toBe(liveGraph.nodes.length);
+    const hash = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
+    expect(hash(loadedGraph)).toBe(hash(liveGraph));
+  });
 
   it('save, load, advance equals not having saved: comarca and peoples, bit for bit', () => {
     const live = globe('wsp-1');

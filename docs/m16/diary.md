@@ -882,3 +882,10 @@ What is left open: N39, inundación repentina, pendiente de semilla y actividad
 previa. El tinte nocturno queda cerrado.
 Screenshots: `artifacts/screenshots/m16-2026-10-21-2.21/`.
 
+## M16 2.25 — Parked rations and batch arrival (2026-10-22, 269222fe)
+Goal: verify that off-map rationing stays within the requested relief and that a host batch crossing the journey arrival tick produces a valid destination save.
+What was done: named R22 capability tests cover the six-person `repro-scout-cross` crossing and a batch that advances past journey arrival. Both behaviours were already present in the M15 implementation; no game code changed.
+Before and after: focused checks pass 9/9, `frontier` passes 2/2, and `check:fast` passes 9 files / 46 tests. The complete unit suite reported 349 files passed, one failed (known E5), 2,444 passed, and one skipped.
+What turned out differently from the card: the E6 `RangeError` does not reproduce in the documented case. The fractional credit guard is already present from M15 commit `9fe57c9d`; no speculative clamp or counter was added. E7 is covered by the M15 phase-35 catch-up implementation.
+What is left open: E5 remains an independent R0 finding; the historical 400-tick notice limit is still unattributed.
+Screenshots: none; UI did not change.

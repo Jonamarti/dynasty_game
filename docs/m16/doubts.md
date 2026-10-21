@@ -156,3 +156,21 @@ the ambiguity recorded below without claiming a full unit run takes <2 min.
   preserved and excluded from phase commits. Phase 0.3 still needs to verify
   the remaining rules and version note; its branch-creation step is already
   done and should be recorded as such rather than repeated.
+
+## M16 2.24 — la identidad que diverge no está localizada — 2026-10-22
+
+- **Fase:** 2.24, E5.
+- **Esperado:** guardar, cargar y avanzar 20 días conserva el grafo de objetos
+  exacto; la tarjeta sospecha que la carga duplica el evento `share_food`.
+- **Encontrado:** la prueba de capacidad `m16-load-keeps-sharing` reproduce un
+  nodo adicional (3.049 frente a 3.048). La diferencia ya aparece en la
+  estructura raíz al serializar, con los índices de `corpsesById` desplazados;
+  todavía no se identificó el objeto cuya identidad se pierde ni se confirmó
+  que sea `share_food`. El test previo de `world-state-peoples.test.ts`
+  normaliza el grafo por contenido y por eso no detectaba esta pérdida.
+- **Archivo/línea:** `src/sim/__tests__/world-state-peoples.test.ts`, prueba
+  `m16-load-keeps-sharing`; `src/sim/persistence/WorldObjectRecords.ts`,
+  rehidratación del grafo y reenganche de personas en `fromWorldObjectRecord`.
+- **Resolución:** mantener la prueba roja y detener la fase según R0 hasta
+  localizar la primera referencia concreta; no modificar el cargador con una
+  causa no confirmada. Próxima fase independiente: 2.25.

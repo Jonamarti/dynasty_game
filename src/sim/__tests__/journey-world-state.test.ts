@@ -43,7 +43,7 @@ function tick(state: WorldState): void { state.current.step(); state.advancePeop
     expect(toWorldStateRecord(loaded)).toEqual(toWorldStateRecord(state));
   });
 
-  it('catches the installed destination up when a host advances across the arrival tick in one batch', () => {
+  it('m16-block-advance-across-arrival: catches up the destination and keeps saves valid', () => {
     const { state, destination } = journeyWorld();
     const actor = state.current.possessFirst()!;
     expect(state.startJourney(destination, { requireKnowledge: false })).toBeNull();

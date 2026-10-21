@@ -707,6 +707,15 @@ ejercita el reparto entre bandas. Ver [m15_profile_systems.md](m15_profile_syste
 ## M15 fase 33: lo que el mundo de pueblos y el guardado no hacen todavía (2026-10-07)
 
 - **El cargador no restaura la compartición de objetos (fase 28).** Guardar y cargar una partida y avanzar 29 días da un `objects.graph` con un nodo más que la partida sin guardar: el contenido, expandido, es igual; lo que se pierde es que un objeto compartido (un `SocialEvent` visto por varios, el primer sospechoso) pase a ser dos copias iguales. El resto del registro es idéntico bit a bit. No se ha investigado qué objeto es ni si una mutación posterior puede divergir por ello. Para localizarlo: guardar, cargar, avanzar 20 días, comparar `graph.nodes` nodo a nodo con los `ref` normalizados (el primer nodo distinto es el evento `share_food` que en la original ya es una referencia). `world-state-peoples.test.ts` lo compara por contenido y lo dice.
+
+- **M16 2.24: identidad compartida perdida al cargar (E5, reproducido).**
+  En `world-state-peoples.test.ts`, guarda el mundo `wsp-1` tras poseer a la
+  primera persona y avanzar cuatro días; carga y avanza ambas ramas veinte
+  días. La prueba `m16-load-keeps-sharing` falla: 3.048 nodos en la rama viva
+  y 3.049 en la cargada. El primer desplazamiento de referencias visibles está
+  en `corpsesById`; aún no se ha aislado el objeto duplicado ni confirmado la
+  hipótesis `share_food` de la nota histórica. No se cambió el código. Detalle
+  y decisión R0 en `docs/m16/doubts.md` (2026-10-22).
 - **`World.index` envuelve las coordenadas fuera del mapa (2026-10-07).** `index(x, y) = y * width + x` sin comprobar límites: una x negativa cae en la fila de arriba y una x >= ancho en la de abajo. `Simulation.hasWaterNear` lo usaba a un radio de 20 y un campamento del borde oeste «veía» el agua del borde este de la fila anterior (se colocó una banda a 117 casillas del único río). Corregido **solo** en inicios con mapa; en la isla clásica no se toca porque movería los campamentos de toda semilla guardada. Cualquier otro llamador de `isFreshWater`/`isWater` con coordenadas fuera de rango tiene el mismo riesgo; no se ha buscado.
 - **Una banda con camino largo al agua aún puede morir de sed.** La colocación ya exige agua a 10 casillas en un inicio con mapa, pero la IA sigue sin medir la distancia al agua conocida antes de alejarse; no se ha medido fuera de la colocación de partida.
 - **Los mapas generados dan casi siempre bosque boreal.** Entre los países con río marcado dominan los boreales (4 de las 6 semillas de prueba). El mapa de la Tierra es la vía para la variedad; la distribución de ríos del mapa aleatorio no se ha revisado.
@@ -5185,6 +5194,9 @@ raciones ya anotado arriba en este archivo para la fase 34.
 
 ## Seguimiento de raciones aparcadas — 2026-10-10
 Se corrigió exceso de una ULP de crédito nutricional con control mínimo y retirada sub-ULP sin alimento gratis; la RangeError original no se reprodujo en el cruce de seis personas y sigue abierta. La exploración a 400 ticks encontró otro TypeError: Invalid ledger record: too many interruption notices; no se ha establecido vínculo causal. Detalle y condiciones: docs/m15_phase34_ration_credit.md.
+
+**Verificación M16 2.25 (2026-10-22):** la capability `m16-parked-rations-remain-within-relief-request` repitió `repro-scout-cross` con seis residentes, cruzó por `leave_comarca` y avanzó 100 ticks adicionales sin la excepción. También pasa el guard fraccionario de crédito de `9fe57c9d`. E6 queda verificado como ya corregido en el código actual; la prueba no determina retrospectivamente cuál estado concreto disparó la incidencia histórica. El TypeError de 400 ticks sigue sin atribución.
+
 
 2026-10-10: se aisló un mecanismo del rechazo too many interruption notices: movePersonLedgers concatenaba colas sin cap. Regresión con destino32 y viajero1 falla antes y pasa después; el ledger JSON carga sin aflojar límite. El caso largo400 no se atribuye resuelto sin repetir condiciones; m15_phase34_notice_transfer.md.
 
