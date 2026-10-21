@@ -831,3 +831,11 @@ Before and after: pre-change capability 2/2 failed because removal actions were 
 What turned out differently from the card: garments and armour already had removal; only other slots needed implementation. Over-capacity removal refuses with a reason rather than discarding owned goods.
 What is left open: full batch verification closes this phase below.
 Screenshots: artifacts/screenshots/m16-2026-10-20-2.16/.
+
+## M16 2.17 — Búsqueda urgente de comida y agua (2026-10-21; R0)
+Goal: verificar que el hambre y la sed graves desencadenan búsqueda y que una ruta no se aleja del agua conocida.
+What was done: las pruebas focales con nombre confirman exploración con hambre sin fuente, aviso al personaje dirigido sin agua conocida, comida antes de volver a casa y prioridad del agua durante una ruta. No se cambió código del juego.
+Before and after: `check:fast` pasó (46 pruebas); las cuatro capacidades focales pasaron. El cierre completo anterior tuvo 2.444 pruebas aprobadas y una omitida; la matriz conservó rojos heredados.
+What turned out differently from the card: N44 exige un aviso diario para miembros NPC; el código solo registra telemetría al agotarse la frontera y el aviso actual solo cubre al personaje dirigido. El contrato de presentación/persistencia no está definido; R0 deja N44 abierto.
+What is left open: aviso N44 para NPC y medición de la banda entre aguas. N21 se verifica como ya corregido; E2/E3 quedan cubiertos por pruebas de regresión.
+Screenshots: ninguna; no cambió la UI.

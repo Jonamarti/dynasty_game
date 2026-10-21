@@ -1,3 +1,24 @@
+## 2026-10-21 — M16 2.17: búsqueda urgente de comida y agua
+
+**Problema:** hambre y sed sin fuente cercana podían dejar a la gente esperando;
+una ruta de regreso podía competir con necesidades graves.
+
+**Causa:** el reporte N44 mezcla el descubrimiento de agua con el aviso que
+debe recibir un NPC cuando ya no queda frontera por explorar.
+
+**Cambio:** las pruebas `m16-hungry-searches-farther`,
+`m16-water-between-lakes`, `m16-eat-before-home` y
+`m16-known-water-keeps-route` pasan en el código actual. N21 se registra como
+ya corregido y no se tocó la simulación. N44 sigue abierto: al agotar fronteras,
+la simulación solo cuenta telemetría para NPCs; el aviso existente corresponde
+al personaje dirigido y la tarjeta no define el contrato NPC. R0 documentado
+en `docs/m16/doubts.md`.
+
+**Verificación:** `check:fast` pasó (typecheck y 46 pruebas); capacidades
+focales 4/4. La ejecución unitaria completa del lote anterior terminó con
+2.444 aprobadas y una omitida; la matriz devolvió 1 por los fallos heredados
+listados en el cierre del 20-10. Sin cambio de versión ni captura.
+
 ## 2026-10-20 — Regla de integración al cerrar sesión
 
 El propietario autoriza integrar en `master` cada lote terminado y verificado

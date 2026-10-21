@@ -1,5 +1,23 @@
 # M16 doubts
 
+## Phase 2.17 — visible water-search failure for band members (2026-10-21)
+
+- **Phase:** 2.17 — N21/N44/E2/E3 hunger and thirst search.
+- **Expected:** when a band member on land between impassable waters has no
+  reachable drinkable source or unexplored frontier, it must move or show a
+  visible notice once per day (`phases/2.17-search-food-water.md:19-20,36-39`).
+- **Found:** thirst can select an unexplored frontier in `Brain.findExplorePoint`
+  (`src/sim/ai/Brain.ts:4645-4728`), but exhaustion of the frontier only
+  increments `water_exploration_no_frontier`. The visible `autonomyStall`
+  explanation is set only by the directed-character autonomy path
+  (`src/sim/core/Simulation.ts:7175-7202`); no equivalent notice exists for
+  other members of the band. The card does not define the NPC notice's owner,
+  presentation, persistence, or daily reset, and the state would be player-
+  visible (R24).
+- **Resolution:** R0. Do not invent a new notice channel or its saved-state
+  contract. Keep the passing capability tests for N21, E2, E3 and directed
+  character no-water feedback; leave N44 open and take independent phase 2.18.
+
 ## Phase 2.14 — predator bites as defence targets (2026-10-20)
 
 - **Phase:** 2.14 — a bandmate answers a predator biting someone in their band.
