@@ -1,4 +1,31 @@
 import { test, expect } from '@playwright/test';
+import { mkdirSync } from 'node:fs';
+
+test('a humid forest comarca starts with a small drinking source without a no-water warning', async ({ page }) => {
+  // Initial place selection is the subject, so this deliberately includes intro.
+  await page.goto('/?seed=728083595&defaults=1&lang=es');
+  const picker = page.locator('.worldpicker');
+  await expect(picker.locator('.worldpicker-map')).toBeEnabled({ timeout: 20_000 });
+  const box = (await picker.locator('.worldpicker-canvas').boundingBox())!;
+  await page.mouse.click(box.x + 47.5 / 96 * box.width, box.y + 11.5 / 48 * box.height);
+  await picker.locator('[data-comarca-x="475"][data-comarca-y="115"]').click();
+  const dir = 'artifacts/screenshots/m16-2026-10-22-local-water';
+  mkdirSync(dir, { recursive: true });
+  await page.screenshot({ path: `${dir}/01-selected-forest.png` });
+  await picker.locator('.worldpicker-begin').click();
+  await expect(page.locator('.settings')).toBeVisible({ timeout: 30_000 });
+  await expect(picker.locator('.worldpicker-confirm')).toBeHidden();
+  const result = await page.evaluate(() => {
+    const { sim, worldState } = (window as any).__dynasty;
+    return { start: worldState.initialGeographicStart.start,
+      fresh: sim.world.waterKind.filter((k: number) => k === 1).length,
+      banks: sim.world.freshShore.length };
+  });
+  expect(result.start).toEqual({ x: 475.5, y: 115.5 });
+  expect(result.fresh).toBeGreaterThan(0);
+  expect(result.banks).toBeGreaterThan(0);
+  await page.screenshot({ path: `${dir}/02-start-accepted.png` });
+});
 
 const SHOTS = process.env.DYNASTY_CAPTURE_DIR ??
   `artifacts/screenshots/m15-comarca-choice-${new Date().toISOString().replace(/[:.]/g, '-')}`;

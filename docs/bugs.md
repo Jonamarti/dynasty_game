@@ -1,3 +1,21 @@
+## 2026-10-22 — M16: aviso de falta de agua en bosques húmedos
+
+**Resuelto en 0.16.18-alpha para comarcas húmedas y fuentes pequeñas.** El mínimo
+de 120 casillas rechazaba fuentes reales; además los bosques templados planos
+quedaban fuera de la generación de manantiales. Ahora basta una fuente y las
+comarcas húmedas tienen un punto de surgencia en coordenadas mundiales, visible
+a resolución local y sin sobrescribir agua existente.
+El caso de Francia 475,115 conserva el inicio exacto, permite beber y mantiene
+sus capas de terreno al guardar, cargar y avanzar. La regla no promete agua
+en cualquier color verde: la humedad medida debe alcanzar el umbral 0,58;
+sabanas secas y estepas pueden seguir requiriendo buscar agua.
+
+La prueba adicional de continuación del grafo completo volvió a mostrar el
+fallo heredado E5 en `simulation.objects.graph.nodes`; la fuente, su lecho,
+superficie, riberas y el resultado de beber sí se comparan de forma exacta.
+No se cierra E5 ni se modifica su prueba roja. Capturas:
+`artifacts/screenshots/m16-2026-10-22-local-water/`.
+
 ## 2026-10-22 — M16 2.21: agua nueva bajo obras planeadas, N39
 
 El autor aporta `530199218` (Tierra, América o Europa) y `728083595` (Francia,

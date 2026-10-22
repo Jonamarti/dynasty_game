@@ -322,7 +322,10 @@ describe('frontier demography and drought gates',()=>{
   });
   it('the-thirsty-leave: an autonomous dry-band proposal crosses before one third dies; water is the negative control',()=>{
     function run(dry:boolean) {
-      const state=new WorldState(config,{geography:frontierGeography(),start:{x:40.5,y:20.5},peoples:false}),sim=state.current,origin=state.frontier.active!;
+      // This is a drought gate: a humid forest now has a real local spring.
+      // Generate arid country for both arms before spawning, then vary only
+      // the migration water policy as before; keep the departure assertions.
+      const state=new WorldState(config,{geography:frontierGeography(4),start:{x:40.5,y:20.5},peoples:false}),sim=state.current,origin=state.frontier.active!;
       sim.world.walkable.fill(1); const members=sim.livingPeople();
       for(const p of members){p.age=20*p.daysPerYear;p.needs.hunger=0;p.needs.thirst=30;p.needs.cold=0;p.needs.fatigue=0;p.needs.company=0;p.order=null;p.worldKnowledge=new WorldKnowledge();p.worldKnowledge.see(41,20,0);}
       const leader=members[0]!;sim.bandSystem.chiefByBand.set(leader.bandId,leader.id);

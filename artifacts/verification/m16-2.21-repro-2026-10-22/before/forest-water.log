@@ -1,0 +1,50 @@
+
+> dynasty@0.16.15-alpha test
+> vitest run src/sim/__tests__/start-place.test.ts --testNamePattern m16-forest-start --maxWorkers=1 --testTimeout=15000
+
+
+ RUN  v4.1.11 C:/Users/Marty/Documents/Work/Programs/dynastyGame
+
+ ❯ src/sim/__tests__/start-place.test.ts (19 tests | 2 failed | 17 skipped) 114ms
+     × accepts a small spring as drinking water rather than requiring a wide river 10ms
+     × provides a real source in the selected humid forest comarca, without moving the start 102ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/sim/__tests__/start-place.test.ts > m16-forest-start-has-local-drinking-water > accepts a small spring as drinking water rather than requiring a wide river
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ src/sim/__tests__/start-place.test.ts:39:44
+     37| describe('m16-forest-start-has-local-drinking-water', () => {
+     38|   it('accepts a small spring as drinking water rather than requiring a…
+     39|     expect(isStart({ fresh: 1, land: 1 })).toBe(true);
+       |                                            ^
+     40|     expect(isStart({ fresh: 0, land: 1 })).toBe(false);
+     41|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  src/sim/__tests__/start-place.test.ts > m16-forest-start-has-local-drinking-water > provides a real source in the selected humid forest comarca, without moving the start
+AssertionError: forest comarca 475,115: expected null not to be null
+ ❯ src/sim/__tests__/start-place.test.ts:46:53
+     44|     for (const x of [475, 476, 477]) {
+     45|       const chosen = startInComarca(earthGeography, x, 115, config);
+     46|       expect(chosen, `forest comarca ${x},115`).not.toBeNull();
+       |                                                     ^
+     47|       expect(chosen!.x).toBe(x + 0.5);
+     48|       expect(chosen!.report.fresh).toBeGreaterThan(0);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 17 skipped (19)
+   Start at  10:16:07
+   Duration  6.26s (transform 2.91s, setup 0ms, import 5.88s, tests 114ms, environment 0ms)
+

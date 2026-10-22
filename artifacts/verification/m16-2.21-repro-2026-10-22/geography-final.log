@@ -1,0 +1,13 @@
+
+> dynasty@0.16.18-alpha test
+> vitest run src/sim/__tests__/local-geography.test.ts src/sim/__tests__/hydrology.test.ts src/sim/__tests__/start-place.test.ts src/sim/__tests__/comarca-travel.test.ts src/sim/__tests__/m16-no-sudden-flood.test.ts src/sim/__tests__/freshwater-worldstate.test.ts --maxWorkers=1 --testTimeout=15000
+
+
+ RUN  v4.1.11 C:/Users/Marty/Documents/Work/Programs/dynastyGame
+
+
+ Test Files  6 passed (6)
+      Tests  68 passed (68)
+   Start at  10:41:24
+   Duration  91.57s (transform 3.70s, setup 0ms, import 10.74s, tests 79.19s, environment 1ms)
+

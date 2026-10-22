@@ -10,6 +10,8 @@ import {
 } from '../world/StartPlace.ts';
 import { WorldState } from '../world/WorldState.ts';
 import { gridFromGeography, regionOfStart } from '../world/PeopleWorld.ts';
+import { fromWorldStateRecord, toWorldStateRecord } from '../persistence/WorldStateRecords.ts';
+import { toWorldTerrainRecord } from '../persistence/WorldRecords.ts';
 
 const SPAN = 4;
 const config = localWorldConfig();
@@ -33,6 +35,49 @@ function earth(): EarthWorldGeography {
 // Both Earth test groups query the same read-only atlas; decoding it twice at
 // module load added setup cost without giving either group an isolated world.
 const earthGeography = earth();
+
+describe('m16-forest-start-has-local-drinking-water', () => {
+  it('accepts a small spring as drinking water rather than requiring a wide river', () => {
+    expect(isStart({ fresh: 1, land: 1 })).toBe(true);
+    expect(isStart({ fresh: 0, land: 1 })).toBe(false);
+  });
+
+  it('provides a real source in the selected humid forest comarca, without moving the start', () => {
+    for (const x of [475, 476, 477]) {
+      const chosen = startInComarca(earthGeography, x, 115, config);
+      expect(chosen, `forest comarca ${x},115`).not.toBeNull();
+      expect(chosen!.x).toBe(x + 0.5);
+      expect(chosen!.report.fresh).toBeGreaterThan(0);
+    }
+    const chosen = startInComarca(earthGeography, 475, 115, config)!;
+    const sim = new WorldState({ seed: 728083595, population: { bands: 1, peoplePerBand: 4 } },
+      { geography: earthGeography, start: chosen, comarcasWide: 1, comarcasHigh: 1, peoples: false }).current;
+    expect(sim.world.freshShore.length).toBeGreaterThan(0);
+    expect(sim.world.freshShore.some(bank => sim.world.isWalkable(bank.x, bank.y))).toBe(true);
+  });
+
+  it('saves the exact small source and lets a thirsty person drink after loading', () => {
+    const chosen = startInComarca(earthGeography, 475, 115, config)!;
+    const state = new WorldState({ seed: 728083595, population: { bands: 1, peoplePerBand: 4 } },
+      { geography: earthGeography, start: chosen, comarcasWide: 1, comarcasHigh: 1, peoples: false });
+    const sim = state.current;
+    const person = sim.people.find(p => !p.isChild)!;
+    sim.possess(person);
+    const bank = sim.world.freshShore[0]!;
+    person.x = bank.x + 0.5; person.y = bank.y + 0.5; person.needs.thirst = 70;
+    expect(sim.order(person, 'drink', bank)).toBe(true);
+    const record = JSON.stringify(toWorldStateRecord(state));
+    const restored = fromWorldStateRecord(JSON.parse(record));
+    expect(JSON.stringify(toWorldStateRecord(restored))).toBe(record);
+    for (let tick = 0; tick < 2 * sim.config.time.ticksPerDay; tick++) { sim.step(); restored.current.step(); }
+    expect(sim.peopleById.get(person.id)!.needs.thirst).toBeLessThan(70);
+    // Full entity-graph continuation is tracked separately by the inherited
+    // E5 regression. Here compare every terrain field, including the exact
+    // spring and its banks, and the player's real drinking result.
+    expect(toWorldTerrainRecord(restored.current.world)).toEqual(toWorldTerrainRecord(sim.world));
+    expect(restored.current.peopleById.get(person.id)!.needs.thirst).toBe(sim.peopleById.get(person.id)!.needs.thirst);
+  }, 15000);
+});
 
 describe('where a game may begin: with fresh water to drink (phase 33)', () => {
   it('the old pick (open temperate country by its flags) often had no water at all: the bug this guards', () => {

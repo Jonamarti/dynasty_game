@@ -915,3 +915,19 @@ What turned out differently from the card: el monitor anterior habría aceptado
 esta invasión como causada por una zanja; registrar el método no bastaba.
 What is left open: cotejar la comarca exacta de la captura francesa del autor.
 Screenshots: las capturas del autor se describen en bugs.md; sin cambio de UI.
+
+## M16 — fuentes locales en bosques húmedos, petición del autor (2026-10-22)
+
+Goal: poder comenzar exactamente en una comarca húmeda con una pequeña fuente.
+What was done: el inicio acepta una fuente física; las surgencias pequeñas se
+anclan en coordenadas mundiales y usan las capas normales del terreno.
+La búsqueda admite regiones húmedas sin río cartografiado.
+Before and after: tres comarcas francesas pasan de cero agua a una fuente;
+la selección de navegador ya no muestra el aviso ni desplaza el inicio.
+What turned out differently from the card: alcance ampliado explícitamente por
+el autor. La comparación del grafo completo reencontró E5, aún independiente;
+el terreno y el resultado de beber coinciden al guardar, cargar y avanzar.
+La primera implementación rompía un recorte sin río de la prueba de continuidad;
+se sustituyó la selección por ventana por puntos mundiales estables.
+What is left open: E5 y la comarca exacta de la mancha N39.
+Screenshots: `artifacts/screenshots/m16-2026-10-22-local-water/`.

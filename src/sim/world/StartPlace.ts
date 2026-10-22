@@ -12,17 +12,18 @@
  * world and different seeds begin in different kinds of country, not always the first temperate meadow to the middle).
  */
 import type { WorldGeography } from './WorldGeography.ts';
-import { createLocalGeography, type LocalGeographySource } from './LocalGeography.ts';
+import { createLocalGeography, regionalMoisture, type LocalGeographySource } from './LocalGeography.ts';
+import { SPRING_MIN_MOISTURE } from './Hydrology.ts';
 import { globeGridOf, worldTerrainOf, type GlobeGrid, type WorldTerrain } from './WorldTerrain.ts';
 import { WORLD_FEATURE } from './WorldFeatureSeeds.ts';
 import type { WorldConfig } from '../core/Config.ts';
 import { DEFAULT_CONFIG } from '../core/Config.ts';
 
 /**
- * Fresh water tiles a local map must hold to be a start. The window was four comarcas wide (a comarca was 32 by 32 tiles) when this was chosen; it is one comarca now, 128 by 128 tiles, so this is a stretch of
- * river a few comarcas long or a pond, not a puddle: a design assumption, chosen so that every band starts within reach of a drink.
+ * A small physical spring supplies the same drinking action as a river bank.
+ * The old 120-tile floor rejected real brooks and springs as "no water".
  */
-export const MIN_FRESH_TILES = 120;
+export const MIN_FRESH_TILES = 1;
 /**
  * Share of the window that must be dry land. Was 0.6 from phase 33 until "begin anywhere" (M15, 2026-10-07), when the owner
  * decided a coastal region should be choosable on the world map (it wasn't: `WorldPicker.canBegin` and `findStartInRegion`
@@ -103,6 +104,8 @@ function waterNearby(geography: WorldGeography, grid: GlobeGrid, rx: number, ry:
     const y = ry + dy;
     if (y < 0 || y >= grid.regionsHigh) continue;
     if (regionWater(geography, x, y) !== 'none') return true;
+    const profile = geography.profileAt(x * grid.perRegion + grid.perRegion / 2, y * grid.perRegion + grid.perRegion / 2);
+    if (profile.kind !== 'legacyIsland' && regionalMoisture(profile) >= SPRING_MIN_MOISTURE) return true;
   }
   return false;
 }

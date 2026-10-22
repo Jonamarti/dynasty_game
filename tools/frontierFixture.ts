@@ -7,14 +7,14 @@ import { WORLD_FEATURE } from '../src/sim/world/WorldFeatureSeeds.ts';
 import { telemetry } from '../src/sim/core/Telemetry.ts';
 import { hydrationOf } from '../src/sim/core/Macros.ts';
 
-export function frontierGeography() {
+export function frontierGeography(climateClass = 8) {
   const heights = [100, 85, 70, 55, 40, 25, -10, -20];
   return earthWorldGeography({
     entry: { id: 'frontier-fixture', title: 'Frontier fixture', file: 'fixture.bin',
       seaLevelMeters: 0, recommended: false },
     raster: { width: 8, height: 4, seaLevelMeters: 0,
       elevationMeters: Int16Array.from({ length: 32 }, (_, i) => heights[i % 8]!),
-      koppen: Uint8Array.from({ length: 32 }, () => 8),
+      koppen: Uint8Array.from({ length: 32 }, () => climateClass),
       features: Uint32Array.from({ length: 32 }, (_, i) => i % 8 < 6 ? WORLD_FEATURE.river : 0) },
   }, 10);
 }

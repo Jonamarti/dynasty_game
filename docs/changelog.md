@@ -1,3 +1,35 @@
+## 2026-10-22 — M16: fuentes pequeñas para empezar en bosques húmedos (0.16.18-alpha)
+
+**Problema:** muchas comarcas verdes abrían «no hay río o lago», incluso dentro
+de una región con río señalado. El autor pide que un pequeño arroyo o fuente
+sea suficiente para comenzar.
+
+**Causa:** el inicio exigía 120 casillas de agua y las fuentes dispersas requerían
+una humedad mayor que la asignada a los bosques templados de la Tierra, además
+de una pendiente marcada. Un bosque llano podía tener cero agua local.
+
+**Cambio:** una fuente física ya basta para beber. Cada comarca húmeda tiene
+un punto de surgencia pequeño en coordenadas mundiales, visible a escala local;
+el umbral incluye bosques templados y continentales, conserva los desiertos
+secos y no sobrescribe los cursos existentes. La fuente usa las capas de lecho,
+superficie y agua potable que el resto de la hidrología, sin nuevos sorteos.
+La selección conserva la comarca elegida y la búsqueda contempla las regiones
+húmedas aunque el atlas no señale un río principal.
+
+**Verificación:** las pruebas de capacidad fallaron antes. Tras el cambio,
+comarcas francesas 475–477,115 pasan de 0 a 1 casilla de agua dulce y permiten
+un inicio exacto. El navegador recorre la selección real sin aviso de falta de
+agua. Se verifica guardar/cargar, beber y la igualdad del terreno tras avanzar;
+la divergencia heredada del grafo de objetos E5 se registra aparte en bugs.md.
+La suite encontró una premisa obsoleta en `the-thirsty-leave`: usaba un bosque
+húmedo como comarca seca. La preparación ahora usa clima árido en ambos brazos,
+sin reducir las exigencias de salida ni supervivencia. Su archivo pasa 18/18.
+La primera implementación elegía una fuente por ventana seca y rompió la
+comparación existente entre un mapa y sus recortes. Se corrigió la generación
+para anclar las fuentes a coordenadas mundiales y se añadió una prueba de
+recortes detallados de una llanura húmeda; no se relajó la prueba existente.
+Capturas: `artifacts/screenshots/m16-2026-10-22-local-water/`.
+
 ## 2026-10-22 — M16 2.21: el relleno no invade riberas sin excavar (0.16.17-alpha)
 
 **Problema:** agua nueva bajo edificios planeados; semillas comunicadas

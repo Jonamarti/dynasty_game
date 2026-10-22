@@ -191,6 +191,16 @@ make equal-resolution crops agree with the whole map. Flooded trenches inherit
 their source's kind and surface; depth and rendering share that local surface.
 See [m15_phase30_water.md](m15_phase30_water.md).
 
+M16, seguimiento del autor 2026-10-22: una fuente física de agua dulce basta
+para aceptar un inicio. Las comarcas húmedas tienen un punto de surgencia en
+coordenadas mundiales, representado a resolución local en las capas habituales
+de agua, superficie y lecho; recortar un mapa no inventa otra fuente;
+el umbral de humedad incluye los bosques templados y continentales. El relleno
+de zanjas sólo atraviesa suelo excavado, sin invadir riberas naturales bajo la
+cota de un tramo alto del río. La nieve diaria usa la temperatura estacional de
+`TimeManager.dailyTemperature`, compartida con `dailyGrowth`, para no tratar la
+temperatura mínima de medianoche como la temperatura del día entero.
+
 Food hydration is shared through `hydrationOf`: fruit keeps its existing
 policy, while milk hydrates continental terrain only. Geographic AI spends
 carried hydrating food before asking/exploring for an absent water source;

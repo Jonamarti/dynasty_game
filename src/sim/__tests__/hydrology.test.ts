@@ -4,6 +4,31 @@ import { generateLocalHydrology, HYDROLOGY_FRESH } from '../world/Hydrology.ts';
 const thresholds = { waterLevel: 0, wadeDepth: 0.002, swimDepth: 0.008 };
 
 describe('local hydrology generation', () => {
+  it('m16-local-springs stay in the same place when a humid plain is cropped', () => {
+    const make = (originX: number, span: number) => {
+      const width = span * 64, height = 64, n = width * height;
+      return generateLocalHydrology({ width, height, ...thresholds,
+        elevation: new Float32Array(n).fill(0.2), moisture: new Float32Array(n).fill(0.58),
+        riverCandidates: new Uint8Array(n), lakeCandidates: new Uint8Array(n),
+        flowX: new Int8Array(n), flowY: new Int8Array(n),
+        globalX: Float64Array.from({ length: n }, (_, i) => originX + (i % width + 0.5) / 64),
+        globalY: Float64Array.from({ length: n }, (_, i) => (Math.floor(i / width) + 0.5) / 64),
+      });
+    };
+    const whole = make(0, 2);
+    expect(whole.kind.filter(k => k === HYDROLOGY_FRESH)).toHaveLength(2);
+    for (const originX of [0, 1]) {
+      const crop = make(originX, 1);
+      expect(crop.kind.filter(k => k === HYDROLOGY_FRESH)).toHaveLength(1);
+      for (let y = 0; y < 64; y++) for (let x = 0; x < 64; x++) {
+        const local = y * 64 + x, global = y * 128 + originX * 64 + x;
+        expect(crop.kind[local]).toBe(whole.kind[global]);
+        expect(crop.surface[local]).toBe(whole.surface[global]);
+        expect(crop.bed[local]).toBe(whole.bed[global]);
+      }
+    }
+  });
+
   it('fills only a bounded closed depression from a coarse lake candidate', () => {
     const width = 16, height = 16, count = width * height;
     const elevation = new Float32Array(count).fill(0.2);

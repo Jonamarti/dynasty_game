@@ -9,6 +9,8 @@
 
 export const HYDROLOGY_NONE = 0;
 export const HYDROLOGY_FRESH = 1;
+/** Temperate and continental forests qualify; arid country does not. */
+export const SPRING_MIN_MOISTURE = 0.58;
 
 export interface HydrologyRiver {
   /** Index of the high-side entry tile in the local grid. */
@@ -114,8 +116,35 @@ export function generateLocalHydrology(input: HydrologyInput): HydrologyResult {
   addTributaries(input, kind, surface, bed, claimed, rivers);
   fillCandidateLakes(input, kind, surface, bed, claimed);
   addSprings(input, kind, surface, bed, claimed);
+  addForestSpring(input, kind, surface, bed);
 
   return { kind, surface, bed, rivers };
+}
+
+/** Small sources belong to global comarcas, never to the current window.
+ * Choosing one "best" cell only when a window was dry made a crop invent water
+ * absent from the whole map. One fixed point per comarca keeps crops identical
+ * at equal resolution. These tiny sources are below a coarse overview's pixel. */
+function addForestSpring(input: HydrologyInput, kind: Uint8Array, surface: Float32Array, bed: Float32Array): void {
+  const dx = Math.abs(input.globalX[1]! - input.globalX[0]!);
+  const dy = Math.abs(input.globalY[input.width]! - input.globalY[0]!);
+  // A spring is a local feature, not a lake painted across an atlas pixel.
+  if (dx <= 0 || dy <= 0 || Math.max(dx, dy) > 1 / 32) return;
+  for (let y = 0; y < input.height; y++) for (let x = 0; x < input.width; x++) {
+    const i = y * input.width + x;
+    if (kind[i] === HYDROLOGY_FRESH || input.moisture[i]! < SPRING_MIN_MOISTURE - 1e-6 ||
+        input.elevation[i]! <= input.waterLevel) continue;
+    const gx = input.globalX[i]!, gy = input.globalY[i]!;
+    const cx = Math.floor(gx), cy = Math.floor(gy);
+    const hash = stableHash(cx, cy);
+    const sourceX = cx + 0.2 + (hash & 65535) / 65536 * 0.6;
+    const sourceY = cy + 0.2 + (hash >>> 16) / 65536 * 0.6;
+    if (sourceX < gx - dx / 2 || sourceX >= gx + dx / 2 ||
+        sourceY < gy - dy / 2 || sourceY >= gy + dy / 2) continue;
+    kind[i] = HYDROLOGY_FRESH;
+    surface[i] = input.elevation[i]!;
+    bed[i] = surface[i]! - input.wadeDepth * 0.5;
+  }
 }
 
 /**

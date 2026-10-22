@@ -1,0 +1,13 @@
+
+> dynasty@0.16.18-alpha test
+> vitest run src/sim/__tests__/comarca-travel.test.ts --maxWorkers=1 --testTimeout=15000
+
+
+ RUN  v4.1.11 C:/Users/Marty/Documents/Work/Programs/dynastyGame
+
+
+ Test Files  1 passed (1)
+      Tests  18 passed (18)
+   Start at  10:36:12
+   Duration  29.15s (transform 8.82s, setup 0ms, import 15.40s, tests 13.45s, environment 0ms)
+
