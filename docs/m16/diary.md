@@ -931,3 +931,18 @@ La primera implementación rompía un recorte sin río de la prueba de continuid
 se sustituyó la selección por ventana por puntos mundiales estables.
 What is left open: E5 y la comarca exacta de la mancha N39.
 Screenshots: `artifacts/screenshots/m16-2026-10-22-local-water/`.
+
+## M16 2.21 — reproducción concreta y cierre N39 (2026-10-22)
+
+Goal: identificar y comprobar la mancha de la captura, además del mecanismo aislado.
+What was done: se cotejó la silueta del río y el tamaño de sus escalones. La
+comarca es 470,125; el tamaño 160×160; la semilla numérica 728083595; el personaje
+Narsh en autonomía `auto`. Se añadió la reproducción concreta a unidad y navegador.
+Before and after: sin el guard, una excavación 37,123 en d7/tick 708 llena 512
+casillas, 511 intactas. Con él, llena una; tras ocho días hay cuatro llenados
+excavados y cero casillas naturales inundadas. Ambas pruebas fallan antes y
+pasan después. La imagen reproduce la misma cuña bajo las obras.
+What turned out differently from the card: el tamaño del mapa era esencial;
+128×128 no reproducía el caso aunque coincidiesen semilla y comarca.
+What is left open: E5 independiente; la matriz `world` mantiene rojos.
+Screenshots: `artifacts/screenshots/m16-2026-10-22-exact-france/`.

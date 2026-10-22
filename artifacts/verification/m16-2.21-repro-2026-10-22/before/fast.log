@@ -1,0 +1,17 @@
+
+> dynasty@0.16.15-alpha check:fast
+> npm run typecheck && vitest run --config vitest.fast.config.ts
+
+
+> dynasty@0.16.15-alpha typecheck
+> tsc --noEmit
+
+
+ RUN  v4.1.11 C:/Users/Marty/Documents/Work/Programs/dynastyGame
+
+
+ Test Files  9 passed (9)
+      Tests  46 passed (46)
+   Start at  10:06:10
+   Duration  14.69s (transform 2.80s, setup 0ms, import 6.20s, tests 6.11s, environment 1ms)
+

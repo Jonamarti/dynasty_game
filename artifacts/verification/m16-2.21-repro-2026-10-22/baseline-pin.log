@@ -1,0 +1,8 @@
+
+> dynasty@0.16.15-alpha baseline:pin
+> vite-node tools/baseline-pin.ts
+
+Pinned switches-off checkpoint fingerprints at C:\Users\Marty\Documents\Work\Programs\dynastyGame\fixtures\switches-off.json
+  1: c61a6bd8
+  2: 98d972e4
+  3: 988c035e

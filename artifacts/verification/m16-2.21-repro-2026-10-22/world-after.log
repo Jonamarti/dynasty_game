@@ -1,0 +1,27 @@
+
+> dynasty@0.16.15-alpha check:area
+> vite-node tools/scenarios.ts -- --area world
+
+
+SCENARIO MATRIX
+==============================================================================
+  scenario        checks    steps/s     failures
+  nights          3/3       466         -
+  ploughmen       1/1       1,074       -
+  frontier-cohort 3/3       448         -
+  frontier        2/2       6,250       -
+  food-news       1/1       4,615       -
+  tiny            40/43     2,375       moods-move-choices, materials-delivered, forest-is-used
+  wilds           68/70     480         nights-are-slept, the-wise-avoid-baneberries
+  emptied         54/59     982         nights-are-slept, moods-move-choices, gossip-is-aimed, projects-find-backers, research-is-social
+  harsh-winter    56/58     418         shelter-answers-cold, hills-see-farther
+  coast           52/54     624         walkers-do-not-grind, projects-find-backers
+  shallows        6/6       861         -
+  traps           64/66     647         nights-are-slept, gossip-is-aimed
+  hunters         58/63     583         people-act-on-what-they-know, nights-are-slept, gossip-is-aimed, kills-are-butchered-for-bone, discovery-is-situated
+  fishers         63/66     771         nights-are-slept, gossip-is-aimed, food-spoils
+  diggers         56/62     735         nights-are-slept, needs-not-pinned, gossip-is-aimed, projects-find-backers, research-is-social, spatial-hash-spreads
+  orchard         62/64     974         nights-are-slept, people-survive
+==============================================================================
+SOME SCENARIOS FAILED
+

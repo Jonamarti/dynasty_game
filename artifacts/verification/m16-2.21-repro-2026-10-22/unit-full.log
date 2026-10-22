@@ -1,0 +1,56 @@
+
+> dynasty@0.16.15-alpha test
+> vitest run --maxWorkers=1 --testTimeout=15000
+
+
+ RUN  v4.1.11 C:/Users/Marty/Documents/Work/Programs/dynastyGame
+
+ ❯ src/sim/__tests__/comarca-travel.test.ts (18 tests | 1 failed) 12925ms
+     × the-thirsty-leave: an autonomous dry-band proposal crosses before one third dies; water is the negative control 186ms
+ ❯ src/sim/__tests__/local-geography.test.ts (22 tests | 1 failed) 994ms
+     × follows the same canonical segment through a macro-region turn and keeps ford phase global 80ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/sim/__tests__/comarca-travel.test.ts > frontier demography and drought gates > the-thirsty-leave: an autonomous dry-band proposal crosses before one third dies; water is the negative control
+AssertionError: expected { departed: false, dead: +0 } to deeply equal { departed: true, dead: +0 }
+
+- Expected
++ Received
+
+  {
+    "dead": 0,
+-   "departed": true,
++   "departed": false,
+  }
+
+ ❯ src/sim/__tests__/comarca-travel.test.ts:339:23
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  src/sim/__tests__/local-geography.test.ts > local geography terrain projection > follows the same canonical segment through a macro-region turn and keeps ford phase global
+AssertionError: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ src/sim/__tests__/local-geography.test.ts:272:48
+    270|         const wholeIndex = (offsetY + y) * fixture.config.width + offs…
+    271|         const cropIndex = y * 40 + x;
+    272|         expect(crop.hydrology.kind[cropIndex]).toBe(local.hydrology.ki…
+       |                                                ^
+    273|         if (crop.hydrology.kind[cropIndex] === 1) {
+    274|           expect(crop.hydrology.surface[cropIndex]).toBe(local.hydrolo…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  2 failed | 354 passed (356)
+      Tests  2 failed | 2460 passed | 1 expected fail | 1 skipped (2464)
+   Start at  10:24:47
+   Duration  1171.00s (transform 11.99s, setup 0ms, import 226.90s, tests 847.14s, environment 57ms)
+

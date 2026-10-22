@@ -1,3 +1,20 @@
+## 2026-10-22 — M16: observaciones de verificación de nieve y agua
+
+La matriz `world` cambia de 38/622 a 32/621 fallos/aplicables al corregir el
+muestreo de nieve. Los nuevos rojos por escenario son `emptied`:
+`moods-move-choices`, `research-is-social`; `hunters`: `gossip-is-aimed`;
+`orchard`: `people-survive`. Las reglas continentales no alcanzan esas islas;
+la progresión distinta de nieve cambia entierro y decisiones anuales. No se
+retocaron coeficientes ni checks, y la reducción agregada no prueba una mejora
+de población. Quedan las diferencias para calibración del bloque 10. Informes
+antes/después: `artifacts/verification/m16-2.21-repro-2026-10-22/`.
+
+También se observó una ambigüedad de reproducción: el arranque genera una
+semilla numérica y muestra sólo sus dígitos, pero URL y campo de nueva partida
+entregan texto a RNG, que lo hashea. `728083595` numérico da Narsh y el texto
+da Torva. No se cambia el contrato de RNG en esta pasada; queda pendiente una
+representación inequívoca de semillas en la UI y su entrada de reproducción.
+
 ## 2026-10-22 — M16: aviso de falta de agua en bosques húmedos
 
 **Resuelto en 0.16.18-alpha para comarcas húmedas y fuentes pequeñas.** El mínimo
@@ -19,7 +36,7 @@ No se cierra E5 ni se modifica su prueba roja. Capturas:
 ## 2026-10-22 — M16 2.21: agua nueva bajo obras planeadas, N39
 
 El autor aporta `530199218` (Tierra, América o Europa) y `728083595` (Francia,
-d7, tick 568). La captura muestra `0.15.159-alpha`. Falta la comarca exacta.
+d7, tick 568). La captura muestra `0.15.159-alpha`.
 Se observaron ocho días en ocho inicios de América/Europa con la primera
 semilla y cuatro franceses con la segunda: no hubo conversión espontánea.
 Un inicio francés recomendado tiene 87 casillas secas junto a un nivel de
@@ -30,10 +47,23 @@ sí solo la mancha comunicada.
 agua en vecinos naturales sin excavar. Una prueba con río elevado reproduce
 esa invasión antes del cambio. Ahora la expansión exige desplazamiento negativo
 en cada casilla. La anterior atribución automática del monitor era demasiado
-amplia y también se corrige. N39 permanece abierto para cotejar la comarca
-exacta del autor en una versión actual; no se afirma que la captura sea una
-reproducción exacta de este mecanismo. Los guardados con terreno ya inundado
-conservan ese estado; la corrección evita nuevas expansiones indebidas.
+amplia y también se corrige.
+
+**Reproducción identificada y N39 cerrado al terminar la misma sesión:** la
+silueta del río localiza la captura en la comarca **470,125**. El tamaño era
+**160×160**, no el 128×128 usado inicialmente, y el personaje estaba en `auto`.
+Con semilla numérica **728083595** aparece el mismo personaje, Narsh, y se
+reproduce la misma mancha bajo las obras: en el tick 708 (d7 en el código local)
+una excavación en **37,123** inunda 512 casillas, 511 de ellas intactas.
+Al retirar sólo el guard de la corrección, el test de capacidad falla con 511
+y el navegador muestra la misma cuña inundada. Con el guard, ese primer evento
+llena sólo la casilla excavada; durante ocho días se llenan cuatro excavaciones
+legítimas y cero casillas intactas. Pruebas y capturas antes/después:
+`artifacts/screenshots/m16-2026-10-22-exact-france/`.
+
+Los guardados con terreno ya inundado conservan ese estado; la corrección evita
+nuevas expansiones indebidas. La semilla escrita como texto genera otros NPC;
+la reproducción comunicada corresponde al valor numérico.
 
 ## 2026-10-22 — M16 2.21: nieve fugaz al comenzar la primavera
 

@@ -1,3 +1,46 @@
+## 2026-10-22 — M16 2.21: reproducción de la captura y cierre N39
+
+**Problema:** faltaba identificar la comarca y reproducir la mancha de agua bajo
+las obras, además de probar la invasión de riberas en un caso aislado.
+
+**Causa confirmada:** el río de la imagen corresponde a **470,125** y el tamaño
+del mapa es **160×160**. Con semilla **numérica 728083595** y autonomía `auto`,
+una excavación en **37,123**, tick **708/d7** en el código local, inunda **512**
+casillas cuando se retira sólo el guard de `c1dc4453`: **511** estaban intactas.
+Se reproduce la misma cuña bajo las obras; 128×128 no reproducía el caso.
+
+**Cambio:** el monitor de ocho días usa esta comarca y tamaño. Un E2E en el
+archivo ya registrado `water-depth.spec.ts` recorre el motor real y captura el
+terreno antes y después. No hay otra modificación de reglas ni de versión.
+N39 queda cerrado por la reparación `c1dc4453`, ahora con reproducción concreta.
+
+**Verificación:** la capacidad falla antes con 511 casillas intactas inundadas;
+después pasa 2/2. El navegador también falla antes y pasa después 1/1. El mismo
+evento llena sólo una excavación con el guard; durante ocho días se llenan
+cuatro casillas excavadas y cero intactas. Capturas:
+`artifacts/screenshots/m16-2026-10-22-exact-france/`.
+
+**Cierre de verificación conjunta:** `check:fast` pasa 46/46; el área focal de
+geografía pasa 68/68 y la prueba adicional de recortes pasa en su archivo 5/5;
+guardar/continuar y suelo de primavera pasan 6/6 focales. La suite completa
+recorrió 356 archivos: 354 aprobados, dos fallidos; 2.460 pruebas aprobadas, dos
+fallidas, una con fallo esperado E5 y una omitida. Los dos fallos nuevos fueron
+la preparación húmeda de la prueba de sequía y la primera fuente por ventana;
+ambos se corrigieron sin relajar aserciones y sus archivos pasan en las 68
+focales. No se declara verde la ejecución completa ni se repite toda la suite.
+
+La matriz `world` continúa roja: antes 38 fallos/622 aplicables y después
+32/621. Aparecen fallos por escenario en `emptied` (`moods-move-choices`,
+`research-is-social`), `hunters` (`gossip-is-aimed`) y `orchard` (`people-survive`);
+también cambian checks ejercitados y se eliminan otros rojos. La única regla
+modificada que alcanza esos mundos clásicos es la nieve diaria: el relleno
+sólo excluye terreno natural bajo el agua (inexistente en la isla clásica) y
+las fuentes sólo se generan en geografía continental. Cambia la progresión
+de nieve y con ella entierro/acciones/decisiones anuales; no se ajustan checks
+ni se atribuye una mejora de supervivencia a la suma agregada. Se conservan
+ambos informes y este seguimiento para la calibración de bloque 10.
+Evidencia: `artifacts/verification/m16-2.21-repro-2026-10-22/`.
+
 ## 2026-10-22 — M16: fuentes pequeñas para empezar en bosques húmedos (0.16.18-alpha)
 
 **Problema:** muchas comarcas verdes abrían «no hay río o lago», incluso dentro

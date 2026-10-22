@@ -1,0 +1,36 @@
+
+Running 1 test using 1 worker
+
+(node:32460) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  1 e2e\water-depth.spec.ts:4:1 › m16-owner-france-seed keeps untouched building ground dry after the day-seven excavation (34.2s)
+
+
+  1) e2e\water-depth.spec.ts:4:1 › m16-owner-france-seed keeps untouched building ground dry after the day-seven excavation 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 511
+
+      49 |   await page.locator('#n39-scene').screenshot({ path: `${dir}/02-after-day-seven.png` });
+      50 |   expect(result.floods.length, 'the real excavation must actually reach water').toBeGreaterThan(0);
+    > 51 |   expect(result.untouchedFlooded).toBe(0);
+         |                                   ^
+      52 | });
+      53 |
+      54 | test('the coast paints traversal depth bands without advancing the paused world', async ({ page }) => {
+        at C:\Users\Marty\Documents\Work\Programs\dynastyGame\e2e\water-depth.spec.ts:51:35
+
+    Error Context: artifacts\playwright\water-depth-m16-owner-fran-61c78-er-the-day-seven-excavation\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    artifacts\playwright\water-depth-m16-owner-fran-61c78-er-the-day-seven-excavation\trace.zip
+    Usage:
+
+        npx playwright show-trace artifacts\playwright\water-depth-m16-owner-fran-61c78-er-the-day-seven-excavation\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    e2e\water-depth.spec.ts:4:1 › m16-owner-france-seed keeps untouched building ground dry after the day-seven excavation 

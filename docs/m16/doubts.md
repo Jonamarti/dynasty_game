@@ -1,5 +1,17 @@
 # M16 doubts
 
+## M16 2.21 — resuelto: comarca y tamaño identificados, 2026-10-22
+
+El cotejo de la silueta del río identifica 470,125; los escalones de 9,6 píxeles
+de la captura corresponden a un mapa 160×160. Con semilla numérica 728083595 y
+autonomía `auto` se reproduce Narsh y la cuña inundada bajo las obras. Al quitar
+sólo el guard de `World.floodFrom`, una excavación 37,123 en tick 708/d7 llena
+512 casillas, 511 sin excavar. Con el guard, llena una; en ocho días se llenan
+cuatro casillas excavadas y ninguna intacta. El test de capacidad y el navegador
+fallan antes y pasan después, con capturas del mismo terreno. Queda resuelta
+la falta de comarca de las entradas anteriores; N39 se cierra. Capturas:
+`artifacts/screenshots/m16-2026-10-22-exact-france/`.
+
 ## M16 2.21 — seguimiento del autor, 2026-10-22
 
 Recibidas las semillas `530199218` (Tierra, lugar no recordado en América o

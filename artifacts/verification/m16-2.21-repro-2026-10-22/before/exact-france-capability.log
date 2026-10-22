@@ -1,0 +1,37 @@
+
+> dynasty@0.16.18-alpha test
+> vitest run src/sim/__tests__/m16-no-sudden-flood.test.ts --testNamePattern eight days --maxWorkers=1 --testTimeout=15000
+
+
+ RUN  v4.1.11 C:/Users/Marty/Documents/Work/Programs/dynastyGame
+
+ ❯ src/sim/__tests__/m16-no-sudden-flood.test.ts (2 tests | 1 failed | 1 skipped) 22934ms
+     × keeps untouched ground dry for eight days with both reported seeds on French river starts 22932ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/sim/__tests__/m16-no-sudden-flood.test.ts > m16-no-sudden-flood > keeps untouched ground dry for eight days with both reported seeds on French river starts
+AssertionError: seed 728083595: expected 511 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 511
+
+ ❯ src/sim/__tests__/m16-no-sudden-flood.test.ts:105:103
+    103|       state.current.autonomy = 'auto';
+    104|       const conversions = observeDays(seed, () => state.current, () =>…
+    105|       expect(conversions.filter(conversion => conversion.cause === 'un…
+       |                                                                                                       ^
+    106|     }
+    107|   }, 60000);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 1 skipped (2)
+   Start at  10:54:57
+   Duration  31.00s (transform 3.99s, setup 0ms, import 7.72s, tests 22.93s, environment 0ms)
+

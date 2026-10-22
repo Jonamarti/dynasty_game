@@ -4,7 +4,6 @@ import type { World as TileWorld } from '../core/World.ts';
 import { WorldState } from '../world/WorldState.ts';
 import { randomWorldGeography } from '../world/WorldGeography.ts';
 import { findWateredGlobeStart, localWorldConfig } from '../world/StartPlace.ts';
-import { findStartInRegion } from '../world/StartPlace.ts';
 import { readFileSync } from 'node:fs';
 import { decodeWorldRaster } from '../world/WorldBinary.ts';
 import { earthWorldGeography } from '../world/WorldGeography.ts';
@@ -95,12 +94,15 @@ describe('m16-no-sudden-flood', () => {
     const geography = earthWorldGeography({ entry: { id: 'earth-12000-bce', title: 'Earth',
       file: 'earth-12000-bce.bin', seaLevelMeters: -60, recommended: true }, raster }, 10);
     for (const seed of [530199218, 728083595]) {
-      const start = findStartInRegion(geography, 47, 11, 1, localWorldConfig())!;
-      expect(start).not.toBeNull();
-      const state = new WorldState({ seed }, { geography, start, comarcasWide: 1, comarcasHigh: 1, peoples: false });
+      // Matched from the owner's river silhouette: the 160x160 setting and
+      // autonomous player are essential. With 128x128, the same seed did not
+      // reproduce the storage excavation that flooded 512 tiles on day 7.
+      const state = new WorldState({ seed, world: { width: 160, height: 160 } },
+        { geography, start: { x: 470.5, y: 125.5 }, comarcasWide: 1, comarcasHigh: 1, peoples: false });
       state.current.possessFirst();
+      state.current.autonomy = 'auto';
       const conversions = observeDays(seed, () => state.current, () => state.current, 8);
-      expect(conversions.filter(conversion => conversion.cause === 'unknown')).toEqual([]);
+      expect(conversions.filter(conversion => conversion.cause === 'unknown').length, `seed ${seed}`).toBe(0);
     }
   }, 60000);
 });
