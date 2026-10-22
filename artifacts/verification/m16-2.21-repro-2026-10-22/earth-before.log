@@ -1,0 +1,16 @@
+{"rx":17,"ry":7,"start":{"x":178.5,"y":77.5,"region":{"x":17,"y":7},"report":{"fresh":8682,"land":1}},"initial":{"water":0,"beach":0,"grass":0,"forest":7702,"hills":0,"rock":0,"river":8682}}
+{"rx":17,"ry":7,"final":{"water":0,"beach":0,"grass":0,"forest":7702,"hills":0,"rock":0,"river":8682}}
+{"rx":20,"ry":9,"start":{"x":202.5,"y":97.5,"region":{"x":20,"y":9},"report":{"fresh":4920,"land":1}},"initial":{"water":0,"beach":0,"grass":0,"forest":4517,"hills":6947,"rock":0,"river":4920}}
+{"rx":20,"ry":9,"final":{"water":0,"beach":0,"grass":0,"forest":4517,"hills":6947,"rock":0,"river":4920}}
+{"rx":26,"ry":12,"start":{"x":267.5,"y":129.5,"region":{"x":26,"y":12},"report":{"fresh":6272,"land":1}},"initial":{"water":0,"beach":0,"grass":0,"forest":10112,"hills":0,"rock":0,"river":6272}}
+{"rx":26,"ry":12,"final":{"water":0,"beach":0,"grass":0,"forest":10112,"hills":0,"rock":0,"river":6272}}
+{"rx":30,"ry":24,"start":{"x":306.5,"y":247.5,"region":{"x":30,"y":24},"report":{"fresh":7871,"land":1}},"initial":{"water":0,"beach":0,"grass":0,"forest":8513,"hills":0,"rock":0,"river":7871}}
+{"rx":30,"ry":24,"final":{"water":0,"beach":0,"grass":0,"forest":8513,"hills":0,"rock":0,"river":7871}}
+{"rx":46,"ry":10,"start":{"x":470.5,"y":99.5,"region":{"x":46,"y":10},"report":{"fresh":721,"land":1}},"initial":{"water":0,"beach":0,"grass":0,"forest":15663,"hills":0,"rock":0,"river":721}}
+{"rx":46,"ry":10,"final":{"water":0,"beach":0,"grass":0,"forest":15663,"hills":0,"rock":0,"river":721}}
+{"rx":47,"ry":11,"start":{"x":478.5,"y":113.5,"region":{"x":47,"y":11},"report":{"fresh":3389,"land":1}},"initial":{"water":0,"beach":0,"grass":0,"forest":12995,"hills":0,"rock":0,"river":3389}}
+{"rx":47,"ry":11,"final":{"water":0,"beach":0,"grass":0,"forest":12995,"hills":0,"rock":0,"river":3389}}
+{"rx":49,"ry":10,"start":{"x":494.5,"y":101.5,"region":{"x":49,"y":10},"report":{"fresh":8865,"land":1}},"initial":{"water":0,"beach":0,"grass":0,"forest":7519,"hills":0,"rock":0,"river":8865}}
+{"rx":49,"ry":10,"final":{"water":0,"beach":0,"grass":0,"forest":7519,"hills":0,"rock":0,"river":8865}}
+{"rx":52,"ry":9,"start":{"x":528.5,"y":98.5,"region":{"x":52,"y":9},"report":{"fresh":3996,"land":1}},"initial":{"water":0,"beach":0,"grass":0,"forest":12388,"hills":0,"rock":0,"river":3996}}
+{"rx":52,"ry":9,"final":{"water":0,"beach":0,"grass":0,"forest":12388,"hills":0,"rock":0,"river":3996}}

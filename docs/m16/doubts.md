@@ -1,5 +1,19 @@
 # M16 doubts
 
+## M16 2.21 — seguimiento del autor, 2026-10-22
+
+Recibidas las semillas `530199218` (Tierra, lugar no recordado en América o
+Europa) y `728083595` (Francia, captura d7/tick 568, versión 0.15.159-alpha).
+La petición de semilla del 21 de octubre queda atendida; sigue faltando la
+comarca exacta. Ocho días en ocho inicios de América/Europa y cuatro franceses
+no reprodujeron la mancha exacta. Se confirma por separado una invasión de
+riberas naturales al excavar: `World.floodFrom`, predicado `wet`, no exigía
+desplazamiento negativo. La prueba de capacidad falla antes y pasa al limitar
+el relleno a suelo excavado. El monitor ya no justifica como zanja toda casilla
+convertida por ese método. N39 no se cierra por completo hasta cotejar el caso
+exacto. La nieve fugaz d6, otra causa del cambio de suelo, sí se reprodujo y
+se corrigió mediante `TimeManager.dailyTemperature`.
+
 ## Phase 2.21 — seed and actions for the reported flood (2026-10-21)
 
 - **Phase:** 2.21 — N39, delayed land-to-water conversion.

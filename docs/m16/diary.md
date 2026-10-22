@@ -902,3 +902,16 @@ What turned out differently from the card: había otra causa además del tinte
 nocturno. La prueba anterior no avanzaba los sistemas diarios.
 What is left open: la inundación se investiga con las semillas nuevas del autor.
 Screenshots: `artifacts/screenshots/m16-2026-10-22-2.21/`.
+
+## M16 2.21 — el relleno respeta las riberas naturales (2026-10-22)
+
+Goal: impedir que una excavación convierta terreno natural en agua.
+What was done: `floodFrom` exige desplazamiento negativo en cada casilla;
+el monitor comprueba esa condición antes de justificar una conversión como
+zanja. Se conserva la propagación por canales excavados y la persistencia.
+Before and after: una prueba de río elevado falló al inundar vecinos intactos;
+ahora pasa junto a las pruebas existentes de inundación y agua continental.
+What turned out differently from the card: el monitor anterior habría aceptado
+esta invasión como causada por una zanja; registrar el método no bastaba.
+What is left open: cotejar la comarca exacta de la captura francesa del autor.
+Screenshots: las capturas del autor se describen en bugs.md; sin cambio de UI.

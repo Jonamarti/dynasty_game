@@ -73,6 +73,18 @@ describe('local freshwater and saltwater semantics', () => {
     expect(restored.isDrinkingWater(1, 2)).toBe(true);
   });
 
+  it('m16-digging-does-not-flood-untouched-river-banks', () => {
+    // A sloping geographic river has a surface above some nearby dry ground.
+    // One scrape used to flood that entire connected area, including tiles
+    // nobody had touched, because floodFrom checked only absolute elevation.
+    const world = geographicWorld();
+    world.dig(1, 2, 0.03);
+    expect(world.isWater(1, 2)).toBe(true);
+    expect(world.offset[world.index(2, 2)]).toBe(0);
+    expect(world.isWater(2, 2)).toBe(false);
+    expect(world.isWater(0, 0)).toBe(false);
+  });
+
   it('rejects a record that relabels salt sea as non-water', () => {
     const record = JSON.parse(JSON.stringify(toWorldTerrainRecord(geographicWorld())));
     record.tiles.waterKind[9] = 0;

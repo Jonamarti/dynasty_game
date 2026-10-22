@@ -1,3 +1,25 @@
+## 2026-10-22 — M16 2.21: el relleno no invade riberas sin excavar (0.16.17-alpha)
+
+**Problema:** agua nueva bajo edificios planeados; semillas comunicadas
+`530199218` y `728083595`, esta última en torno a Francia.
+
+**Causa comprobada:** `World.floodFrom` sólo comprobaba la cota respecto al
+agua vecina. Una excavación podía propagar el nivel de un tramo alto del río
+por terreno natural más bajo. La prueba de capacidad lo reproduce: una sola
+excavación convierte en agua casillas con desplazamiento cero.
+
+**Cambio:** el relleno sólo recorre casillas excavadas. Conserva el llenado de
+zanjas conectadas, la clase del agua y las riberas transitables. El monitor
+anterior atribuía cualquier conversión del relleno a una zanja aunque no
+hubiese excavación en esa casilla; ahora exige comprobarla individualmente.
+
+**Verificación:** la prueba falló antes y pasa tras el cambio; pasan las pruebas
+de inundación y agua continental. La monitorización incorpora ambas semillas
+en un inicio francés de tamaño real durante ocho días. No se reprodujo todavía
+la mancha exacta del autor: falta la comarca concreta, y su captura muestra
+`0.15.159-alpha`, anterior al código local. No se da por cerrado todo N39.
+Evidencia: `artifacts/verification/m16-2.21-repro-2026-10-22/`.
+
 ## 2026-10-22 — M16 2.21, seguimiento: nieve fugaz al comenzar (0.16.16-alpha)
 
 **Problema:** el autor volvió a observar cambios de suelo los días 5→6→7.

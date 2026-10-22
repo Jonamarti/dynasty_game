@@ -4,6 +4,10 @@ import type { World as TileWorld } from '../core/World.ts';
 import { WorldState } from '../world/WorldState.ts';
 import { randomWorldGeography } from '../world/WorldGeography.ts';
 import { findWateredGlobeStart, localWorldConfig } from '../world/StartPlace.ts';
+import { findStartInRegion } from '../world/StartPlace.ts';
+import { readFileSync } from 'node:fs';
+import { decodeWorldRaster } from '../world/WorldBinary.ts';
+import { earthWorldGeography } from '../world/WorldGeography.ts';
 
 interface Conversion {
   seed: string | number;
@@ -16,7 +20,7 @@ function waterMask(world: TileWorld): Uint8Array {
   return Uint8Array.from(world.biome, biome => biome === 0 || biome === 6 ? 1 : 0);
 }
 
-function observeFiveDays(seed: string | number, make: () => Simulation, replaceCurrent?: () => Simulation): Conversion[] {
+function observeDays(seed: string | number, make: () => Simulation, replaceCurrent?: () => Simulation, days = 5): Conversion[] {
   const conversions: Conversion[] = [];
   let simulation = make();
   let world = simulation.world;
@@ -29,7 +33,9 @@ function observeFiveDays(seed: string | number, make: () => Simulation, replaceC
       if (filled > 0) {
         const after = waterMask(target);
         for (let tile = 0; tile < after.length; tile++) {
-          if (!before[tile] && after[tile]) thisTickCauses.set(tile, 'dug trench connected to water');
+          if (!before[tile] && after[tile] && target.offset[tile]! < 0) {
+            thisTickCauses.set(tile, 'dug trench connected to water');
+          }
         }
       }
       return filled;
@@ -37,7 +43,7 @@ function observeFiveDays(seed: string | number, make: () => Simulation, replaceC
   };
   wrapFloodPath(world);
   let previous = waterMask(world);
-  const ticks = simulation.config.time.ticksPerDay * 5;
+  const ticks = simulation.config.time.ticksPerDay * days;
   for (let tick = 0; tick < ticks; tick++) {
     thisTickCauses = new Map();
     simulation.step();
@@ -66,7 +72,7 @@ describe('m16-no-sudden-flood', () => {
   it('records a cause for every land tile that becomes water over five days', () => {
     const conversions: Conversion[] = [];
     for (const seed of [1, 2, 3] as const) {
-      conversions.push(...observeFiveDays(seed, () => new Simulation({ seed,
+      conversions.push(...observeDays(seed, () => new Simulation({ seed,
         world: { width: 64, height: 64, predators: 0, gameHerds: 0 },
         population: { bands: 1, peoplePerBand: 4 } })));
     }
@@ -78,9 +84,23 @@ describe('m16-no-sudden-flood', () => {
       if (!start) throw new Error(`${seed}: generated map has no watered start`);
       const state = new WorldState(mapConfig, { geography, start: { x: start.x, y: start.y },
         comarcasWide: 1, comarcasHigh: 1, peoples: false });
-      conversions.push(...observeFiveDays(seed, () => state.current, () => state.current));
+      conversions.push(...observeDays(seed, () => state.current, () => state.current));
     }
     if (process.env.DYNASTY_TRACE_FLOODS === '1') console.info(JSON.stringify(conversions));
     expect(conversions.filter(conversion => conversion.cause === 'unknown')).toEqual([]);
   }, 15000);
+
+  it('keeps untouched ground dry for eight days with both reported seeds on French river starts', () => {
+    const raster = decodeWorldRaster(new Uint8Array(readFileSync('public/world/earth-12000-bce.bin')));
+    const geography = earthWorldGeography({ entry: { id: 'earth-12000-bce', title: 'Earth',
+      file: 'earth-12000-bce.bin', seaLevelMeters: -60, recommended: true }, raster }, 10);
+    for (const seed of [530199218, 728083595]) {
+      const start = findStartInRegion(geography, 47, 11, 1, localWorldConfig())!;
+      expect(start).not.toBeNull();
+      const state = new WorldState({ seed }, { geography, start, comarcasWide: 1, comarcasHigh: 1, peoples: false });
+      state.current.possessFirst();
+      const conversions = observeDays(seed, () => state.current, () => state.current, 8);
+      expect(conversions.filter(conversion => conversion.cause === 'unknown')).toEqual([]);
+    }
+  }, 60000);
 });

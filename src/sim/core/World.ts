@@ -630,6 +630,11 @@ export class World {
       if (!this.inBounds(tx, ty)) return false;
       const k = this.index(tx, ty);
       if (this.isWater(tx, ty) || BIOMES[this.biome[k]!] === 'rock') return false;
+      // The fill follows excavated channels. Geographic river surfaces can
+      // sit above neighbouring natural ground on a slope; one bank scrape
+      // must not turn that entire untouched valley (and its building sites)
+      // into water at the upstream tile's surface.
+      if (this.offset[k]! >= 0) return false;
       return this.elevation[k]! + this.offset[k]! < sourceSurface - 1e-9;
     };
     const touchesWater = (tx: number, ty: number): boolean => this.isShore(tx, ty);

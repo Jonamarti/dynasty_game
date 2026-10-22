@@ -1,0 +1,8 @@
+{"rx":47,"ry":11,"start":{"x":478.5,"y":113.5,"region":{"x":47,"y":11},"report":{"fresh":3389,"land":1}},"initial":{"water":0,"beach":0,"grass":0,"forest":12995,"hills":0,"rock":0,"river":3389}}
+{"rx":47,"ry":11,"final":{"water":0,"beach":0,"grass":0,"forest":12995,"hills":0,"rock":0,"river":3389}}
+{"rx":48,"ry":11,"start":{"x":488.5,"y":114.5,"region":{"x":48,"y":11},"report":{"fresh":4539,"land":1}},"initial":{"water":0,"beach":0,"grass":0,"forest":11845,"hills":0,"rock":0,"river":4539}}
+{"rx":48,"ry":11,"final":{"water":0,"beach":0,"grass":0,"forest":11845,"hills":0,"rock":0,"river":4539}}
+{"rx":47,"ry":12,"start":{"x":478.5,"y":129.5,"region":{"x":47,"y":12},"report":{"fresh":4490,"land":1}},"initial":{"water":0,"beach":0,"grass":0,"forest":11666,"hills":228,"rock":0,"river":4490}}
+{"rx":47,"ry":12,"final":{"water":0,"beach":0,"grass":0,"forest":11666,"hills":228,"rock":0,"river":4490}}
+{"rx":48,"ry":12,"start":{"x":480.5,"y":129.5,"region":{"x":48,"y":12},"report":{"fresh":4716,"land":1}},"initial":{"water":0,"beach":0,"grass":0,"forest":11668,"hills":0,"rock":0,"river":4716}}
+{"rx":48,"ry":12,"final":{"water":0,"beach":0,"grass":0,"forest":11668,"hills":0,"rock":0,"river":4716}}

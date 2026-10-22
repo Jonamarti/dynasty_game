@@ -1,3 +1,22 @@
+## 2026-10-22 — M16 2.21: agua nueva bajo obras planeadas, N39
+
+El autor aporta `530199218` (Tierra, América o Europa) y `728083595` (Francia,
+d7, tick 568). La captura muestra `0.15.159-alpha`. Falta la comarca exacta.
+Se observaron ocho días en ocho inicios de América/Europa con la primera
+semilla y cuatro franceses con la segunda: no hubo conversión espontánea.
+Un inicio francés recomendado tiene 87 casillas secas junto a un nivel de
+agua mayor que su cota; esto identifica una vulnerabilidad, no reproduce por
+sí solo la mancha comunicada.
+
+**Mecanismo corregido en 0.16.17-alpha:** al excavar, `floodFrom` dejaba entrar
+agua en vecinos naturales sin excavar. Una prueba con río elevado reproduce
+esa invasión antes del cambio. Ahora la expansión exige desplazamiento negativo
+en cada casilla. La anterior atribución automática del monitor era demasiado
+amplia y también se corrige. N39 permanece abierto para cotejar la comarca
+exacta del autor en una versión actual; no se afirma que la captura sea una
+reproducción exacta de este mecanismo. Los guardados con terreno ya inundado
+conservan ese estado; la corrección evita nuevas expansiones indebidas.
+
 ## 2026-10-22 — M16 2.21: nieve fugaz al comenzar la primavera
 
 **Resuelto en 0.16.16-alpha.** Con cualquier semilla y calendario inicial, la

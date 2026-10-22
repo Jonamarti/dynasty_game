@@ -1,0 +1,56 @@
+{"seed":530199218,"mode":"island","day":5,"tick":0,"snow":0,"earth":0,"grass":5128.874781280756,"biomes":{"water":4657,"beach":1461,"grass":4745,"forest":4233,"hills":1096,"rock":192}}
+{"seed":530199218,"mode":"island","day":6,"tick":240,"snow":1,"earth":0,"grass":5107.740026444197,"biomes":{"water":4657,"beach":1461,"grass":4745,"forest":4233,"hills":1096,"rock":192}}
+{"seed":530199218,"mode":"island","day":7,"tick":480,"snow":0,"earth":8,"grass":5097.718784220517,"biomes":{"water":4657,"beach":1461,"grass":4745,"forest":4233,"hills":1096,"rock":192}}
+{"seed":530199218,"mode":"island","day":8,"tick":720,"snow":0,"earth":14,"grass":5105.680582847446,"biomes":{"water":4657,"beach":1461,"grass":4745,"forest":4233,"hills":1096,"rock":192}}
+{"seed":530199218,"mode":"island","day":9,"tick":960,"snow":0,"earth":15,"grass":5126.205471727997,"biomes":{"water":4657,"beach":1461,"grass":4745,"forest":4233,"hills":1096,"rock":192}}
+{"seed":530199218,"mode":"island","day":10,"tick":1200,"snow":0,"earth":15,"grass":5149.80024715513,"biomes":{"water":4657,"beach":1461,"grass":4745,"forest":4233,"hills":1096,"rock":192}}
+{"seed":530199218,"mode":"island","day":11,"tick":1440,"snow":0,"earth":15,"grass":5182.063804212958,"biomes":{"water":4657,"beach":1461,"grass":4745,"forest":4233,"hills":1096,"rock":192}}
+{"seed":530199218,"mode":"island","day":12,"tick":1680,"snow":0,"earth":15,"grass":5222.27141847834,"biomes":{"water":4657,"beach":1461,"grass":4745,"forest":4233,"hills":1096,"rock":192}}
+{"seed":530199218,"mode":"island","day":13,"tick":1920,"snow":0,"earth":15,"grass":5266.13497024402,"biomes":{"water":4657,"beach":1461,"grass":4745,"forest":4233,"hills":1096,"rock":192}}
+{
+  seed: 530199218,
+  mode: 'random',
+  start: {
+    x: 44.5,
+    y: 392.5,
+    region: { x: 4, y: 39 },
+    report: { fresh: 2860, land: 1 }
+  }
+}
+{"seed":530199218,"mode":"random","day":5,"tick":0,"snow":0,"earth":0,"grass":5867.91888821125,"biomes":{"water":0,"beach":0,"grass":0,"forest":13524,"hills":0,"rock":0,"river":2860}}
+{"seed":530199218,"mode":"random","day":6,"tick":240,"snow":1,"earth":1,"grass":5854.953238904476,"biomes":{"water":0,"beach":0,"grass":0,"forest":13524,"hills":0,"rock":0,"river":2860}}
+{"seed":530199218,"mode":"random","day":7,"tick":480,"snow":0,"earth":6,"grass":5854.526015765965,"biomes":{"water":0,"beach":0,"grass":0,"forest":13524,"hills":0,"rock":0,"river":2860}}
+{"seed":530199218,"mode":"random","day":8,"tick":720,"snow":0,"earth":11,"grass":5865.45596858114,"biomes":{"water":0,"beach":0,"grass":0,"forest":13524,"hills":0,"rock":0,"river":2860}}
+{"seed":530199218,"mode":"random","day":9,"tick":960,"snow":0,"earth":12,"grass":5889.795559331775,"biomes":{"water":0,"beach":0,"grass":0,"forest":13524,"hills":0,"rock":0,"river":2860}}
+{"seed":530199218,"mode":"random","day":10,"tick":1200,"snow":0,"earth":14,"grass":5921.538918681443,"biomes":{"water":0,"beach":0,"grass":0,"forest":13524,"hills":0,"rock":0,"river":2860}}
+{"seed":530199218,"mode":"random","day":11,"tick":1440,"snow":0,"earth":17,"grass":5960.870627939701,"biomes":{"water":0,"beach":0,"grass":0,"forest":13524,"hills":0,"rock":0,"river":2860}}
+{"seed":530199218,"mode":"random","day":12,"tick":1680,"snow":0,"earth":17,"grass":6006.046306557953,"biomes":{"water":0,"beach":0,"grass":0,"forest":13524,"hills":0,"rock":0,"river":2860}}
+{"seed":530199218,"mode":"random","day":13,"tick":1920,"snow":0,"earth":17,"grass":6050.142087645829,"biomes":{"water":0,"beach":0,"grass":0,"forest":13524,"hills":0,"rock":0,"river":2860}}
+{"seed":"530199218","mode":"island","day":5,"tick":0,"snow":0,"earth":0,"grass":4188.738042905927,"biomes":{"water":6207,"beach":1466,"grass":4179,"forest":2841,"hills":1475,"rock":216}}
+{"seed":"530199218","mode":"island","day":6,"tick":240,"snow":1,"earth":0,"grass":4160.369322229177,"biomes":{"water":6207,"beach":1466,"grass":4179,"forest":2841,"hills":1475,"rock":216}}
+{"seed":"530199218","mode":"island","day":7,"tick":480,"snow":0,"earth":2,"grass":4136.679204687476,"biomes":{"water":6207,"beach":1466,"grass":4179,"forest":2841,"hills":1475,"rock":216}}
+{"seed":"530199218","mode":"island","day":8,"tick":720,"snow":0,"earth":5,"grass":4131.686455719173,"biomes":{"water":6207,"beach":1466,"grass":4179,"forest":2841,"hills":1475,"rock":216}}
+{"seed":"530199218","mode":"island","day":9,"tick":960,"snow":0,"earth":5,"grass":4137.975426953286,"biomes":{"water":6207,"beach":1466,"grass":4179,"forest":2841,"hills":1475,"rock":216}}
+{"seed":"530199218","mode":"island","day":10,"tick":1200,"snow":0,"earth":5,"grass":4153.4120709225535,"biomes":{"water":6207,"beach":1466,"grass":4179,"forest":2841,"hills":1475,"rock":216}}
+{"seed":"530199218","mode":"island","day":11,"tick":1440,"snow":0,"earth":5,"grass":4174.829679071903,"biomes":{"water":6207,"beach":1466,"grass":4179,"forest":2841,"hills":1475,"rock":216}}
+{"seed":"530199218","mode":"island","day":12,"tick":1680,"snow":0,"earth":5,"grass":4203.502817247063,"biomes":{"water":6207,"beach":1466,"grass":4179,"forest":2841,"hills":1475,"rock":216}}
+{"seed":"530199218","mode":"island","day":13,"tick":1920,"snow":0,"earth":5,"grass":4232.109823264182,"biomes":{"water":6207,"beach":1466,"grass":4179,"forest":2841,"hills":1475,"rock":216}}
+{
+  seed: '530199218',
+  mode: 'random',
+  start: {
+    x: 44.5,
+    y: 392.5,
+    region: { x: 4, y: 39 },
+    report: { fresh: 2860, land: 1 }
+  }
+}
+{"seed":"530199218","mode":"random","day":5,"tick":0,"snow":0,"earth":0,"grass":5867.91888821125,"biomes":{"water":0,"beach":0,"grass":0,"forest":13524,"hills":0,"rock":0,"river":2860}}
+{"seed":"530199218","mode":"random","day":6,"tick":240,"snow":1,"earth":1,"grass":5853.024382054806,"biomes":{"water":0,"beach":0,"grass":0,"forest":13524,"hills":0,"rock":0,"river":2860}}
+{"seed":"530199218","mode":"random","day":7,"tick":480,"snow":0,"earth":11,"grass":5851.2652448266745,"biomes":{"water":0,"beach":0,"grass":0,"forest":13524,"hills":0,"rock":0,"river":2860}}
+{"seed":"530199218","mode":"random","day":8,"tick":720,"snow":0,"earth":15,"grass":5863.541440092027,"biomes":{"water":0,"beach":0,"grass":0,"forest":13524,"hills":0,"rock":0,"river":2860}}
+{"seed":"530199218","mode":"random","day":9,"tick":960,"snow":0,"earth":16,"grass":5887.079325355589,"biomes":{"water":0,"beach":0,"grass":0,"forest":13524,"hills":0,"rock":0,"river":2860}}
+{"seed":"530199218","mode":"random","day":10,"tick":1200,"snow":0,"earth":16,"grass":5919.072853818536,"biomes":{"water":0,"beach":0,"grass":0,"forest":13524,"hills":0,"rock":0,"river":2860}}
+{"seed":"530199218","mode":"random","day":11,"tick":1440,"snow":0,"earth":19,"grass":5958.097148142755,"biomes":{"water":0,"beach":0,"grass":0,"forest":13524,"hills":0,"rock":0,"river":2860}}
+{"seed":"530199218","mode":"random","day":12,"tick":1680,"snow":0,"earth":19,"grass":6007.135512456298,"biomes":{"water":0,"beach":0,"grass":0,"forest":13524,"hills":0,"rock":0,"river":2860}}
+{"seed":"530199218","mode":"random","day":13,"tick":1920,"snow":0,"earth":19,"grass":6054.622784227133,"biomes":{"water":0,"beach":0,"grass":0,"forest":13524,"hills":0,"rock":0,"river":2860}}
