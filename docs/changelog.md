@@ -1,3 +1,21 @@
+## 2026-10-22 — Limpieza de worktrees y rama local integrada
+
+Se revisan y retiran 38 copias antiguas de trabajo, incluida
+`../dynastyGame-art`, y la rama local `m16`, ya integrada en `master`.
+Los 56 commits originales con otra genealogía tienen su funcionalidad en
+`master`: 51 parches equivalentes y cinco integraciones adaptadas revisadas.
+Los cambios sin commit de prendas también tenían código y pruebas equivalentes.
+No cambia el juego ni su versión.
+
+Se conservan capturas únicas, el parche local y sus pruebas en un ZIP de
+44 MiB, y los historiales originales en un bundle verificado de 2 MiB bajo
+`artifacts/cleanup-2026-10-22/`. Se comprueban rutas, ausencia de junctions,
+estado de cada checkout y conectividad de Git; se compacta con `git gc`.
+El espacio libre pasa de 14,3 a aproximadamente 23,4 GiB tras retirar las
+copias. Inventario, equivalencias y recuperación:
+`docs/repository-cleanup-2026-10-22.md`. Se conservan las modificaciones
+previas de notas y capturas en el checkout principal. Sin push.
+
 ## 2026-10-22 — M16 2.21: reproducción de la captura y cierre N39
 
 **Problema:** faltaba identificar la comarca y reproducir la mancha de agua bajo
