@@ -1,3 +1,12 @@
+## 2026-10-22 — M16 2.21: nieve fugaz al comenzar la primavera
+
+**Resuelto en 0.16.16-alpha.** Con cualquier semilla y calendario inicial, la
+nieve pasaba de 0 a 1 en d6 y a 0 en d7 por muestrear siempre la temperatura
+de medianoche. La capa nocturna corregida el 21 de octubre era otra causa.
+La nieve diaria ahora usa la temperatura estacional que ya alimenta el
+crecimiento diario. Prueba de capacidad, continuidad de guardado y capturas
+con avance real: `artifacts/screenshots/m16-2026-10-22-2.21/`.
+
 ## 2026-10-20 — M16 2.3: transiciones en la matriz de escenarios (seguimiento abierto)
 
 La matriz completa recorrió 48 escenarios y 4.205 checks. Frente al artefacto

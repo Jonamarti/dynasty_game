@@ -889,3 +889,16 @@ Before and after: focused checks pass 9/9, `frontier` passes 2/2, and `check:fas
 What turned out differently from the card: the E6 `RangeError` does not reproduce in the documented case. The fractional credit guard is already present from M15 commit `9fe57c9d`; no speculative clamp or counter was added. E7 is covered by the M15 phase-35 catch-up implementation.
 What is left open: E5 remains an independent R0 finding; the historical 400-tick notice limit is still unattributed.
 Screenshots: none; UI did not change.
+
+## M16 2.21 — seguimiento: nieve fugaz de primavera (2026-10-22)
+
+Goal: comprobar y corregir el cambio de suelo entre d5, d6 y d7.
+What was done: la nieve diaria usa la base estacional del crecimiento diario;
+la temperatura instantánea sigue atendiendo las necesidades. Se añadieron
+pruebas de nieve de invierno y continuidad al guardar antes de medianoche.
+Before and after: profundidad 0→1→0 antes, 0→0→0 después. La comparación de
+píxeles en navegador avanza la simulación real. `check:fast` pasa 46/46.
+What turned out differently from the card: había otra causa además del tinte
+nocturno. La prueba anterior no avanzaba los sistemas diarios.
+What is left open: la inundación se investiga con las semillas nuevas del autor.
+Screenshots: `artifacts/screenshots/m16-2026-10-22-2.21/`.

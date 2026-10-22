@@ -1,0 +1,43 @@
+
+Running 1 test using 1 worker
+
+(node:36044) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  1 e2e\m16-night-tint-stable.spec.ts:6:1 › keeps spring ground stable while actually advancing days 5, 6 and 7 (31.5s)
+
+
+  1) e2e\m16-night-tint-stable.spec.ts:6:1 › keeps spring ground stable while actually advancing days 5, 6 and 7 
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 1
+
+      Array [
+        0,
+    -   0,
+    +   1,
+        0,
+      ]
+
+      31 |     await page.screenshot({ path: `${dir}/spring-day-${day}.png` });
+      32 |   }
+    > 33 |   expect(readings.map(row => row.snow)).toEqual([0, 0, 0]);
+         |                                         ^
+      34 |   expect(readings[1]!.pixel).toEqual(readings[0]!.pixel);
+      35 |   expect(readings[2]!.pixel).toEqual(readings[0]!.pixel);
+      36 | });
+        at C:\Users\Marty\Documents\Work\Programs\dynastyGame\e2e\m16-night-tint-stable.spec.ts:33:41
+
+    Error Context: artifacts\playwright\m16-night-tint-stable-keep-14d77-ly-advancing-days-5-6-and-7\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    artifacts\playwright\m16-night-tint-stable-keep-14d77-ly-advancing-days-5-6-and-7\trace.zip
+    Usage:
+
+        npx playwright show-trace artifacts\playwright\m16-night-tint-stable-keep-14d77-ly-advancing-days-5-6-and-7\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    e2e\m16-night-tint-stable.spec.ts:6:1 › keeps spring ground stable while actually advancing days 5, 6 and 7 

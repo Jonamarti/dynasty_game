@@ -1,0 +1,41 @@
+
+> dynasty@0.16.15-alpha test
+> vitest run src/sim/__tests__/m16-spring-ground-stable.test.ts --maxWorkers=1 --testTimeout=15000
+
+
+ RUN  v4.1.11 C:/Users/Marty/Documents/Work/Programs/dynastyGame
+
+ ❯ src/sim/__tests__/m16-spring-ground-stable.test.ts (2 tests | 1 failed) 107ms
+     × keeps the starting spring ground free of a one-day snow flash on days 5, 6 and 7 83ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/sim/__tests__/m16-spring-ground-stable.test.ts > m16-spring-ground-stable > keeps the starting spring ground free of a one-day snow flash on days 5, 6 and 7
+AssertionError: expected [ +0, 1, +0 ] to deeply equal [ +0, +0, +0 ]
+
+- Expected
++ Received
+
+  [
+    0,
+-   0,
++   1,
+    0,
+  ]
+
+ ❯ src/sim/__tests__/m16-spring-ground-stable.test.ts:15:20
+     13|       depths.push(sim.snowDepth);
+     14|     }
+     15|     expect(depths).toEqual([0, 0, 0]);
+       |                    ^
+     16|   });
+     17|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 1 passed (2)
+   Start at  10:10:44
+   Duration  5.53s (transform 2.72s, setup 0ms, import 5.17s, tests 107ms, environment 0ms)
+

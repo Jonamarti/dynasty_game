@@ -544,7 +544,7 @@ export class Simulation {
 
   /**
    * How deep the snow lies, 0-`SNOW_MAX_DEPTH`. Advanced once a day in
-   * `advanceDay` from `time.temperature`, and read by `isBuried` — see
+   * `advanceDay` from `time.dailyTemperature`, and read by `isBuried` — see
    * `Snow.ts`'s header for why this is a scalar rather than a tile array.
    */
   snowDepth = 0;
@@ -6210,7 +6210,7 @@ export class Simulation {
     // sixty people's worth of both every step would be the most expensive
     // thing in the loop, and nothing in the design could tell the difference.
     if (this.time.tick % this.config.time.ticksPerDay === 0) {
-      this.snowDepth = advanceSnowDepth(this.snowDepth, this.time.temperature);
+      this.snowDepth = advanceSnowDepth(this.snowDepth, this.time.dailyTemperature);
       // M15 phase 23a: the sward, a pure function of the ground and the day.
       advanceGrass(this.world, this.time.dailyGrowth, this.snowDepth);
       // M15 phase 23d: spring's young, proportional to how well fed the herd

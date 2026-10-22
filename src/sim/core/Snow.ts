@@ -12,8 +12,9 @@
  * Deliberately not a tile array: per-tile variation comes from the same
  * deterministic positional hash `Renderer.prerenderTerrain` already uses for
  * its speckle, so there is no new grid to keep in sync with the world and no
- * new RNG stream to fork — nothing here can move a seed on its own, only the
- * one `TimeManager.temperature` read every burial check already depends on.
+ * new RNG stream to fork. The daily step reads `TimeManager.dailyTemperature`:
+ * using the midnight minimum produced a one-day snow flash in the starting
+ * spring. Burial and rendering both read the resulting saved depth.
  */
 import type { Tree } from '../entities/Tree.ts';
 import type { SpatialHash } from './SpatialHash.ts';

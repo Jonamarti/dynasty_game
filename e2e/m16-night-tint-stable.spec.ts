@@ -1,7 +1,39 @@
 import { mkdirSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 
-const captureDir = 'artifacts/screenshots/m16-2026-10-21-2.21';
+const captureDir = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m16-2026-10-22-2.21/night';
+
+test('keeps spring ground stable while actually advancing days 5, 6 and 7', async ({ page }) => {
+  await page.setViewportSize({ width: 1400, height: 900 });
+  await page.goto('/?seed=530199218&skipIntro=1&defaults=1&lang=es');
+  await expect(page.locator('.hud-clock')).not.toBeEmpty({ timeout: 15000 });
+  await page.locator('.hud-button', { hasText: 'Pausa' }).click();
+  const dir = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m16-2026-10-22-2.21/after';
+  mkdirSync(dir, { recursive: true });
+  const readings: { day: number; snow: number; pixel: number[] }[] = [];
+  for (const day of [5, 6, 7]) {
+    readings.push(await page.evaluate(day => {
+      const { sim, camera, renderer } = (window as any).__dynasty;
+      renderer.fogEnabled = false;
+      camera.following = false;
+      camera.zoom = 0.65;
+      camera.snapTo(sim.world.width / 2, sim.world.height / 2);
+      while (sim.time.day < day || sim.time.dayFraction < 0.5) sim.step();
+      renderer.render(null);
+      // Read the actual baked ground, independently of moving people/trees.
+      const tile = sim.world.biome.findIndex((b: number, i: number) => b === 3 && sim.world.offset[i] === 0 &&
+        sim.world.grass[i] > sim.world.grassCap[i] * 0.9);
+      const x = tile % sim.world.width, y = Math.floor(tile / sim.world.width);
+      return { day: sim.time.day, snow: sim.snowDepth,
+        pixel: Array.from(renderer.terrain.getContext('2d').getImageData(x * 16 + 8, y * 16 + 8, 1, 1).data) as number[] };
+    }, day));
+    await expect(page.locator('.hud-clock')).toContainText(`d${day}`);
+    await page.screenshot({ path: `${dir}/spring-day-${day}.png` });
+  }
+  expect(readings.map(row => row.snow)).toEqual([0, 0, 0]);
+  expect(readings[1]!.pixel).toEqual(readings[0]!.pixel);
+  expect(readings[2]!.pixel).toEqual(readings[0]!.pixel);
+});
 
 test('keeps the ground tint stable at the same hour on day one and day two', async ({ page }) => {
   await page.setViewportSize({ width: 1400, height: 900 });

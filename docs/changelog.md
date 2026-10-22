@@ -1,3 +1,22 @@
+## 2026-10-22 — M16 2.21, seguimiento: nieve fugaz al comenzar (0.16.16-alpha)
+
+**Problema:** el autor volvió a observar cambios de suelo los días 5→6→7.
+La reparación anterior sólo comparaba el tinte nocturno y no cubría esta causa.
+
+**Causa:** la nieve diaria usaba la temperatura de medianoche. Con el calendario
+inicial la profundidad era 0→1→0 pese a ser días templados.
+
+**Cambio:** nieve y crecimiento diario comparten la temperatura estacional sin
+penalización horaria. La nieve invernal sigue acumulándose; las necesidades
+mantienen la temperatura instantánea. Sin nuevas claves, estado ni sorteos.
+`baseline:pin` conserva los tres fingerprints.
+
+**Verificación:** el test de capacidad falló antes (0,1,0); pasa con (0,0,0).
+El navegador avanza realmente hasta el mediodía de los tres días y compara
+píxeles del suelo. Hay prueba de guardar antes de medianoche y continuar.
+`check:fast`: 46/46. Verificación conjunta y diferencias `world` en el cierre
+de esta pasada. Capturas: `artifacts/screenshots/m16-2026-10-22-2.21/`.
+
 ## 2026-10-22 — M16 2.25: verificar raciones aparcadas y llegada por lotes
 
 **Problema:** E6 y E7 ya tenían arreglos parciales en M15, pero faltaba

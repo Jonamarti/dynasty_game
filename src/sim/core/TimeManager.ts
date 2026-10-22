@@ -152,9 +152,15 @@ export class TimeManager {
    * silently retune farming inside a pass about trees.
    */
   get dailyGrowth(): number {
-    const seasonal = Math.max(-1, Math.min(1,
+    return Math.max(0, Math.min(1, this.dailyTemperature * 0.9 + 0.35));
+  }
+
+  /** Daily consumers share the seasonal temperature already used by dailyGrowth.
+   * Sampling midnight for snow painted the starting spring white on day 6 and
+   * green again on day 7, although the days themselves were above freezing. */
+  get dailyTemperature(): number {
+    return Math.max(-1, Math.min(1,
       Math.cos((this.yearFraction - 0.375) * Math.PI * 2) * 0.7));
-    return Math.max(0, Math.min(1, seasonal * 0.9 + 0.35));
   }
 
   label(): string {
