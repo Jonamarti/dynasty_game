@@ -361,7 +361,7 @@ A stage ends with the full level (§5) and a screenshot tour.
 | 37 | [2.21](phases/2.21-sudden-flood.md) | No sudden floods; night does not recolour the ground (N39) | done: tinte `ab6a9308`, nieve d6 `98be0fa3`, inundación `c1dc4453`; N39 reproducido y verificado en comarca 470,125, mapa 160×160, semilla numérica 728083595; fuentes locales `8151d46b` |
 | 38 | [2.24](phases/2.24-load-keeps-sharing.md) | Loading keeps shared objects shared (E5) | skipped: R0, identity mismatch not localized; see doubts.md |
 | 39 | [2.25](phases/2.25-compact-ration.md) | Parked comarcas: ration `RangeError` and block advance (E6, E7) — **E7 done in M15, verify** | verified already fixed `269222fe`; see diary |
-| 40 | [2.26](phases/2.26-torch-transfer.md) | Handing over a lit torch keeps its fuel (E8) | done `0.16.19-alpha`; see diary and phase verification |
+| 40 | [2.26](phases/2.26-torch-transfer.md) | Handing over a lit torch keeps its fuel (E8) | done `90cebb50` (`0.16.19-alpha`); see diary and phase verification |
 | 41 | [2.G](phases/2.G-gate.md) | Block 2 gate: new baseline | todo |
 
 ### Stage 3 — Shelter ladder (D-13)

@@ -947,7 +947,7 @@ What turned out differently from the card: el tamaño del mapa era esencial;
 What is left open: E5 independiente; la matriz `world` mantiene rojos.
 Screenshots: `artifacts/screenshots/m16-2026-10-22-exact-france/`.
 
-## M16 2.26 — Antorchas entregadas sin perder la llama (2026-10-24)
+## M16 2.26 — Antorchas entregadas sin perder la llama (2026-10-24, `90cebb50`)
 
 Goal: conservar el combustible y el propietario de una antorcha al pagar una
 compensación o aceptar una exigencia.
