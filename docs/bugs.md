@@ -1,3 +1,19 @@
+## 2026-10-24 — M16 2.26: preparación heredada del E2E de antorchas
+
+`phase12d-torch.spec.ts`, caso «a lit torch is visible…», no consigue colocar
+la hoguera de su fixture con la semilla `phase12d-torch`, parámetros por defecto,
+`skipIntro=1` y español. Falla antes de encender o entregar una antorcha:
+`Could not place a hearth for torch fixture`. Se reproduce tanto en `efecdaa9`
+(`0.16.18-alpha`) como con esta fase; el cuerpo del caso original no se ha
+modificado. No se atribuye el fallo a la transferencia y no se cambia la regla
+de colocación ni se relaja la prueba para resolverlo en esta fase.
+
+El nuevo caso del aviso de compensación sí pasa. Logs antes/después y contexto:
+`artifacts/verification/m16-2.26/before/phase12d-torch-baseline.log`,
+`before/phase12d-torch-baseline-error-context.md` y `after/e2e.log` dentro
+del mismo directorio de verificación. Queda pendiente revisar la preparación
+de la hoguera antes del gate completo.
+
 ## 2026-10-22 — M16: observaciones de verificación de nieve y agua
 
 La matriz `world` cambia de 38/622 a 32/621 fallos/aplicables al corregir el
@@ -5284,6 +5300,15 @@ El sim:check band del árbol compartido (ropa/muebles/luz simultáneos) dio un a
 **Control corto posterior 2026-10-10:** people-act-on-what-they-know vuelve a PASS tras el filtro de madera. La semilla band conserva sólo cravings-steer-the-diet y perf-budget (2/147), sin rebajar umbrales. Log: artifacts/m15-pending-simcheck-20261010.log.
 
 ### 2026-10-10 — combustible de antorcha y transferencias sociales automáticas
+**Resuelto en M16 2.26, `0.16.19-alpha` (2026-10-24).** Compensaciones y
+exigencias transfieren la mano y su combustible mediante el contrato compartido;
+si faltan manos o espacio, conservan la propiedad y muestran el motivo.
+Las compensaciones rechazadas no saldan la deuda. La entrega manual mantiene
+su reserva de la llama. Pruebas: `amends.test.ts` y `m16-torch-transfer.test.ts`,
+incluido guardar/cargar/avanzar con comparación del checkpoint completo.
+Captura: `artifacts/screenshots/m16-2026-10-24-2.26/`.
+
+Diagnóstico original:
 La unidad ardiendo se reserva en drop/handOver/store del jugador. Las rutas
 sociales automáticas que retiran directamente de Inventory (amends, demandas)
 no transportan metadatos de combustible: pueden dejar un slot sin propietario,

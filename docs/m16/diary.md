@@ -946,3 +946,33 @@ What turned out differently from the card: el tamaño del mapa era esencial;
 128×128 no reproducía el caso aunque coincidiesen semilla y comarca.
 What is left open: E5 independiente; la matriz `world` mantiene rojos.
 Screenshots: `artifacts/screenshots/m16-2026-10-22-exact-france/`.
+
+## M16 2.26 — Antorchas entregadas sin perder la llama (2026-10-24)
+
+Goal: conservar el combustible y el propietario de una antorcha al pagar una
+compensación o aceptar una exigencia.
+What was done: ambas acciones usan el mismo contrato de transferencia que
+la entrega manual, con una política explícita para la llama. Las rutas
+sociales la trasladan a una mano libre; la entrega manual mantiene su reserva.
+Un receptor sin mano o espacio produce un motivo traducido y deja intacta
+la oferta; una compensación rechazada conserva la deuda. La amenaza conserva
+su propio agravio aunque no pueda recibirse el objeto.
+Before and after: antes se movía el inventario sin la llama; después las
+pruebas comparan combustible, manos, propiedad, deuda y checkpoint completo
+al guardar/cargar/avanzar. 59 pruebas focales, check:fast 46/46 y dos E2E pasan.
+Las huellas re-pinned de semillas 1–3 no cambian.
+What turned out differently from the card: Amends calcula la oferta y el
+movimiento real reside en ActionSystem; el contrato manual existente reservaba
+la llama. Se conserva esa regla y se añade la política pedida para las rutas
+automáticas. No se añaden RNG, configuración ni otro formato de guardado.
+What is left open: la preparación de la hoguera en el E2E original de
+antorchas falla también en `efecdaa9`; no es una regresión de esta fase.
+El área `bands` conserva 63/751 fallos/aplicables en 13 escenarios sin cambios
+de estado. La suite completa se ejecutó una vez: 356/357 archivos aprobados,
+2.468 pruebas aprobadas, una fallida, una con fallo esperado y una omitida.
+La prueba fallida se añadió durante la ejecución y detectó la capacidad por
+objeto del receptor anciano antes del guard final; ahora pasa en las focales.
+El guard impide que reconciliar la carga suelte la llama recién recibida.
+Tras ese ajuste pasan `conflicts`, el control rápido y las mismas huellas.
+No se declara verde la ejecución completa ni se repite por el commit.
+Screenshots: `artifacts/screenshots/m16-2026-10-24-2.26/`.

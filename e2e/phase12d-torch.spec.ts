@@ -1,6 +1,56 @@
 import { mkdirSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
 
+for (const obstruction of ['hands', 'item-capacity'] as const) {
+  test(`m16 torch amends explain recipient refusal: ${obstruction}`, async ({ page }) => {
+    await page.goto('/?seed=m16-torch-amends&skipIntro=1&defaults=1&lang=es');
+    await expect(page.locator('.hud-clock')).not.toBeEmpty({ timeout: 15_000 });
+    await page.locator('.hud-button', { hasText: 'Pausa' }).click();
+    await page.waitForFunction(() => !!(window as any).__dynasty?.renderer?.art);
+    await page.evaluate(async obstruction => {
+      const d = (window as any).__dynasty, sim = d.sim, payer = sim.player;
+      const owed = sim.livingPeople().find((p: any) => p.id !== payer.id && !p.isChild);
+      if (!owed) throw new Error('No adult torch recipient');
+      const path = '/src/sim/social/Amends.ts';
+      const { incur } = await import(/* @vite-ignore */ path);
+      for (const [item, count] of payer.inventory.entries()) payer.inventory.remove(item, count);
+      payer.equipment = {};
+      payer.inventory.add('torch', 1);
+      payer.equipment.left = { item: 'torch', count: 1, lit: 12 };
+      payer.needs.hunger = payer.needs.thirst = payer.needs.fatigue = payer.needs.cold = 0;
+      owed.x = payer.x + 1; owed.y = payer.y;
+      owed.traits.malice = owed.traits.aggression = 0;
+      for (const [item, count] of owed.inventory.entries()) owed.inventory.remove(item, count);
+      owed.equipment = {};
+      if (obstruction === 'hands') {
+        owed.inventory.add('handaxe', 1); owed.inventory.add('spear', 1);
+        owed.equipment.left = { item: 'handaxe', count: 1 };
+        owed.equipment.right = { item: 'spear', count: 1 };
+      } else {
+        owed.age = 80 * owed.daysPerYear;
+      }
+      incur(payer, owed, 'theft', 1, sim.time.tick, { itemId: 'torch', count: 1 });
+      sim.peopleHash.rebuild(sim.livingPeople());
+      if (!sim.order(payer, 'make_amends', { personId: owed.id })) throw new Error(sim.lastRefusal);
+      payer.actionTimer = 1;
+      sim.step();
+      d.camera.zoom = 5; d.camera.snapTo(payer.x, payer.y); d.camera.following = false;
+      d.renderer.interpolator.clear();
+      if (payer.inventory.count('torch') !== 1 || payer.debts.length !== 1) {
+        throw new Error('Refused torch payment changed ownership or settled debt');
+      }
+    }, obstruction);
+    await page.waitForFunction(() => (window as any).__dynasty.renderer.floaters.items
+      .some((item: any) => item.text.includes('receptor')));
+    const text = await page.evaluate(() => (window as any).__dynasty.renderer.floaters.items
+      .find((item: any) => item.text.includes('receptor'))?.text);
+    expect(text).toContain(obstruction === 'hands' ? 'mano' : 'antorcha');
+    const shots = 'artifacts/screenshots/m16-2026-10-24-2.26';
+    mkdirSync(shots, { recursive: true });
+    await page.screenshot({ path: `${shots}/${obstruction === 'hands' ? '01-amends-recipient-no-free-hand' : '02-amends-recipient-torch-capacity'}-es.png` });
+  });
+}
+
 test('a lit torch is visible and its fuel freezes with the paused world', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));

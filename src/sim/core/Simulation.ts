@@ -143,6 +143,7 @@ import { lightAt as measuredLightAt, lightFactor, torchLight, hearthNear, hearth
 import { effectiveSleepMoodQuality, sleepMoodChange } from './SleepComfort.ts';
 import { saltSourceNear } from './Preservation.ts';
 import { advanceTorchBurn, torchIgnitionRefusal, torchRefusalText, transferableUnits, burningTorchRefusalText } from './Torch.ts';
+import { transferBetweenPeople } from './PersonTransfer.ts';
 import { advanceFatLamps, FAT_LAMP_FUEL_TICKS, fatLampRefusal, fatLampRefusalText } from './FatLamp.ts';
 import { edgeOfTile, type ComarcaEdge } from '../world/ComarcaNeighbour.ts';
 import type { ComarcaMigrationContext } from '../world/ComarcaMigration.ts';
@@ -3223,7 +3224,17 @@ export class Simulation {
       this.lastRefusal = t('{name} cannot carry any more', { name: receiver.name });
       return 0;
     }
-    const moved = giver.inventory.transferTo(receiver.inventory, itemId, Math.min(room, count, available));
+    const requested = Math.min(room, count, available);
+    if (requested <= 0) return 0;
+    const result = transferBetweenPeople(giver, receiver,
+      [[itemId, requested]], this.config.carry, 'reserve-lit-torch');
+    if (result.failure) {
+      this.lastRefusal = result.failure === 'recipient_no_free_hand' ? t('They need a free hand')
+        : result.failure === 'recipient_full' ? t('{name} cannot carry any more', { name: receiver.name })
+          : burningTorchRefusalText();
+      return 0;
+    }
+    const moved = result.moved;
     if (moved === 0) return 0;
     // Worn layers are ownership references too. Handing over the last copy
     // must clear the visible layer and any capacity it supplied immediately.

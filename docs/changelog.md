@@ -1,3 +1,39 @@
+## 2026-10-24 — M16 2.26: combustible en compensaciones y exigencias
+
+**Problema:** entregar una antorcha encendida como compensación o por una
+exigencia movía el objeto sin su combustible y dejaba una mano sin propietario.
+
+**Causa:** ambas acciones llamaban directamente al contrato de inventarios;
+la llama pertenece al equipo de la persona y no al montón de objetos.
+
+**Cambio:** `PersonTransfer.ts` mueve inventario y mano con el combustible
+restante. Las rutas automáticas trasladan la llama a una mano libre; la entrega
+manual conserva la reserva de M15. Si el receptor no puede recibirla, se
+conservan los objetos y la deuda de compensación, con un motivo traducido.
+Se comprueba también la capacidad por tipo de objeto: con vigor reducido puede
+haber espacio total y una mano libre, pero no capacidad para sostener una
+antorcha. Sin ese guard, la reconciliación de carga la soltaba perdiendo la llama.
+Una amenaza fallida sigue dejando su deuda por intimidación. Sin RNG nuevo
+ni cambios en pilas o almacenes. Versión `0.16.19-alpha`.
+
+**Verificación:** la prueba de capacidad falla en `efecdaa9` al perder la llama
+en el receptor; después pasan 59 pruebas focales en seis archivos y
+`check:fast` 46/46. Guardar, cargar y avanzar compara checkpoints completos.
+El baseline re-pinned conserva las tres huellas anteriores. El área `bands`
+mantiene 63 fallos heredados de 751 checks aplicables en 13 escenarios;
+`baseline:diff` no detecta ningún cambio de estado. El caso de navegador del
+aviso español pasa 2/2 y sus capturas se revisaron. El caso antiguo de antorchas falla
+al preparar su hoguera tanto antes como después; queda registrado en bugs.md.
+La suite unitaria se ejecutó una vez: 357 archivos, 356 aprobados y uno fallido;
+2.468 pruebas aprobadas, una fallida, una con fallo esperado E5 y una omitida.
+El fallo era la nueva regresión del receptor anciano, incorporada mientras
+la suite corría antes del guard final; queda corregida y cubierta por las
+59 focales posteriores. No se declara verde esa ejecución ni se repite toda
+la suite. Tras el último guard, `conflicts` pasa su check aplicable y se repiten
+el control rápido y las huellas, sin cambios. Evidencia completa:
+`artifacts/verification/m16-2.26/`.
+Capturas: `artifacts/screenshots/m16-2026-10-24-2.26/`.
+
 ## 2026-10-22 — Limpieza de worktrees y rama local integrada
 
 Se revisan y retiran 38 copias antiguas de trabajo, incluida

@@ -1,0 +1,108 @@
+
+> dynasty@0.16.19-alpha sim:check
+> vite-node tools/headless.ts -- --scenario conflicts
+
+
+WORLD HEALTH REPORT  -  scenario "conflicts"  seed "conflicts"
+==============================================================================
+80 steps in 174ms  (460 steps/s)
+
+POPULATION OVER TIME
+  step    day   alive  hunger  thirst  tired   cold   lonely  health  food   bare  store  trees  grown  fruit  kids  wed  age   oob  
+  0       5     13     0.0     0.0     0.0     0.0    0.0     100.0   1642   175   0      139    128    0      2     10   24    0    
+  8       5     13     0.4     0.3     0.0     0.1    0.6     100.0   1642   175   0      139    128    0      2     10   24    0    
+  16      5     13     0.9     0.7     0.1     0.3    1.1     99.6    1642   175   0      139    128    0      2     10   24    0    
+  24      5     13     1.3     1.1     0.1     0.4    1.7     99.7    1657   175   0      139    128    0      2     10   24    0    
+  32      5     13     1.8     1.5     0.2     0.5    2.2     99.7    1657   175   0      139    128    0      2     10   24    0    
+  40      5     13     2.2     1.9     0.2     0.6    2.8     99.7    1672   175   0      139    128    0      2     10   24    0    
+  48      5     13     2.6     2.3     0.3     0.6    3.4     99.7    1672   175   0      139    128    0      2     10   24    0    
+  56      5     13     3.1     2.7     0.3     0.7    3.9     99.7    1672   175   0      139    128    0      2     10   24    0    
+  64      5     13     3.5     3.1     0.4     0.7    4.5     99.7    1686   175   0      139    128    0      2     10   24    0    
+  72      5     13     4.0     3.5     0.4     0.6    5.0     99.7    1686   175   0      139    128    0      2     10   24    0    
+  80      5     13     4.4     3.9     0.5     0.5    5.6     99.7    1702   175   0      139    128    0      2     10   24    0    
+
+EVENTS
+  malnutrition_samples    1040
+  rest                    892
+  path_expanded           666
+  step_slope_up           531
+  step_slope_down_ratio   516.1585674172421
+  step_slope_down         495
+  step_slope_up_ratio     476.3376717770314
+  remembered_node_candidate168
+  walk_tick               127
+  step_blocked            110
+  path_denied_cooldown    82
+  step_slope_flat_ratio   68.06820820526133
+  step_slope_flat         68
+  path_found              45
+  answered_under_attack_detected_tick41
+  place_memory_samples_band_141
+  water_memory_candidate  40
+  food_accessible_at_think40
+  make_peace_offered      40
+  set_upon_flee           40
+  answered_brain_decision_flee40
+  think_woken_early       38
+  step_slide              31
+  place_exploration_fraction_band_126.541666666666686
+  remembered_node_target  14
+  animal_alarmed          13
+  site_placed             6
+  marriage                5
+  founding_households     5
+  intruder_sighted        4
+  security_intruder_seen  4
+  witnessed               3
+  answered_initial_action_rest1
+  answered_initial_order_rest1
+  answered_initial_commitment_action_none1
+  answered_initial_commitment_drive_none1
+  answered_initial_timer_01
+  answered_initial_under_attack_no1
+  blow_landed             1
+  event_assault           1
+  security_as_victim      1
+  dread_as_victim         1
+  debt_incurred_assault   1
+  answered_interrupted_under_attack_action_rest1
+  set_upon_under_attack   1
+  malnutrition_sum        0
+  place_memory_age_sum_band_10
+
+ACTIONS (summed over samples)
+  rest                    892
+  attack                  80
+  flee                    67
+  idle                    1
+
+KNOWLEDGE
+  era: Lower Palaeolithic  ·  0 things known to somebody  ·  0 can make fire
+
+BANDS
+  0 chiefs  ·  0 outcast  ·  0 exiled  ·  0 orders obeyed, 0 refused
+
+BUILDINGS
+  0 of 6 finished  ·  0 items in store
+
+RELATIONSHIPS
+  73 edges across 13 people  ·  72 warm  ·  1 hostile
+  Naror band            theft tolerance 0.83   murder 1.01
+  Tora band             theft tolerance 0.36   murder 1.03
+
+TERRAIN
+  water=877  beach=218  grass=604  forest=430  hills=175  rock=0
+
+TRAVEL
+  45 routes found  ·  14.8 mean / 27 worst expansions  ·  562.5 searches per 1,000 ticks
+  route_arrived=0  walk_blocked=0  abandoned_cannot_reach=0
+  everything that walks: step_blocked=110  ·  axis_null=0  ·  slides=31
+  people only: 0 stuck of 127 walk ticks (0.0 per 1,000)  ·  denied: cooldown=82 budget=0
+  recoveries=0 (0 found a route)
+
+CHECKS
+  PASS  opinions-diverge        73 relationships across 13 people: 72 warm, 1 hostile
+
+==============================================================================
+ALL 1 APPLICABLE CHECKS PASSED
+

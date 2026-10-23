@@ -1,0 +1,35 @@
+
+ RUN  v4.1.11 C:/Users/Marty/Documents/Work/Programs/dynastyGame/artifacts/verification/m16-2.26/baseline-checkout
+
+ ❯ src/sim/__tests__/amends.test.ts (10 tests | 1 failed | 9 skipped) 109ms
+     × m16-lit-torch-amends-preserve-fuel-slots-and-checkpoint-state 107ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/sim/__tests__/amends.test.ts > making amends > m16-lit-torch-amends-preserve-fuel-slots-and-checkpoint-state
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ src/sim/__tests__/amends.test.ts:169:99
+    167|     expect(payer.equipment.left).toBeUndefined();
+    168|     expect(owed.inventory.count('torch')).toBe(1);
+    169|     expect(Object.values(owed.equipment).some(item => item?.item === '…
+       |                                                                                                   ^
+    170|     expect(payer.debts).toHaveLength(0);
+    171|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 9 skipped (10)
+   Start at  01:31:20
+   Duration  5.98s (transform 2.89s, setup 0ms, import 5.61s, tests 109ms, environment 0ms)
+
+
+VITEST_EXIT=1

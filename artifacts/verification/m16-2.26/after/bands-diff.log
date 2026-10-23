@@ -1,0 +1,5 @@
+
+> dynasty@0.16.19-alpha baseline:diff
+> vite-node tools/baseline-diff.ts -- artifacts/verification/m16-2.26/before/bands.json artifacts/verification/m16-2.26/after/bands.json
+
+No check status changes.

@@ -1,0 +1,24 @@
+
+> dynasty@0.16.19-alpha check:area
+> vite-node tools/scenarios.ts -- --area bands --json artifacts/verification/m16-2.26/after/bands.json
+
+
+SCENARIO MATRIX
+==============================================================================
+  scenario        checks    steps/s     failures
+  smiths          63/71     291         nights-are-slept, moods-move-choices, gossip-is-aimed, projects-find-backers, roast-wins, cooking-spreads, discovery-is-situated, ore-becomes-metal
+  conflicts       1/1       1,143       -
+  conflicts-from  0/0       2,944       -
+  crowded         56/57     211         moods-move-choices
+  century         73/77     416         people-act-on-what-they-know, nights-are-slept, the-wise-avoid-baneberries, bands-take-sides
+  herders         70/75     474         nights-are-slept, gossip-is-aimed, projects-find-backers, animals-are-tamed, discovery-is-situated
+  feasts          73/77     340         nights-are-slept, techs-are-refined, discovery-is-situated, bands-take-sides
+  stewards        70/76     425         people-act-on-what-they-know, nights-are-slept, moods-move-choices, techs-are-refined, discovery-is-situated, bands-take-sides
+  labour          63/69     244         nights-are-slept, moods-move-choices, people-survive, gossip-is-aimed, shelter-answers-cold, research-is-social
+  polity          77/90     343         people-act-on-what-they-know, nights-are-slept, moods-move-choices, population-persists, gossip-is-aimed, generations-turn-over, techs-are-refined, taxes-reach-the-temple, roast-wins, cooking-spreads, pots-reach-a-granary, discovery-is-situated, hills-see-farther
+  polity-from     1/1       881         -
+  conquest        82/91     395         nights-are-slept, projects-find-backers, knowledge-is-found, ideas-become-tech, taxes-reach-the-temple, soldiers-are-kept, roast-wins, cooking-spreads, discovery-is-situated
+  culture         59/66     535         nights-are-slept, needs-not-pinned, gossip-is-aimed, shelter-answers-cold, animals-are-tamed, kills-are-butchered-for-bone, spatial-hash-spreads
+==============================================================================
+SOME SCENARIOS FAILED
+

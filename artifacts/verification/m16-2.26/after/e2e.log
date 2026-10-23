@@ -1,0 +1,33 @@
+
+Running 2 tests using 1 worker
+
+(node:29576) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 1 e2e\phase12d-torch.spec.ts:4:1 › m16 torch amends explain when the recipient has no free hand (15.7s)
+  x  2 e2e\phase12d-torch.spec.ts:46:1 › a lit torch is visible and its fuel freezes with the paused world (5.5s)
+
+
+  1) e2e\phase12d-torch.spec.ts:46:1 › a lit torch is visible and its fuel freezes with the paused world 
+
+    Error: page.evaluate: Error: Could not place a hearth for torch fixture
+        at eval (eval at evaluate (:311:30), <anonymous>:23:24)
+        at UtilityScript.evaluate (<anonymous>:313:16)
+        at UtilityScript.<anonymous> (<anonymous>:1:44)
+        at eval (eval at evaluate (:311:30), <anonymous>:23:24)
+        at UtilityScript.evaluate (<anonymous>:313:16)
+        at UtilityScript.<anonymous> (<anonymous>:1:44)
+        at C:\Users\Marty\Documents\Work\Programs\dynastyGame\e2e\phase12d-torch.spec.ts:57:30
+
+    Error Context: artifacts\playwright\phase12d-torch-a-lit-torch-d2737-eezes-with-the-paused-world\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    artifacts\playwright\phase12d-torch-a-lit-torch-d2737-eezes-with-the-paused-world\trace.zip
+    Usage:
+
+        npx playwright show-trace artifacts\playwright\phase12d-torch-a-lit-torch-d2737-eezes-with-the-paused-world\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    e2e\phase12d-torch.spec.ts:46:1 › a lit torch is visible and its fuel freezes with the paused world 
+  1 passed (26.2s)

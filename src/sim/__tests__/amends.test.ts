@@ -9,6 +9,8 @@ import { Simulation } from '../core/Simulation.ts';
 import { incur, debtTo, offerFor, acceptance, settleDebt, pruneDebts } from '../social/Amends.ts';
 import { ITEMS } from '../entities/Item.ts';
 import { changeGarment } from '../core/ToolEquipment.ts';
+import { toCheckpointRecord } from '../persistence/CheckpointRecords.ts';
+import { stopReasonLabel } from '../../render/Floaters.ts';
 
 function adult(name: string, band: number): Person {
   const person = new Person(name, 10, 10, band, new RNG('a-' + name));
@@ -142,6 +144,78 @@ describe('making amends', () => {
     expect(payer.inventory.count('wool_cloak')).toBe(0);
     expect(payer.equipment.cloak).toBeUndefined();
     expect(payer.debts).toHaveLength(0);
+  });
+
+  it('m16-lit-torch-amends-preserve-fuel-slots-and-checkpoint-state', () => {
+    const sim = new Simulation(SMALL);
+    const payer = sim.livingPeople().find(p => p.bandId === 0 && !p.isChild)!;
+    const owed = sim.livingPeople().find(p => p.bandId === 1 && !p.isChild)!;
+    owed.traits.malice = 0;
+    owed.traits.aggression = 0;
+    owed.x = payer.x + 1;
+    owed.y = payer.y;
+    payer.inventory.add('torch', 1);
+    payer.equipment.left = { item: 'torch', count: 1, lit: 12 };
+    const torchValue = ITEMS.torch!.baseValue;
+    incur(payer, owed, 'theft', torchValue, sim.time.tick);
+    expect(sim.order(payer, 'make_amends', { personId: owed.id })).toBe(true);
+    payer.actionTimer = 1;
+
+    sim.step();
+
+    expect(payer.inventory.count('torch')).toBe(0);
+    expect(payer.equipment.left).toBeUndefined();
+    expect(owed.inventory.count('torch')).toBe(1);
+    expect(Object.values(owed.equipment).some(item => item?.item === 'torch' && item.lit === 11)).toBe(true);
+    expect(payer.debts).toHaveLength(0);
+
+    const saved = JSON.parse(JSON.stringify(toCheckpointRecord(sim)));
+    const loaded = Simulation.fromCheckpointRecord(saved);
+    expect(JSON.parse(JSON.stringify(toCheckpointRecord(loaded)))).toEqual(saved);
+    const restoredOwed = loaded.peopleById.get(owed.id)!;
+    expect(Object.values(restoredOwed.equipment).find(item => item?.item === 'torch')?.lit).toBe(11);
+    loaded.step();
+    sim.step();
+    expect(Object.values(restoredOwed.equipment).find(item => item?.item === 'torch')?.lit).toBe(10);
+    expect(JSON.parse(JSON.stringify(toCheckpointRecord(loaded))))
+      .toEqual(JSON.parse(JSON.stringify(toCheckpointRecord(sim))));
+  });
+
+  it('m16-lit-torch-amends-do-not-settle-without-a-free-hand-or-carry-room', () => {
+    for (const obstruction of ['hands', 'capacity'] as const) {
+      const sim = new Simulation(SMALL);
+      const payer = sim.livingPeople().find(p => p.bandId === 0 && !p.isChild)!;
+      const owed = sim.livingPeople().find(p => p.bandId === 1 && !p.isChild)!;
+      owed.traits.malice = 0;
+      owed.traits.aggression = 0;
+      owed.x = payer.x + 1;
+      owed.y = payer.y;
+      payer.inventory.add('torch', 1);
+      payer.inventory.add('flint', 1);
+      payer.equipment.left = { item: 'torch', count: 1, lit: 12 };
+      if (obstruction === 'hands') {
+        owed.inventory.add('handaxe', 1);
+        owed.inventory.add('spear', 1);
+        owed.equipment.left = { item: 'handaxe', count: 1 };
+        owed.equipment.right = { item: 'spear', count: 1 };
+      } else {
+        owed.inventory.add('sticks', owed.carryCapacity - owed.inventory.total);
+      }
+      incur(payer, owed, 'theft', ITEMS.torch!.baseValue + ITEMS.flint!.baseValue, sim.time.tick);
+      expect(sim.order(payer, 'make_amends', { personId: owed.id })).toBe(true);
+      payer.actionTimer = 1;
+
+      sim.step();
+
+      expect(payer.debts).toHaveLength(1);
+      expect(payer.inventory.count('torch')).toBe(1);
+      expect(payer.inventory.count('flint')).toBe(1);
+      expect(payer.equipment.left?.lit).toBe(11);
+      expect(owed.inventory.count('torch')).toBe(0);
+      const reason = obstruction === 'hands' ? 'recipient_no_free_hand' : 'recipient_full';
+      expect(sim.interruptions.at(-1)?.reason).toBe(reason);
+      expect(stopReasonLabel(reason)).not.toBe(reason);
+    }
   });
 
   it('is refused aloud to somebody who owes nothing', () => {

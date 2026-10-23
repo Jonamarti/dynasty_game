@@ -17,6 +17,12 @@ burning unit remains reserved in its hand until spent. The refusal is visible.
 This restriction prevents an aggregate inventory transfer from resetting the
 countdown; portable fuel metadata on piles/stores is not part of this slice.
 
+M16 phase 2.26 adds an explicit person-to-person contract for automatic amends
+and demands: if the offer includes the burning unit, its hand record and exact
+remaining fuel move into a free usable hand of the receiver. A refused transfer
+moves nothing and reports why. Spare copies move first. Manual handover keeps
+the reservation described above; piles and stores still do not hold flame fuel.
+
 Live owned flames provide radius-four local light, carried warmth 0.2, and
 wildlife avoidance at twice the fixed-fire range. The night compositor filters
 carriers by present visibility and viewport. Both torch and a tool can be drawn

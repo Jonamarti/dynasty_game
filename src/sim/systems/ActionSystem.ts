@@ -115,6 +115,7 @@ import { assignedSleepSurface, benchConversationBelonging, houseInteriorContains
 import { effectiveSleepRecoveryQuality } from '../core/SleepComfort.ts';
 import { FAT_LAMP_FUEL_TICKS, FAT_LAMP_REFILL_FAT, fatLampRefusal, fatLampRefusalText } from '../core/FatLamp.ts';
 import { igniteTorch, TORCH_IGNITION_TICKS } from '../core/Torch.ts';
+import { transferBetweenPeople } from '../core/PersonTransfer.ts';
 
 export interface ActionContext {
   fineWorkPace?: (person: Person) => number;
@@ -6484,7 +6485,17 @@ export class ActionSystem {
       return;
     }
 
-    person.inventory.transferItemsTo(owed.inventory, offer.items);
+    const transfer = transferBetweenPeople(person, owed, offer.items, ctx.carry, 'preserve-lit-torch');
+    if (transfer.failure) {
+      this.abandon(person, transfer.failure === 'recipient_no_free_hand' ? 'recipient_no_free_hand'
+        : transfer.failure === 'recipient_full' ? 'recipient_full'
+          : transfer.failure === 'recipient_torch_capacity' ? 'recipient_torch_capacity' : 'burning_torch', ctx);
+      return;
+    }
+    if (transfer.moved === 0) {
+      this.abandon(person, 'amends_too_little', ctx);
+      return;
+    }
     reconcileCarry(person, ctx.carry, ctx.dropAt);
     settleDebt(person, owed);
     ctx.social.emit('amends', person, owed, Math.min(1, offer.value / Math.max(1, debt.worth)),
@@ -7161,7 +7172,15 @@ export class ActionSystem {
       return;
     }
 
-    const taken = other.inventory.transferItemsTo(person.inventory, [[itemId, want]]);
+    const transfer = transferBetweenPeople(other, person, [[itemId, want]], ctx.carry, 'preserve-lit-torch');
+    if (transfer.failure) {
+      this.owe(person, other, 'threaten', THREAT_WORTH, ctx);
+      this.abandon(person, transfer.failure === 'recipient_no_free_hand' ? 'recipient_no_free_hand'
+        : transfer.failure === 'recipient_full' ? 'recipient_full'
+          : transfer.failure === 'recipient_torch_capacity' ? 'recipient_torch_capacity' : 'burning_torch', ctx);
+      return;
+    }
+    const taken = transfer.moved;
     if (taken === 0) {
       this.abandon(person, 'nothing_to_demand', ctx);
       return;

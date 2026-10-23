@@ -1,0 +1,37 @@
+
+> dynasty@0.16.19-alpha test
+> vitest run --maxWorkers=1 --testTimeout=15000
+
+
+ RUN  v4.1.11 C:/Users/Marty/Documents/Work/Programs/dynastyGame
+
+ ❯ src/sim/__tests__/m16-torch-transfer.test.ts (4 tests | 1 failed) 111ms
+     × m16-lit-torch-demand-does-not-drop-the-flame-when-an-elderly-receiver-cannot-carry-it 18ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/sim/__tests__/m16-torch-transfer.test.ts > M16 lit torch transfers > m16-lit-torch-demand-does-not-drop-the-flame-when-an-elderly-receiver-cannot-carry-it
+AssertionError: expected +0 to be 1 // Object.is equality
+
+- Expected
++ Received
+
+- 1
++ 0
+
+ ❯ src/sim/__tests__/m16-torch-transfer.test.ts:61:46
+     59|     sim.step();
+     60|
+     61|     expect(target!.inventory.count('torch')).toBe(1);
+       |                                              ^
+     62|     expect(target!.equipment.left).toMatchObject({ item: 'torch', lit:…
+     63|     expect(demander!.inventory.count('torch')).toBe(0);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 356 passed (357)
+      Tests  1 failed | 2468 passed | 1 expected fail | 1 skipped (2471)
+   Start at  01:24:51
+   Duration  1054.38s (transform 10.32s, setup 0ms, import 194.21s, tests 779.51s, environment 52ms)
+
