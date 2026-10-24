@@ -1,0 +1,1 @@
+final run: exit 0 / 19 passed / wall 2.85 min (2026-10-24, after the framing + timeout fixes; earlier runs this session: exit 1 twice, .radial hidden at frame 10 then 60 s test timeout)

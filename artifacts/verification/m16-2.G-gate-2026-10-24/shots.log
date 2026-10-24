@@ -1,0 +1,28 @@
+﻿
+> dynasty@0.16.19-alpha shots
+> playwright test e2e/screenshots.spec.ts
+
+
+Running 19 tests using 1 worker
+
+  Ô£ô   1 e2e\screenshots.spec.ts:55:1 ÔÇ║ tour (59.7s)
+  Ô£ô   2 e2e\screenshots.spec.ts:299:1 ÔÇ║ M15 phase 7 command cost estimate (3.5s)
+  Ô£ô   3 e2e\screenshots.spec.ts:368:1 ÔÇ║ M15 2i observer map and fog toggle (4.3s)
+  Ô£ô   4 e2e\screenshots.spec.ts:378:1 ÔÇ║ M15 2i corrected fog after memory updates (3.5s)
+  Ô£ô   5 e2e\screenshots.spec.ts:419:1 ÔÇ║ the four seasons (15.0s)
+  Ô£ô   6 e2e\screenshots.spec.ts:469:1 ÔÇ║ the tribe graph, flat and in ranks (13.9s)
+  Ô£ô   7 e2e\screenshots.spec.ts:523:1 ÔÇ║ the menu and the settings screen (4.4s)
+  Ô£ô   8 e2e\screenshots.spec.ts:546:1 ÔÇ║ the screen the game opens on (4.1s)
+  Ô£ô   9 e2e\screenshots.spec.ts:561:1 ÔÇ║ M15 phase 4 idea born from a chronic want (3.2s)
+  Ô£ô  10 e2e\screenshots.spec.ts:583:1 ÔÇ║ M15 phase 6 project proposal menu (3.9s)
+  Ô£ô  11 e2e\screenshots.spec.ts:628:1 ÔÇ║ M15 phase 11a equipment slots (3.2s)
+  Ô£ô  12 e2e\screenshots.spec.ts:651:1 ÔÇ║ M15 20 a mother carries and nurses her baby (5.4s)
+  Ô£ô  13 e2e\screenshots.spec.ts:701:1 ÔÇ║ M15 20b playing a mother: the baby in her arms, and a baby's own menu (5.3s)
+  Ô£ô  14 e2e\screenshots.spec.ts:762:1 ÔÇ║ M15 20c berry bushes in their own seasons: a winter hedge (13.0s)
+  Ô£ô  15 e2e\screenshots.spec.ts:841:1 ÔÇ║ M15 21 wounds and fever show on the character sheet (4.3s)
+  Ô£ô  16 e2e\screenshots.spec.ts:870:1 ÔÇ║ M15 21d/22 a poisoned player shows the sickness and carries herbs (4.3s)
+  Ô£ô  17 e2e\screenshots.spec.ts:897:1 ÔÇ║ M15 25a the land has relief, and the ground says how high it is (5.6s)
+  Ô£ô  18 e2e\screenshots.spec.ts:940:1 ÔÇ║ earth moved (5.2s)
+  Ô£ô  19 e2e\screenshots.spec.ts:991:1 ÔÇ║ M16 2.10 stranger knowledge does not grey out social actions (4.0s)
+
+  19 passed (2.8m)

@@ -53,6 +53,12 @@ async function clickThrough(
 }
 
 test('tour', async ({ page }) => {
+  // The tour collects ~25 frames with settled waits between them and has run
+  // right against the config's 60 s line since 1.2: on 2026-10-24 it died at
+  // the overall timeout on its last frames on two serial runs even after the
+  // tree framing was fixed. It is a capture harness, not an assertion suite —
+  // the assertion layer is `capture()`'s surface check — so it gets headroom.
+  test.setTimeout(240_000);
   await page.goto('/?seed=tour&skipIntro=1');
   await expect(page.locator('.hud-clock')).not.toBeEmpty({ timeout: 15000 });
   await page.waitForTimeout(800);
@@ -190,13 +196,24 @@ test('tour', async ({ page }) => {
     const d = (window as never as {
       __dynasty: {
         sim: { player: { x: number; y: number }; trees: { x: number; y: number; fruit: number }[] };
-        camera: { worldToScreenX: (x: number) => number; worldToScreenY: (y: number) => number };
+        camera: {
+          worldToScreenX: (x: number) => number;
+          worldToScreenY: (y: number) => number;
+          snapTo: (x: number, y: number) => void;
+          following: boolean;
+        };
       };
     }).__dynasty;
     const near = d.sim.trees
       .filter(t => Math.hypot(t.x - d.sim.player.x, t.y - d.sim.player.y) < 16)
       .sort((a, b) => b.fruit - a.fruit)[0];
     if (!near) return null;
+    // The follow camera put a near tree below the fold or under the bottom
+    // help strip, where the right-click died on the strip and the radial
+    // never opened (2.G tour failure). Snap two tiles north of the tree and
+    // freeze the camera, the way every other spec does, then re-project.
+    d.camera.snapTo(near.x, near.y - 2);
+    d.camera.following = false;
     return { x: d.camera.worldToScreenX(near.x), y: d.camera.worldToScreenY(near.y) };
   });
   if (tree) {
@@ -205,6 +222,15 @@ test('tour', async ({ page }) => {
     await clickThrough(page, tree.x, tree.y, '\u{1F333}', 'right');
     await capture(page, DIR + '/10-tree-menu.png', '.radial');
     if (await page.locator('.radial').isVisible()) await page.keyboard.press('Escape');
+    // Back to the follow camera so the rest of the tour frames the player as
+    // every run before this one did.
+    await page.evaluate(() => {
+      const d = (window as never as {
+        __dynasty: { sim: { player: { x: number; y: number }; camera: { snapTo: (x: number, y: number) => void; following: boolean } } };
+      }).__dynasty;
+      if (d.sim.player) d.camera.snapTo(d.sim.player.x, d.sim.player.y);
+      d.camera.following = true;
+    });
   }
   // A missed world target leaves no radial for Escape to close, so older tour
   // runs opened the pause overlay here. Resume whichever surface is visible.

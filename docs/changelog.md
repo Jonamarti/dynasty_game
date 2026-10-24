@@ -1,3 +1,63 @@
+## 2026-10-24 — M16 2.G: la gira de capturas recupera el encuadre del árbol y margen de tiempo
+
+**Problema:** `npm.cmd run shots` moría en el marco 10 (`10-tree-menu.png`): el
+menú radial no abría tras el clic derecho sobre un árbol cercano al jugador.
+
+**Causa:** dos premisas desfasadas del spec de la gira, sin código de juego
+implicado. La cámara en seguimiento dejaba al árbol proyectado fuera del
+viewport o bajo la tira de ayuda inferior, donde el clic derecho caía en
+`.hud-help` y no en el canvas (`elementFromPoint` lo demostró); y la gira
+corría pegada al límite de 60 s de prueba del config desde 1.2 — esa fecha
+murió dos veces seguidas en ese límite en sus últimos marcos, incluso tras
+arreglar el encuadre.
+
+**Cambio:** solo `e2e/screenshots.spec.ts`. Antes de los dos clics del árbol,
+la gira fija la cámara dos casillas al norte del árbol y la congela
+(`snapTo` + `following = false`, la convención del resto de specs), recalcula
+la proyección y restaura la cámara de seguimiento tras los marcos del árbol; y
+la gira —que es un mecanismo de captura, no una suite de asertos, la capa de
+asertos es el chequeo de superficie de `capture()`— recibe su propio límite de
+240 s con `test.setTimeout`.
+
+**Verificación:** diagnóstico primero (spec efímero que mostró
+`elementFromPoint` = `null`/`hud-help` bajo el punto proyectado, y radial/picker
+operativos al centro del viewport); tras el arreglo, `npm.cmd run shots` sale
+0 con 19/19 en 2,8 min y escribe los 40 captores en
+`artifacts/screenshots/m16-2026-10-24-stage2/` incluidos `09-tree.png` y
+`10-tree-menu.png`. Los históricos tocados por la capa E2E del gate se
+restauran desde `HEAD`.
+
+## 2026-10-24 — M16 2.G: gate de etapa y línea base de cierre
+
+**Problema:** la etapa 2 se cierra sin una comparación formal contra la línea
+base 0.1: hace falta matriz nueva, diff explícito, cohortes con 20 semillas y
+un documento que explique cada deterioro puntuado.
+
+**Causa:** el cierre de etapa exige el gate completo (R21) y la tarjeta 2.G
+fija el orquestado: capas en serie, diff contra
+`artifacts/verification/m16-baseline/matrix.json`, cohortes `band` y `century`
+a 20 semillas, nunca concurrentes (R27).
+
+**Cambio:** sin cambios de juego ni de versión (el único código fue la
+premisa E2E, commit `7f45fb44`). Matriz nueva 49 escenarios: 1.885 pasan,
+139 fallan, 2.330 n/a. Diff: 140 transiciones; 74 con línea de causa
+(39 pass→fail, 32 pass→na, 3 na→fail), 66 recuperaciones. Cohortes en serie:
+`band` 98,2 % (frente a 97,9 % de 0.1) y 0/20 colapsadas, 601 pasos/s idéntico
+al de 0.1; `century` 48,7 % y 4/20 (fuego 9/20), −4,8 puntos bajo el umbral
+del caos de semilla (R20), registrado sin reclamo. `baseline-2.md` nuevo
+agrupa la lectura: dominio de la sensibilidad al tamaño de muestra, embudo
+demográfico delgado como única candidata con mecanismo consistente, dos
+señales abiertas (`ore-becomes-metal`, `hills-see-farther`) grabadas en
+`bugs.md` y como A15, y conciliación de las entradas A abiertas.
+
+**Verificación:** cadena serial completa con logs por capa en
+`artifacts/verification/m16-2.G-gate-2026-10-24/` (`check-full.log`,
+`matrix.log`+`matrix.json`, `diff.log`, `transitions.csv`, `causes.txt`,
+26 `verbose-<escenario>.log`, `cohort-band.log`, `cohort-century.log`,
+`steps.json`). Typecheck limpio; unitarios 2.474 con el fallo esperado E5;
+E2E 191/11 con premisas corregidas y luego 19/19 enfocado. Capturado el
+tour fechado `artifacts/screenshots/m16-2026-10-24-stage2/`.
+
 ## 2026-10-24 — M16 2.G: los E2E de estaciones vuelven a la regla de territorio
 
 **Problema:** el E2E completo del gate de 2.G vino con 11 fallos agrupados en

@@ -1,5 +1,65 @@
 # M16 diary
 
+## M16 2.G — La gira de capturas recupera su encuadre (2026-10-24)
+
+Symptom: `npm.cmd run shots` died at frame 10 — right-click on the tour tree
+left `.radial` hidden. Diagnosis with a throwaway spec: the follow camera put
+the fruitiest nearby tree at y=816 of an 800-tall viewport, or re-projected it
+under the bottom `hud-help` strip (`elementFromPoint` was `null`, then
+`hud-help`), so the right-click never reached the canvas listener. The radial
+and picker machinery itself was healthy — a ground right-click opened the
+menu all along. Second finding: the tour has run against the config's 60-second
+test timeout since 1.2; this date it died there on two serial runs even after
+the framing fix, finishing its frames at roughly the same second it was
+killed.
+
+Fix, no game code: the tour now snaps the camera two tiles north of the tree
+and freezes it (`snapTo` + `following = false`, the convention the other specs
+already use), recalculates the projection, and restores the follow camera after
+the tree frames; plus a 240-second `test.setTimeout` for the tour itself —
+a capture harness, with its assertion layer being `capture()`'s surface
+check, not a timed assertion suite. After the fix the tour exits 0, 19/19,
+writing `artifacts/screenshots/m16-2026-10-24-stage2/` complete with
+`09-tree.png` and `10-tree-menu.png`.
+
+## M16 2.G — El gate de etapa y su línea base (2026-10-24)
+
+Goal: cerrar la etapa 2 según la tarjeta 2.G: gate completo de cuatro capas,
+matriz nueva y `baseline:diff` explícito contra 0.1, las dos cohortes con 20
+semillas en serie, y `baseline-2.md` con cada transición oscura explicada.
+
+What was done: `check:full` corrió las cuatro capas en serie (51,6 min):
+typecheck limpio, unitarios 358 archivos y 2.474 pruebas con el fallo esperado
+E5, matriz `--slow` roja heredada, E2E con 11 premisas desfasadas que se
+arreglaron en `7f45fb44` antes de continuar. La cadena serial completa:
+matriz nueva 49 escenarios (1.885 pasan, 139 fallan, 2.330 n/a), diff contra
+`m16-baseline/matrix.json` con 140 transiciones — 39 pass→fail, 32 pass→na
+y 3 na→fail enviadas a causa, 66 recuperaciones de sobra — cohortes `band`
+98,2 % (0/20 colapsadas) y `century` 48,7 % (4/20; fuego 9/20) y las 26
+capturas verbose por escenario que dan la línea de causa. `baseline-2.md`
+recoge las 74 líneas y agrupa la lectura: sensibilidad al tamaño de muestra
+dominante, embudo de cortejo→parto delgado en escenarios cortos como
+candidata única con mecanismo, doce checks que giran en ambas direcciones, y
+dos señales a investigar (`ore-becomes-metal` en smiths, `hills-see-farther`
+en harsh-winter/polity) grabadas en `bugs.md` y como A15.
+
+What turned out differently from the card: la matriz creció de 43 a 49
+escenarios (agregados de M16), así que el diff no es igual total contra igual
+total; el diff del card cubre los escenarios compartidos. Las cohortes no
+cuentan como mejora ni como regresión (R20: `century` −4,8 puntos queda debajo
+del umbral del caos); el rendimiento de `band` repite el 601 pasos/s de 0.1
+exacto, señal de comparabilidad de máquina.
+
+What is left open: decidir quién explica el embudo demográfico (propuesto
+para el siguiente bloque), las dos señales en `bugs.md`, y el presupuesto
+por área de 1.7 ya registrado en este mismo día. La auditoría de
+`m16_bugs.md` (N6/N8/N12/A3/A4/E4 como cotejadas) queda sustanciada con las
+pruebas unitarias del propio gate.
+
+Screenshots: `artifacts/screenshots/m16-2026-10-24-stage2/` (tour fechado);
+los históricos reescritos por E2E/tour se restauran desde `HEAD` conforme a
+la convención; el incidente del respaldo incompleto está en `doubts.md`.
+
 ## M16 2.G — Los E2E de estaciones vuelven a la regla de territorio (2026-10-24)
 
 Goal: que el gate completo de etapa vuelva a correr E2E con las aserciones
