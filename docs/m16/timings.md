@@ -24,6 +24,32 @@ sale roja; el nuevo alcanza la cuarta y conserva el código de fallo.
 No se han cronometrado todas las áreas de forma aislada, así que 1.7 no cumple
 todavía su criterio de cierre. Se conserva íntegra la selección de escenarios.
 
+## Cronometraje aislado de áreas — M16 1.7 (2026-10-24)
+
+Las nueve áreas del registro de `tools/simcheck.ts`, ejecutadas en serie sin
+otro proceso en la máquina. Build `0.16.19-alpha`, sin cambios de simulación.
+Evidencia: `artifacts/verification/m16-1.7-area-timings-2026-10-24/` (log,
+`summary.json` y `summary.txt` por área).
+
+| Área | Wall s | Escenarios | Checks aprobados/aplicables | Exit |
+|---|---:|---:|---:|---|
+| foresight | 13,66 | 2 | 54/55 | 1 |
+| player | 42,41 | 6 | 72/77 | 1 |
+| shelter | 102,32 | 7 | 196/218 | 1 |
+| discovery | 150,02 | 4 | 264/287 | 1 |
+| world | 166,99 | 16 | 589/621 | 1 |
+| assembly | 363,97 | 5 | 143/162 | 1 |
+| base | 397,02 | 7 | 352/377 | 1 |
+| objects | 513,49 | 24 | 924/985 | 1 |
+| bands | 546,17 | 13 | 688/751 | 1 |
+
+Cuatro áreas superan el presupuesto de 300 s de la tarjeta: `assembly`,
+`base`, `objects` y `bands`. `objects` repite exactamente su cuenta anterior
+(924/985), señal de que el conteo es estable entre ejecuciones. `base` incluye
+`century`; el escenario lento `generations` no entra en ninguna área porque
+`check:area` lo excluye por defecto (la matriz completa lo corre con `--slow`).
+Exit 1 en todas: son los fallos heredados de la línea base, no del runner.
+
 ## Medición original M16 1.1
 
 Medido el 2026-10-16 en `NoPE` (Windows, AMD64, AMD family 23/model 8),

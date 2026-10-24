@@ -1,3 +1,26 @@
+## 2026-10-24 — M16 1.7: cronometraje aislado de las áreas
+
+**Problema:** el cierre de 1.7 sólo tenía una medida de `objects` con solapes
+de CPU, insuficiente para juzgar el presupuesto de cinco minutos por área.
+
+**Causa:** la medición anterior compartió la máquina con una prueba
+interrumpida y con el gate rápido.
+
+**Cambio:** sin cambios de código, de juego, de versión ni de UI. Las nueve
+áreas del registro corren en serie sin otro proceso en la máquina y se
+registra tiempo de pared, escenarios y checks de cada una.
+
+**Verificación:** `foresight` 13,66 s; `player` 42,41 s; `shelter` 102,32 s;
+`discovery` 150,02 s; `world` 166,99 s; `assembly` 363,97 s; `base` 397,02 s;
+`objects` 513,49 s; `bands` 546,17 s. Cuatro áreas superan el presupuesto de
+300 s (`assembly`, `base`, `objects`, `bands`); `objects` repite 924/985 igual
+que la medición anterior, señal de que el conteo es estable y el único cambio
+fue la contención. `generations` no entra en las áreas porque `check:area` lo
+excluye por defecto. Exit 1 en todas: son los fallos heredados de la línea
+base, no errores del runner. No se recorta ningún escenario ni se modifica un
+límite; la decisión queda para el propietario (R0). Logs y resumen:
+`artifacts/verification/m16-1.7-area-timings-2026-10-24/`.
+
 ## 2026-10-24 — M16 1.7: preparar territorio en los E2E de luz
 
 **Problema:** el E2E heredado de antorchas fallaba antes de encenderlas al

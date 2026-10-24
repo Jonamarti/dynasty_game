@@ -1,5 +1,29 @@
 # M16 diary
 
+## M16 1.7 — Cronometraje aislado de las nueve áreas (2026-10-24)
+
+Goal: dar a cada `check:area` una medición de pared sin carga concurrente para
+poder juzgar el presupuesto de cinco minutos de la tarjeta.
+
+What was done: las nueve áreas del registro de `simcheck.ts` corren en serie,
+una tras otra, sin ningún otro proceso pesando en la CPU. Sin cambios de
+código ni de juego; se registran tiempo, escenarios y checks por área.
+
+Before and after: la medida anterior de `objects` (506,31 s) tenía solapes y
+no valía; la aislada es 513,49 s. `foresight` 13,66 s, `player` 42,41 s,
+`shelter` 102,32 s, `discovery` 150,02 s, `world` 166,99 s, `assembly`
+363,97 s, `base` 397,02 s, `bands` 546,17 s. Cuatro áreas exceden los 300 s y
+`objects` repite su cuenta 924/985 exacta, señal de estabilidad.
+
+What turned out differently from the card: el presupuesto por área no se
+cumple en cuatro de nueve; no se recorta cobertura ni se cambia el límite,
+porque eso es una decisión del propietario (R0). La fase sigue sin cerrarse.
+
+What is left open: la decisión sobre el presupuesto; el gate de etapa 2.G,
+que arranca tras este registro.
+
+Screenshots: ninguna; la medición no cambia la UI.
+
 ## M16 2.10 — El menú no revela la tecnología de un desconocido (2026-10-20, `f94c77e`)
 
 Goal: ensure the action menu does not read a stranger's known technologies or

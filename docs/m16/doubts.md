@@ -157,6 +157,16 @@ se corrigió mediante `TimeManager.dailyTemperature`.
   orchestration, but leave the timing criterion open. No scenario is removed,
   shortened or relabelled to claim the budget passed. Stage verification and
   isolated timings remain explicit pending work.
+- **Resolved as measured, 2026-10-24 (later the same day):** all nine areas ran
+  serially with no concurrent load. Wall times: `foresight` 13.66 s,
+  `player` 42.41 s, `shelter` 102.32 s, `discovery` 150.02 s, `world` 166.99 s,
+  `assembly` 363.97 s, `base` 397.02 s, `objects` 513.49 s, `bands` 546.17 s.
+  Four areas exceed the card's five-minute budget (`assembly`, `base`,
+  `objects`, `bands`); `objects` repeats its previous 924/985 count exactly, so
+  the tally is stable, not noisy. Per R0 nothing is cut and no limit is
+  changed: the commands ship, the budget stays unmet, and shortening scenarios
+  versus redefining the limit is the owner's decision. Recorded in
+  `timings.md` and in the phase's README status; not marked done.
 
 ## Phase 1.7 fast-level duration — 2026-10-18
 

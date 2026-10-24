@@ -326,7 +326,7 @@ A stage ends with the full level (§5) and a screenshot tour.
 | 7 | [1.4](phases/1.4-checkpoint-scenario-keys.md) | Checkpoints of every scenario can be saved (E10) | done 9e567c5 |
 | 8 | [1.5](phases/1.5-fixture-worlds.md) | Fixture worlds | done 64aaef4 |
 | 9 | [1.6](phases/1.6-from-scenarios.md) | Short scenarios that start from a fixture | done 6055379 |
-| 10 | [1.7](phases/1.7-run-levels.md) | Run levels `check:fast/area/full` | commands implemented; full gate retains every layer and hearth E2E fixtures pass (2026-10-24); isolated area timing closeout pending (R0, see doubts.md) |
+| 10 | [1.7](phases/1.7-run-levels.md) | Run levels `check:fast/area/full` | commands implemented; full gate retains every layer and hearth E2E fixtures pass (2026-10-24); isolated area timings measured 2026-10-24: 5/9 areas within the 5-min budget, `assembly`/`base`/`objects`/`bands` exceed it — decision to the owner, stays open (R0, see doubts.md) |
 | 11 | [1.8](phases/1.8-perf.md) | Performance command and budget | done `d58faae9`; verification closeout 2026-10-24 |
 | 12 | [1.9](phases/1.9-red-test-verdicts.md) | A verdict for each known red test (E12) | done a40a6dc |
 
