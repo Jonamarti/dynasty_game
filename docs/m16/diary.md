@@ -1,5 +1,17 @@
 # M16 diary
 
+## M16 2.16 — Cierre documental de N18 (2026-10-24, `92fd53ee`)
+
+Goal: resolver el estado pendiente con la evidencia original del equipo.
+What was done: la tarjeta enlaza capacidad, navegador, typecheck y suite
+del lote del 20 de octubre; se actualizan el plan y N18.
+Before and after: cuatro casos de capacidad y E2E 1/1; suite del lote
+350 archivos y 2.444 pruebas aprobadas, una omitida.
+What turned out differently from the card: el código y las capturas ya estaban;
+se completa documentación sin nuevas ejecuciones o cambios de comportamiento.
+What is left open: la matriz roja y su comparación en el gate 2.G.
+Screenshots: `artifacts/screenshots/m16-2026-10-20-2.16/`, ya existentes.
+
 ## M16 2.12 — Cierre documental de A12 (2026-10-24, `2b25754c`)
 
 Goal: cerrar el estado pendiente contrastando las pruebas guardadas.

@@ -354,7 +354,7 @@ A stage ends with the full level (§5) and a screenshot tour.
 | 30 | [2.11](phases/2.11-talk-under-thirst.md) | Nobody starts a chat they will abandon for thirst (A11) | verified already fixed `35a4cafd` (M12 phase 2c) |
 | 31 | [2.12](phases/2.12-floaters-follow.md) | Floating labels follow their entity (A12) | done `2b25754c`; verification closeout 2026-10-24 |
 | 32 | [2.14](phases/2.14-defend-from-predators.md) | Bandmates defend someone bitten by a predator (A14) | skipped (R0; animal assailant contract, see doubts.md) |
-| 33 | [2.16](phases/2.16-equip-unequip.md) | Everything with a slot can be equipped and removed (N18) — **partly done in M15, verify** | implemented 2026-10-20; full phase verification pending |
+| 33 | [2.16](phases/2.16-equip-unequip.md) | Everything with a slot can be equipped and removed (N18) — **partly done in M15, verify** | done `92fd53ee`; verification closeout 2026-10-24 |
 | 34 | [2.17](phases/2.17-search-food-water.md) | Hungry or thirsty people search farther (N21, N44, E2, E3) — **partly done in M15, verify** | skipped (R0; NPC no-water notice contract, see doubts.md) |
 | 35 | [2.18](phases/2.18-mud-markers.md) | You can see which shore tiles give mud (N32) | done `e9bb7f36` |
 | 36 | [2.20](phases/2.20-bedding-player.md) | The player can use and remove bedding (N38) | done `76ce70d6` |

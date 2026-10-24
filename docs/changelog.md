@@ -1,3 +1,15 @@
+## 2026-10-24 — M16 2.16: cierre documental de retirar equipo
+
+**Problema:** el plan y N18 seguían pendientes de verificar el equipo.
+**Causa:** faltaba enlazar las pruebas del lote del 20 de octubre.
+**Cambio:** se cierra 2.16 (`92fd53ee`) y N18; no cambia el juego ni la UI.
+**Verificación:** se conservan los cuatro casos de capacidad, E2E focal 1/1,
+typecheck y suite de 350 archivos con 2.444 pruebas aprobadas y una omitida.
+Son ejecuciones históricas, detalladas en la tarjeta y en
+`artifacts/verification/m16-session-2026-10-20/`. La matriz de ese lote
+terminó roja; su comparación sigue correspondiendo a 2.G. Capturas existentes:
+`artifacts/screenshots/m16-2026-10-20-2.16/`.
+
 ## 2026-10-24 — M16 2.12: cierre documental de los rótulos
 
 **Problema:** A12 y el plan conservaban «verification closeout pending».
