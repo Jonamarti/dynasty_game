@@ -1,3 +1,30 @@
+## 2026-10-24 — M16 2.G: los E2E de estaciones vuelven a la regla de territorio
+
+**Problema:** el E2E completo del gate de 2.G vino con 11 fallos agrupados en
+phase13d (hoguera con caldo y pan), el metal (phase37 y las cuatro de
+phase40) y la conservación (astro, salina, ahumado).
+
+**Causa:** presema desfasada del fixture, no del juego. Esos tests colocan la
+estación con `sim.place` en un mundo recién generado sin territorio ni obras,
+y desde 2.22 (D-16) toda estación exige territorio propio o un edificio
+terminado a ocho casillas. Mismo tipo que el E2E de antorchas mantenido y
+recuperado en 1.7.
+
+**Cambio:** la regla se conserva; la premisa del test se actualiza. Nuevo
+`placeStationFixtureOnClaimedGround` en `e2e/helpers.ts`, autocontenido y
+serializable: reclama la celda burda no reclamada sólo durante la llamada y la
+restaura en `finally`, con espiral de radios, limpiezas configurables, huellas,
+solapes y modo orilla para la salina. Diez especificaciones sustituyen su
+escaneo en línea por el helper. Sin cambios de juego, versión ni UI.
+
+**Verificación:** enfocado, los 19 de esos archivos pasan (los 11 fallidos
+incluidos) en 1,8 min; antorchas y luz de hogar comparten el archivo y
+mantienen 4/4; `check:fast` 46/46 con typecheck. El gate completo registró los
+11 fallos antes del arreglo en
+`artifacts/verification/m16-2.G-gate-2026-10-24/check-full.log`; la re-corrida
+focal es `artifacts/playwright/`. No se re-corrió el E2E completo por este
+commit; la evidencia de ambos estados queda en el gate y en la fase.
+
 ## 2026-10-24 — M16 1.7: cronometraje aislado de las áreas
 
 **Problema:** el cierre de 1.7 sólo tenía una medida de `objects` con solapes

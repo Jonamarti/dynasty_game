@@ -1,5 +1,6 @@
 import { mkdirSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
+import { placeStationFixtureOnClaimedGround } from './helpers';
 
 test('a physical drying rack makes durable food and appears in the world', async ({ page }) => {
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
@@ -7,17 +8,27 @@ test('a physical drying rack makes durable food and appears in the world', async
   await expect(page.locator('.hud-clock')).not.toBeEmpty({ timeout: 15_000 });
   await page.locator('.hud-button', { hasText: 'Pausa' }).click();
   await page.waitForFunction(() => !!(window as any).__dynasty?.renderer?.art);
-  const made = await page.evaluate(() => {
+  const ready = await page.evaluate(() => {
     const d = (window as any).__dynasty, sim = d.sim, person = sim.player;
+    person.needs.hunger = person.needs.thirst = 0;
     person.knownTech.add('preserving'); sim.knownTech.add('preserving'); person.skills.cook = 100;
     sim.time.tick = sim.config.time.ticksPerDay / 2;
-    let rack: any = null;
-    for (let y = Math.floor(person.y) - 5; y <= person.y + 5 && !rack; y++) {
-      for (let x = Math.floor(person.x) - 5; x <= person.x + 5 && !rack; x++) {
-        rack = sim.place('drying_rack', x, y, person.bandId);
-      }
-    }
-    if (!rack) throw new Error('No rack site');
+    return { originX: person.x, originY: person.y };
+  });
+  // M16 2.22 refuses stations without territory; the fixture band has none.
+  const rackSite = await page.evaluate(placeStationFixtureOnClaimedGround, {
+    kind: 'drying_rack',
+    originX: ready.originX,
+    originY: ready.originY,
+    radiusMin: 0,
+    radiusLimit: 5,
+    nodeClear: 0,
+    treeClear: 0,
+  });
+  const made = await page.evaluate(({ rackSite }) => {
+    const d = (window as any).__dynasty, sim = d.sim, person = sim.player;
+    const rack = sim.buildings.find((building: any) => building.id === rackSite.id);
+    if (!rack) throw new Error('The rack fixture disappeared');
     rack.complete = true; rack.durability = rack.def.workTicks;
     person.x = rack.centerX; person.y = rack.centerY;
     person.targetX = person.x; person.targetY = person.y;
@@ -32,7 +43,7 @@ test('a physical drying rack makes durable food and appears in the world', async
     d.camera.zoom = 5; d.camera.snapTo(rack.centerX, rack.centerY); d.camera.following = false;
     d.renderer.fogEnabled = false; d.renderer.interpolator.clear();
     return { meat: person.inventory.count('dried_meat'), fish: person.inventory.count('dried_fish') };
-  });
+  }, { rackSite });
   expect(made).toEqual({ meat: 2, fish: 2 });
   await page.locator('.hud-tab[data-tab="kit"]').click();
   await expect(page.locator('.hud-panel')).toContainText('Carne seca');

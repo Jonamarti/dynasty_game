@@ -1,6 +1,7 @@
 /** M15 phase 40c: the Metal web names forging in Spanish, and an order turns a bloom into wrought iron at an anvil. */
 import { test, expect, type Page } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
+import { placeStationFixtureOnClaimedGround } from './helpers';
 
 const SHOTS = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m15-phase40-forging-2026-10-08';
 
@@ -38,7 +39,7 @@ test('the Metal TechWeb names forging in Spanish', async ({ page }) => {
 test('an order forges a bloom at an anvil and shows wrought iron in the kit', async ({ page }) => {
   mkdirSync(SHOTS, { recursive: true });
   await openGame(page);
-  const started = await page.evaluate(() => {
+  const ready = await page.evaluate(() => {
     const d = (window as any).__dynasty, sim = d.sim, player = sim.player;
     if (!player) throw new Error('The game did not create a player');
     player.needs.hunger = player.needs.thirst = player.needs.cold = 0;
@@ -50,31 +51,30 @@ test('an order forges a bloom at an anvil and shows wrought iron in the kit', as
     }
     for (const [item, count] of player.inventory.entries()) player.inventory.remove(item, count);
     player.inventory.add('iron_bloom', 1);
-
-    let anvil: any = null;
-    search: for (let radius = 3; radius <= 12; radius++) {
-      for (let angle = 0; angle < 32; angle++) {
-        const x = Math.round(player.x + Math.cos(angle * Math.PI / 16) * radius);
-        const y = Math.round(player.y + Math.sin(angle * Math.PI / 16) * radius);
-        if (!sim.world.isWalkable(x, y) || sim.buildingAt(x, y)) continue;
-        if (sim.nodes.some((n: any) => Math.hypot(n.x - x, n.y - y) <= 2)) continue;
-        if (sim.trees.some((t: any) => t.standing && Math.hypot(t.x - x, t.y - y) <= 2)) continue;
-        anvil = sim.place('anvil', x, y, player.bandId, null);
-        if (anvil) break search;
-      }
-    }
-    if (!anvil) throw new Error('Could not place the anvil fixture in open ground');
-    anvil.complete = true;
-    player.x = anvil.centerX + 1.5;
-    player.y = anvil.centerY + 0.5;
+    return { originX: player.x, originY: player.y };
+  });
+  // M16 2.22 refuses stations without territory; the fixture band has none.
+  const anvil = await page.evaluate(placeStationFixtureOnClaimedGround, {
+    kind: 'anvil',
+    originX: ready.originX,
+    originY: ready.originY,
+  });
+  const started = await page.evaluate(({ anvil }) => {
+    const d = (window as any).__dynasty, sim = d.sim;
+    const player = sim.player;
+    const site = sim.buildings.find((building: any) => building.id === anvil.id);
+    if (!site) throw new Error('The anvil fixture disappeared');
+    site.complete = true;
+    player.x = site.centerX + 1.5;
+    player.y = site.centerY + 0.5;
     player.path = null; player.pathCount = player.pathAt = 0;
     d.camera.snapTo(player.x, player.y);
     d.camera.following = false;
-    if (!sim.order(player, 'craft', { recipeId: 'forge_iron', buildingId: anvil.id })) {
+    if (!sim.order(player, 'craft', { recipeId: 'forge_iron', buildingId: site.id })) {
       throw new Error('The iron forging order was refused: ' + sim.lastRefusal);
     }
-    return { playerId: player.id, anvilId: anvil.id };
-  });
+    return { playerId: player.id, anvilId: site.id };
+  }, { anvil });
 
   const made = await page.evaluate(({ playerId, anvilId }) => {
     const d = (window as any).__dynasty, sim = d.sim;

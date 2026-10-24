@@ -10,6 +10,7 @@
  * any click (AGENTS.md).
  */
 import { test, expect, type Page } from '@playwright/test';
+import { placeStationFixtureOnClaimedGround } from './helpers';
 import { mkdirSync } from 'node:fs';
 
 type Debug = {
@@ -45,7 +46,7 @@ async function openGame(page: Page): Promise<void> {
 
 /** Gives the player what the node needs and puts a finished building on open ground. */
 async function furnish(page: Page, opts: { tech: string[]; items: Record<string, number>; building: string }): Promise<{ x: number; y: number }> {
-  const spot = await page.evaluate(o => {
+  const ready = await page.evaluate(o => {
     const d = (window as never as Debug).__dynasty;
     const self = d.sim.player!;
     // `place` gates on the world's derived tech set, which is rebuilt once a day.
@@ -53,34 +54,32 @@ async function furnish(page: Page, opts: { tech: string[]; items: Record<string,
     for (const [item, count] of self.inventory.entries()) self.inventory.remove(item, count);
     for (const [item, count] of Object.entries(o.items)) self.inventory.add(item, count);
     self.needs.hunger = 0; self.needs.thirst = 0; self.needs.cold = 0;
-    const clear = (x: number, y: number) =>
-      d.sim.world.isWalkable(x, y) && !d.sim.buildingAt(x, y) &&
-      d.sim.livingPeople().every(p => Math.hypot(p.x - x, p.y - y) > 3) &&
-      d.sim.nodes.every(n => Math.hypot(n.x - x, n.y - y) > 3) &&
-      d.sim.trees.every(t => !t.standing || Math.hypot(t.x - x, t.y - y) > 3);
-    for (let radius = 3; radius <= 14; radius++) {
-      for (let angle = 0; angle < 24; angle++) {
-        const x = Math.round(self.x + Math.cos(angle) * radius);
-        const y = Math.round(self.y + Math.sin(angle) * radius);
-        if (!clear(x, y)) continue;
-        if (o.building) {
-          const site = d.sim.place(o.building, x, y, self.bandId, null);
-          if (!site) continue;
-          site.complete = true;
-          d.camera.snapTo(site.centerX, site.centerY);
-          d.camera.following = false;
-          return { x: site.centerX, y: site.centerY };
-        }
-        d.camera.snapTo(x, y);
-        d.camera.following = false;
-        return { x, y };
-      }
-    }
-    return null;
+    return { originX: self.x, originY: self.y };
   }, opts);
-  expect(spot).not.toBeNull();
+  // The building itself goes through the shared station fixture: M16 2.22
+  // refuses stations without territory, which a brand-new band has none of.
+  const site = await page.evaluate(placeStationFixtureOnClaimedGround, {
+    kind: opts.building,
+    originX: ready.originX,
+    originY: ready.originY,
+    radiusLimit: 14,
+    nodeClear: 3,
+    treeClear: 3,
+    peopleClear: 3,
+  });
+  expect(site).not.toBeNull();
+  await page.evaluate(site => {
+    const d = (window as never as Debug).__dynasty;
+    const building = (d.sim as any).buildings.find((candidate: { id: number }) => candidate.id === site.id);
+    if (!building) throw new Error('The hearth fixture disappeared');
+    // The original fixture finished its building in the same breath; the
+    // radial menu only offers Make on a complete hearth.
+    building.complete = true;
+    d.camera.snapTo(building.centerX, building.centerY);
+    d.camera.following = false;
+  }, site);
   await page.evaluate(() => new Promise<void>(r => requestAnimationFrame(() => requestAnimationFrame(() => r()))));
-  return spot!;
+  return { x: site.centerX, y: site.centerY };
 }
 
 async function screenOf(page: Page, p: { x: number; y: number }): Promise<{ x: number; y: number }> {

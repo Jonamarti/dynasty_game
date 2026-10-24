@@ -9,6 +9,7 @@
  * click (AGENTS.md). Captures go to `artifacts/screenshots/m15-phase37-metal-2026-10-07/`.
  */
 import { test, expect, type Page } from '@playwright/test';
+import { placeStationFixtureOnClaimedGround } from './helpers';
 import { mkdirSync } from 'node:fs';
 
 const SHOTS = 'artifacts/screenshots/m15-phase37-metal-2026-10-07';
@@ -95,40 +96,51 @@ test('the metal tier on the ground: the pit, the furnace, a seam of each ore, go
   mkdirSync(SHOTS, { recursive: true });
   await openGame(page);
   // Everything goes within sight of the player, where the fog does not hide it,
-  // and each thing takes the first free spot on a widening ring.
-  const placed = await page.evaluate(() => {
+  // and each thing takes the first free spot on a widening ring. M16 2.22
+  // refuses stations without territory, so both go through the shared
+  // station fixture, second one keeping four tiles from the first.
+  const ready = await page.evaluate(() => {
     const d = (window as never as Debug).__dynasty;
     const self = d.sim.player!;
     self.needs.hunger = 0; self.needs.thirst = 0; self.needs.cold = 0;
     for (const tech of ['firemaking', 'carpentry', 'charcoal', 'kiln', 'smelting']) {
       self.knownTech.add(tech); d.sim.knownTech.add(tech);
     }
-    const taken: [number, number][] = [];
-    const free = (x: number, y: number) =>
-      d.sim.world.isWalkable(x, y) && !d.sim.buildingAt(x, y) &&
-      taken.every(([tx, ty]) => Math.hypot(tx - x, ty - y) > 4) &&
-      d.sim.nodes.every(n => Math.hypot(n.x - x, n.y - y) > 2) &&
-      d.sim.trees.every(t => !t.standing || Math.hypot(t.x - x, t.y - y) > 2);
-    const spots: { id: string; x: number; y: number }[] = [];
-    for (const id of ['charcoal_pit', 'furnace']) {
-      search: for (let radius = 3; radius <= 12; radius++) {
-        for (let angle = 0; angle < 32; angle++) {
-          const x = Math.round(self.x + Math.cos(angle * Math.PI / 16) * radius);
-          const y = Math.round(self.y + Math.sin(angle * Math.PI / 16) * radius);
-          if (!free(x, y)) continue;
-          const site = d.sim.place(id, x, y, self.bandId, null);
-          if (!site) continue;
-          site.complete = true;
-          taken.push([site.centerX, site.centerY]);
-          spots.push({ id, x: site.centerX, y: site.centerY });
-          break search;
-        }
-      }
+    return { originX: self.x, originY: self.y };
+  });
+  const pit = await page.evaluate(placeStationFixtureOnClaimedGround, {
+    kind: 'charcoal_pit',
+    originX: ready.originX,
+    originY: ready.originY,
+  });
+  const furnace = await page.evaluate(placeStationFixtureOnClaimedGround, {
+    kind: 'furnace',
+    originX: ready.originX,
+    originY: ready.originY,
+    overlap: [pit],
+    overlapClear: 4,
+  });
+  const centers = await page.evaluate(ids => {
+    const d = (window as never as Debug).__dynasty;
+    const out: [number, number][] = [];
+    for (const id of ids) {
+      const site = (d.sim as any).buildings.find((building: { id: number }) => building.id === id);
+      if (!site) throw new Error(`The ${id} fixture disappeared`);
+      site.complete = true;
+      out.push([site.centerX, site.centerY]);
     }
+    const self = d.sim.player!;
     d.camera.snapTo(self.x, self.y);
     d.camera.following = false;
-    return { spots, taken };
-  });
+    return out;
+  }, [pit.id, furnace.id]);
+  const placed = {
+    spots: [
+      { id: 'charcoal_pit', x: centers[0]![0], y: centers[0]![1] },
+      { id: 'furnace', x: centers[1]![0], y: centers[1]![1] },
+    ],
+    taken: centers,
+  };
   expect(placed.spots.map(s => s.id)).toEqual(['charcoal_pit', 'furnace']);
   const around = await page.evaluate(taken => {
     const d = (window as never as Debug).__dynasty;

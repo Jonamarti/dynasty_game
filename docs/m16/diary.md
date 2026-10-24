@@ -1,5 +1,35 @@
 # M16 diary
 
+## M16 2.G — Los E2E de estaciones vuelven a la regla de territorio (2026-10-24)
+
+Goal: que el gate completo de etapa vuelva a correr E2E con las aserciones
+originales, después de que la regla de estaciones de 2.22 dejara fuera de
+premisa a once especificaciones.
+
+What was done: el gate de 2.G arrancó con 191 E2E aprobados y 11 fallidos
+(phase13d, el metal de phase37/phase40, y la conservación: astro, salina,
+ahumado). La causa, confirmada reproduciendo cada uno: esos fixtures colocan
+estaciones con `sim.place` en un mundo recién creado, y desde 2.22 (D-16) una
+estación necesita territorio propio. Arreglé la premisa de los fixtures, no la
+regla: `e2e/helpers.ts` gana `placeStationFixtureOnClaimedGround`, serializable
+y autocontenido, que reclama la celda burda no reclamada sólo durante la
+llamada y la restaura en `finally` — el mismo truco del fixture de antorchas de
+1.7 — con espiral de radios, limpiezas de árboles/nodos/personas, huella,
+solapes y modo orilla para la salina. Diez especificaciones cambian su escaneo
+en línea por el helper.
+
+What turned out differently from the card: 2.G espera una comparación de
+matriz, no una reparación de E2E; el arreglo salió del propio gate. Sin
+cambios de juego, versión ni capturas históricas nuevas.
+
+Before and after: antes de la reparación, el gate completo marcaba 11 fallos
+E2E; enfocado, 19/19 pasan y las antorchas y la luz de hogar (comparten
+helpers) mantienen 4/4. `check:fast` 46/46 con typecheck.
+
+What is left open: el resto de 2.G (matriz, diff, cohortes, baseline-2.md).
+
+Screenshots: ninguno; los fixtures reusan capturas históricas.
+
 ## M16 1.7 — Cronometraje aislado de las nueve áreas (2026-10-24)
 
 Goal: dar a cada `check:area` una medición de pared sin carga concurrente para

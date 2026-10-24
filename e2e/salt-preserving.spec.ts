@@ -1,5 +1,6 @@
 import { mkdirSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
+import { placeStationFixtureOnClaimedGround } from './helpers';
 
 test('a coastal salt pan supplies salt for meat and fish', async ({ page }) => {
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
@@ -7,22 +8,38 @@ test('a coastal salt pan supplies salt for meat and fish', async ({ page }) => {
   await expect(page.locator('.hud-clock')).not.toBeEmpty({ timeout: 15_000 });
   await page.locator('.hud-button', { hasText: 'Pausa' }).click();
   await page.waitForFunction(() => !!(window as any).__dynasty?.renderer?.art);
-  const made = await page.evaluate(() => {
+  const ready = await page.evaluate(() => {
     const d = (window as any).__dynasty, sim = d.sim, person = sim.player;
     for (const tech of ['saltmaking', 'salting', 'firemaking']) { person.knownTech.add(tech); sim.knownTech.add(tech); }
     person.skills.cook = 100;
-    let pan: any = null;
-    const shores = [...sim.world.shoreTiles].sort((a, b) => person.distanceTo(a) - person.distanceTo(b));
-    for (const tile of shores) { pan = sim.place('salt_pan', tile.x, tile.y, person.bandId); if (pan) break; }
-    if (!pan) throw new Error('No coastal salt-pan site');
+    return { originX: person.x, originY: person.y };
+  });
+  // M16 2.22 refuses stations without territory; the fixture band has none.
+  // The pan walks the world's shore tiles, nearest first, exactly like the
+  // inline scan it replaces; the hearth sits beside whichever pan succeeds.
+  const panSite = await page.evaluate(placeStationFixtureOnClaimedGround, {
+    kind: 'salt_pan',
+    originX: ready.originX,
+    originY: ready.originY,
+    shore: true,
+    nodeClear: 0,
+    treeClear: 0,
+  });
+  const hearthSite = await page.evaluate(placeStationFixtureOnClaimedGround, {
+    kind: 'hearth',
+    originX: panSite.centerX,
+    originY: panSite.centerY,
+    radiusMin: 1,
+    radiusLimit: 3,
+    nodeClear: 0,
+    treeClear: 0,
+  });
+  const made = await page.evaluate(({ panSite, hearthSite }) => {
+    const d = (window as any).__dynasty, sim = d.sim, person = sim.player;
+    const pan = sim.buildings.find((building: any) => building.id === panSite.id);
+    const fire = sim.buildings.find((building: any) => building.id === hearthSite.id);
+    if (!pan || !fire) throw new Error('The pan or hearth fixture disappeared');
     pan.complete = true; pan.durability = pan.def.workTicks;
-    let fire: any = null;
-    for (let y = pan.y - 2; y <= pan.y + 3 && !fire; y++) {
-      for (let x = pan.x - 2; x <= pan.x + 3 && !fire; x++) {
-        if (Math.hypot(x - pan.centerX, y - pan.centerY) <= 3) fire = sim.place('hearth', x, y, person.bandId);
-      }
-    }
-    if (!fire) throw new Error('No nearby hearth site');
     fire.complete = true; fire.durability = fire.def.workTicks;
     person.x = pan.centerX; person.y = pan.centerY; sim.peopleHash.rebuild(sim.livingPeople());
     person.targetX = person.x; person.targetY = person.y;
@@ -46,7 +63,7 @@ test('a coastal salt pan supplies salt for meat and fish', async ({ page }) => {
     d.camera.zoom = 5; d.camera.snapTo(pan.centerX, pan.centerY); d.camera.following = false;
     d.renderer.fogEnabled = false; d.renderer.interpolator.clear();
     return { salt: person.inventory.count('salt'), meat: person.inventory.count('salted_meat'), fish: person.inventory.count('salted_fish') };
-  });
+  }, { panSite, hearthSite });
   expect(made).toEqual({ salt: 2, meat: 2, fish: 2 });
   await page.locator('.hud-tab[data-tab="kit"]').click();
   await expect(page.locator('.hud-panel')).toContainText('Carne salada');

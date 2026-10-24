@@ -1,6 +1,7 @@
 /** M15 phase 40e: the iron tools web, full kit, and a real six-power dig. */
 import { mkdirSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
+import { placeStationFixtureOnClaimedGround } from './helpers';
 
 const SHOTS = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m15-phase40-iron-tools-2026-10-08';
 
@@ -37,7 +38,7 @@ test('the Metal TechWeb names iron tools in Spanish', async ({ page }) => {
 test('an anvil order makes the four iron tools and the iron spade digs the ground six times as fast', async ({ page }) => {
   mkdirSync(SHOTS, { recursive: true });
   await openGame(page);
-  const fixture = await page.evaluate(() => {
+  const ready = await page.evaluate(() => {
     const d = (window as any).__dynasty, sim = d.sim, player = sim.player;
     if (!player) throw new Error('The game did not create a player');
     player.needs.hunger = player.needs.thirst = player.needs.cold = player.needs.fatigue = 0;
@@ -47,21 +48,28 @@ test('an anvil order makes the four iron tools and the iron spade digs the groun
       player.knownTech.add(tech); player.techLevel.set(tech, 1); sim.knownTech.add(tech);
     }
     for (const [item, count] of player.inventory.entries()) player.inventory.remove(item, count);
-    let anvil: any = null;
-    search: for (let radius = 4; radius <= 20; radius++) {
-      for (let angle = 0; angle < 32; angle++) {
-        const x = Math.round(player.x + Math.cos(angle * Math.PI / 16) * radius);
-        const y = Math.round(player.y + Math.sin(angle * Math.PI / 16) * radius);
-        if (!sim.world.isWalkable(x, y) || sim.buildingAt(x, y)) continue;
-        if (sim.nodes.some((n: any) => Math.hypot(n.x - x, n.y - y) <= 4)) continue;
-        if (sim.trees.some((t: any) => t.standing && Math.hypot(t.x - x, t.y - y) <= 5)) continue;
-        anvil = sim.place('anvil', x, y, player.bandId, null);
-        if (anvil) break search;
-      }
-    }
-    if (!anvil) throw new Error('Could not place the anvil fixture in open ground');
-    anvil.complete = true;
-    player.x = anvil.centerX + 1.5; player.y = anvil.centerY + 0.5;
+    return { originX: player.x, originY: player.y };
+  });
+  // M16 2.22 refuses stations without territory; the fixture band has none.
+  const anvil = await page.evaluate(placeStationFixtureOnClaimedGround, {
+    kind: 'anvil',
+    originX: ready.originX,
+    originY: ready.originY,
+    radiusMin: 4,
+    radiusLimit: 20,
+    nodeClear: 4,
+    treeClear: 5,
+  });
+  const fixture = await page.evaluate(({ anvil }) => {
+    const d = (window as any).__dynasty, sim = d.sim;
+    const player = sim.player;
+    if (!player) throw new Error('The game did not create a player');
+    player.needs.hunger = player.needs.thirst = player.needs.cold = player.needs.fatigue = 0;
+    player.workedTicks = 0; player.skills.smith = 70;
+    const site = sim.buildings.find((building: any) => building.id === anvil.id);
+    if (!site) throw new Error('The anvil fixture disappeared');
+    site.complete = true;
+    player.x = site.centerX + 1.5; player.y = site.centerY + 0.5;
     player.path = null; player.pathCount = player.pathAt = 0;
     d.camera.snapTo(player.x, player.y); d.camera.following = false;
     const recipes = [{ id: 'iron_axe', iron: 1 }, { id: 'iron_adze', iron: 1 },
@@ -69,7 +77,7 @@ test('an anvil order makes the four iron tools and the iron spade digs the groun
     const madeTools: string[] = [];
     for (const { id: recipeId, iron } of recipes) {
       player.inventory.add('wrought_iron', iron);
-      if (!sim.order(player, 'craft', { recipeId, buildingId: anvil.id })) {
+      if (!sim.order(player, 'craft', { recipeId, buildingId: site.id })) {
         throw new Error(`The ${recipeId} order was refused: ${sim.lastRefusal}`);
       }
       const output = recipeId;
@@ -81,8 +89,8 @@ test('an anvil order makes the four iron tools and the iron spade digs the groun
       player.inventory.remove(recipeId, 1);
     }
     for (const tool of madeTools) player.inventory.add(tool, 1);
-    return { playerId: player.id, anvilId: anvil.id };
-  });
+    return { playerId: player.id, anvilId: site.id };
+  }, { anvil });
 
   await page.locator('.hud-tab[data-tab="kit"]').click();
   for (const label of ['Hacha de hierro', 'Azuela de hierro', 'Hoz de hierro', 'Pala de hierro']) {

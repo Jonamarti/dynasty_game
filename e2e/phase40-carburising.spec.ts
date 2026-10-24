@@ -1,6 +1,7 @@
 /** M15 phase 40d: Spanish TechWeb, real steel production, and the stronger steel sword. */
 import { test, expect, type Page } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
+import { placeStationFixtureOnClaimedGround } from './helpers';
 
 const SHOTS = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m15-phase40-carburising-2026-10-08';
 
@@ -37,7 +38,7 @@ test('the Metal TechWeb names carburising in Spanish', async ({ page }) => {
 test('a smith carburises steel and forges the stronger steel sword at an anvil', async ({ page }) => {
   mkdirSync(SHOTS, { recursive: true });
   await openGame(page);
-  const fixture = await page.evaluate(() => {
+  const ready = await page.evaluate(() => {
     const d = (window as any).__dynasty, sim = d.sim, player = sim.player;
     if (!player) throw new Error('The game did not create a player');
     player.needs.hunger = player.needs.thirst = player.needs.cold = player.needs.fatigue = 0;
@@ -50,19 +51,19 @@ test('a smith carburises steel and forges the stronger steel sword at an anvil',
       sim.knownTech.add(tech);
     }
     for (const [item, count] of player.inventory.entries()) player.inventory.remove(item, count);
-    let anvil: any = null;
-    search: for (let radius = 3; radius <= 12; radius++) {
-      for (let angle = 0; angle < 32; angle++) {
-        const x = Math.round(player.x + Math.cos(angle * Math.PI / 16) * radius);
-        const y = Math.round(player.y + Math.sin(angle * Math.PI / 16) * radius);
-        if (!sim.world.isWalkable(x, y) || sim.buildingAt(x, y)) continue;
-        if (sim.nodes.some((n: any) => Math.hypot(n.x - x, n.y - y) <= 2)) continue;
-        if (sim.trees.some((t: any) => t.standing && Math.hypot(t.x - x, t.y - y) <= 2)) continue;
-        anvil = sim.place('anvil', x, y, player.bandId, null);
-        if (anvil) break search;
-      }
-    }
-    if (!anvil) throw new Error('Could not place the anvil fixture in open ground');
+    return { originX: player.x, originY: player.y };
+  });
+  // M16 2.22 refuses stations without territory; the fixture band has none.
+  const site = await page.evaluate(placeStationFixtureOnClaimedGround, {
+    kind: 'anvil',
+    originX: ready.originX,
+    originY: ready.originY,
+  });
+  const fixture = await page.evaluate(({ site }) => {
+    const d = (window as any).__dynasty, sim = d.sim;
+    const player = sim.player;
+    const anvil = sim.buildings.find((building: any) => building.id === site.id);
+    if (!anvil) throw new Error('The anvil fixture disappeared');
     anvil.complete = true;
     player.x = anvil.centerX + 1.5; player.y = anvil.centerY + 0.5;
     player.path = null; player.pathCount = player.pathAt = 0;
@@ -72,7 +73,7 @@ test('a smith carburises steel and forges the stronger steel sword at an anvil',
       throw new Error('The carburising order was refused: ' + sim.lastRefusal);
     }
     return { playerId: player.id, anvilId: anvil.id };
-  });
+  }, { site });
 
   const made = await page.evaluate(async ({ playerId, anvilId }) => {
     const sim = (window as any).__dynasty.sim, player = sim.peopleById.get(playerId);

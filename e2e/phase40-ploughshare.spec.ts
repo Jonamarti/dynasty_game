@@ -1,6 +1,7 @@
 /** M15 phase 40f: Spanish Field TechWeb, a real iron plough, and plough-sown ground. */
 import { mkdirSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
+import { placeStationFixtureOnClaimedGround } from './helpers';
 
 const SHOTS = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m15-phase40-ploughshare-2026-10-08';
 
@@ -32,7 +33,7 @@ test('Field TechWeb names ploughshare in Spanish', async ({ page }) => {
 test('iron plough recipe, free draft pair gate, and real plough sow', async ({ page }) => {
   mkdirSync(SHOTS, { recursive: true });
   await openGame(page);
-  const fixture = await page.evaluate(() => {
+  const ready = await page.evaluate(() => {
     const d = (window as any).__dynasty, sim = d.sim, p = sim.player;
     if (!p) throw new Error('The game did not create a player');
     p.needs.hunger = p.needs.thirst = p.needs.cold = p.needs.fatigue = 0;
@@ -42,25 +43,48 @@ test('iron plough recipe, free draft pair gate, and real plough sow', async ({ p
       p.knownTech.add(id); p.techLevel.set(id, 1); sim.knownTech.add(id);
     }
     for (const [id, count] of p.inventory.entries()) p.inventory.remove(id, count);
-
-    const place = (kind: string, size: number, cx: number, cy: number, lo: number, hi: number) => {
-      for (let r = lo; r <= hi; r++) for (let a = 0; a < 32; a++) {
-        const x = Math.round(cx + Math.cos(a * Math.PI / 16) * r);
-        const y = Math.round(cy + Math.sin(a * Math.PI / 16) * r);
-        let clear = true;
-        for (let dy = -1; dy < size + 1 && clear; dy++) for (let dx = -1; dx < size + 1; dx++) {
-          const tx = x + dx, ty = y + dy;
-          if (!sim.world.isWalkable(tx, ty) || sim.buildingAt(tx, ty) ||
-              sim.trees.some((t: any) => t.standing && Math.hypot(t.x - tx - .5, t.y - ty - .5) < 1.5)) { clear = false; break; }
-        }
-        if (clear) { const b = sim.place(kind, x, y, p.bandId, null); if (b) { b.complete = true; return b; } }
-      }
-      throw new Error('Could not place clear fixture: ' + kind);
-    };
-    const anvil = place('anvil', 3, p.x, p.y, 3, 14);
-    const field = place('field', 4, anvil.centerX + 7, anvil.centerY, 5, 14);
-    const pen = place('pen', 2, field.centerX, field.centerY + 6, 2, 12);
-    pen.store.add('meat', 2);
+    return { originX: p.x, originY: p.y };
+  });
+  // M16 2.22 refuses stations without territory; the fixture band has none,
+  // so the anvil, the field and the pen each go through the shared station
+  // fixture, chained exactly like the inline scans they replace.
+  const anvil = await page.evaluate(placeStationFixtureOnClaimedGround, {
+    kind: 'anvil',
+    originX: ready.originX,
+    originY: ready.originY,
+    radiusLimit: 14,
+    treeClear: 1.5,
+  });
+  const field = await page.evaluate(placeStationFixtureOnClaimedGround, {
+    kind: 'field',
+    originX: anvil.centerX + 7,
+    originY: anvil.centerY,
+    radiusMin: 5,
+    radiusLimit: 14,
+    footprint: { width: 4, height: 4 },
+    nodeClear: 0,
+    treeClear: 1.5,
+  });
+  const pen = await page.evaluate(placeStationFixtureOnClaimedGround, {
+    kind: 'pen',
+    originX: field.centerX,
+    originY: field.centerY + 6,
+    radiusMin: 2,
+    radiusLimit: 12,
+    footprint: { width: 2, height: 2 },
+    nodeClear: 0,
+    treeClear: 1.5,
+  });
+  const fixture = await page.evaluate(({ anvil, field, pen }) => {
+    const d = (window as any).__dynasty, sim = d.sim;
+    const p = sim.player;
+    for (const site of [anvil, field, pen]) {
+      const b = sim.buildings.find((building: any) => building.id === site.id);
+      if (!b) throw new Error('The ' + site.id + ' fixture disappeared');
+      b.complete = true;
+    }
+    const penBuilding = sim.buildings.find((building: any) => building.id === pen.id)!;
+    penBuilding.store.add('meat', 2);
     p.x = anvil.centerX + 2; p.y = anvil.centerY + .5; p.path = null; p.pathCount = p.pathAt = 0;
     d.camera.snapTo(p.x, p.y); d.camera.following = false;
     p.inventory.add('wrought_iron', 1); p.inventory.add('sticks', 2);
@@ -68,7 +92,7 @@ test('iron plough recipe, free draft pair gate, and real plough sow', async ({ p
       throw new Error('Iron plough craft refused: ' + sim.lastRefusal);
     }
     return { playerId: p.id, anvilId: anvil.id, fieldId: field.id, penId: pen.id };
-  });
+  }, { anvil, field, pen });
 
   const crafted = await page.evaluate(({ playerId, anvilId }) => {
     const sim = (window as any).__dynasty.sim, p = sim.peopleById.get(playerId);

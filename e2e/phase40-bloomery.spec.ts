@@ -7,6 +7,7 @@
  * Captures go to artifacts/screenshots/m15-phase40-bloomery-2026-10-07/.
  */
 import { test, expect, type Page } from '@playwright/test';
+import { placeStationFixtureOnClaimedGround } from './helpers';
 import { mkdirSync } from 'node:fs';
 
 const SHOTS = 'artifacts/screenshots/m15-phase40-bloomery-2026-10-07';
@@ -46,7 +47,7 @@ test('the Metal TechWeb names bloomery in Spanish', async ({ page }) => {
 test('an order smelts bog iron at a furnace and shows the bloom in the kit', async ({ page }) => {
   mkdirSync(SHOTS, { recursive: true });
   await openGame(page);
-  const started = await page.evaluate(() => {
+  const ready = await page.evaluate(() => {
     const d = (window as any).__dynasty, sim = d.sim, player = sim.player;
     if (!player) throw new Error('The game did not create a player');
     player.needs.hunger = player.needs.thirst = player.needs.cold = 0;
@@ -58,29 +59,28 @@ test('an order smelts bog iron at a furnace and shows the bloom in the kit', asy
     for (const [item, count] of player.inventory.entries()) player.inventory.remove(item, count);
     player.inventory.add('iron_ore', 2);
     player.inventory.add('charcoal', 1);
-
-    let furnace: any = null;
-    search: for (let radius = 3; radius <= 12; radius++) {
-      for (let angle = 0; angle < 32; angle++) {
-        const x = Math.round(player.x + Math.cos(angle * Math.PI / 16) * radius);
-        const y = Math.round(player.y + Math.sin(angle * Math.PI / 16) * radius);
-        if (!sim.world.isWalkable(x, y) || sim.buildingAt(x, y)) continue;
-        if (sim.nodes.some((n: any) => Math.hypot(n.x - x, n.y - y) <= 2)) continue;
-        if (sim.trees.some((t: any) => t.standing && Math.hypot(t.x - x, t.y - y) <= 2)) continue;
-        furnace = sim.place('furnace', x, y, player.bandId, null);
-        if (furnace) break search;
-      }
-    }
-    if (!furnace) throw new Error('Could not place the furnace fixture in open ground');
-    furnace.complete = true;
-    player.x = furnace.centerX + 1.5;
-    player.y = furnace.centerY + 0.5;
+    return { playerId: player.id, originX: player.x, originY: player.y };
+  });
+  // M16 2.22 refuses stations without territory; the fixture band has none.
+  const furnace = await page.evaluate(placeStationFixtureOnClaimedGround, {
+    kind: 'furnace',
+    originX: ready.originX,
+    originY: ready.originY,
+  });
+  const started = await page.evaluate(({ ready, furnace }) => {
+    const d = (window as any).__dynasty, sim = d.sim;
+    const player = sim.peopleById.get(ready.playerId);
+    const site = sim.buildings.find((building: any) => building.id === furnace.id);
+    if (!site) throw new Error('The furnace fixture disappeared');
+    site.complete = true;
+    player.x = site.centerX + 1.5;
+    player.y = site.centerY + 0.5;
     player.path = null; player.pathCount = player.pathAt = 0;
-    if (!sim.order(player, 'craft', { recipeId: 'smelt_iron', buildingId: furnace.id })) {
+    if (!sim.order(player, 'craft', { recipeId: 'smelt_iron', buildingId: site.id })) {
       throw new Error('The iron smelting order was refused');
     }
     return { playerId: player.id };
-  });
+  }, { ready, furnace });
 
   await expect.poll(
     () => page.evaluate(() => (window as any).__dynasty.renderer.floaters.items.map((item: any) => item.text)),
