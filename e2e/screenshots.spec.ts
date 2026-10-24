@@ -226,7 +226,7 @@ test('tour', async ({ page }) => {
     // every run before this one did.
     await page.evaluate(() => {
       const d = (window as never as {
-        __dynasty: { sim: { player: { x: number; y: number }; camera: { snapTo: (x: number, y: number) => void; following: boolean } } };
+        __dynasty: { sim: { player: { x: number; y: number } | null }; camera: { snapTo: (x: number, y: number) => void; following: boolean } };
       }).__dynasty;
       if (d.sim.player) d.camera.snapTo(d.sim.player.x, d.sim.player.y);
       d.camera.following = true;
