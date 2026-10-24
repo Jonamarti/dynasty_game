@@ -1,3 +1,15 @@
+## 2026-10-24 — M16 2.12: cierre documental de los rótulos
+
+**Problema:** A12 y el plan conservaban «verification closeout pending».
+**Causa:** la evidencia del lote no se había asociado a la tarjeta.
+**Cambio:** se cierra 2.12 (`2b25754c`) y A12, sin modificar el juego.
+**Verificación:** evidencia histórica del 20 de octubre: focales 5/5,
+seguimiento en navegador 1/1 y conjunto de presupuestos 3/3, rápido 46/46;
+la suite posterior del lote pasó 350 archivos y 2.444 pruebas, una omitida.
+Rutas detalladas en la tarjeta; la matriz roja sigue pendiente del gate 2.G.
+No se repiten pruebas ni capturas: se conservan las de
+`artifacts/screenshots/m16-2026-10-20-2.12/`.
+
 ## 2026-10-24 — M16 1.8: cerrar la evidencia del perfilador
 
 **Problema:** la fase seguía pendiente pese a tener las mediciones y la suite

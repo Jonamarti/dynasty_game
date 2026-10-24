@@ -1,5 +1,17 @@
 # M16 diary
 
+## M16 2.12 — Cierre documental de A12 (2026-10-24, `2b25754c`)
+
+Goal: cerrar el estado pendiente contrastando las pruebas guardadas.
+What was done: se enlazan las focales, E2E y suite completa del lote del
+20 de octubre en la tarjeta y se cierra A12 en el triage.
+Before and after: 5/5 focales, 1/1 seguimiento, 3/3 navegador conjunto,
+46/46 rápidas; suite del lote 350 archivos y 2.444 pruebas, una omitida.
+What turned out differently from the card: sólo faltaba documentar el cierre;
+no hubo cambios ni nuevas ejecuciones de pruebas.
+What is left open: comparación de la matriz roja en 2.G.
+Screenshots: `artifacts/screenshots/m16-2026-10-20-2.12/`, ya existentes.
+
 ## M16 1.8 — Cierre de verificación del perfilador (2026-10-24, `d58faae9`)
 
 Goal: enlazar la evidencia existente y resolver el estado pendiente de la fase.

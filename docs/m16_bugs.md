@@ -195,7 +195,7 @@ contradice la columna «Causa probable» de 1b, manda esta.
 | A9 | "Two effects bypass `techPower`" | `doHunt` ya usa el alcance del arma (M8.1) y `axeFactor` escala la tala por `hafting` (M11); quedó un hueco: `hide_armour` no declaraba `armourTech: leatherwork`, por lo que no aplicaba la escala de armadura | cerrado por M16 2.9 (2026-10-20); pruebas de arco, armadura y hacha |
 | A10 | "The catalogue reads a stranger's knowledge" | `personActions` consultaba `other.knownTech` y `other.skills` para habilitar y describir `teach`/`discuss`; el test `m16-stranger-menu-does-not-reveal-known-tech` reproduce la diferencia | cerrado por M16 2.10 (2026-10-20); rechazo de `teach`/`discuss` cubierto | 2.10 |
 | A11 | "A sixth of all conversations are broken off for thirst" | `Brain.score` ya filtra `talk` junto con las demás frases cortadas en cuanto una necesidad pasa el límite de trabajo; `m16-talk-under-thirst` cubre el caso | verificado ya corregido por M12 fase 2c; cerrado 2.11 (2026-10-20) |
-| A12 | "Floaters do not follow the entity" | los rótulos se quedan atrás | A, baja | 2.12 → fixed M16 2.12; verification closeout pending |
+| A12 | "Floaters do not follow the entity" | los rótulos se quedan atrás | cerrado | → closed by M16 2.12 (`2b25754c`); evidencia de unidad, navegador y capturas cotejada el 2026-10-24 |
 | A13 | "M15 equipamiento: matriz roja y cobertura perdida" | 15 fallos nuevos y 12 pérdidas de aplicabilidad sin causa establecida | A | 0.1, 2.13 |
 | A14 | "M15 fase 23e/f" | a quien muerde un depredador nadie lo defiende | A (conducta) | 2.14 |
 
