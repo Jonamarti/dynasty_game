@@ -1,0 +1,12 @@
+
+[check:full] typecheck: npm run typecheck
+
+[check:full] unit: npm test -- --maxWorkers=1 --testTimeout=15000
+
+[check:full] matrix: npm run sim:check:all -- --slow
+
+[check:full] e2e: npm run e2e
+[check:full] typecheck: exit 0
+[check:full] unit: exit 0
+[check:full] matrix: exit 1
+[check:full] e2e: exit 0

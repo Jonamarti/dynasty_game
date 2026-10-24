@@ -33,7 +33,7 @@
     "art:sheet": "vite-node tools/art/sheet.ts --",
     "check:fast": "npm run typecheck && vitest run --config vitest.fast.config.ts",
     "check:area": "vite-node tools/scenarios.ts -- --area",
-    "check:full": "npm run typecheck && npm run test && npm run sim:check:all -- --slow && npm run e2e",
+    "check:full": "vite-node tools/check-full.ts",
     "e2e:ui": "npm run e2e -- --grep-invert \"ArtAtlas preserves|population profiler\"",
     "perf": "vite-node tools/perf.ts"
   },

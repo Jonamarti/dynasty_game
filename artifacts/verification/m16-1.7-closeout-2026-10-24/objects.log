@@ -1,0 +1,35 @@
+
+> dynasty@0.16.19-alpha check:area
+> vite-node tools/scenarios.ts -- --area objects --json artifacts/verification/m16-1.7-closeout-2026-10-24/objects.json
+
+
+SCENARIO MATRIX
+==============================================================================
+  scenario        checks    steps/s     failures
+  salters         1/1       571         -
+  tailors         3/3       726         -
+  homes           7/7       341         -
+  ironsmiths      1/1       2,362       -
+  forgers         1/1       2,083       -
+  ironminers      1/1       2,564       -
+  carburisers     1/1       2,083       -
+  ironworkers     1/1       1,724       -
+  ploughmen       1/1       1,090       -
+  smiths          63/71     353         nights-are-slept, moods-move-choices, gossip-is-aimed, projects-find-backers, roast-wins, cooking-spreads, discovery-is-situated, ore-becomes-metal
+  craft           67/72     492         people-act-on-what-they-know, nights-are-slept, sub-webs-are-climbed, discovery-is-situated, peoples-drift-apart
+  porters         54/56     850         nights-are-slept, moods-move-choices
+  traps           64/66     660         nights-are-slept, gossip-is-aimed
+  millers         72/76     904         nights-are-slept, population-persists, projects-find-backers, generations-turn-over
+  hunters         58/63     573         people-act-on-what-they-know, nights-are-slept, gossip-is-aimed, kills-are-butchered-for-bone, discovery-is-situated
+  fishers         63/66     727         nights-are-slept, gossip-is-aimed, food-spoils
+  farmers         71/74     358         nights-are-slept, techs-are-refined, animals-are-tamed
+  herders         70/75     492         nights-are-slept, gossip-is-aimed, projects-find-backers, animals-are-tamed, discovery-is-situated
+  feasts          73/77     344         nights-are-slept, techs-are-refined, discovery-is-situated, bands-take-sides
+  stewards        70/76     460         people-act-on-what-they-know, nights-are-slept, moods-move-choices, techs-are-refined, discovery-is-situated, bands-take-sides
+  labour          63/69     251         nights-are-slept, moods-move-choices, people-survive, gossip-is-aimed, shelter-answers-cold, research-is-social
+  labour-from     1/1       1,515       -
+  diggers         56/62     604         nights-are-slept, needs-not-pinned, gossip-is-aimed, projects-find-backers, research-is-social, spatial-hash-spreads
+  orchard         62/64     892         nights-are-slept, people-survive
+==============================================================================
+SOME SCENARIOS FAILED
+

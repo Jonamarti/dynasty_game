@@ -1,3 +1,29 @@
+## 2026-10-24 — M16 1.7: ejecutar todas las capas del gate completo
+
+**Problema:** `check:full` omitía E2E cuando la matriz heredada terminaba roja.
+
+**Causa:** el encadenamiento con `&&` detenía el comando antes de su cuarta capa.
+
+**Cambio:** un orquestador serial ejecuta typecheck, unitarios completos con
+los flags de Windows, matriz con `--slow` y E2E. Imprime los códigos por capa
+y conserva el fallo global aunque las siguientes pasen; un error de arranque
+identifica la capa. `verify` mantiene su alias. No cambia juego, versión o UI.
+
+**Verificación:** la reproducción del comando anterior invoca tres capas;
+el CLI nuevo invoca las cuatro ante la misma matriz simulada roja y termina
+con código 1. Cinco pruebas focales pasan, incluido el CLI real con un npm
+simulado explícito. `check:fast` pasa typecheck y 46/46 pruebas en 45,59 s.
+`objects` termina con 924/985 checks aplicables aprobados y 61 rojos en 24
+escenarios. Su tiempo de 506,31 s tuvo solapamiento y no cierra el presupuesto
+aislado de cinco minutos; 1.7 permanece pendiente de tiempos y del gate de etapa.
+La primera prueba del CLI arrancó verificaciones reales por la ruta heredada
+de npm: se detuvo su árbol y ese intento no cuenta como suite completa.
+La prueba final aísla el ejecutable. La suite completa del lote final se ejecutó
+una vez: 358 archivos aprobados, 2.474 pruebas aprobadas, un fallo esperado E5 y
+una omitida; salida 0 en 987,27 s. La matriz roja se informa por separado.
+Evidencia:
+`artifacts/verification/m16-1.7-closeout-2026-10-24/`.
+
 ## 2026-10-24 — M16 2.16: cierre documental de retirar equipo
 
 **Problema:** el plan y N18 seguían pendientes de verificar el equipo.

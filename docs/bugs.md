@@ -1,3 +1,18 @@
+## 2026-10-24 — M16 1.7: falta cerrar los tiempos de área
+
+`check:area -- objects` ejecuta 24 escenarios y termina rojo con 61 fallos de
+985 checks aplicables. Tardó 506,31 s, pero hubo carga concurrente por un intento
+interrumpido del test del CLI y el control rápido. No es una medición aislada
+que permita decidir el presupuesto de cinco minutos de la tarjeta. Las demás
+áreas siguen sin cronometraje de cierre. No se cambian escenarios, umbrales ni
+simulación; la fase queda pendiente de esa medición y del gate de etapa.
+Evidencia: `artifacts/verification/m16-1.7-closeout-2026-10-24/`.
+
+El problema independiente de que `check:full` omitiese E2E tras una matriz roja
+queda corregido con pruebas focales de las cuatro invocaciones y el fallo
+agregado. El test del CLI ahora usa un ejecutable simulado explícito; el intento
+interrumpido que arrancó verificaciones reales no cuenta como suite aprobada.
+
 ## 2026-10-24 — M16 2.26: preparación heredada del E2E de antorchas
 
 `phase12d-torch.spec.ts`, caso «a lit torch is visible…», no consigue colocar

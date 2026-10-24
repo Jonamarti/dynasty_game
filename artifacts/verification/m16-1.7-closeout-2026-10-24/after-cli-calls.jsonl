@@ -1,0 +1,4 @@
+["run","typecheck"]
+["test","--","--maxWorkers=1","--testTimeout=15000"]
+["run","sim:check:all","--","--slow"]
+["run","e2e"]

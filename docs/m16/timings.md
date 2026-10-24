@@ -1,5 +1,31 @@
 # M16 1.1 — Coste de las verificaciones
 
+## Seguimiento M16 1.7 — 2026-10-24
+
+Build `0.16.19-alpha`; sólo cambia el orquestador de verificaciones, sin cambios
+en la simulación. Evidencia:
+`artifacts/verification/m16-1.7-closeout-2026-10-24/`.
+
+| Comando | Wall s | Resultado | Límite de interpretación |
+|---|---:|---|---|
+| `check:fast` | 45,59 | typecheck y 9 archivos / 46 pruebas aprobadas | se solapó parcialmente con el área; queda por debajo de 120 s en esta ejecución |
+| `check:area -- objects` | 506,31 | 24 escenarios; 924/985 aplicables aprobados, 61 rojos | tuvo carga concurrente; **no** es una medida aislada del presupuesto de 300 s |
+| `npm.cmd test -- --maxWorkers=1 --testTimeout=15000` | 987,27* | 358 archivos; 2.474 aprobadas, un fallo esperado E5 y una omitida; salida 0 | única suite completa del lote final |
+
+\* Duración informada por Vitest; no incluye el arranque de npm.
+
+La prueba inicial del CLI heredó la ruta real de npm y arrancó verificaciones
+reales; se identificó y detuvo su árbol de procesos antes de E2E. Ese intento
+interrumpido no es una suite completa ni una medición válida. La prueba final
+usa `CHECK_FULL_NPM_CLI` con un stub temporal explícito; pasa 5/5 sin ejecutar
+capas reales. El comando original corta tras la tercera capa cuando la matriz
+sale roja; el nuevo alcanza la cuarta y conserva el código de fallo.
+
+No se han cronometrado todas las áreas de forma aislada, así que 1.7 no cumple
+todavía su criterio de cierre. Se conserva íntegra la selección de escenarios.
+
+## Medición original M16 1.1
+
 Medido el 2026-10-16 en `NoPE` (Windows, AMD64, AMD family 23/model 8),
 branch `m16`, commit de partida `74dd860`, versión `0.15.160-alpha`. No se
 cambió código. Las salidas originales están en

@@ -1,42 +1,5 @@
 # M16 diary
 
-## M16 2.16 — Cierre documental de N18 (2026-10-24, `92fd53ee`)
-
-Goal: resolver el estado pendiente con la evidencia original del equipo.
-What was done: la tarjeta enlaza capacidad, navegador, typecheck y suite
-del lote del 20 de octubre; se actualizan el plan y N18.
-Before and after: cuatro casos de capacidad y E2E 1/1; suite del lote
-350 archivos y 2.444 pruebas aprobadas, una omitida.
-What turned out differently from the card: el código y las capturas ya estaban;
-se completa documentación sin nuevas ejecuciones o cambios de comportamiento.
-What is left open: la matriz roja y su comparación en el gate 2.G.
-Screenshots: `artifacts/screenshots/m16-2026-10-20-2.16/`, ya existentes.
-
-## M16 2.12 — Cierre documental de A12 (2026-10-24, `2b25754c`)
-
-Goal: cerrar el estado pendiente contrastando las pruebas guardadas.
-What was done: se enlazan las focales, E2E y suite completa del lote del
-20 de octubre en la tarjeta y se cierra A12 en el triage.
-Before and after: 5/5 focales, 1/1 seguimiento, 3/3 navegador conjunto,
-46/46 rápidas; suite del lote 350 archivos y 2.444 pruebas, una omitida.
-What turned out differently from the card: sólo faltaba documentar el cierre;
-no hubo cambios ni nuevas ejecuciones de pruebas.
-What is left open: comparación de la matriz roja en 2.G.
-Screenshots: `artifacts/screenshots/m16-2026-10-20-2.12/`, ya existentes.
-
-## M16 1.8 — Cierre de verificación del perfilador (2026-10-24, `d58faae9`)
-
-Goal: enlazar la evidencia existente y resolver el estado pendiente de la fase.
-What was done: se cotejaron los tres perfiles seriales del 20 de octubre,
-las pruebas del informe y la suite completa posterior del mismo lote.
-Before and after: sin nuevas mediciones; se conservan 1,4781/16,1854 ms por
-paso con 30/300 personas. El lote pasó 350 archivos y 2.444 pruebas, una omitida.
-What turned out differently from the card: el trabajo ya estaba implementado;
-faltaba asociar explícitamente el cierre conjunto a la tarjeta.
-What is left open: el gate de etapa, la matriz roja y los límites de FPS/largo
-plazo siguen separados de este contrato de medición.
-Screenshots: ninguna; no cambia la UI.
-
 ## M16 2.10 — El menú no revela la tecnología de un desconocido (2026-10-20, `f94c77e`)
 
 Goal: ensure the action menu does not read a stranger's known technologies or
@@ -1013,3 +976,58 @@ El guard impide que reconciliar la carga suelte la llama recién recibida.
 Tras ese ajuste pasan `conflicts`, el control rápido y las mismas huellas.
 No se declara verde la ejecución completa ni se repite por el commit.
 Screenshots: `artifacts/screenshots/m16-2026-10-24-2.26/`.
+
+## M16 2.16 — Cierre documental de N18 (2026-10-24, `92fd53ee`)
+
+Goal: resolver el estado pendiente con la evidencia original del equipo.
+What was done: la tarjeta enlaza capacidad, navegador, typecheck y suite
+del lote del 20 de octubre; se actualizan el plan y N18.
+Before and after: cuatro casos de capacidad y E2E 1/1; suite del lote
+350 archivos y 2.444 pruebas aprobadas, una omitida.
+What turned out differently from the card: el código y las capturas ya estaban;
+se completa documentación sin nuevas ejecuciones o cambios de comportamiento.
+What is left open: la matriz roja y su comparación en el gate 2.G.
+Screenshots: `artifacts/screenshots/m16-2026-10-20-2.16/`, ya existentes.
+
+## M16 2.12 — Cierre documental de A12 (2026-10-24, `2b25754c`)
+
+Goal: cerrar el estado pendiente contrastando las pruebas guardadas.
+What was done: se enlazan las focales, E2E y suite completa del lote del
+20 de octubre en la tarjeta y se cierra A12 en el triage.
+Before and after: 5/5 focales, 1/1 seguimiento, 3/3 navegador conjunto,
+46/46 rápidas; suite del lote 350 archivos y 2.444 pruebas, una omitida.
+What turned out differently from the card: sólo faltaba documentar el cierre;
+no hubo cambios ni nuevas ejecuciones de pruebas.
+What is left open: comparación de la matriz roja en 2.G.
+Screenshots: `artifacts/screenshots/m16-2026-10-20-2.12/`, ya existentes.
+
+## M16 1.8 — Cierre de verificación del perfilador (2026-10-24, `d58faae9`)
+
+Goal: enlazar la evidencia existente y resolver el estado pendiente de la fase.
+What was done: se cotejaron los tres perfiles seriales del 20 de octubre,
+las pruebas del informe y la suite completa posterior del mismo lote.
+Before and after: sin nuevas mediciones; se conservan 1,4781/16,1854 ms por
+paso con 30/300 personas. El lote pasó 350 archivos y 2.444 pruebas, una omitida.
+What turned out differently from the card: el trabajo ya estaba implementado;
+faltaba asociar explícitamente el cierre conjunto a la tarjeta.
+What is left open: el gate de etapa, la matriz roja y los límites de FPS/largo
+plazo siguen separados de este contrato de medición.
+Screenshots: ninguna; no cambia la UI.
+
+## M16 1.7 — El gate completo conserva todas sus capas (2026-10-24)
+
+Goal: ejecutar E2E incluso cuando la matriz termine con fallos heredados.
+What was done: el orquestador sustituye el encadenamiento con `&&`, ejecuta
+las cuatro capas serialmente y conserva sus códigos de fallo. La prueba del
+CLI usa un npm simulado explícito para no arrancar otra suite desde Vitest.
+Before and after: el comando anterior invoca tres capas con la matriz roja;
+el nuevo invoca cuatro y devuelve 1. Focales 5/5; rápido 46/46. La suite
+completa del lote final pasa 358 archivos y 2.474 pruebas, con un fallo esperado
+E5 y una omitida; una sola ejecución completa, 987,27 s.
+What turned out differently from the card: el área objects tarda 506,31 s en
+una ejecución con solapamiento; no demuestra el presupuesto aislado de cinco
+minutos. El primer intento del test CLI arrancó procesos reales y se detuvo;
+no cuenta como suite completa ni como medición válida.
+What is left open: tiempos aislados de todas las áreas, gate de etapa y 2.G.
+Los 61 fallos de 985 checks aplicables en objects no se presentan como verde.
+Screenshots: ninguna; este cambio de orquestación no modifica la UI.

@@ -142,6 +142,22 @@ se corrigió mediante `TimeManager.dailyTemperature`.
   card's suspected stale-start/view defect is not present on this build; no
   travel or view code changed. Keep the regression coverage.
 
+## Phase 1.7 area timing closeout — 2026-10-24
+
+- **Phase:** 1.7.
+- **Expected:** every `check:area` completes in less than five minutes.
+- **Found:** `objects` ran 24 scenarios in 506.31 s, but overlapped an
+  accidentally started and interrupted CLI-test child and the fast gate.
+  This cannot establish an isolated area budget; the other areas were not
+  timed. The game and scenario selections are unchanged by this follow-up.
+- **File:line:** `docs/m16/phases/1.7-run-levels.md:29`,
+  `tools/simcheck.ts:1308` (area registry),
+  `artifacts/verification/m16-1.7-closeout-2026-10-24/objects-timing.json`.
+- **Resolution:** retain the implemented commands and corrected full-gate
+  orchestration, but leave the timing criterion open. No scenario is removed,
+  shortened or relabelled to claim the budget passed. Stage verification and
+  isolated timings remain explicit pending work.
+
 ## Phase 1.7 fast-level duration — 2026-10-18
 
 **Resolved direction, 2026-10-20:** the owner explicitly requested reducing
