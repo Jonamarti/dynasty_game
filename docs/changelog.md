@@ -1,3 +1,26 @@
+## 2026-10-24 — M16 2.G: guardar la matriz en el gate completo
+
+**Problema:** el gate debía comparar una matriz JSON, pero `check:full` no
+permitía conservarla y obligaba a repetir la simulación para obtenerla.
+
+**Causa:** la capa de matriz tenía argumentos fijos sin destino de salida.
+
+**Cambio:** `check:full -- --matrix-json <ruta>` añade sólo la salida JSON a
+esa capa. Se conservan las cuatro capas, escenarios lentos y flags unitarios.
+Los argumentos incompletos o una bandera usada como ruta se rechazan antes de
+arrancar pruebas. Las invocaciones copian sus argumentos sin mutar los defaults.
+Sin cambios de juego, versión o UI.
+
+**Verificación:** siete focales pasan, incluido el CLI con npm simulado. La
+reproducción del comando anterior demuestra que ignoraba la ruta y no reenviaba
+`--json`. El rápido pasa 46/46 con typecheck. La suite completa única de 2.G
+se ejecutará dentro de su gate; esta entrada no declara ese gate terminado.
+Evidencia: `artifacts/verification/m16-2.G-2026-10-24/`.
+
+**Medición pendiente de 1.7 resuelta como incumplimiento:** `objects` aislado
+tarda 577,99 s y conserva los mismos estados (924 aprobados, 61 fallidos de
+985 aplicables). El límite de 300 s sigue abierto; no se altera cobertura.
+
 ## 2026-10-24 — M16 1.7: preparar territorio en los E2E de luz
 
 **Problema:** el E2E heredado de antorchas fallaba antes de encenderlas al

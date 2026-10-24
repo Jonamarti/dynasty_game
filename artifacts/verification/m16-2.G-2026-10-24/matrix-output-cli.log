@@ -1,0 +1,16 @@
+
+> dynasty@0.16.19-alpha check:full
+> vite-node tools/check-full.ts --matrix-json artifacts/verification/m16-2.G-2026-10-24/matrix with spaces.json
+
+
+[check:full] typecheck: npm run typecheck
+
+[check:full] unit: npm test -- --maxWorkers=1 --testTimeout=15000
+
+[check:full] matrix: npm run sim:check:all -- --slow --json artifacts/verification/m16-2.G-2026-10-24/matrix with spaces.json
+
+[check:full] e2e: npm run e2e
+[check:full] typecheck: exit 0
+[check:full] unit: exit 0
+[check:full] matrix: exit 1
+[check:full] e2e: exit 0

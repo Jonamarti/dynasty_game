@@ -1,5 +1,19 @@
 import { spawnSync } from 'node:child_process';
-import { FULL_CHECK_COMMANDS, runFullCheck } from './check-full-runner.ts';
+import { fullCheckCommands, runFullCheck, type FullCheckCommand } from './check-full-runner.ts';
+
+function matrixJsonPathFromArgs(args: string[]): string | undefined {
+  if (args.length === 0) return undefined;
+  if (args[0] !== '--matrix-json') {
+    throw new Error(`Unknown check:full argument: ${args[0]}`);
+  }
+  const path = args[1];
+  // Catch a missing value that would consume the next flag as a path and waste the full gate
+  // before the matrix command can reject it.
+  if (args.length !== 2 || typeof path !== 'string' || !path.trim() || path.startsWith('--')) {
+    throw new Error('--matrix-json requires a non-empty path (not another flag) and accepts no extra arguments');
+  }
+  return path;
+}
 
 function npmCliPath(): string {
   // Explicit injection keeps the subprocess contract test from launching the
@@ -9,7 +23,7 @@ function npmCliPath(): string {
   return npmPath;
 }
 
-function runNpmCommand(command: (typeof FULL_CHECK_COMMANDS)[number], npmPath: string): number {
+function runNpmCommand(command: FullCheckCommand, npmPath: string): number {
   console.log(`\n[check:full] ${command.name}: npm ${command.args.join(' ')}`);
   const child = spawnSync(process.execPath, [npmPath, ...command.args], {
     cwd: process.cwd(),
@@ -26,8 +40,19 @@ function runNpmCommand(command: (typeof FULL_CHECK_COMMANDS)[number], npmPath: s
 }
 
 function main(): void {
+  let matrixJsonPath: string | undefined;
+  try {
+    matrixJsonPath = matrixJsonPathFromArgs(process.argv.slice(2));
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    console.error(`[check:full] ${detail}`);
+    console.error('[check:full] usage: npm run check:full -- [--matrix-json <path>]');
+    process.exitCode = 2;
+    return;
+  }
+
   const npmPath = npmCliPath();
-  const summary = runFullCheck(FULL_CHECK_COMMANDS, (command) => runNpmCommand(command, npmPath));
+  const summary = runFullCheck(fullCheckCommands(matrixJsonPath), (command) => runNpmCommand(command, npmPath));
   for (const result of summary.results) {
     console.log(`[check:full] ${result.name}: exit ${result.exitCode}`);
   }

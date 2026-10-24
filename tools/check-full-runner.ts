@@ -20,6 +20,17 @@ export const FULL_CHECK_COMMANDS: FullCheckCommand[] = [
   { name: 'e2e', args: ['run', 'e2e'] },
 ];
 
+/** Return an invocation-specific copy so adding matrix output never mutates the default gate. */
+export function fullCheckCommands(matrixJsonPath?: string): FullCheckCommand[] {
+  const commands = FULL_CHECK_COMMANDS.map((command) => ({ ...command, args: [...command.args] }));
+  if (matrixJsonPath !== undefined) {
+    const matrix = commands.find((command) => command.name === 'matrix');
+    if (!matrix) throw new Error('check:full matrix command is missing');
+    matrix.args.push('--json', matrixJsonPath);
+  }
+  return commands;
+}
+
 /**
  * Run each verification layer in order, even when a completed layer exits red.
  * A spawn failure is different from a test failure: surface it immediately so

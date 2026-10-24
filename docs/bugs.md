@@ -1,5 +1,11 @@
 ## 2026-10-24 — M16 1.7: falta cerrar los tiempos de área
 
+**Seguimiento aislado:** `objects` repite exactamente sus estados de checks en
+577,99 s, sin otras pruebas pesadas en paralelo. El límite de cinco minutos
+queda incumplido; no se recortan escenarios para aprobarlo. Logs y diff:
+`artifacts/verification/m16-2.G-2026-10-24/objects-isolated-*` y
+`objects-status-diff.log`.
+
 `check:area -- objects` ejecuta 24 escenarios y termina rojo con 61 fallos de
 985 checks aplicables. Tardó 506,31 s, pero hubo carga concurrente por un intento
 interrumpido del test del CLI y el control rápido. No es una medición aislada

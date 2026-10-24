@@ -1048,3 +1048,16 @@ corregidos antes de la validación final.
 What is left open: los tiempos aislados de 1.7 y el gate 2.G con matriz,
 cohortes seriales y capturas de etapa.
 Screenshots: artifacts/screenshots/m16-2026-10-24-1.7-fixtures/.
+
+## M16 2.G — Destino JSON de la matriz en el gate (2026-10-24)
+Goal: obtener la comparación requerida sin repetir toda la matriz.
+What was done: el gate admite --matrix-json; conserva todas las capas y
+valida la ruta antes de ejecutar pruebas. Las invocaciones son independientes.
+Before and after: antes se ignoraba la ruta; ahora siete pruebas focales
+cubren el destino, el CLI y los argumentos inválidos. Rápido: 46/46.
+What turned out differently from the card: faltaba exponer el destino JSON
+que el comando de matriz ya admitía. No hay cambios de simulación.
+What is left open: el gate completo, su comparación, cohortes y capturas.
+El replay aislado de objects tomó 577,99 s, con estados idénticos; no cumple
+el presupuesto de cinco minutos de 1.7 y se registra sin recortar cobertura.
+Screenshots: ninguna; herramienta sin cambios de UI.

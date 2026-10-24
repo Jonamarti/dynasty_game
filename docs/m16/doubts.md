@@ -144,6 +144,15 @@ se corrigió mediante `TimeManager.dailyTemperature`.
 
 ## Phase 1.7 area timing closeout — 2026-10-24
 
+**Isolated follow-up:** `check:area -- objects` subsequently ran without other
+heavy tests or cohorts in 577.99 s, exit 1, 24 scenarios, 924/985 applicable
+checks passing and 61 failing. The check states match the earlier output
+exactly. The 300 s budget is now measured as unmet for this area. No scenario
+is removed, shortened or relabelled; the command remains available while the
+phase's timing criterion stays open. Raw evidence:
+`artifacts/verification/m16-2.G-2026-10-24/objects-isolated-timing.json` and
+`objects-status-diff.log`.
+
 - **Phase:** 1.7.
 - **Expected:** every `check:area` completes in less than five minutes.
 - **Found:** `objects` ran 24 scenarios in 506.31 s, but overlapped an

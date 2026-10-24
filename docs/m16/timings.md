@@ -2,6 +2,13 @@
 
 ## Seguimiento M16 1.7 — 2026-10-24
 
+**Repetición aislada posterior:** `check:area -- objects` tarda **577,99 s**
+sin otras suites o cohortes en paralelo. Son 24 escenarios, 924/985 aplicables
+aprobados y 61 rojos; `baseline:diff` confirma estados idénticos a la salida
+anterior. El presupuesto de 300 s no se cumple. Evidencia:
+`artifacts/verification/m16-2.G-2026-10-24/objects-isolated-timing.json` y
+`objects-status-diff.log`. Se conserva toda la cobertura.
+
 Build `0.16.19-alpha`; sólo cambia el orquestador de verificaciones, sin cambios
 en la simulación. Evidencia:
 `artifacts/verification/m16-1.7-closeout-2026-10-24/`.

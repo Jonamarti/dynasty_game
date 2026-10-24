@@ -1,0 +1,5 @@
+
+> dynasty@0.16.19-alpha baseline:diff
+> vite-node tools/baseline-diff.ts -- artifacts/verification/m16-1.7-closeout-2026-10-24/objects.json artifacts/verification/m16-2.G-2026-10-24/objects-isolated.json
+
+No check status changes.
