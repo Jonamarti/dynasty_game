@@ -1,0 +1,60 @@
+﻿
+> dynasty@0.16.19-alpha sim:check:all
+> vite-node tools/scenarios.ts -- --slow --json C:\Users\Marty\Documents\Work\Programs\dynastyGame\artifacts\verification\m16-2.G-gate-2026-10-24/matrix.json
+
+
+SCENARIO MATRIX
+==============================================================================
+  scenario        checks    steps/s     failures
+  nights          3/3       467         -
+  salters         1/1       554         -
+  tailors         3/3       760         -
+  homes           7/7       366         -
+  ironsmiths      1/1       2,362       -
+  forgers         1/1       2,000       -
+  ironminers      1/1       2,410       -
+  carburisers     1/1       1,840       -
+  ironworkers     1/1       1,676       -
+  ploughmen       1/1       1,146       -
+  smiths          63/71     357         nights-are-slept, moods-move-choices, gossip-is-aimed, projects-find-backers, roast-wins, cooking-spreads, discovery-is-situated, ore-becomes-metal
+  frontier-cohort 3/3       464         -
+  frontier        2/2       7,692       -
+  food-news       1/1       4,724       -
+  conflicts       1/1       1,481       -
+  conflicts-from  0/0       3,029       -
+  tiny            40/43     2,022       moods-move-choices, materials-delivered, forest-is-used
+  band            51/52     631         moods-move-choices
+  band-from       3/3       4,204       -
+  crowded         56/57     235         moods-move-choices
+  century         73/77     469         people-act-on-what-they-know, nights-are-slept, the-wise-avoid-baneberries, bands-take-sides
+  craft           67/72     466         people-act-on-what-they-know, nights-are-slept, sub-webs-are-climbed, discovery-is-situated, peoples-drift-apart
+  wilds           68/70     524         nights-are-slept, the-wise-avoid-baneberries
+  emptied         54/59     1,176       nights-are-slept, moods-move-choices, gossip-is-aimed, projects-find-backers, research-is-social
+  hearths         68/75     529         people-act-on-what-they-know, nights-are-slept, moods-move-choices, gossip-is-aimed, roast-wins, sub-webs-are-climbed, bands-take-sides
+  hearths-from    1/1       1,445       -
+  porters         54/56     786         nights-are-slept, moods-move-choices
+  scribes         66/69     454         nights-are-slept, the-wise-avoid-baneberries, discovery-is-situated
+  harsh-winter    56/58     572         shelter-answers-cold, hills-see-farther
+  coast           52/54     763         walkers-do-not-grind, projects-find-backers
+  shallows        6/6       920         -
+  traps           64/66     667         nights-are-slept, gossip-is-aimed
+  millers         72/76     889         nights-are-slept, population-persists, projects-find-backers, generations-turn-over
+  hunters         58/63     582         people-act-on-what-they-know, nights-are-slept, gossip-is-aimed, kills-are-butchered-for-bone, discovery-is-situated
+  fishers         63/66     752         nights-are-slept, gossip-is-aimed, food-spoils
+  farmers         71/74     369         nights-are-slept, techs-are-refined, animals-are-tamed
+  herders         70/75     537         nights-are-slept, gossip-is-aimed, projects-find-backers, animals-are-tamed, discovery-is-situated
+  feasts          73/77     390         nights-are-slept, techs-are-refined, discovery-is-situated, bands-take-sides
+  stewards        70/76     503         people-act-on-what-they-know, nights-are-slept, moods-move-choices, techs-are-refined, discovery-is-situated, bands-take-sides
+  labour          63/69     277         nights-are-slept, moods-move-choices, people-survive, gossip-is-aimed, shelter-answers-cold, research-is-social
+  labour-from     1/1       1,822       -
+  polity          77/90     379         people-act-on-what-they-know, nights-are-slept, moods-move-choices, population-persists, gossip-is-aimed, generations-turn-over, techs-are-refined, taxes-reach-the-temple, roast-wins, cooking-spreads, pots-reach-a-granary, discovery-is-situated, hills-see-farther
+  polity-from     1/1       988         -
+  conquest        82/91     455         nights-are-slept, projects-find-backers, knowledge-is-found, ideas-become-tech, taxes-reach-the-temple, soldiers-are-kept, roast-wins, cooking-spreads, discovery-is-situated
+  culture         59/66     600         nights-are-slept, needs-not-pinned, gossip-is-aimed, shelter-answers-cold, animals-are-tamed, kills-are-butchered-for-bone, spatial-hash-spreads
+  lean            58/71     824         the-map-grows, nights-are-slept, moods-move-choices, population-persists, deaths-explained, health-holds-up, shelter-answers-cold, generations-turn-over, knowledge-is-found, ideas-become-tech, the-tree-is-climbed, families-exist, peoples-drift-apart
+  diggers         56/62     716         nights-are-slept, needs-not-pinned, gossip-is-aimed, projects-find-backers, research-is-social, spatial-hash-spreads
+  orchard         62/64     1,002       nights-are-slept, people-survive
+  generations     80/86     503         people-act-on-what-they-know, nights-are-slept, population-persists, discovery-is-situated, peoples-drift-apart, herds-follow-the-grass
+==============================================================================
+SOME SCENARIOS FAILED
+

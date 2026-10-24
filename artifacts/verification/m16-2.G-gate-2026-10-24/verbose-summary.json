@@ -1,0 +1,132 @@
+﻿[
+    {
+        "scenario":  "smiths",
+        "wallSeconds":  52.43,
+        "exitCode":  1
+    },
+    {
+        "scenario":  "band",
+        "wallSeconds":  9.65,
+        "exitCode":  1
+    },
+    {
+        "scenario":  "century",
+        "wallSeconds":  92.24,
+        "exitCode":  1
+    },
+    {
+        "scenario":  "craft",
+        "wallSeconds":  39.76,
+        "exitCode":  1
+    },
+    {
+        "scenario":  "wilds",
+        "wallSeconds":  33.8,
+        "exitCode":  1
+    },
+    {
+        "scenario":  "emptied",
+        "wallSeconds":  13.55,
+        "exitCode":  1
+    },
+    {
+        "scenario":  "hearths",
+        "wallSeconds":  36.14,
+        "exitCode":  1
+    },
+    {
+        "scenario":  "scribes",
+        "wallSeconds":  37.49,
+        "exitCode":  1
+    },
+    {
+        "scenario":  "harsh-winter",
+        "wallSeconds":  12.08,
+        "exitCode":  1
+    },
+    {
+        "scenario":  "coast",
+        "wallSeconds":  10.44,
+        "exitCode":  1
+    },
+    {
+        "scenario":  "millers",
+        "wallSeconds":  44.63,
+        "exitCode":  1
+    },
+    {
+        "scenario":  "hunters",
+        "wallSeconds":  20.77,
+        "exitCode":  1
+    },
+    {
+        "scenario":  "herders",
+        "wallSeconds":  41.93,
+        "exitCode":  1
+    },
+    {
+        "scenario":  "feasts",
+        "wallSeconds":  64.19,
+        "exitCode":  1
+    },
+    {
+        "scenario":  "stewards",
+        "wallSeconds":  52.98,
+        "exitCode":  1
+    },
+    {
+        "scenario":  "polity",
+        "wallSeconds":  67.2,
+        "exitCode":  1
+    },
+    {
+        "scenario":  "conquest",
+        "wallSeconds":  59.28,
+        "exitCode":  1
+    },
+    {
+        "scenario":  "culture",
+        "wallSeconds":  20.71,
+        "exitCode":  1
+    },
+    {
+        "scenario":  "lean",
+        "wallSeconds":  32.73,
+        "exitCode":  1
+    },
+    {
+        "scenario":  "diggers",
+        "wallSeconds":  18.05,
+        "exitCode":  1
+    },
+    {
+        "scenario":  "orchard",
+        "wallSeconds":  14.65,
+        "exitCode":  1
+    },
+    {
+        "scenario":  "traps",
+        "wallSeconds":  20.14,
+        "exitCode":  1
+    },
+    {
+        "scenario":  "fishers",
+        "wallSeconds":  18.7,
+        "exitCode":  1
+    },
+    {
+        "scenario":  "farmers",
+        "wallSeconds":  71.72,
+        "exitCode":  1
+    },
+    {
+        "scenario":  "labour",
+        "wallSeconds":  51.3,
+        "exitCode":  1
+    },
+    {
+        "scenario":  "crowded",
+        "wallSeconds":  17.84,
+        "exitCode":  1
+    }
+]

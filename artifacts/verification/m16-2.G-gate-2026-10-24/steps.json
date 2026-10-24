@@ -1,0 +1,22 @@
+﻿[
+    {
+        "step":  "matrix",
+        "wallSeconds":  1222.21,
+        "exitCode":  1
+    },
+    {
+        "step":  "diff",
+        "wallSeconds":  0.8,
+        "exitCode":  1
+    },
+    {
+        "step":  "cohort-band",
+        "wallSeconds":  99.85,
+        "exitCode":  0
+    },
+    {
+        "step":  "cohort-century",
+        "wallSeconds":  1880.35,
+        "exitCode":  0
+    }
+]

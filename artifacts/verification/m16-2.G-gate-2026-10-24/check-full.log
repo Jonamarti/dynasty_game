@@ -1,0 +1,572 @@
+﻿
+> dynasty@0.16.19-alpha check:full
+> vite-node tools/check-full.ts
+
+
+[check:full] typecheck: npm run typecheck
+
+> dynasty@0.16.19-alpha typecheck
+> tsc --noEmit
+
+
+[check:full] unit: npm test -- --maxWorkers=1 --testTimeout=15000
+
+> dynasty@0.16.19-alpha test
+> vitest run --maxWorkers=1 --testTimeout=15000
+
+
+ RUN  v4.1.11 C:/Users/Marty/Documents/Work/Programs/dynastyGame
+
+
+ Test Files  358 passed (358)
+      Tests  2474 passed | 1 expected fail | 1 skipped (2476)
+   Start at  19:57:19
+   Duration  962.90s (transform 8.55s, setup 0ms, import 183.45s, tests 704.06s, environment 52ms)
+
+
+[check:full] matrix: npm run sim:check:all -- --slow
+
+> dynasty@0.16.19-alpha sim:check:all
+> vite-node tools/scenarios.ts -- --slow
+
+
+SCENARIO MATRIX
+==============================================================================
+  scenario        checks    steps/s     failures
+  nights          3/3       479         -
+  salters         1/1       586         -
+  tailors         3/3       749         -
+  homes           7/7       362         -
+  ironsmiths      1/1       2,381       -
+  forgers         1/1       1,987       -
+  ironminers      1/1       2,439       -
+  carburisers     1/1       1,840       -
+  ironworkers     1/1       1,695       -
+  ploughmen       1/1       1,102       -
+  smiths          63/71     367         nights-are-slept, moods-move-choices, gossip-is-aimed, projects-find-backers, roast-wins, cooking-spreads, discovery-is-situated, ore-becomes-metal
+  frontier-cohort 3/3       454         -
+  frontier        2/2       7,317       -
+  food-news       1/1       4,651       -
+  conflicts       1/1       1,429       -
+  conflicts-from  0/0       3,118       -
+  tiny            40/43     1,961       moods-move-choices, materials-delivered, forest-is-used
+  band            51/52     633         moods-move-choices
+  band-from       3/3       4,094       -
+  crowded         56/57     234         moods-move-choices
+  century         73/77     475         people-act-on-what-they-know, nights-are-slept, the-wise-avoid-baneberries, bands-take-sides
+  craft           67/72     468         people-act-on-what-they-know, nights-are-slept, sub-webs-are-climbed, discovery-is-situated, peoples-drift-apart
+  wilds           68/70     519         nights-are-slept, the-wise-avoid-baneberries
+  emptied         54/59     1,177       nights-are-slept, moods-move-choices, gossip-is-aimed, projects-find-backers, research-is-social
+  hearths         68/75     531         people-act-on-what-they-know, nights-are-slept, moods-move-choices, gossip-is-aimed, roast-wins, sub-webs-are-climbed, bands-take-sides
+  hearths-from    1/1       1,428       -
+  porters         54/56     782         nights-are-slept, moods-move-choices
+  scribes         66/69     442         nights-are-slept, the-wise-avoid-baneberries, discovery-is-situated
+  harsh-winter    56/58     562         shelter-answers-cold, hills-see-farther
+  coast           52/54     724         walkers-do-not-grind, projects-find-backers
+  shallows        6/6       863         -
+  traps           64/66     608         nights-are-slept, gossip-is-aimed
+  millers         72/76     836         nights-are-slept, population-persists, projects-find-backers, generations-turn-over
+  hunters         58/63     555         people-act-on-what-they-know, nights-are-slept, gossip-is-aimed, kills-are-butchered-for-bone, discovery-is-situated
+  fishers         63/66     723         nights-are-slept, gossip-is-aimed, food-spoils
+  farmers         71/74     356         nights-are-slept, techs-are-refined, animals-are-tamed
+  herders         70/75     506         nights-are-slept, gossip-is-aimed, projects-find-backers, animals-are-tamed, discovery-is-situated
+  feasts          73/77     366         nights-are-slept, techs-are-refined, discovery-is-situated, bands-take-sides
+  stewards        70/76     490         people-act-on-what-they-know, nights-are-slept, moods-move-choices, techs-are-refined, discovery-is-situated, bands-take-sides
+  labour          63/69     265         nights-are-slept, moods-move-choices, people-survive, gossip-is-aimed, shelter-answers-cold, research-is-social
+  labour-from     1/1       1,900       -
+  polity          77/90     376         people-act-on-what-they-know, nights-are-slept, moods-move-choices, population-persists, gossip-is-aimed, generations-turn-over, techs-are-refined, taxes-reach-the-temple, roast-wins, cooking-spreads, pots-reach-a-granary, discovery-is-situated, hills-see-farther
+  polity-from     1/1       977         -
+  conquest        82/91     442         nights-are-slept, projects-find-backers, knowledge-is-found, ideas-become-tech, taxes-reach-the-temple, soldiers-are-kept, roast-wins, cooking-spreads, discovery-is-situated
+  culture         59/66     587         nights-are-slept, needs-not-pinned, gossip-is-aimed, shelter-answers-cold, animals-are-tamed, kills-are-butchered-for-bone, spatial-hash-spreads
+  lean            58/71     833         the-map-grows, nights-are-slept, moods-move-choices, population-persists, deaths-explained, health-holds-up, shelter-answers-cold, generations-turn-over, knowledge-is-found, ideas-become-tech, the-tree-is-climbed, families-exist, peoples-drift-apart
+  diggers         56/62     718         nights-are-slept, needs-not-pinned, gossip-is-aimed, projects-find-backers, research-is-social, spatial-hash-spreads
+  orchard         62/64     992         nights-are-slept, people-survive
+  generations     80/86     492         people-act-on-what-they-know, nights-are-slept, population-persists, discovery-is-situated, peoples-drift-apart, herds-follow-the-grass
+==============================================================================
+SOME SCENARIOS FAILED
+
+
+[check:full] e2e: npm run e2e
+
+> dynasty@0.16.19-alpha e2e
+> playwright test e2e/infant-care-animation.spec.ts e2e/attack-response.spec.ts e2e/site-abandonment-notice.spec.ts e2e/smoke.spec.ts e2e/animals.spec.ts e2e/m16-animal-alarm-sign.spec.ts e2e/group-colors.spec.ts e2e/dig-animation.spec.ts e2e/chop-animation.spec.ts e2e/craft-animation.spec.ts e2e/tool-equipment.spec.ts e2e/geographic-terrain.spec.ts e2e/bank-resources.spec.ts e2e/earth-river-map.spec.ts e2e/autonomy-rebuild.spec.ts e2e/brain-commitment.spec.ts e2e/earth-river-tools.spec.ts e2e/earthworks.spec.ts e2e/water-depth.spec.ts e2e/water-wading.spec.ts e2e/swimming.spec.ts e2e/swim-animation.spec.ts e2e/fishing.spec.ts e2e/freshwater.spec.ts e2e/river-continuity.spec.ts e2e/tech-subwebs.spec.ts e2e/phase13d-nodes.spec.ts e2e/globe.spec.ts e2e/phase31-familytree-zoom.spec.ts e2e/phase31-tribegraph-zoom.spec.ts e2e/phase37-metal.spec.ts e2e/phase40-bloomery.spec.ts e2e/phase40-forging.spec.ts e2e/phase40-carburising.spec.ts e2e/phase40-iron-tools.spec.ts e2e/phase40-ploughshare.spec.ts e2e/version.spec.ts e2e/fog-on-switch.spec.ts e2e/m16-fog-persistence.spec.ts e2e/one-comarca.spec.ts e2e/comarca-travel.spec.ts e2e/phase35-logboat.spec.ts e2e/phase35-journeys.spec.ts e2e/phase35-transport.spec.ts e2e/phase35-sail.spec.ts e2e/phase36-rival.spec.ts e2e/world-caravan-ui.spec.ts e2e/world-map-choice.spec.ts e2e/extraction-animation.spec.ts e2e/cutgrass-animation.spec.ts e2e/planting-animation.spec.ts e2e/hide-dressing-animation.spec.ts e2e/spread-animation.spec.ts e2e/dyeing-animation.spec.ts e2e/attend-feast-animation.spec.ts e2e/inscription-animation.spec.ts e2e/read-animation.spec.ts e2e/tend-animation.spec.ts e2e/ponder-animation.spec.ts e2e/prototype-animation.spec.ts e2e/reflect-animation.spec.ts e2e/fight-animation.spec.ts e2e/talk-animation.spec.ts e2e/tame-animation.spec.ts e2e/sleep-animation.spec.ts e2e/hunt-animation.spec.ts e2e/roof-lift.spec.ts e2e/hearth-light.spec.ts e2e/phase16d-furniture.spec.ts e2e/m16-select-on-shore.spec.ts e2e/m16-infants-cannot-dress.spec.ts e2e/m16-mud-shore-markers.spec.ts e2e/m16-bedding-player-use.spec.ts e2e/m16-night-tint-stable.spec.ts e2e/clothing.spec.ts e2e/phase12d-torch.spec.ts e2e/garment-layers.spec.ts e2e/preserving.spec.ts e2e/smoking.spec.ts e2e/pemmican.spec.ts e2e/salt-preserving.spec.ts e2e/indoor-preserving.spec.ts e2e/foot-wraps.spec.ts e2e/leggings.spec.ts e2e/moccasins.spec.ts e2e/fur-hat.spec.ts e2e/toggled-coat.spec.ts e2e/linen-tunic.spec.ts e2e/wool-cloak.spec.ts e2e/clothing-web.spec.ts e2e/hide-loincloth.spec.ts e2e/fibre-skirt.spec.ts e2e/garment-warm-beliefs.spec.ts e2e/garment-pockets.spec.ts e2e/render-budget.spec.ts e2e/floaters-follow.spec.ts
+
+
+Running 202 tests using 1 worker
+
+  Ô£ô    1 e2e\animals.spec.ts:5:1 ÔÇ║ animal events draw four distinct shared frames and freeze while paused (42.3s)
+  Ô£ô    2 e2e\animals.spec.ts:88:1 ÔÇ║ 300 animated animal draws use one atlas and do not create per-animal composite canvases (2.8s)
+  Ô£ô    3 e2e\attack-response.spec.ts:63:1 ÔÇ║ a familiar autonomous attacker says why it stopped in English and Spanish (6.0s)
+  Ô£ô    4 e2e\attend-feast-animation.spec.ts:7:1 ÔÇ║ a reached feast guest sits through the active attend order (3.2s)
+  Ô£ô    5 e2e\autonomy-rebuild.spec.ts:3:1 ÔÇ║ a geographic rebuild keeps the autonomy shown in the HUD (4.4s)
+  Ô£ô    6 e2e\bank-resources.spec.ts:5:1 ÔÇ║ random wooded river paints its generated clay banks and reeds (3.2s)
+  Ô£ô    7 e2e\brain-commitment.spec.ts:133:1 ÔÇ║ a selected, familiar NPC explains the urgent stop in English and Spanish; player orders remain explicit (6.6s)
+  Ô£ô    8 e2e\brain-commitment.spec.ts:159:1 ÔÇ║ a selected strangerÔÇÖs autonomous need remains private (3.2s)
+  Ô£ô    9 e2e\chop-animation.spec.ts:4:1 ÔÇ║ a real felling order swings four axe poses, freezes and releases the gesture (3.9s)
+  Ô£ô   10 e2e\clothing-web.spec.ts:4:1 ÔÇ║ clothing knowledge opens its own Spanish web with working recipe nodes (3.5s)
+  Ô£ô   11 e2e\clothing.spec.ts:4:1 ÔÇ║ wearing a coat from the Kit warms the person and offers to take it off (3.2s)
+  Ô£ô   12 e2e\comarca-travel.spec.ts:4:1 ÔÇ║ the globe offers persistent travel controls and issues the chosen edge (3.6s)
+  Ô£ô   13 e2e\comarca-travel.spec.ts:25:1 ÔÇ║ travel controls are translated and unavailable on the classic island (5.9s)
+  Ô£ô   14 e2e\comarca-travel.spec.ts:38:1 ÔÇ║ a real boundary arrival changes the displayed comarca and preserves the player (4.6s)
+  Ô£ô   15 e2e\comarca-travel.spec.ts:86:1 ÔÇ║ a real scout order on the controlled character arrives at once, with the HUD and the globe intact (4.9s)
+  Ô£ô   16 e2e\craft-animation.spec.ts:4:1 ÔÇ║ a real craft order manipulates its work, hides a packed spear and freezes its bank (3.9s)
+  Ô£ô   17 e2e\cutgrass-animation.spec.ts:8:1 ÔÇ║ an active thatch-cutting order shows the grass-sweeping gesture (3.2s)
+  Ô£ô   18 e2e\dig-animation.spec.ts:5:1 ÔÇ║ digging draws four clocked tool strokes only for a worker at the ground (3.8s)
+  Ô£ô   19 e2e\dyeing-animation.spec.ts:7:1 ÔÇ║ an active garment dye order shows rubbing work before the pigment commits (3.3s)
+  Ô£ô   20 e2e\earth-river-map.spec.ts:4:3 ÔÇ║ Ebro retains its detailed course and bank resources (4.0s)
+  Ô£ô   21 e2e\earth-river-map.spec.ts:4:3 ÔÇ║ Danube retains its detailed course and bank resources (3.9s)
+  Ô£ô   22 e2e\earth-river-map.spec.ts:4:3 ÔÇ║ Rhine retains its detailed course and bank resources (4.0s)
+  Ô£ô   23 e2e\earth-river-map.spec.ts:4:3 ÔÇ║ Tagus retains its detailed course and bank resources (4.0s)
+  Ô£ô   24 e2e\earth-river-tools.spec.ts:4:3 ÔÇ║ Ebro: curved river, real bank resources, and working bank/crossing orders (4.6s)
+  Ô£ô   25 e2e\earth-river-tools.spec.ts:4:3 ÔÇ║ Danube: curved river, real bank resources, and working bank/crossing orders (4.4s)
+  Ô£ô   26 e2e\earthworks.spec.ts:10:1 ÔÇ║ an earthwork is previewed, refused with a reason, turned, placed and dug (5.3s)
+  Ô£ô   27 e2e\extraction-animation.spec.ts:7:1 ÔÇ║ a real flint pull shows the planted extraction stroke (3.1s)
+  Ô£ô   28 e2e\fibre-skirt.spec.ts:7:1 ÔÇ║ fibre skirt crafts in Spanish, equips in the hip slot, and can be removed (4.5s)
+  Ô£ô   29 e2e\fight-animation.spec.ts:5:1 ÔÇ║ a real attack order shows four guarded strike poses without changing combat state while drawing (3.5s)
+  Ô£ô   30 e2e\fishing.spec.ts:9:1 ÔÇ║ a fitted spear harvests a real shoal and the tech web explains the harpoon bonus (3.5s)
+  Ô£ô   31 e2e\floaters-follow.spec.ts:4:1 ÔÇ║ a floating label stays over its walker as they move (3.2s)
+  Ô£ô   32 e2e\fog-on-switch.spec.ts:11:1 ÔÇ║ switching character blacks out everything beyond their sight, not their brain (3.7s)
+  Ô£ô   33 e2e\foot-wraps.spec.ts:4:1 ÔÇ║ foot wraps are worn from the Spanish Kit and visible on the feet (3.8s)
+  Ô£ô   34 e2e\freshwater.spec.ts:4:1 ÔÇ║ continental river and salt coast paint without changing the checkpoint (3.8s)
+  Ô£ô   35 e2e\freshwater.spec.ts:50:1 ÔÇ║ salt water has a harmful menu label and a visible stop reason after drinking (3.5s)
+  Ô£ô   36 e2e\fur-hat.spec.ts:4:1 ÔÇ║ a fur hat is worn from the Spanish Kit and visible on the head (3.7s)
+  Ô£ô   37 e2e\garment-layers.spec.ts:4:1 ÔÇ║ a hide cape and sewn tunic can be worn together from the Kit (3.9s)
+  Ô£ô   38 e2e\garment-pockets.spec.ts:4:1 ÔÇ║ a worn linen tunic adds visible carrying room for small items (4.1s)
+  Ô£ô   39 e2e\garment-warm-beliefs.spec.ts:4:1 ÔÇ║ garment warmth is learned from wearing and only seen in public view (3.9s)
+  Ô£ô   40 e2e\geographic-terrain.spec.ts:5:1 ÔÇ║ geographic inspection terrain paints without mutating the world (3.6s)
+  Ô£ô   41 e2e\globe.spec.ts:40:1 ÔÇ║ a classic island has no globe, says so, and gives the game back (3.3s)
+  Ô£ô   42 e2e\globe.spec.ts:57:1 ÔÇ║ the globe shows what was seen and heard, and nothing of the rest (4.9s)
+  Ô£ô   43 e2e\globe.spec.ts:122:1 ÔÇ║ the globe speaks Spanish (3.7s)
+  Ô£ô   44 e2e\globe.spec.ts:129:1 ÔÇ║ the globe fits and can be read on a phone (4.7s)
+  Ô£ô   45 e2e\group-colors.spec.ts:3:1 ÔÇ║ a globally allocated low-ID outcast still draws in neutral grey (3.1s)
+12c night-layer workload: {"frames":120,"medianMs":1.4000000357627869,"p95Ms":2.099999964237213,"people":31,"visibleHearths":1,"viewport":"1280x800 CSS px"}
+  Ô£ô   46 e2e\hearth-light.spec.ts:5:1 ÔÇ║ visible hearth light softens night without changing the paused world or piercing fog (4.6s)
+  Ô£ô   47 e2e\hide-dressing-animation.spec.ts:7:1 ÔÇ║ an active hide-dressing order shows the treatment gesture (3.6s)
+  Ô£ô   48 e2e\hide-loincloth.spec.ts:4:1 ÔÇ║ hide loincloth occupies the hip slot and draws only while worn (4.1s)
+  Ô£ô   49 e2e\hunt-animation.spec.ts:5:1 ÔÇ║ a real hunt order animates the hunter only on active in-range work (3.8s)
+  Ô£ô   50 e2e\indoor-preserving.spec.ts:4:1 ÔÇ║ a hosted rack dries meat inside a visible house room (3.7s)
+  Ô£ô   51 e2e\infant-care-animation.spec.ts:7:1 ÔÇ║ infant lying, carrying, and nursing use the actual person and pause with simulation state (4.2s)
+  Ô£ô   52 e2e\inscription-animation.spec.ts:5:1 ÔÇ║ a real inscription order animates four chisel strokes on its unfinished record (4.0s)
+  Ô£ô   53 e2e\leggings.spec.ts:4:1 ÔÇ║ leggings are worn from the Spanish Kit and visible on the legs (3.8s)
+  Ô£ô   54 e2e\linen-tunic.spec.ts:4:1 ÔÇ║ a linen tunic is worn from the Spanish Kit and visible on the torso (3.8s)
+  Ô£ô   55 e2e\m16-animal-alarm-sign.spec.ts:4:1 ÔÇ║ m16 animal alarm sign disappears when the alarm expires (3.7s)
+  Ô£ô   56 e2e\m16-bedding-player-use.spec.ts:6:1 ÔÇ║ orders sleep on household bedding and picks it up from the radial menu (4.3s)
+  Ô£ô   57 e2e\m16-fog-persistence.spec.ts:6:1 ÔÇ║ m16-fog-saved: the reveal grid survives save, reload, and a legacy save defaults inactive (12.7s)
+  Ô£ô   58 e2e\m16-fog-persistence.spec.ts:105:1 ÔÇ║ m16-fog-dimmed: a remembered place outside sight stays dim rather than black (3.5s)
+  Ô£ô   59 e2e\m16-infants-cannot-dress.spec.ts:6:1 ÔÇ║ the Kit explains that a baby cannot dress itself until the child stage (3.9s)
+  Ô£ô   60 e2e\m16-mud-shore-markers.spec.ts:6:1 ÔÇ║ shows the freshwater mud-bank markers in Spanish (3.7s)
+  Ô£ô   61 e2e\m16-night-tint-stable.spec.ts:6:1 ÔÇ║ keeps spring ground stable while actually advancing days 5, 6 and 7 (5.1s)
+  Ô£ô   62 e2e\m16-night-tint-stable.spec.ts:38:1 ÔÇ║ keeps the ground tint stable at the same hour on day one and day two (4.2s)
+  Ô£ô   63 e2e\m16-select-on-shore.spec.ts:89:1 ÔÇ║ selects an NPC wading on a shallow-water tile (4.2s)
+  Ô£ô   64 e2e\m16-select-on-shore.spec.ts:93:1 ÔÇ║ selects a beach NPC when rounding the click would hit adjacent water (4.1s)
+  Ô£ô   65 e2e\m16-select-on-shore.spec.ts:97:1 ÔÇ║ an open-water click still offers drinking (3.6s)
+  Ô£ô   66 e2e\moccasins.spec.ts:4:1 ÔÇ║ moccasins are worn from the Spanish Kit and visible on the feet (3.9s)
+  Ô£ô   67 e2e\one-comarca.spec.ts:24:1 ÔÇ║ a generated world opens as one comarca (3.8s)
+  Ô£ô   68 e2e\one-comarca.spec.ts:38:1 ÔÇ║ the Earth opens as one comarca, from the picker (4.7s)
+  Ô£ô   69 e2e\pemmican.spec.ts:5:1 ÔÇ║ pemmican is made and preservation opens a populated Spanish web (4.7s)
+  Ô£ô   70 e2e\phase12d-torch.spec.ts:6:3 ÔÇ║ m16 torch amends explain recipient refusal: hands (3.7s)
+  Ô£ô   71 e2e\phase12d-torch.spec.ts:6:3 ÔÇ║ m16 torch amends explain recipient refusal: item-capacity (3.7s)
+  Ô£ô   72 e2e\phase12d-torch.spec.ts:55:1 ÔÇ║ a lit torch is visible and its fuel freezes with the paused world (4.5s)
+  Ô£ÿ   73 e2e\phase13d-nodes.spec.ts:93:1 ÔÇ║ broth: the hearth offers it to somebody who knows stone boiling and holds two bones (4.3s)
+  Ô£ÿ   74 e2e\phase13d-nodes.spec.ts:113:1 ÔÇ║ flatbread: the hearth offers it to somebody who knows it and holds a meal (3.5s)
+  Ô£ô   75 e2e\phase13d-nodes.spec.ts:131:1 ÔÇ║ projectile ammo: the hand-craft bar shows arrows and atlatl darts (3.0s)
+  Ô£ô   76 e2e\phase16d-furniture.spec.ts:8:1 ÔÇ║ places a bed in the household home and captures the in-world sprite (3.1s)
+  Ô£ô   77 e2e\phase16d-furniture.spec.ts:59:1 ÔÇ║ places an indoor fireplace and captures its household sprite (3.2s)
+  Ô£ô   78 e2e\phase16d-furniture.spec.ts:110:1 ÔÇ║ furniture and an outdoor station have no household banner (3.7s)
+  Ô£ô   79 e2e\phase31-familytree-zoom.spec.ts:6:1 ÔÇ║ family tree keeps names readable on mobile and supports zooming (3.0s)
+  Ô£ô   80 e2e\phase31-tribegraph-zoom.spec.ts:6:1 ÔÇ║ tribe graph keeps labels readable on mobile and supports pan and zoom (3.3s)
+  Ô£ô   81 e2e\phase35-journeys.spec.ts:10:1 ÔÇ║ globe departure shows the persisted land journey and captures its status (7.4s)
+  Ô£ô   82 e2e\phase35-logboat.spec.ts:5:1 ÔÇ║ logboat knowledge and item unlock a sheltered salt-water crossing (3.2s)
+  Ô£ô   83 e2e\phase35-sail.spec.ts:5:1 ÔÇ║ long sea journeys require logboat plus researched and physical sail (3.9s)
+  Ô£ô   84 e2e\phase35-transport.spec.ts:6:1 ÔÇ║ assigns a nearby donkey, shows it following, and keeps a released lease clear (3.8s)
+  Ô£ô   85 e2e\phase36-rival.spec.ts:11:1 ÔÇ║ rival-house view resolves a known enemy from the source comarca archive after travel (15.3s)
+  Ô£ÿ   86 e2e\phase37-metal.spec.ts:94:1 ÔÇ║ the metal tier on the ground: the pit, the furnace, a seam of each ore, gold and a nugget (3.5s)
+  Ô£ô   87 e2e\phase37-metal.spec.ts:158:1 ÔÇ║ the menu says why a seam cannot be worked, and offers the verb to a miner (3.5s)
+  Ô£ô   88 e2e\phase37-metal.spec.ts:188:1 ÔÇ║ the tech web gains a Metal sector and its sub-web (3.5s)
+  Ô£ô   89 e2e\phase40-bloomery.spec.ts:23:1 ÔÇ║ the Metal TechWeb names bloomery in Spanish (3.7s)
+  Ô£ÿ   90 e2e\phase40-bloomery.spec.ts:46:1 ÔÇ║ an order smelts bog iron at a furnace and shows the bloom in the kit (4.4s)
+  Ô£ô   91 e2e\phase40-carburising.spec.ts:16:1 ÔÇ║ the Metal TechWeb names carburising in Spanish (3.7s)
+  Ô£ÿ   92 e2e\phase40-carburising.spec.ts:37:1 ÔÇ║ a smith carburises steel and forges the stronger steel sword at an anvil (3.5s)
+  Ô£ô   93 e2e\phase40-forging.spec.ts:16:1 ÔÇ║ the Metal TechWeb names forging in Spanish (3.7s)
+  Ô£ÿ   94 e2e\phase40-forging.spec.ts:38:1 ÔÇ║ an order forges a bloom at an anvil and shows wrought iron in the kit (3.4s)
+  Ô£ô   95 e2e\phase40-iron-tools.spec.ts:16:1 ÔÇ║ the Metal TechWeb names iron tools in Spanish (3.8s)
+  Ô£ÿ   96 e2e\phase40-iron-tools.spec.ts:37:1 ÔÇ║ an anvil order makes the four iron tools and the iron spade digs the ground six times as fast (3.4s)
+  Ô£ô   97 e2e\phase40-ploughshare.spec.ts:15:1 ÔÇ║ Field TechWeb names ploughshare in Spanish (3.6s)
+  Ô£ÿ   98 e2e\phase40-ploughshare.spec.ts:32:1 ÔÇ║ iron plough recipe, free draft pair gate, and real plough sow (3.9s)
+  Ô£ô   99 e2e\planting-animation.spec.ts:8:1 ÔÇ║ an active fruit-tree order shows the planting gesture (3.1s)
+  Ô£ô  100 e2e\ponder-animation.spec.ts:5:1 ÔÇ║ a real ponder order animates generic thinking without disclosing its idea (3.2s)
+  Ô£ÿ  101 e2e\preserving.spec.ts:4:1 ÔÇ║ a physical drying rack makes durable food and appears in the world (3.4s)
+  Ô£ô  102 e2e\prototype-animation.spec.ts:5:1 ÔÇ║ a real prototype order animates generic assembly and preserves banked work (3.5s)
+  Ô£ô  103 e2e\read-animation.spec.ts:5:1 ÔÇ║ a real read order animates four attention frames while reading a record (3.2s)
+  Ô£ô  104 e2e\reflect-animation.spec.ts:5:1 ÔÇ║ a real reflect order animates without inventing or revealing an idea (3.3s)
+  Ô£ô  105 e2e\render-budget.spec.ts:22:1 ÔÇ║ population profiler runs 300 real founders through the production loop (3.4s)
+  Ô£ô  106 e2e\render-budget.spec.ts:38:1 ÔÇ║ ArtAtlas preserves person pixels and stays within the render cache budget (9.0s)
+  Ô£ô  107 e2e\river-continuity.spec.ts:4:1 ÔÇ║ the shared river bend renders deep water and fords without changing simulation state (3.1s)
+  Ô£ô  108 e2e\roof-lift.spec.ts:4:1 ÔÇ║ house roof lifts on hover, when occupied, and with V while paused (3.6s)
+  Ô£ÿ  109 e2e\salt-preserving.spec.ts:4:1 ÔÇ║ a coastal salt pan supplies salt for meat and fish (3.4s)
+  Ô£ô  110 e2e\site-abandonment-notice.spec.ts:7:1 ÔÇ║ shows the reason over an abandoned site in view (3.1s)
+  Ô£ô  111 e2e\sleep-animation.spec.ts:5:1 ÔÇ║ a real sleep order shows four lying poses only after arrival (3.3s)
+  Ô£ô  112 e2e\smoke.spec.ts:235:1 ÔÇ║ the verdict overlay skips expired cases and closes when the chief loses office (2.8s)
+  Ô£ô  113 e2e\smoke.spec.ts:278:1 ÔÇ║ boots, paints and advances the clock (2.7s)
+  Ô£ô  114 e2e\smoke.spec.ts:308:1 ÔÇ║ the observer map hides unvisited ground and prevents selecting its entities (5.2s)
+  Ô£ô  115 e2e\smoke.spec.ts:384:1 ÔÇ║ explored terrain keeps the same shade as the map memory updates (2.8s)
+  Ô£ô  116 e2e\smoke.spec.ts:428:1 ÔÇ║ a remembered place reports when it was last seen (2.9s)
+  Ô£ô  117 e2e\smoke.spec.ts:463:1 ÔÇ║ the panel shows who someone is and what they want (2.5s)
+  Ô£ô  118 e2e\smoke.spec.ts:479:1 ÔÇ║ the character tabs each render (3.2s)
+  Ô£ô  119 e2e\smoke.spec.ts:502:1 ÔÇ║ a job can be assigned from the Work tab and changes what it says (3.2s)
+  Ô£ô  120 e2e\smoke.spec.ts:539:1 ÔÇ║ right-click opens a radial menu whose options fit the target (2.8s)
+  Ô£ô  121 e2e\smoke.spec.ts:564:1 ÔÇ║ an order from the menu changes what the player is doing (3.0s)
+  Ô£ô  122 e2e\smoke.spec.ts:581:1 ÔÇ║ build mode offers designs and marks locked ones (3.0s)
+  Ô£ô  123 e2e\smoke.spec.ts:605:1 ÔÇ║ pauses and resumes (4.5s)
+  Ô£ô  124 e2e\smoke.spec.ts:623:1 ÔÇ║ walking with the keyboard moves the player (2.7s)
+  Ô£ô  125 e2e\smoke.spec.ts:636:1 ÔÇ║ dragging pans the map instead of selecting (2.9s)
+  Ô£ô  126 e2e\smoke.spec.ts:670:1 ÔÇ║ the browser context menu is suppressed (2.7s)
+  Ô£ô  127 e2e\smoke.spec.ts:680:1 ÔÇ║ a stranger gives up nothing but what you can see (3.2s)
+  Ô£ô  128 e2e\smoke.spec.ts:721:1 ÔÇ║ a berry bush reads as an estimate until you are close (2.9s)
+  Ô£ô  129 e2e\smoke.spec.ts:765:1 ÔÇ║ death hands the game to an heir instead of ending it (3.3s)
+  Ô£ô  130 e2e\smoke.spec.ts:821:1 ÔÇ║ the family panel names spouse, parents and children (2.9s)
+  Ô£ô  131 e2e\smoke.spec.ts:837:1 ÔÇ║ the era is named in the top bar (2.6s)
+  Ô£ô  132 e2e\smoke.spec.ts:847:1 ÔÇ║ standing over someone is shown, and command mode can be entered (3.2s)
+  Ô£ô  133 e2e\smoke.spec.ts:879:1 ÔÇ║ knowledge is listed on the person who holds it (2.8s)
+  Ô£ô  134 e2e\smoke.spec.ts:899:1 ÔÇ║ an idea in progress is shown, with the story that started it (2.9s)
+  Ô£ô  135 e2e\smoke.spec.ts:930:1 ÔÇ║ somebody with no ideas can still sit and think (2.7s)
+  Ô£ô  136 e2e\smoke.spec.ts:955:1 ÔÇ║ the tech web opens on G and answers why an idea has not arrived (3.0s)
+  Ô£ô  137 e2e\smoke.spec.ts:1009:1 ÔÇ║ the tech web keeps a stranger to themselves (3.0s)
+  Ô£ô  138 e2e\smoke.spec.ts:1044:1 ÔÇ║ the tech web can be dragged and zoomed (3.5s)
+  Ô£ô  139 e2e\smoke.spec.ts:1082:1 ÔÇ║ the family tree opens on K and reads top to bottom (2.8s)
+  Ô£ô  140 e2e\smoke.spec.ts:1098:1 ÔÇ║ the tribe graph hides other bands until asked, and says how many it hid (2.9s)
+  Ô£ô  141 e2e\smoke.spec.ts:1147:1 ÔÇ║ the family tree colours a line by what its two ends think of each other (2.6s)
+  Ô£ô  142 e2e\smoke.spec.ts:1160:1 ÔÇ║ the tribe graph opens on T and is empty rather than broken for a friendless founder (2.9s)
+  Ô£ô  143 e2e\smoke.spec.ts:1175:1 ÔÇ║ the tribe graph draws in ranks once the band divides its labour (3.0s)
+  Ô£ô  144 e2e\smoke.spec.ts:1228:1 ÔÇ║ the family tree and tribe graph are gated the same as the tech web (3.2s)
+  Ô£ô  145 e2e\smoke.spec.ts:1254:1 ÔÇ║ the three graphs are mutually exclusive (2.8s)
+  Ô£ô  146 e2e\smoke.spec.ts:1274:1 ÔÇ║ teaching appears in the menu only when you have something to teach (3.6s)
+  Ô£ô  147 e2e\smoke.spec.ts:1348:1 ÔÇ║ crowded radial options stay clickable on desktop and phone, including submenus (3.5s)
+  Ô£ô  148 e2e\smoke.spec.ts:1386:1 ÔÇ║ the talk menu nests, and offers a stranger only a greeting (3.5s)
+  Ô£ô  149 e2e\smoke.spec.ts:1466:1 ÔÇ║ the kit tab lists what you carry and offers verbs on it (3.1s)
+  Ô£ô  150 e2e\smoke.spec.ts:1494:1 ÔÇ║ a gathering NPC cycles visible poses, freezes while paused and releases the gesture on interruption (4.6s)
+  Ô£ô  151 e2e\smoke.spec.ts:1580:1 ÔÇ║ digging tools appear in the craft bar and carried kit (3.4s)
+  Ô£ô  152 e2e\smoke.spec.ts:1618:1 ÔÇ║ dropping puts goods on the ground where they can be picked up (3.1s)
+  Ô£ô  153 e2e\smoke.spec.ts:1657:1 ÔÇ║ right-clicking water sends you to the bank instead of refusing (3.9s)
+  Ô£ô  154 e2e\smoke.spec.ts:1708:1 ÔÇ║ character creation picks a life inside a world that already exists (4.6s)
+  Ô£ô  155 e2e\smoke.spec.ts:1771:1 ÔÇ║ the dead are folded away under the living, and the fold stays open (3.9s)
+  Ô£ô  156 e2e\smoke.spec.ts:1805:1 ÔÇ║ the ties tab can send the camera to somebody (3.2s)
+  Ô£ô  157 e2e\smoke.spec.ts:1832:1 ÔÇ║ clicking a lone person still offers the ground under them (3.3s)
+  Ô£ô  158 e2e\smoke.spec.ts:1873:1 ÔÇ║ clicking yourself alone does not put a chooser in the way (3.2s)
+  Ô£ô  159 e2e\smoke.spec.ts:1956:1 ÔÇ║ a walking person is drawn between steps, not only on them (4.2s)
+  Ô£ô  160 e2e\smoke.spec.ts:2026:1 ÔÇ║ a record says nothing to somebody who cannot read it (3.5s)
+  Ô£ô  161 e2e\smoke.spec.ts:2097:1 ÔÇ║ the craft bar shows what you can make, and why you cannot (3.1s)
+  Ô£ô  162 e2e\smoke.spec.ts:2135:1 ÔÇ║ a proven design stops asking for its prototype materials (3.2s)
+  Ô£ô  163 e2e\smoke.spec.ts:2174:1 ÔÇ║ Escape opens the menu only when nothing else is in the way (3.0s)
+  Ô£ô  164 e2e\smoke.spec.ts:2207:1 ÔÇ║ the difficulty slider stamps every field, and a hand edit reads as custom (3.3s)
+  Ô£ô  165 e2e\smoke.spec.ts:2249:1 ÔÇ║ a worldgen setting says it needs a new world instead of pretending (3.2s)
+  Ô£ô  166 e2e\smoke.spec.ts:2274:1 ÔÇ║ the game opens on its settings, and Begin rebuilds the island they describe (3.4s)
+  Ô£ô  167 e2e\smoke.spec.ts:2354:1 ÔÇ║ how much your character does for itself is a visible, remembered choice (6.1s)
+  Ô£ô  168 e2e\smoke.spec.ts:2402:1 ÔÇ║ a phone viewport keeps the HUD reachable and touch pans the map (5.8s)
+  Ô£ô  169 e2e\smoke.spec.ts:2508:1 ÔÇ║ the tech web opens with readable names on a phone (4.0s)
+  Ô£ô  170 e2e\smoke.spec.ts:2558:1 ÔÇ║ the tribe graph stands still while the game is paused (4.6s)
+  Ô£ô  171 e2e\smoke.spec.ts:2595:1 ÔÇ║ the start screen switches to Spanish and back, and the choice sticks (6.2s)
+  Ô£ô  172 e2e\smoke.spec.ts:2621:1 ÔÇ║ a Spanish game is Spanish in the HUD, the menus and the panels (3.6s)
+  Ô£ô  173 e2e\smoke.spec.ts:2648:1 ÔÇ║ a brewer is offered a feast, and told why there is none to give (3.3s)
+  Ô£ô  174 e2e\smoke.spec.ts:2715:1 ÔÇ║ a chief who knows how to tax sets the levy from the Work tab (3.4s)
+  Ô£ô  175 e2e\smoke.spec.ts:2769:1 ÔÇ║ a chief who rules by law declares war on a people it knows (3.3s)
+  Ô£ÿ  176 e2e\smoking.spec.ts:4:1 ÔÇ║ a rack beside a hearth makes smoked food (4.0s)
+  Ô£ô  177 e2e\spread-animation.spec.ts:7:1 ÔÇ║ an active compost spreading order shows the soil-working gesture (3.1s)
+  Ô£ô  178 e2e\swim-animation.spec.ts:7:1 ÔÇ║ a real swim order cycles generated strokes only while crossing swim water (3.2s)
+  Ô£ô  179 e2e\swimming.spec.ts:4:1 ÔÇ║ a player can order a safe swim, while a hand load gets a visible reason (3.1s)
+  Ô£ô  180 e2e\talk-animation.spec.ts:7:1 ÔÇ║ a real greeting order animates its speaker without resolving the conversation while drawing (3.3s)
+  Ô£ô  181 e2e\tame-animation.spec.ts:7:1 ÔÇ║ a real tame order cycles coaxing poses before the next tick feeds the animal (3.2s)
+  Ô£ô  182 e2e\tech-subwebs.spec.ts:60:1 ÔÇ║ a known gate carries ┬½known / total┬╗, opens its web, and Escape steps back (5.3s)
+  Ô£ô  183 e2e\tech-subwebs.spec.ts:145:1 ÔÇ║ a sub-web whose gate the character does not know is not there to see (3.0s)
+  Ô£ô  184 e2e\tech-subwebs.spec.ts:191:1 ÔÇ║ clicks on the web do not reach the world behind it (3.5s)
+  Ô£ô  185 e2e\tech-subwebs.spec.ts:300:1 ÔÇ║ learning a technique leaves every node where it was (3.6s)
+  Ô£ô  186 e2e\tech-subwebs.spec.ts:336:1 ÔÇ║ screenshots: the gate mark, a sub-web, in Spanish, and on a phone (12.6s)
+  Ô£ô  187 e2e\tend-animation.spec.ts:5:1 ÔÇ║ a real tend order animates four dressing poses without changing the patient while drawing (3.4s)
+  Ô£ô  188 e2e\toggled-coat.spec.ts:4:1 ÔÇ║ a toggled coat is worn from the Spanish Kit and visible on the torso (3.4s)
+  Ô£ô  189 e2e\tool-equipment.spec.ts:5:1 ÔÇ║ a real chop order renders the fitted axe and keeps the packed spear out of hand (4.1s)
+  Ô£ô  190 e2e\version.spec.ts:9:1 ÔÇ║ the main menu shows the package version and checked-out commit (2.8s)
+  Ô£ô  191 e2e\version.spec.ts:24:1 ÔÇ║ the version label survives into the in-game screen (2.6s)
+  Ô£ô  192 e2e\water-depth.spec.ts:4:1 ÔÇ║ m16-owner-france-seed keeps untouched building ground dry after the day-seven excavation (4.8s)
+  Ô£ô  193 e2e\water-depth.spec.ts:54:1 ÔÇ║ the coast paints traversal depth bands without advancing the paused world (3.6s)
+  Ô£ô  194 e2e\water-wading.spec.ts:4:1 ÔÇ║ wading explains wet chill and removes the note after drying (3.0s)
+  Ô£ô  195 e2e\wool-cloak.spec.ts:4:1 ÔÇ║ a wool cloak replaces a hide cape from the Spanish Kit and is visible (3.8s)
+  Ô£ô  196 e2e\world-caravan-ui.spec.ts:5:1 ÔÇ║ the globe offers a caravan only for a known non-home comarca and sends the selected target (3.8s)
+  Ô£ô  197 e2e\world-caravan-ui.spec.ts:44:1 ÔÇ║ commissioning from the globe transfers the actual nearby merchant and goods (4.1s)
+  Ô£ô  198 e2e\world-map-choice.spec.ts:4:1 ÔÇ║ a humid forest comarca starts with a small drinking source without a no-water warning (4.1s)
+  Ô£ô  199 e2e\world-map-choice.spec.ts:33:1 ÔÇ║ changing the atlas clears the old start and installs the selected map (4.3s)
+  Ô£ô  200 e2e\world-map-choice.spec.ts:69:1 ÔÇ║ the comarca grid distinguishes the coastal strip from inland terrain (2.9s)
+  Ô£ô  201 e2e\world-map-choice.spec.ts:90:1 ÔÇ║ a generated globe can be chosen in the start screen without URL flags (4.5s)
+  Ô£ô  202 e2e\world-map-choice.spec.ts:130:1 ÔÇ║ choosing a comarca starts the local world there and reserves its region from world peoples (4.2s)
+
+
+  1) e2e\phase13d-nodes.spec.ts:93:1 ÔÇ║ broth: the hearth offers it to somebody who knows stone boiling and holds two bones 
+
+    Error: expect(received).not.toBeNull()
+
+    Received: null
+
+      79 |     return null;
+      80 |   }, opts);
+    > 81 |   expect(spot).not.toBeNull();
+         |                    ^
+      82 |   await page.evaluate(() => new Promise<void>(r => requestAnimationFrame(() => requestAnimationFrame(() => r()))));
+      83 |   return spot!;
+      84 | }
+        at furnish (C:\Users\Marty\Documents\Work\Programs\dynastyGame\e2e\phase13d-nodes.spec.ts:81:20)
+        at C:\Users\Marty\Documents\Work\Programs\dynastyGame\e2e\phase13d-nodes.spec.ts:97:18
+
+    Error Context: artifacts\playwright\phase13d-nodes-broth-the-h-0f5db-boiling-and-holds-two-bones\error-context.md
+
+    attachment #2: trace (application/zip) ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+    artifacts\playwright\phase13d-nodes-broth-the-h-0f5db-boiling-and-holds-two-bones\trace.zip
+    Usage:
+
+        npx playwright show-trace artifacts\playwright\phase13d-nodes-broth-the-h-0f5db-boiling-and-holds-two-bones\trace.zip
+
+    ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+
+  2) e2e\phase13d-nodes.spec.ts:113:1 ÔÇ║ flatbread: the hearth offers it to somebody who knows it and holds a meal 
+
+    Error: expect(received).not.toBeNull()
+
+    Received: null
+
+      79 |     return null;
+      80 |   }, opts);
+    > 81 |   expect(spot).not.toBeNull();
+         |                    ^
+      82 |   await page.evaluate(() => new Promise<void>(r => requestAnimationFrame(() => requestAnimationFrame(() => r()))));
+      83 |   return spot!;
+      84 | }
+        at furnish (C:\Users\Marty\Documents\Work\Programs\dynastyGame\e2e\phase13d-nodes.spec.ts:81:20)
+        at C:\Users\Marty\Documents\Work\Programs\dynastyGame\e2e\phase13d-nodes.spec.ts:117:18
+
+    Error Context: artifacts\playwright\phase13d-nodes-flatbread-t-8f614-o-knows-it-and-holds-a-meal\error-context.md
+
+    attachment #2: trace (application/zip) ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+    artifacts\playwright\phase13d-nodes-flatbread-t-8f614-o-knows-it-and-holds-a-meal\trace.zip
+    Usage:
+
+        npx playwright show-trace artifacts\playwright\phase13d-nodes-flatbread-t-8f614-o-knows-it-and-holds-a-meal\trace.zip
+
+    ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+
+  3) e2e\phase37-metal.spec.ts:94:1 ÔÇ║ the metal tier on the ground: the pit, the furnace, a seam of each ore, gold and a nugget 
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 4
+    + Received  + 1
+
+    - Array [
+    -   "charcoal_pit",
+    -   "furnace",
+    - ]
+    + Array []
+
+      130 |     return { spots, taken };
+      131 |   });
+    > 132 |   expect(placed.spots.map(s => s.id)).toEqual(['charcoal_pit', 'furnace']);
+          |                                       ^
+      133 |   const around = await page.evaluate(taken => {
+      134 |     const d = (window as never as Debug).__dynasty;
+      135 |     const self = d.sim.player!;
+        at C:\Users\Marty\Documents\Work\Programs\dynastyGame\e2e\phase37-metal.spec.ts:132:39
+
+    Error Context: artifacts\playwright\phase37-metal-the-metal-ti-6e0ce--each-ore-gold-and-a-nugget\error-context.md
+
+    attachment #2: trace (application/zip) ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+    artifacts\playwright\phase37-metal-the-metal-ti-6e0ce--each-ore-gold-and-a-nugget\trace.zip
+    Usage:
+
+        npx playwright show-trace artifacts\playwright\phase37-metal-the-metal-ti-6e0ce--each-ore-gold-and-a-nugget\trace.zip
+
+    ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+
+  4) e2e\phase40-bloomery.spec.ts:46:1 ÔÇ║ an order smelts bog iron at a furnace and shows the bloom in the kit 
+
+    Error: page.evaluate: Error: Could not place the furnace fixture in open ground
+        at eval (eval at evaluate (:311:30), <anonymous>:27:25)
+        at UtilityScript.evaluate (<anonymous>:313:16)
+        at UtilityScript.<anonymous> (<anonymous>:1:44)
+        at eval (eval at evaluate (:311:30), <anonymous>:27:25)
+        at UtilityScript.evaluate (<anonymous>:313:16)
+        at UtilityScript.<anonymous> (<anonymous>:1:44)
+        at C:\Users\Marty\Documents\Work\Programs\dynastyGame\e2e\phase40-bloomery.spec.ts:49:30
+
+    Error Context: artifacts\playwright\phase40-bloomery-an-order--279f1--shows-the-bloom-in-the-kit\error-context.md
+
+    attachment #2: trace (application/zip) ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+    artifacts\playwright\phase40-bloomery-an-order--279f1--shows-the-bloom-in-the-kit\trace.zip
+    Usage:
+
+        npx playwright show-trace artifacts\playwright\phase40-bloomery-an-order--279f1--shows-the-bloom-in-the-kit\trace.zip
+
+    ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+
+  5) e2e\phase40-carburising.spec.ts:37:1 ÔÇ║ a smith carburises steel and forges the stronger steel sword at an anvil 
+
+    Error: page.evaluate: Error: Could not place the anvil fixture in open ground
+        at eval (eval at evaluate (:311:30), <anonymous>:27:23)
+        at UtilityScript.evaluate (<anonymous>:313:16)
+        at UtilityScript.<anonymous> (<anonymous>:1:44)
+        at eval (eval at evaluate (:311:30), <anonymous>:27:23)
+        at UtilityScript.evaluate (<anonymous>:313:16)
+        at UtilityScript.<anonymous> (<anonymous>:1:44)
+        at C:\Users\Marty\Documents\Work\Programs\dynastyGame\e2e\phase40-carburising.spec.ts:40:30
+
+    Error Context: artifacts\playwright\phase40-carburising-a-smit-85698-ger-steel-sword-at-an-anvil\error-context.md
+
+    attachment #2: trace (application/zip) ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+    artifacts\playwright\phase40-carburising-a-smit-85698-ger-steel-sword-at-an-anvil\trace.zip
+    Usage:
+
+        npx playwright show-trace artifacts\playwright\phase40-carburising-a-smit-85698-ger-steel-sword-at-an-anvil\trace.zip
+
+    ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+
+  6) e2e\phase40-forging.spec.ts:38:1 ÔÇ║ an order forges a bloom at an anvil and shows wrought iron in the kit 
+
+    Error: page.evaluate: Error: Could not place the anvil fixture in open ground
+        at eval (eval at evaluate (:311:30), <anonymous>:26:23)
+        at UtilityScript.evaluate (<anonymous>:313:16)
+        at UtilityScript.<anonymous> (<anonymous>:1:44)
+        at eval (eval at evaluate (:311:30), <anonymous>:26:23)
+        at UtilityScript.evaluate (<anonymous>:313:16)
+        at UtilityScript.<anonymous> (<anonymous>:1:44)
+        at C:\Users\Marty\Documents\Work\Programs\dynastyGame\e2e\phase40-forging.spec.ts:41:30
+
+    Error Context: artifacts\playwright\phase40-forging-an-order-f-0b3a2-ows-wrought-iron-in-the-kit\error-context.md
+
+    attachment #2: trace (application/zip) ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+    artifacts\playwright\phase40-forging-an-order-f-0b3a2-ows-wrought-iron-in-the-kit\trace.zip
+    Usage:
+
+        npx playwright show-trace artifacts\playwright\phase40-forging-an-order-f-0b3a2-ows-wrought-iron-in-the-kit\trace.zip
+
+    ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+
+  7) e2e\phase40-iron-tools.spec.ts:37:1 ÔÇ║ an anvil order makes the four iron tools and the iron spade digs the ground six times as fast 
+
+    Error: page.evaluate: Error: Could not place the anvil fixture in open ground
+        at eval (eval at evaluate (:311:30), <anonymous>:27:23)
+        at UtilityScript.evaluate (<anonymous>:313:16)
+        at UtilityScript.<anonymous> (<anonymous>:1:44)
+        at eval (eval at evaluate (:311:30), <anonymous>:27:23)
+        at UtilityScript.evaluate (<anonymous>:313:16)
+        at UtilityScript.<anonymous> (<anonymous>:1:44)
+        at C:\Users\Marty\Documents\Work\Programs\dynastyGame\e2e\phase40-iron-tools.spec.ts:40:30
+
+    Error Context: artifacts\playwright\phase40-iron-tools-an-anvi-0ec38-he-ground-six-times-as-fast\error-context.md
+
+    attachment #2: trace (application/zip) ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+    artifacts\playwright\phase40-iron-tools-an-anvi-0ec38-he-ground-six-times-as-fast\trace.zip
+    Usage:
+
+        npx playwright show-trace artifacts\playwright\phase40-iron-tools-an-anvi-0ec38-he-ground-six-times-as-fast\trace.zip
+
+    ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+
+  8) e2e\phase40-ploughshare.spec.ts:32:1 ÔÇ║ iron plough recipe, free draft pair gate, and real plough sow 
+
+    Error: page.evaluate: Error: Could not place clear fixture: anvil
+        at place (eval at evaluate (:311:30), <anonymous>:36:13)
+        at eval (eval at evaluate (:311:30), <anonymous>:38:19)
+        at UtilityScript.evaluate (<anonymous>:313:16)
+        at UtilityScript.<anonymous> (<anonymous>:1:44)
+        at place (eval at evaluate (:311:30), <anonymous>:36:13)
+        at eval (eval at evaluate (:311:30), <anonymous>:38:19)
+        at UtilityScript.evaluate (<anonymous>:313:16)
+        at UtilityScript.<anonymous> (<anonymous>:1:44)
+        at C:\Users\Marty\Documents\Work\Programs\dynastyGame\e2e\phase40-ploughshare.spec.ts:35:30
+
+    Error Context: artifacts\playwright\phase40-ploughshare-iron-p-2439b-ir-gate-and-real-plough-sow\error-context.md
+
+    attachment #2: trace (application/zip) ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+    artifacts\playwright\phase40-ploughshare-iron-p-2439b-ir-gate-and-real-plough-sow\trace.zip
+    Usage:
+
+        npx playwright show-trace artifacts\playwright\phase40-ploughshare-iron-p-2439b-ir-gate-and-real-plough-sow\trace.zip
+
+    ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+
+  9) e2e\preserving.spec.ts:4:1 ÔÇ║ a physical drying rack makes durable food and appears in the world 
+
+    Error: page.evaluate: Error: No rack site
+        at eval (eval at evaluate (:311:30), <anonymous>:15:22)
+        at UtilityScript.evaluate (<anonymous>:313:16)
+        at UtilityScript.<anonymous> (<anonymous>:1:44)
+        at eval (eval at evaluate (:311:30), <anonymous>:15:22)
+        at UtilityScript.evaluate (<anonymous>:313:16)
+        at UtilityScript.<anonymous> (<anonymous>:1:44)
+        at C:\Users\Marty\Documents\Work\Programs\dynastyGame\e2e\preserving.spec.ts:10:27
+
+    Error Context: artifacts\playwright\preserving-a-physical-dryi-3d4fa-od-and-appears-in-the-world\error-context.md
+
+    attachment #2: trace (application/zip) ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+    artifacts\playwright\preserving-a-physical-dryi-3d4fa-od-and-appears-in-the-world\trace.zip
+    Usage:
+
+        npx playwright show-trace artifacts\playwright\preserving-a-physical-dryi-3d4fa-od-and-appears-in-the-world\trace.zip
+
+    ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+
+  10) e2e\salt-preserving.spec.ts:4:1 ÔÇ║ a coastal salt pan supplies salt for meat and fish ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+
+    Error: page.evaluate: Error: No coastal salt-pan site
+        at eval (eval at evaluate (:311:30), <anonymous>:16:21)
+        at UtilityScript.evaluate (<anonymous>:313:16)
+        at UtilityScript.<anonymous> (<anonymous>:1:44)
+        at eval (eval at evaluate (:311:30), <anonymous>:16:21)
+        at UtilityScript.evaluate (<anonymous>:313:16)
+        at UtilityScript.<anonymous> (<anonymous>:1:44)
+        at C:\Users\Marty\Documents\Work\Programs\dynastyGame\e2e\salt-preserving.spec.ts:10:27
+
+    Error Context: artifacts\playwright\salt-preserving-a-coastal--3e1f9-lies-salt-for-meat-and-fish\error-context.md
+
+    attachment #2: trace (application/zip) ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+    artifacts\playwright\salt-preserving-a-coastal--3e1f9-lies-salt-for-meat-and-fish\trace.zip
+    Usage:
+
+        npx playwright show-trace artifacts\playwright\salt-preserving-a-coastal--3e1f9-lies-salt-for-meat-and-fish\trace.zip
+
+    ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+
+  11) e2e\smoking.spec.ts:4:1 ÔÇ║ a rack beside a hearth makes smoked food ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+
+    Error: page.evaluate: Error: No rack site
+        at eval (eval at evaluate (:311:30), <anonymous>:18:22)
+        at UtilityScript.evaluate (<anonymous>:313:16)
+        at UtilityScript.<anonymous> (<anonymous>:1:44)
+        at eval (eval at evaluate (:311:30), <anonymous>:18:22)
+        at UtilityScript.evaluate (<anonymous>:313:16)
+        at UtilityScript.<anonymous> (<anonymous>:1:44)
+        at C:\Users\Marty\Documents\Work\Programs\dynastyGame\e2e\smoking.spec.ts:10:27
+
+    Error Context: artifacts\playwright\smoking-a-rack-beside-a-hearth-makes-smoked-food\error-context.md
+
+    attachment #2: trace (application/zip) ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+    artifacts\playwright\smoking-a-rack-beside-a-hearth-makes-smoked-food\trace.zip
+    Usage:
+
+        npx playwright show-trace artifacts\playwright\smoking-a-rack-beside-a-hearth-makes-smoked-food\trace.zip
+
+    ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+
+  11 failed
+    e2e\phase13d-nodes.spec.ts:93:1 ÔÇ║ broth: the hearth offers it to somebody who knows stone boiling and holds two bones 
+    e2e\phase13d-nodes.spec.ts:113:1 ÔÇ║ flatbread: the hearth offers it to somebody who knows it and holds a meal 
+    e2e\phase37-metal.spec.ts:94:1 ÔÇ║ the metal tier on the ground: the pit, the furnace, a seam of each ore, gold and a nugget 
+    e2e\phase40-bloomery.spec.ts:46:1 ÔÇ║ an order smelts bog iron at a furnace and shows the bloom in the kit 
+    e2e\phase40-carburising.spec.ts:37:1 ÔÇ║ a smith carburises steel and forges the stronger steel sword at an anvil 
+    e2e\phase40-forging.spec.ts:38:1 ÔÇ║ an order forges a bloom at an anvil and shows wrought iron in the kit 
+    e2e\phase40-iron-tools.spec.ts:37:1 ÔÇ║ an anvil order makes the four iron tools and the iron spade digs the ground six times as fast 
+    e2e\phase40-ploughshare.spec.ts:32:1 ÔÇ║ iron plough recipe, free draft pair gate, and real plough sow 
+    e2e\preserving.spec.ts:4:1 ÔÇ║ a physical drying rack makes durable food and appears in the world 
+    e2e\salt-preserving.spec.ts:4:1 ÔÇ║ a coastal salt pan supplies salt for meat and fish ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+    e2e\smoking.spec.ts:4:1 ÔÇ║ a rack beside a hearth makes smoked food ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+  191 passed (14.2m)
+[check:full] typecheck: exit 0
+[check:full] unit: exit 0
+[check:full] matrix: exit 1
+[check:full] e2e: exit 1

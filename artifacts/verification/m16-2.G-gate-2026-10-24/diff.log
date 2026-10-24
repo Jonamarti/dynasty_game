@@ -1,0 +1,87 @@
+﻿
+> dynasty@0.16.19-alpha baseline:diff
+> vite-node tools/baseline-diff.ts -- C:\Users\Marty\Documents\Work\Programs\dynastyGame\artifacts\verification\m16-baseline\matrix.json C:\Users\Marty\Documents\Work\Programs\dynastyGame\artifacts\verification\m16-2.G-gate-2026-10-24/matrix.json
+
+smiths: passed -> failed: moods-move-choices, ore-becomes-metal
+smiths: passed -> na: metal-is-cast
+smiths: failed -> passed: people-survive
+smiths: na -> passed: crafts-happen-at-stations, hunts-succeed-and-fail, the-hearth-warms
+band: passed -> failed: moods-move-choices
+band: passed -> na: hills-see-farther, raw-meat-sickens, the-wise-avoid-baneberries
+crowded: na -> passed: people-eat-meat
+century: passed -> failed: people-act-on-what-they-know
+century: passed -> na: conception-needs-a-roof, kin-outrank-strangers
+craft: passed -> failed: people-act-on-what-they-know, peoples-drift-apart
+craft: passed -> na: trials-accumulate
+craft: na -> passed: fire-keeps-wolves-off
+wilds: passed -> failed: the-wise-avoid-baneberries
+wilds: passed -> na: bodies-are-found
+wilds: failed -> passed: gossip-is-aimed, people-survive
+wilds: na -> passed: the-pregnant-are-spared, the-watched-intervene, trials-accumulate
+emptied: passed -> na: the-pregnant-are-spared
+emptied: passed -> failed: projects-find-backers
+hearths: passed -> failed: gossip-is-aimed, people-act-on-what-they-know
+hearths: passed -> na: the-pregnant-are-spared
+hearths: na -> passed: crafting-is-interruptible, crafts-happen-at-stations, hills-see-farther, the-hearth-warms
+scribes: passed -> na: the-pregnant-are-spared, the-watched-intervene
+scribes: passed -> failed: the-wise-avoid-baneberries
+scribes: na -> passed: raids-are-organised
+harsh-winter: passed -> na: kin-outrank-strangers
+harsh-winter: passed -> failed: hills-see-farther
+harsh-winter: failed -> passed: needs-not-pinned
+harsh-winter: na -> passed: hunts-succeed-and-fail, people-eat-meat
+coast: passed -> failed: projects-find-backers, walkers-do-not-grind
+traps: passed -> na: hunts-succeed-and-fail
+traps: na -> passed: bands-set-traps
+millers: passed -> failed: generations-turn-over, population-persists
+millers: failed -> passed: the-wise-avoid-baneberries
+millers: failed -> na: bands-take-sides
+millers: na -> passed: bodies-are-found, jobs-bias-work, sleep-restores
+hunters: passed -> failed: discovery-is-situated, people-act-on-what-they-know
+hunters: passed -> na: children-are-taught, jobs-bias-work, sleep-restores, trials-accumulate
+hunters: na -> failed: kills-are-butchered-for-bone
+hunters: na -> passed: people-eat-meat
+fishers: passed -> na: the-pregnant-are-spared, the-wise-avoid-baneberries
+fishers: na -> passed: trials-accumulate
+farmers: passed -> na: conception-needs-a-roof, hills-see-farther, kin-outrank-strangers, the-hurt-are-tended
+farmers: failed -> na: bands-take-sides
+farmers: na -> passed: bodies-are-found
+herders: passed -> failed: projects-find-backers
+herders: passed -> na: hunts-succeed-and-fail
+herders: failed -> passed: moods-move-choices, techs-are-refined, walkers-do-not-grind
+herders: failed -> na: bands-take-sides
+herders: na -> passed: conception-needs-a-roof
+feasts: passed -> failed: discovery-is-situated
+feasts: passed -> na: bodies-are-found
+feasts: failed -> passed: generations-turn-over, population-persists
+feasts: na -> passed: children-are-taught, hills-see-farther, the-pregnant-are-spared
+stewards: passed -> failed: moods-move-choices, people-act-on-what-they-know, techs-are-refined
+stewards: passed -> na: the-pregnant-are-spared
+stewards: na -> passed: hills-see-farther, kin-outrank-strangers
+stewards: na -> failed: bands-take-sides
+labour: failed -> passed: discovery-is-situated
+labour: na -> passed: people-eat-meat
+polity: passed -> failed: generations-turn-over, gossip-is-aimed, people-act-on-what-they-know, population-persists, taxes-reach-the-temple
+polity: passed -> na: the-hurt-are-tended, the-pregnant-are-spared
+polity: failed -> passed: projects-find-backers, the-wise-avoid-baneberries
+polity: na -> passed: bodies-are-found, heads-direct-work, raids-are-organised
+polity: na -> failed: hills-see-farther
+conquest: passed -> failed: ideas-become-tech, knowledge-is-found, taxes-reach-the-temple
+conquest: passed -> na: trials-accumulate
+conquest: failed -> passed: population-persists, records-are-cut
+conquest: failed -> na: techs-are-refined, the-beaten-pay-tribute
+conquest: na -> passed: kin-outrank-strangers, peoples-drift-apart, the-wise-avoid-baneberries
+culture: passed -> na: the-pregnant-are-spared
+culture: passed -> failed: needs-not-pinned, shelter-answers-cold, spatial-hash-spreads
+culture: failed -> passed: moods-move-choices
+culture: na -> passed: hunts-succeed-and-fail
+lean: passed -> failed: moods-move-choices
+lean: failed -> passed: camps-move-when-the-land-fails, nights-are-spent-at-home
+lean: failed -> na: research-is-social
+diggers: passed -> failed: needs-not-pinned, projects-find-backers, research-is-social
+diggers: passed -> na: the-wise-avoid-baneberries
+diggers: failed -> passed: moods-move-choices
+diggers: na -> passed: children-are-taught
+orchard: passed -> failed: people-survive
+orchard: failed -> passed: gossip-is-aimed, spatial-hash-spreads
+orchard: na -> passed: bodies-are-found, trials-accumulate

@@ -168,6 +168,31 @@ se corrigió mediante `TimeManager.dailyTemperature`.
   versus redefining the limit is the owner's decision. Recorded in
   `timings.md` and in the phase's README status; not marked done.
 
+## Screenshot residue backup incomplete — 2026-10-24 (2.G)
+
+- **Phase:** 2.G (housekeeping, not a phase rule).
+- **Expected:** the handoff said a backup of 117 pre-session dirty historical
+  screenshots sat at
+  `C:\Users\Marty\AppData\Local\Temp\opencode\pre-screenshot-backup-2026-10-24`
+  and should be restored after the E2E and tour runs.
+- **Found:** that directory holds exactly 3 files
+  (`m15-fog-on-switch-2026-10-08/01..03`). The copy loop that reported
+  "Backed up 117 files" counted its input list, not successful copies, and the
+  E2E layer of this gate's `check:full` (~51.6 min) rewrote the tracked
+  historical screenshots before the gap was discovered. So 114 files'
+  pre-session content is unrecoverable; the working tree now holds that E2E
+  output (144 dirty screenshot files in total). The three preserved files
+  differ both from `HEAD` and from the current output, so they genuinely held
+  pre-session content and are retained in the Temp backup.
+- **Resolution:** the restored end state follows the project's established
+  convention (baseline.md's phase 0.1 and later phases rewrote and restored
+  from `HEAD`): after the stage tour, the touched historical screenshots are
+  restored from `git HEAD` rather than from the residue copy, because the
+  committed capture set is the visual record of record. The pre-session
+  residue for 3 files is archived in the Temp backup and would be restored on
+  request; nothing dirty is committed. Loss recorded here rather than
+  silently pretended away.
+
 ## Phase 1.7 fast-level duration — 2026-10-18
 
 **Resolved direction, 2026-10-20:** the owner explicitly requested reducing

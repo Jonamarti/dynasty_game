@@ -6065,3 +6065,24 @@ las variantes generadas. La fase 2.6 queda omitida por R0; no se cambió el arte
 ni se atribuye la diferencia a un generador concreto. Detalle en
 `docs/m16/doubts.md`.
 
+
+## 2026-10-24 — M16 2.G: candidates opened by the stage-2 matrix diff
+
+Two pass→fail transitions against the 0.1 baseline look mechanism-shaped and
+are flagged for investigation instead of being attributed here (full context in
+`docs/m16/baseline-2.md`, cause lines from `verbose-smiths.log` and
+`verbose-harsh-winter.log`/`verbose-polity.log`):
+
+- **`ore-becomes-metal` (`smiths`)**: 4 loads of copper ore mined, 0 furnace
+  runs, so `metal-is-cast` also went pass→n/a. Ore reaches hands but smelting
+  never engages in the 66-day window. Candidate links, unconfirmed: the M16
+  2.22/D-16 station-territory rule interacting with a scenario band that is
+  minutes old, or charcoal/fuel ordering in the build queue. Not reproduced as
+  a game bug yet; the `craft` scenario (which passed its metal checks) is the
+  contrast case to read next.
+- **`hills-see-farther` (`harsh-winter` pass→fail, `polity` na→fail)**: 0 of 65
+  (and 0 of 63) sightings came from further off than the bare 12-tile radius.
+  Unconfirmed whether hill-related sight extension regressed or these scenario
+  worlds/bands simply never stood on high ground while sighting.
+
+Both are recorded, not fixed; the stage-3 block may consume them.

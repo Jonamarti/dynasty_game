@@ -54,9 +54,9 @@ Los números de línea cambian; no te fíes de ellos.
 | N3 | Emigrar sin consenso: con todos, con unos pocos o solo; menú de qué llevarse | B | 5.8 |
 | N4 | La zanja influye en el camino como el río o la colina: rodear o cruzar; si es muy empinada, cavar para allanar (cuesta mucho más) | B | 6.6 |
 | N5 | Para construir hay que quitar antes árboles, piedras grandes y cultivos del solar | B | 6.1 |
-| N6 | Los edificios planeados no deben verse en la niebla; un edificio recordado que ya no existe se sigue viendo aunque se haya visto que no está; revisar otras entidades | A | 2.3 |
+| N6 | Los edificios planeados no deben verse en la niebla; un edificio recordado que ya no existe se sigue viendo aunque se haya visto que no está; revisar otras entidades | cerrado | → closed by M16 2.3 (`65a5333e`); capacidad, persistencia y navegador cotejados en 2.G |
 | N7 | La imagen del edificio con tejado y sin tejado no encaja (las paredes no coinciden; la vista con tejado parece horizontal y no oblicua) | A | 2.6 |
-| N8 | La ropa, el hatillo, etc. tienen que equiparse. Error "manos llenas" al recoger un hatillo con las manos vacías y otro hatillo en el inventario | A + B | Cerrado en 2.4 (motivo real: ya hay un hatillo en el hombro); 6.3 (equipar) |
+| N8 | La ropa, el hatillo, etc. tienen que equiparse. Error "manos llenas" al recoger un hatillo con las manos vacías y otro hatillo en el inventario | A cerrado; B pendiente | → closed by M16 2.4 (`e8ba1754`) para el rechazo: ya hay un hatillo en el hombro; 6.3 conserva equipar y recoger autónomamente |
 | N9 | ¿Los edificios planeados se cancelan solos, o los cancelan otros NPC? | A | 2.2 (respuesta abajo; obras del jugador protegidas en M15, verificar la regresión) |
 | N10 | El nivel de habilidad permite o bloquea edificios y tareas; hay que practicar; la división del trabajo sale de la destreza natural y de la práctica | B | 6.5 |
 | N11 | Los NPC ven el hatillo y no lo usan ni lo investigan. Quien conoce la técnica lo coge y se lo equipa; quien no, lo investiga y hace ingeniería inversa poco a poco. También con objetos de otra tribu | B | 6.3, 6.4 |
@@ -90,7 +90,7 @@ prueba falle.
 
 | ID | Nota (resumida) | Et. | Causa probable | Carril | Fase |
 |---|---|---|---|---|---|
-| N12 | La memoria del mapa fuera del círculo de visión no se actualiza bien: hay trozos recordados y otros negros, quizá donde el NPC actuó | A, P | Se recuerda lo que `observePlaces` toca al actuar, no lo visto al pasar. Comprobar si la memoria de casillas se escribe solo desde acciones | Percepción | 2.3 (se amplía) |
+| N12 | La memoria del mapa fuera del círculo de visión no se actualiza bien: hay trozos recordados y otros negros, quizá donde el NPC actuó | cerrado | Cuadrícula y observador persistidos, borde del radio revelado y memoria atenuada | Percepción | → closed by M16 2.3 (`65a5333e`) |
 | N16 | Trabajar en construir el hogar no avanza: se queda en 0 % | A, P | M16 2.15 comprobó la hoguera con materiales en el suelo: reúne lo que falta, reanuda y llega al 100 % con progreso monótono | Obras | cerrado 2.15 |
 | N18 | No se puede equipar armadura de piel; la bolsa de piel se equipa sola en la cadera y no se puede quitar | cerrado | Retirada de herramientas y contenedores por orden; prendas y armadura conservan su ruta. Evidencia cotejada el 2026-10-24 | Capacidad y equipo | → closed by M16 2.16 (`92fd53ee`) |
 | N20 | Con hatillo y bolsa de piel equipados el inventario dice que hay hueco, el personaje "recoge", y el objeto desaparece del mundo y no aparece | A, P | La prueba `m16-pickup-conserves-items` verifica suelo + inventario antes = después para todos los objetos de tipo contenedor o equipo; pasa en la ruta existente. El reporte no se reprodujo y la causa queda desconocida | Capacidad y equipo | verificado, sin cambio de juego en 2.4 |
@@ -186,8 +186,8 @@ contradice la columna «Causa probable» de 1b, manda esta.
 |---|---|---|---|---|
 | A1 | "SeasonLore aprende «estéril» de un arbusto recogido" | se aprende que una especie no da en su propia temporada porque la banda la dejó pelada | cerrado en M15 `19cd284`; verificado de nuevo en M16 2.1 el 2026-10-20 (test 8/8; sin cambio de código) | 2.1 |
 | A2 | nota N9 | obras del jugador protegidas y aviso en retirada de obras NPC | verificado ya corregido en M15, capability test M16 2.2 | cerrado |
-| A3 | "M15 fase 20, tercera ronda" y nota N6 | la niebla conserva recuerdos de cosas que ya no están; obras planeadas visibles en la niebla | A | 2.3 |
-| A4 | nota N8 | "manos llenas" al recoger un hatillo | A | 2.4 |
+| A3 | "M15 fase 20, tercera ronda" y nota N6 | la niebla conserva recuerdos de cosas que ya no están; obras planeadas visibles en la niebla | cerrado | → closed by M16 2.3 (`65a5333e`); evidencia de capacidad y E2E cotejada en 2.G |
+| A4 | nota N8 | "manos llenas" al recoger un hatillo | cerrado | → closed by M16 2.4 (`e8ba1754`); rechazo real compartido por menú y acción |
 | A5 | "The radial menu's \"Pick up\" has no reach test" | Verificado ya corregido en M15 `3b8a57b`; `m16-pickup-reach` confirma el paseo antes de transferir | cerrado 2.5 (2026-10-20) |
 | A6 | nota N7 | arte de edificios con y sin tejado desalineado | A | 2.6 |
 | A7 | "Sueño animal pendiente" | el signo de alarma animal sigue tras expirar | cerrado por M16 2.7 (2026-10-20) | 2.7 |
@@ -198,6 +198,7 @@ contradice la columna «Causa probable» de 1b, manda esta.
 | A12 | "Floaters do not follow the entity" | los rótulos se quedan atrás | cerrado | → closed by M16 2.12 (`2b25754c`); evidencia de unidad, navegador y capturas cotejada el 2026-10-24 |
 | A13 | "M15 equipamiento: matriz roja y cobertura perdida" | 15 fallos nuevos y 12 pérdidas de aplicabilidad sin causa establecida | A | 0.1, 2.13 |
 | A14 | "M15 fase 23e/f" | a quien muerde un depredador nadie lo defiende | A (conducta) | 2.14 |
+| A15 | M16 2.G diff: `ore-becomes-metal` (smiths) | mineral 4 cargas minadas, 0 corridas de horno; `metal-is-cast` pasa a n/a. Causa no atribuida: candidato D-16/2.22 en banda joven del escenario, o encadenado de combustible | H | 2.G → siguiente bloque. Grabado en `baseline-2.md` y `bugs.md` |
 
 ## 4. Los absorbe una funcionalidad (no arreglar aparte)
 
@@ -343,7 +344,7 @@ más **H** = herramienta o instrumento de prueba.
 | E1 | `bugs.md` «M15 fase 33: lo que el mundo de pueblos…», punto `World.index` | `index(x,y)` envolvía coordenadas fuera del mapa a la fila vecina; K1 y K2 reproducen y cierran las rutas de orilla/agua dulce | cerrado 2.19 | MUNDO | 2.19 |
 | E2 | `bugs.md` «M15 terreno: `go_home` puede ganarle al hambre máxima» | `go_home` puntúa solo por distancia a casa; con hambre 90–100 y comida bajo los pies, la persona no come en 1.200 ticks | A | CEREBRO | 2.17 (con N21) |
 | E3 | ídem fase 33, «Una banda con camino largo al agua aún puede morir de sed» | la IA no mide la distancia al agua conocida antes de alejarse | A | CEREBRO | 2.17 (con N44) |
-| E4 | `bugs.md` «M15 paso 0 (D): la niebla…no se guarda» | ver N12 en 1d | A | PERCEPCION | 2.3 |
+| E4 | `bugs.md` «M15 paso 0 (D): la niebla…no se guarda» | Cuadrícula, estado activo y observador guardados; migración v1 inactiva y comparación exacta al cargar | cerrado | PERCEPCION | → closed by M16 2.3 (`65a5333e`) |
 | E5 | `bugs.md` fase 33, «El cargador no restaura la compartición de objetos» | guardar, cargar y avanzar 29 días da un nodo más en `objects.graph`: un objeto compartido pasa a dos copias. No se sabe si una mutación posterior diverge | A | HERR (persistencia) | 2.24 |
 | E6 | `bugs.md` «Compacto de raciones: `RangeError`…» y «Seguimiento de raciones aparcadas» | La reproducción `repro-scout-cross` con seis personas cruza y avanza sin `RangeError`; el crédito fraccionario está acotado desde M15 | verificado ya corregido en M15; capability M16 2.25 → cerrado por M16 2.25 (`269222fe`) | MUNDO (frontera) | 2.25 |
 | E7 | `bugs.md` «M15 fase 35: avance de origen en bloque cruza el reloj de llegada» y «viaje de grupo no simula la comarca de destino» | El destino alcanza el tick del lote de origen; conserva jugador y guardado válido | verificado ya corregido en M15 fase 35; capability M16 2.25 → cerrado por M16 2.25 (`269222fe`) | MUNDO (frontera) | 2.25 |

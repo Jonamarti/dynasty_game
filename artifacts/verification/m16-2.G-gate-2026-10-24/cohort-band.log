@@ -1,0 +1,199 @@
+﻿
+> dynasty@0.16.19-alpha sim:seeds
+> vite-node tools/seeds.ts -- --scenario band --seeds 20
+
+
+SEED COHORT  -  scenario "band", 20 seeds, 3,000 steps each
+==============================================================================
+  seed      peak   end    survived   born   starved: inf chi adu   known past taught
+  century     32    32       100%      0             0   0   0       0    0      0
+  HOMES century households=0/9 (0.0%)
+    night samples=189 outdoors=189(100.0%) bare_interior=0(0.0%) bedding_or_rug=0(0.0%) bed=0(0.0%) other=0(0.0%)
+    mood samples=189 comfort╬ö=-0.01 security╬ö=-0.40 mood-quality physical/effective=0.70/0.70
+    recovery quality samples=16389 physical/effective=0.70/0.70
+    NPC furniture crafted: none; placed: none
+  TORCHES night carrier samples=0/416 (0.00%) across 13 night snapshots
+  alpha       32    32       100%      0             0   0   0       0    0      0
+  HOMES alpha households=0/10 (0.0%)
+    night samples=198 outdoors=198(100.0%) bare_interior=0(0.0%) bedding_or_rug=0(0.0%) bed=0(0.0%) other=0(0.0%)
+    mood samples=198 comfort╬ö=-0.08 security╬ö=-0.26 mood-quality physical/effective=0.70/0.70
+    recovery quality samples=17035 physical/effective=0.70/0.70
+    NPC furniture crafted: none; placed: none
+  TORCHES night carrier samples=0/416 (0.00%) across 13 night snapshots
+  beta        30    30       100%      0             0   0   0       0    0      0
+  HOMES beta households=0/11 (0.0%)
+    night samples=170 outdoors=170(100.0%) bare_interior=0(0.0%) bedding_or_rug=0(0.0%) bed=0(0.0%) other=0(0.0%)
+    mood samples=170 comfort╬ö=-0.01 security╬ö=-0.53 mood-quality physical/effective=0.70/0.70
+    recovery quality samples=15105 physical/effective=0.70/0.70
+    NPC furniture crafted: none; placed: none
+  TORCHES night carrier samples=0/390 (0.00%) across 13 night snapshots
+  gamma       30    30       100%      0             0   0   0       0    0      0
+  HOMES gamma households=0/10 (0.0%)
+    night samples=119 outdoors=119(100.0%) bare_interior=0(0.0%) bedding_or_rug=0(0.0%) bed=0(0.0%) other=0(0.0%)
+    mood samples=119 comfort╬ö=-0.01 security╬ö=-0.51 mood-quality physical/effective=0.70/0.70
+    recovery quality samples=10893 physical/effective=0.70/0.70
+    NPC furniture crafted: none; placed: none
+  TORCHES night carrier samples=0/390 (0.00%) across 13 night snapshots
+  delta       31    31       100%      0             0   0   0       0    0      0
+  HOMES delta households=0/11 (0.0%)
+    night samples=171 outdoors=171(100.0%) bare_interior=0(0.0%) bedding_or_rug=0(0.0%) bed=0(0.0%) other=0(0.0%)
+    mood samples=171 comfort╬ö=-0.02 security╬ö=-0.39 mood-quality physical/effective=0.70/0.70
+    recovery quality samples=15138 physical/effective=0.70/0.70
+    NPC furniture crafted: none; placed: none
+  TORCHES night carrier samples=0/403 (0.00%) across 13 night snapshots
+  eps         31    29        94%      0             0   0   0       0    0      0
+  HOMES eps households=0/10 (0.0%)
+    night samples=179 outdoors=179(100.0%) bare_interior=0(0.0%) bedding_or_rug=0(0.0%) bed=0(0.0%) other=0(0.0%)
+    mood samples=179 comfort╬ö=-0.01 security╬ö=-0.20 mood-quality physical/effective=0.70/0.70
+    recovery quality samples=15489 physical/effective=0.70/0.70
+    NPC furniture crafted: none; placed: none
+  TORCHES night carrier samples=0/379 (0.00%) across 13 night snapshots
+  zeta        30    29        97%      0             0   0   0       0    0      0
+  HOMES zeta households=0/10 (0.0%)
+    night samples=209 outdoors=209(100.0%) bare_interior=0(0.0%) bedding_or_rug=0(0.0%) bed=0(0.0%) other=0(0.0%)
+    mood samples=209 comfort╬ö=-0.07 security╬ö=-0.15 mood-quality physical/effective=0.70/0.70
+    recovery quality samples=18667 physical/effective=0.70/0.70
+    NPC furniture crafted: none; placed: none
+  TORCHES night carrier samples=0/378 (0.00%) across 13 night snapshots
+  eta         32    32       100%      0             0   0   0       0    0      0
+  HOMES eta households=0/10 (0.0%)
+    night samples=135 outdoors=135(100.0%) bare_interior=0(0.0%) bedding_or_rug=0(0.0%) bed=0(0.0%) other=0(0.0%)
+    mood samples=135 comfort╬ö=-0.00 security╬ö=-0.29 mood-quality physical/effective=0.70/0.70
+    recovery quality samples=12308 physical/effective=0.70/0.70
+    NPC furniture crafted: none; placed: none
+  TORCHES night carrier samples=0/416 (0.00%) across 13 night snapshots
+  theta       32    32       100%      0             0   0   0       0    0      0
+  HOMES theta households=0/10 (0.0%)
+    night samples=149 outdoors=149(100.0%) bare_interior=0(0.0%) bedding_or_rug=0(0.0%) bed=0(0.0%) other=0(0.0%)
+    mood samples=149 comfort╬ö=-0.06 security╬ö=-0.30 mood-quality physical/effective=0.70/0.70
+    recovery quality samples=13302 physical/effective=0.70/0.70
+    NPC furniture crafted: none; placed: none
+  TORCHES night carrier samples=0/416 (0.00%) across 13 night snapshots
+  iota        32    32       100%      0             0   0   0       0    0      0
+  HOMES iota households=0/11 (0.0%)
+    night samples=168 outdoors=168(100.0%) bare_interior=0(0.0%) bedding_or_rug=0(0.0%) bed=0(0.0%) other=0(0.0%)
+    mood samples=168 comfort╬ö=-0.01 security╬ö=-0.39 mood-quality physical/effective=0.70/0.70
+    recovery quality samples=14728 physical/effective=0.70/0.70
+    NPC furniture crafted: none; placed: none
+  TORCHES night carrier samples=0/416 (0.00%) across 13 night snapshots
+  kappa       31    29        94%      0             0   0   0       0    0      0
+  HOMES kappa households=0/9 (0.0%)
+    night samples=160 outdoors=160(100.0%) bare_interior=0(0.0%) bedding_or_rug=0(0.0%) bed=0(0.0%) other=0(0.0%)
+    mood samples=160 comfort╬ö=-0.02 security╬ö=-0.39 mood-quality physical/effective=0.70/0.70
+    recovery quality samples=13897 physical/effective=0.70/0.70
+    NPC furniture crafted: none; placed: none
+  TORCHES night carrier samples=0/382 (0.00%) across 13 night snapshots
+  lambda      30    29        97%      0             0   0   0       0    0      0
+  HOMES lambda households=0/9 (0.0%)
+    night samples=131 outdoors=131(100.0%) bare_interior=0(0.0%) bedding_or_rug=0(0.0%) bed=0(0.0%) other=0(0.0%)
+    mood samples=131 comfort╬ö=-0.01 security╬ö=-0.53 mood-quality physical/effective=0.70/0.70
+    recovery quality samples=11598 physical/effective=0.70/0.70
+    NPC furniture crafted: none; placed: none
+  TORCHES night carrier samples=0/378 (0.00%) across 13 night snapshots
+  mu          31    30        97%      0             0   0   0       0    0      0
+  HOMES mu households=0/8 (0.0%)
+    night samples=218 outdoors=218(100.0%) bare_interior=0(0.0%) bedding_or_rug=0(0.0%) bed=0(0.0%) other=0(0.0%)
+    mood samples=218 comfort╬ö=-0.08 security╬ö=-0.38 mood-quality physical/effective=0.70/0.70
+    recovery quality samples=17504 physical/effective=0.70/0.70
+    NPC furniture crafted: none; placed: none
+  TORCHES night carrier samples=0/391 (0.00%) across 13 night snapshots
+  nu          31    31       100%      0             0   0   0       0    0      0
+  HOMES nu households=0/10 (0.0%)
+    night samples=154 outdoors=154(100.0%) bare_interior=0(0.0%) bedding_or_rug=0(0.0%) bed=0(0.0%) other=0(0.0%)
+    mood samples=154 comfort╬ö=-0.01 security╬ö=-0.48 mood-quality physical/effective=0.70/0.70
+    recovery quality samples=13267 physical/effective=0.70/0.70
+    NPC furniture crafted: none; placed: none
+  TORCHES night carrier samples=0/403 (0.00%) across 13 night snapshots
+  xi          30    29        97%      0             0   0   0       0    0      0
+  HOMES xi households=2/10 (20.0%)
+    night samples=131 outdoors=128(97.7%) bare_interior=3(2.3%) bedding_or_rug=0(0.0%) bed=0(0.0%) other=0(0.0%)
+    mood samples=131 comfort╬ö=0.03 security╬ö=-0.26 mood-quality physical/effective=0.70/0.70
+    recovery quality samples=12058 physical/effective=0.71/0.71
+    NPC furniture crafted: none; placed: none
+  TORCHES night carrier samples=0/379 (0.00%) across 13 night snapshots
+  omicron     32    31        97%      0             0   0   0       0    0      0
+  HOMES omicron households=0/10 (0.0%)
+    night samples=162 outdoors=162(100.0%) bare_interior=0(0.0%) bedding_or_rug=0(0.0%) bed=0(0.0%) other=0(0.0%)
+    mood samples=162 comfort╬ö=-0.00 security╬ö=-0.30 mood-quality physical/effective=0.70/0.70
+    recovery quality samples=13722 physical/effective=0.70/0.70
+    NPC furniture crafted: none; placed: none
+  TORCHES night carrier samples=0/408 (0.00%) across 13 night snapshots
+  pi          30    29        97%      0             0   0   1       0    0      0
+  HOMES pi households=0/8 (0.0%)
+    night samples=128 outdoors=128(100.0%) bare_interior=0(0.0%) bedding_or_rug=0(0.0%) bed=0(0.0%) other=0(0.0%)
+    mood samples=128 comfort╬ö=-0.01 security╬ö=-0.54 mood-quality physical/effective=0.70/0.70
+    recovery quality samples=11323 physical/effective=0.70/0.70
+    NPC furniture crafted: none; placed: none
+  TORCHES night carrier samples=0/386 (0.00%) across 13 night snapshots
+  rho         32    32       100%      0             0   0   0       0    0      0
+  HOMES rho households=0/11 (0.0%)
+    night samples=159 outdoors=159(100.0%) bare_interior=0(0.0%) bedding_or_rug=0(0.0%) bed=0(0.0%) other=0(0.0%)
+    mood samples=159 comfort╬ö=-0.00 security╬ö=-0.41 mood-quality physical/effective=0.70/0.70
+    recovery quality samples=13993 physical/effective=0.70/0.70
+    NPC furniture crafted: none; placed: none
+  TORCHES night carrier samples=0/416 (0.00%) across 13 night snapshots
+  sigma       31    30        97%      0             0   0   0       0    0      0
+  HOMES sigma households=0/10 (0.0%)
+    night samples=209 outdoors=209(100.0%) bare_interior=0(0.0%) bedding_or_rug=0(0.0%) bed=0(0.0%) other=0(0.0%)
+    mood samples=209 comfort╬ö=-0.02 security╬ö=-0.22 mood-quality physical/effective=0.70/0.70
+    recovery quality samples=18170 physical/effective=0.70/0.70
+    NPC furniture crafted: none; placed: none
+  TORCHES night carrier samples=0/400 (0.00%) across 13 night snapshots
+  tau         31    30        97%      0             0   0   0       0    0      0
+  HOMES tau households=0/11 (0.0%)
+    night samples=162 outdoors=162(100.0%) bare_interior=0(0.0%) bedding_or_rug=0(0.0%) bed=0(0.0%) other=0(0.0%)
+    mood samples=162 comfort╬ö=-0.01 security╬ö=-0.39 mood-quality physical/effective=0.70/0.70
+    recovery quality samples=13867 physical/effective=0.70/0.70
+    NPC furniture crafted: none; placed: none
+  TORCHES night carrier samples=0/397 (0.00%) across 13 night snapshots
+  DEMOGRAPHY 0 births / 216 fertile women = 0.000 births/woman; 0.000 births/woman-year (67.500 woman-years) ┬À mortality <1y n/a (0/0; 0 births awaiting follow-up) ┬À <5y n/a (0/0; 0 births awaiting follow-up) ┬À mean age at death 56.788y (12 deaths) ┬À causes old age=11, starvation=1
+  HOME night near<15 0.905 far>25 0.017 far>45 0.001 sleep 0.339 rest 0.296 ┬À actions sleep:0.339,rest:0.296,forage:0.080,go_home:0.064,haul:0.045,idle:0.041,gather:0.027,dig:0.024,spar:0.019,chop:0.012 ┬À day distance median/p90/max 8.0/17.1/58.8 ┬À child-parent median/p90 2.3/7.2 far>12 0.017 far>30 0.000
+  HISTORY drawdown p50/p90/max 0.000/0.000/0.100 ┬À recovered 0/0 (median days n/a; censored 0) ┬À band lost violence/need/other/absorbed 0/0/0/0 ┬À world lost 0/20 ┬À self-destroyed 0 ┬À in-band kills/1,000 person-years 0.000 ┬À violent adult deaths 0.000 ┬À answered n/a (0/0 unanswered; actions none; unanswered none) ┬À answered diagnostics brain_decision_flee:20,brain_decision_go_home:12,brain_decision_wander:10,initial_action_attack:1,initial_action_go_home:1,initial_action_talk:1,initial_commitment_action_go_home:1,initial_commitment_action_none:2,initial_commitment_drive_home:1,initial_commitment_drive_none:2,initial_order_none:3,initial_timer_0:1,initial_timer_2:1,initial_timer_81:1,initial_under_attack_no:3,interrupted_under_attack_action_talk:1,under_attack_detected_tick:49 ┬À fertility funnel opportunities 2592; blocked spacing/partner/hunger/health 0/220/0/0; attempts 2372; expected rolls 239.201; roll misses 2175; no roof 197; pregnancies 0; losses hunger/fever/blow 0/0/0; live births 0) ┬À war episodes/year 1.521 median days 2 peace share 0.991 ┬À firemaking first known day never ┬À adoption median days n/a not reached 0 ┬À malnutrition 0.182 ┬À protein nutrition share 0.275
+  TORCHES night carrier samples=0/7960 (0.00%) across 260 night snapshots
+  RECOVERY / FERTILITY BY SEED: seed recovered/episodes censored opportunities spacing partner hunger health no-roof pregnancies losses-h/f/b live-births
+    century  0/0 0 132 0 24 0 0 7 0 0/0/0 0
+    alpha    0/0 0 144 0 24 0 0 8 0 0/0/0 0
+    beta     0/0 0 132 0 0 0 0 12 0 0/0/0 0
+    gamma    0/0 0 132 0 12 0 0 8 0 0/0/0 0
+    delta    0/0 0 132 0 0 0 0 12 0 0/0/0 0
+    eps      0/0 0 132 0 12 0 0 10 0 0/0/0 0
+    zeta     0/0 0 120 0 0 0 0 9 0 0/0/0 0
+    eta      0/0 0 168 0 48 0 0 12 0 0/0/0 0
+    theta    0/0 0 132 0 12 0 0 9 0 0/0/0 0
+    iota     0/0 0 144 0 12 0 0 13 0 0/0/0 0
+    kappa    0/0 0 108 0 0 0 0 11 0 0/0/0 0
+    lambda   0/0 0 108 0 0 0 0 9 0 0/0/0 0
+    mu       0/0 0 120 0 24 0 0 3 0 0/0/0 0
+    nu       0/0 0 132 0 12 0 0 11 0 0/0/0 0
+    xi       0/0 0 132 0 12 0 0 9 0 0/0/0 0
+    omicron  0/0 0 132 0 12 0 0 11 0 0/0/0 0
+    pi       0/0 0 96 0 4 0 0 7 0 0/0/0 0
+    rho      0/0 0 132 0 0 0 0 9 0 0/0/0 0
+    sigma    0/0 0 132 0 12 0 0 12 0 0/0/0 0
+    tau      0/0 0 132 0 0 0 0 15 0 0/0/0 0
+  FOOD ACCESS accessible 142347 ┬À blocked by reach 5010 ┬À absent from search 26404
+  ORDERS build 77.3% (34/10 obeyed/refused) ┬À dig 71.2% (47/19 obeyed/refused) ┬À haul 71.3% (288/116 obeyed/refused)
+  RAIDS proposed 3 ┬À chief-approved 2 ┬À refused by chief 1 ┬À called 0 ┬À no party 3 ┬À followers ordered 0
+  SOCIAL INTERRUPTIONS interrupted_discuss_baby_crying=3 interrupted_give_baby_crying=9 interrupted_give_thirsty=29 interrupted_spar_baby_crying=35 interrupted_spar_hungry=1 interrupted_spar_thirsty=44
+  PROTEIN DURING CRAVING 27221/63726 searches had a reachable protein-rich food node ┬À 2960 only outside anchor reach ┬À 2109 masked by another reachable food node ┬À 2109 selected by the out-of-reach override ┬À 33545 absent from the forage search
+  PROTEIN CHOICE 27221 reachable-rich selections ┬À 0 reachable-rich alternatives ignored ┬À 467/3457 rich meals while craving vs 1161/3467 while calm (0.40x)
+==============================================================================
+  EXTINCT 0/20   ┬À  no band able to recover 0/20   ┬À  above its low point at the end 0/20   ┬À  bands still viable 60
+  MEAN SURVIVAL 98.1%   ┬À  0/20 collapsed below a quarter   ┬À  0 born
+  starved: 0 infants (5 or under), 0 older children, 1 adults
+  MEAN 0.0 technologies known at the end, 0.0 conceived past the root nodes, 0.0 passed on   ┬À  20/20 never got past a root node
+  CONFLICT 3 blows between peoples, 100% near either camp ┬À 0 murders ┬À peoples drifted apart after incidents in 2/2 seeds (mean 1.2 tiles)
+  DEFENCE 10 interventions against 3 property deeds an owner saw ┬À 0 taken captive in 0/20 seeds, 0 escaped, 0 came home
+  TRIPWIRES coats sewn in 0/20 seeds ┬À the hurt tended in 0 ┬À animals fed in 0 ┬À tamed in 0 ┬À taming known in 0
+  BANDS 0 cast out in 0 seeds ┬À factions in 0 seeds ┬À 0 taken in, of 0 who left or were cast out
+  BODIES 11 of 12 found ┬À 0 investigations, 0 named the killer, 0 somebody else
+  VIOLENCE 3 blows in all, 0 inside a band, 0 by an adult on a child ┬À 0 of 3 thefts from a person inside a band
+  KIN defended 0/0 witnessed attacks; fled closer 0/0 times
+  RESEARCH 8 argued breakthroughs / 92 total; argument breakthroughs in 6/20 seeds
+  REFINEMENT 0 improvements from 0 proven designs in 0/20 seeds
+  JUSTICE 0/1 victim complaints heard; 0 carried demands delivered; complaints in 0/20 seeds
+  SOIL 0/0 harvested worlds below 98.5% of resting (n/a% mean); compost spread in 0/20 seeds (0 spreads; 0 loads matured)
+  WALK 0/551831 stuck ticks (0.0 per 1,000); above the check floor in 0/20 seeds
+  STANDING 0/0 eligible 60-day worlds above 20 points (0 at or below)
+  96.2s
+
