@@ -1,5 +1,18 @@
 # M16 diary
 
+## M16 1.8 — Cierre de verificación del perfilador (2026-10-24, `d58faae9`)
+
+Goal: enlazar la evidencia existente y resolver el estado pendiente de la fase.
+What was done: se cotejaron los tres perfiles seriales del 20 de octubre,
+las pruebas del informe y la suite completa posterior del mismo lote.
+Before and after: sin nuevas mediciones; se conservan 1,4781/16,1854 ms por
+paso con 30/300 personas. El lote pasó 350 archivos y 2.444 pruebas, una omitida.
+What turned out differently from the card: el trabajo ya estaba implementado;
+faltaba asociar explícitamente el cierre conjunto a la tarjeta.
+What is left open: el gate de etapa, la matriz roja y los límites de FPS/largo
+plazo siguen separados de este contrato de medición.
+Screenshots: ninguna; no cambia la UI.
+
 ## M16 2.10 — El menú no revela la tecnología de un desconocido (2026-10-20, `f94c77e`)
 
 Goal: ensure the action menu does not read a stranger's known technologies or

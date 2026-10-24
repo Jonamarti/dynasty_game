@@ -1,3 +1,21 @@
+## 2026-10-24 — M16 1.8: cerrar la evidencia del perfilador
+
+**Problema:** la fase seguía pendiente pese a tener las mediciones y la suite
+unitaria del lote guardadas desde el 20 de octubre.
+
+**Causa:** el estado del plan no enlazaba el cierre conjunto de verificación.
+
+**Cambio:** se cierra 1.8 (`d58faae9`) con sus evidencias originales: tres perfiles
+seriales, medianas para 30/300 personas y presupuesto en `baseline.md`.
+Sin cambio de juego, versión o UI.
+
+**Verificación:** los tests del informe pasaron 3/3; el lote posterior pasó
+350 archivos y 2.444 pruebas, una omitida, con typecheck correcto. Son resultados
+del 2026-10-20, no una nueva ejecución. Evidencia:
+`artifacts/verification/m16-session-2026-10-20/` y
+`artifacts/verification/m16-test-costs/after/perf-final.log`.
+La matriz del lote terminó roja y el gate completo de etapa sigue pendiente.
+
 ## 2026-10-24 — M16 2.26: combustible en compensaciones y exigencias
 
 **Problema:** entregar una antorcha encendida como compensación o por una
