@@ -1,3 +1,27 @@
+## 2026-10-24 — M16 1.7: preparar territorio en los E2E de luz
+
+**Problema:** el E2E heredado de antorchas fallaba antes de encenderlas al
+intentar colocar su hoguera fuera de territorio propio.
+
+**Causa:** la premisa del fixture quedó desfasada con la regla de estaciones
+de 2.22. El test de luz de hoguera ya tenía una adaptación local equivalente.
+
+**Cambio:** ambos usan un helper compartido que llama a `sim.place`, prepara
+temporalmente sólo suelo sin dueño y restaura los claims en `finally`, incluida
+la ausencia original de la propiedad. Conserva semillas, candidatos, radios y
+redondeo de cada caso. Un fallo al colocar muestra `lastRefusal`. Sin cambios
+de reglas del juego, versión o UI.
+
+**Verificación:** el caso de antorcha fallaba en la evidencia antes/después de
+2.26 (`artifacts/verification/m16-2.26/`); con el montaje corregido pasan los dos
+E2E focales (2/2, 35 s), sin relajar aserciones de luz, combustible, pausa o
+niebla. El typecheck inicial detectó el ensanchamiento del literal de redondeo
+y una variable sobrante; se corrigieron y el rápido final pasa 46/46 con
+typecheck. La suite completa de la fase ya pasó una vez (358 archivos,
+2.474 aprobadas, un fallo esperado y una omitida); no se repite por este commit
+de montaje E2E. Logs: `artifacts/verification/m16-1.7-closeout-2026-10-24/`.
+Capturas nuevas revisadas: `artifacts/screenshots/m16-2026-10-24-1.7-fixtures/`.
+
 ## 2026-10-24 — M16 1.7: ejecutar todas las capas del gate completo
 
 **Problema:** `check:full` omitía E2E cuando la matriz heredada terminaba roja.

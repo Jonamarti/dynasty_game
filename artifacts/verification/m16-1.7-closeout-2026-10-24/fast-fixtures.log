@@ -1,0 +1,35 @@
+
+> dynasty@0.16.19-alpha check:fast
+> npm run typecheck && vitest run --config vitest.fast.config.ts
+
+
+> dynasty@0.16.19-alpha typecheck
+> tsc --noEmit
+
+e2e/hearth-light.spec.ts(21,45): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(pageFunction: PageFunction<{ radiusLimit: number; rounding: string; }, { id: number; x: number; y: number; }>, arg: { radiusLimit: number; rounding: string; }, options?: { exposeFunctions?: boolean | undefined; } | undefined): Promise<...>', gave the following error.
+    Argument of type '(options?: { radiusLimit?: number | undefined; rounding?: "round" | "floor" | undefined; } | undefined) => { id: number; x: number; y: number; }' is not assignable to parameter of type 'PageFunction<{ radiusLimit: number; rounding: string; }, { id: number; x: number; y: number; }>'.
+      Type '(options?: { radiusLimit?: number | undefined; rounding?: "round" | "floor" | undefined; } | undefined) => { id: number; x: number; y: number; }' is not assignable to type '(arg: { radiusLimit: number; rounding: string; }) => { id: number; x: number; y: number; } | Promise<{ id: number; x: number; y: number; }>'.
+        Types of parameters 'options' and 'arg' are incompatible.
+          Type '{ radiusLimit: number; rounding: string; }' is not assignable to type '{ radiusLimit?: number | undefined; rounding?: "round" | "floor" | undefined; }'.
+            Types of property 'rounding' are incompatible.
+              Type 'string' is not assignable to type '"round" | "floor" | undefined'.
+  Overload 2 of 2, '(pageFunction: PageFunction<void, { id: number; x: number; y: number; }>, arg?: any, options?: { exposeFunctions?: boolean | undefined; } | undefined): Promise<{ id: number; x: number; y: number; }>', gave the following error.
+    Argument of type '(options?: { radiusLimit?: number | undefined; rounding?: "round" | "floor" | undefined; } | undefined) => { id: number; x: number; y: number; }' is not assignable to parameter of type 'PageFunction<void, { id: number; x: number; y: number; }>'.
+      Type '(options?: { radiusLimit?: number | undefined; rounding?: "round" | "floor" | undefined; } | undefined) => { id: number; x: number; y: number; }' is not assignable to type '(arg: void) => { id: number; x: number; y: number; } | Promise<{ id: number; x: number; y: number; }>'.
+        Types of parameters 'options' and 'arg' are incompatible.
+          Type 'void' is not assignable to type '{ radiusLimit?: number | undefined; rounding?: "round" | "floor" | undefined; } | undefined'.
+e2e/hearth-light.spec.ts(26,42): error TS6133: 'p' is declared but its value is never read.
+e2e/phase12d-torch.spec.ts(77,45): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(pageFunction: PageFunction<{ radiusLimit: number; rounding: string; }, { id: number; x: number; y: number; }>, arg: { radiusLimit: number; rounding: string; }, options?: { exposeFunctions?: boolean | undefined; } | undefined): Promise<...>', gave the following error.
+    Argument of type '(options?: { radiusLimit?: number | undefined; rounding?: "round" | "floor" | undefined; } | undefined) => { id: number; x: number; y: number; }' is not assignable to parameter of type 'PageFunction<{ radiusLimit: number; rounding: string; }, { id: number; x: number; y: number; }>'.
+      Type '(options?: { radiusLimit?: number | undefined; rounding?: "round" | "floor" | undefined; } | undefined) => { id: number; x: number; y: number; }' is not assignable to type '(arg: { radiusLimit: number; rounding: string; }) => { id: number; x: number; y: number; } | Promise<{ id: number; x: number; y: number; }>'.
+        Types of parameters 'options' and 'arg' are incompatible.
+          Type '{ radiusLimit: number; rounding: string; }' is not assignable to type '{ radiusLimit?: number | undefined; rounding?: "round" | "floor" | undefined; }'.
+            Types of property 'rounding' are incompatible.
+              Type 'string' is not assignable to type '"round" | "floor" | undefined'.
+  Overload 2 of 2, '(pageFunction: PageFunction<void, { id: number; x: number; y: number; }>, arg?: any, options?: { exposeFunctions?: boolean | undefined; } | undefined): Promise<{ id: number; x: number; y: number; }>', gave the following error.
+    Argument of type '(options?: { radiusLimit?: number | undefined; rounding?: "round" | "floor" | undefined; } | undefined) => { id: number; x: number; y: number; }' is not assignable to parameter of type 'PageFunction<void, { id: number; x: number; y: number; }>'.
+      Type '(options?: { radiusLimit?: number | undefined; rounding?: "round" | "floor" | undefined; } | undefined) => { id: number; x: number; y: number; }' is not assignable to type '(arg: void) => { id: number; x: number; y: number; } | Promise<{ id: number; x: number; y: number; }>'.
+        Types of parameters 'options' and 'arg' are incompatible.
+          Type 'void' is not assignable to type '{ radiusLimit?: number | undefined; rounding?: "round" | "floor" | undefined; } | undefined'.

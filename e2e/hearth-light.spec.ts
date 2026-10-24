@@ -1,5 +1,6 @@
 import { mkdirSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
+import { placeHearthFixtureOnClaimedGround } from './helpers';
 
 test('visible hearth light softens night without changing the paused world or piercing fog', async ({ page }) => {
   const errors: string[] = [];
@@ -12,30 +13,19 @@ test('visible hearth light softens night without changing the paused world or pi
     'artifacts/screenshots/m15-phase12c-light-' + new Date().toISOString().replace(/[:.]/g, '-');
   mkdirSync(shots, { recursive: true });
 
-  const fixture = await page.evaluate(() => {
-    const d = (window as any).__dynasty, p = d.sim.player;
+  await page.evaluate(() => {
+    const d = (window as any).__dynasty;
     d.sim.time.tick = 0;
     d.sim.knownTech.add('firemaking');
-    let hearth: any = null;
-    const band = d.sim.bands.find((candidate: any) => candidate.id === p.bandId);
-    const originalClaims = band.claimedCells ?? new Set<string>();
-    band.claimedCells ??= new Set<string>();
-    for (let ring = 4; ring < 22 && !hearth; ring++) {
-      for (const [dx, dy] of [[ring, 0], [-ring, 0], [0, ring], [0, -ring], [ring, ring]]) {
-        const x = Math.round(p.x + dx), y = Math.round(p.y + dy);
-        const key = `${Math.floor(x / 8)},${Math.floor(y / 8)}`;
-        const claimedTemporarily = d.sim.territoryOwnerAt(x, y) === null;
-        if (claimedTemporarily) band.claimedCells.add(key);
-        try {
-          hearth = d.sim.place('hearth', x, y, p.bandId, null);
-        } finally {
-          if (claimedTemporarily) band.claimedCells.delete(key);
-          if (originalClaims.size === 0 && band.claimedCells.size === 0) band.claimedCells = originalClaims;
-        }
-        if (hearth) break;
-      }
-    }
-    if (!hearth) throw new Error('Could not place a hearth fixture');
+  });
+  const hearthFixture = await page.evaluate(placeHearthFixtureOnClaimedGround, {
+    radiusLimit: 22,
+    rounding: 'round' as const,
+  });
+  const fixture = await page.evaluate(({ id: hearthId }) => {
+    const d = (window as any).__dynasty;
+    const hearth = d.sim.buildingsById.get(hearthId);
+    if (!hearth) throw new Error(`Hearth fixture disappeared after placement (${hearthId})`);
     hearth.complete = true;
     d.camera.following = false;
     d.camera.zoom = 3;
@@ -60,7 +50,7 @@ test('visible hearth light softens night without changing the paused world or pi
       .map((value: any) => value.getState());
     return { id: hearth.id, x: hearth.x, y: hearth.y, tick: d.sim.time.tick, rng,
       daylight: d.sim.time.daylight };
-  });
+  }, hearthFixture);
   expect(fixture.daylight).toBe(0);
 
   const sample = async () => page.evaluate(({ x, y }) => {

@@ -15,6 +15,14 @@ interrumpido que arrancó verificaciones reales no cuenta como suite aprobada.
 
 ## 2026-10-24 — M16 2.26: preparación heredada del E2E de antorchas
 
+**Resuelto el 2026-10-24**, commit `m16: 1.7 share territorial setup for hearth E2E fixtures`.
+La regla de estaciones de 2.22 requiere territorio; el fixture de antorchas no
+preparaba esa premisa. Ahora comparte la preparación temporal de territorio con
+el caso de luz de hoguera, mediante la API real y restauración en `finally`.
+Ambos E2E pasan 2/2 con sus aserciones originales. Evidencia nueva:
+`artifacts/verification/m16-1.7-closeout-2026-10-24/e2e-fixtures.log`;
+capturas: `artifacts/screenshots/m16-2026-10-24-1.7-fixtures/`.
+
 `phase12d-torch.spec.ts`, caso «a lit torch is visible…», no consigue colocar
 la hoguera de su fixture con la semilla `phase12d-torch`, parámetros por defecto,
 `skipIntro=1` y español. Falla antes de encender o entregar una antorcha:
@@ -26,8 +34,8 @@ de colocación ni se relaja la prueba para resolverlo en esta fase.
 El nuevo caso del aviso de compensación sí pasa. Logs antes/después y contexto:
 `artifacts/verification/m16-2.26/before/phase12d-torch-baseline.log`,
 `before/phase12d-torch-baseline-error-context.md` y `after/e2e.log` dentro
-del mismo directorio de verificación. Queda pendiente revisar la preparación
-de la hoguera antes del gate completo.
+del mismo directorio de verificación. La preparación de la hoguera queda
+corregida por el seguimiento de M16 1.7; el gate completo sigue pendiente.
 
 ## 2026-10-22 — M16: observaciones de verificación de nieve y agua
 

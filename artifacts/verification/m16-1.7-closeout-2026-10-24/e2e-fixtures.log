@@ -1,0 +1,10 @@
+
+Running 2 tests using 1 worker
+
+(node:39940) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+12c night-layer workload: {"frames":120,"medianMs":1.399999976158142,"p95Ms":2.300000011920929,"people":31,"visibleHearths":1,"viewport":"1280x800 CSS px"}
+  ok 1 e2e\hearth-light.spec.ts:5:1 › visible hearth light softens night without changing the paused world or piercing fog (19.5s)
+  ok 2 e2e\phase12d-torch.spec.ts:55:1 › a lit torch is visible and its fuel freezes with the paused world (6.2s)
+
+  2 passed (35.0s)

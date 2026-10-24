@@ -1,5 +1,6 @@
 import { mkdirSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
+import { placeHearthFixtureOnClaimedGround } from './helpers';
 
 for (const obstruction of ['hands', 'item-capacity'] as const) {
   test(`m16 torch amends explain recipient refusal: ${obstruction}`, async ({ page }) => {
@@ -62,7 +63,7 @@ test('a lit torch is visible and its fuel freezes with the paused world', async 
     'artifacts/screenshots/m15-phase12d-torches-2026-10-10';
   mkdirSync(shots, { recursive: true });
 
-  const fixture = await page.evaluate(() => {
+  await page.evaluate(() => {
     const d = (window as any).__dynasty;
     if (!d.sim.player) d.sim.possessFirst();
     const p = d.sim.player;
@@ -72,15 +73,16 @@ test('a lit torch is visible and its fuel freezes with the paused world', async 
     p.inventory.add('torch', 1);
     p.inventory.add('handaxe', 1);
     p.equipment.right = { item: 'handaxe', count: 1 };
-    let hearth: any = null;
-    for (let radius = 4; radius < 23 && !hearth; radius++) {
-      const candidates = [[radius, 0], [-radius, 0], [0, radius], [0, -radius], [radius, radius]];
-      for (const [dx, dy] of candidates) {
-        hearth = d.sim.place('hearth', Math.floor(p.x + dx), Math.floor(p.y + dy), p.bandId, null);
-        if (hearth) break;
-      }
-    }
-    if (!hearth) throw new Error('Could not place a hearth for torch fixture');
+  });
+  const hearthFixture = await page.evaluate(placeHearthFixtureOnClaimedGround, {
+    radiusLimit: 23,
+    rounding: 'floor' as const,
+  });
+  const fixture = await page.evaluate(({ id: hearthId }) => {
+    const d = (window as any).__dynasty;
+    const p = d.sim.player;
+    const hearth = d.sim.buildingsById.get(hearthId);
+    if (!hearth) throw new Error(`Hearth fixture disappeared after placement (${hearthId})`);
     hearth.complete = true;
     p.x = hearth.x + 1.25; p.y = hearth.y + 0.5;
     p.path = null; p.pathCount = p.pathAt = 0;
@@ -99,7 +101,7 @@ test('a lit torch is visible and its fuel freezes with the paused world', async 
     return { person: p.id, hearth: hearth.id, lit: p.equipment.left?.lit ?? p.equipment.right?.lit ?? 0,
       tick: d.sim.time.tick, light: d.sim.lightAt(p.x, p.y), x: p.x, y: p.y,
       otherHand: p.equipment.right?.item };
-  });
+  }, hearthFixture);
   expect(fixture.lit).toBeGreaterThan(0);
   expect(fixture.light).toBeGreaterThan(0.5);
   expect(fixture.otherHand).toBe('handaxe');

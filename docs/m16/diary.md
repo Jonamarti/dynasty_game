@@ -1031,3 +1031,20 @@ no cuenta como suite completa ni como medición válida.
 What is left open: tiempos aislados de todas las áreas, gate de etapa y 2.G.
 Los 61 fallos de 985 checks aplicables en objects no se presentan como verde.
 Screenshots: ninguna; este cambio de orquestación no modifica la UI.
+
+## M16 1.7 — Montaje territorial compartido para las hogueras E2E (2026-10-24)
+
+Goal: recuperar el caso heredado de antorchas antes del gate completo.
+What was done: ambos tests de luz usan una preparación compartida con sim.place;
+sólo reclama temporalmente suelo sin dueño y restaura exactamente los claims.
+Se conservan las semillas, la búsqueda y las aserciones de cada caso.
+Before and after: el caso de antorchas fallaba al colocar la hoguera en 2.26;
+ahora los dos E2E pasan 2/2 en 35 s. El rápido final pasa typecheck y 46/46.
+La suite completa de la fase ya pasó una vez; no se repite por este commit.
+What turned out differently from the card: la premisa territorial del fixture
+quedó desfasada al implementar estaciones en 2.22; no había un fallo de luz.
+El typecheck intermedio encontró literales ensanchados y una variable sin uso,
+corregidos antes de la validación final.
+What is left open: los tiempos aislados de 1.7 y el gate 2.G con matriz,
+cohortes seriales y capturas de etapa.
+Screenshots: artifacts/screenshots/m16-2026-10-24-1.7-fixtures/.

@@ -9,6 +9,8 @@
   conservar los códigos de fallo y usar los flags unitarios de Windows.
   Los tiempos aislados de todas las áreas siguen pendientes; la fase no se
   declara terminada. No hay cambios en juego, versión o UI.
+- 1.7, segundo commit de funcionalidad: se comparte la preparación territorial
+  de los fixtures de luz; el caso heredado de antorchas vuelve a ejecutarse.
 
 Las tres primeras fases usan evidencias históricas del 20 de octubre, enlazadas
 en sus tarjetas; no se presentan como nuevas ejecuciones. Las capturas ya
@@ -27,6 +29,9 @@ Directorio: `artifacts/verification/m16-1.7-closeout-2026-10-24/`.
 - Suite unitaria completa de esta fase, una vez para el lote final: 358 archivos
   aprobados, 2.474 pruebas aprobadas, un fallo esperado E5 y una omitida;
   salida 0, 987,27 s. Log: `unit-full.log`.
+- E2E focales de luz y antorchas: 2/2 en 35 s; rápido final con typecheck y
+  46/46. Logs `e2e-fixtures.log` y `fast-fixtures-final.log`. Seis capturas en
+  `artifacts/screenshots/m16-2026-10-24-1.7-fixtures/`.
 
 Una primera prueba del CLI heredó el npm real y arrancó verificaciones; se
 identificó y detuvo únicamente ese árbol de procesos. El intento interrumpido
@@ -43,9 +48,9 @@ explícito en un directorio temporal y pasa sin ejecutar capas reales.
 3. Escribir `baseline-2.md`, reconciliar los A abiertos y guardar un recorrido
    nuevo de capturas de etapa. 14.3 depende de este gate; no se ha iniciado.
 
-Antes del gate, revisar el E2E heredado de antorchas documentado en `bugs.md`:
-no consigue colocar su hoguera; no se arregla cambiando la regla de colocación
-sin investigar el montaje.
+El E2E heredado de antorchas documentado en `bugs.md` queda corregido: su fixture
+ya prepara territorio antes de colocar la hoguera. La regla de juego conserva
+su comportamiento; ambos casos de luz pasan con las aserciones originales.
 
 La auditoría documental también encontró cierres no reflejados en el triage:
 A3/N6/E4 tienen capacidad, unidad y E2E en 2.3 (`65a5333e`); A4 y la parte de
