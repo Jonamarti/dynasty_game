@@ -152,7 +152,11 @@ export function fromWorldObjectRecord(input: unknown, peopleById?: ReadonlyMap<n
     // could place one, so the only valid migration is the empty tank.
     if (!Object.hasOwn(building, 'fuelRemaining')) building.fuelRemaining = 0;
     if (!Object.hasOwn(building.def, 'places') && BUILDINGS[building.def.id]?.places !== undefined) {
-      building.def.places = BUILDINGS[building.def.id]!.places;
+      // A pre-14.3 4x4 mud hut was built for four sleepers. Never borrow the
+      // new 3x3 hut's three-place limit when migrating its detached definition.
+      const historicalMudHut = building.def.id === 'mud_hut' &&
+        building.def.width === 4 && building.def.height === 4;
+      building.def.places = historicalMudHut ? 4 : BUILDINGS[building.def.id]!.places;
     }
   }
   for (const corpse of state.corpses) {
