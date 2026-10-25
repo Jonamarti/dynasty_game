@@ -37,6 +37,18 @@ jobs:
         run: npm run typecheck
       - name: Validate new generated art against source
         run: npm test -- --maxWorkers=1 --testTimeout=15000 src/render/__tests__/art.test.ts
+      - name: Verify shelter, interior, and furnishings (focused)
+        run: |
+          npm test -- --maxWorkers=1 --testTimeout=15000 \
+            src/sim/__tests__/m16-shelter-ladder-order.test.ts \
+            src/sim/__tests__/house-interior.test.ts \
+            src/sim/__tests__/house-interior-lifecycle.test.ts \
+            src/sim/__tests__/indoor-preserving.test.ts \
+            src/sim/__tests__/furniture-sleep.test.ts \
+            src/sim/__tests__/m16-occupancy.test.ts \
+            src/sim/__tests__/m16-lean-to.test.ts
+      - name: Report band scenario health
+        run: npm run sim:check -- --scenario band
       - name: Commit generated building art to the phase branch
         env:
           BRANCH: codex/m16-14-6-mud-hut-rebalance

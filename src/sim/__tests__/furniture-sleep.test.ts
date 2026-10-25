@@ -25,9 +25,14 @@ function fixture(motivation: { sleepQualityEffectsEnabled?: boolean; comfortDriv
   let house: Building | null = null;
   for (let y = 4; y < sim.world.height - 8 && !house; y++) {
     for (let x = 4; x < sim.world.width - 8; x++) {
-      if (!sim.canPlace(BUILDINGS.mud_hut!, x, y)) continue;
-      house = sim.place('mud_hut', x, y, person.bandId);
-      if (house) break;
+      // Furnishing mechanics need a 2x2 room. The reduced 3x3 mud hut
+      // has only one free room tile and cannot be the generic fixture.
+      if (!sim.canPlace(BUILDINGS.wattle_hut!, x, y)) continue;
+      house = new Building(BUILDINGS.wattle_hut!, x, y, person.bandId, sim.ids);
+      sim.buildings.push(house);
+      sim.buildingsById.set(house.id, house);
+      sim.buildingHash.insert(house);
+      break;
     }
   }
   if (!house) throw new Error('could not site a house');
