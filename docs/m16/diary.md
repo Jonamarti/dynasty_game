@@ -1,5 +1,35 @@
 # M16 diary
 
+## M16 14.6 — Historical-save compatibility and follow-up (2026-10-25)
+
+**Applied on PR #7** after confirming the old restore path:
+`WorldObjectRecords.fromWorldObjectRecord` now recognises pre-14.3
+`mud_hut` definitions with a 4x4 footprint and no `places` field
+as four-place buildings, preserving their material, work-tick and warmth
+values. A 3x3 new hut remains 3-place, and explicitly saved capacities
+are never overwritten.
+
+Red/green evidence: GitHub Actions run `40231542419` failed the
+two legacy-restore tests before the migration correction; run
+`40231568804` passed TypeScript and all 9 focused tests afterward,
+including a JSON world-object roundtrip, a full checkpoint restored with
+the original wall/door overlay, and five equal simulation ticks.
+Tests live in `m16-legacy-mud-hut-places.test.ts`. No baseline re-pin.
+
+The latest previous full CI run at `1525234`, run `40224685177`,
+failed 24 of 2,494 tests: old 5-second deadlines, pre-existing
+felling-order assumptions, changing world fingerprints, plus other
+unresolved integration results. Do not call these failures an approved
+14.6 baseline. A one-off comparative workflow runs the same long-timeout
+checkpoint, order and technology suites on 14.5 vs 14.6 and a three-seed
+`harsh-winter` cohort in the same runner, storing both outputs as
+artifacts. Its results must be inspected before adjusting any snapshots.
+
+**Still blocked:** review comparisons, reproduce and fix genuine bugs,
+run the full scenario matrix, inspect in-game screenshots, re-pin
+only explained world changes, remove temporary diagnostic workflow after
+collecting its artifacts and leave PR draft until acceptance.
+
 ## M16 14.6 — Mud hut rebalance (2026-10-25; draft / NOT GATED)
 
 Rebalanced the mud hut to a 3x3 footprint, 3 places, 0.75 shelter,
