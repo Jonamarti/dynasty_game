@@ -1,3 +1,29 @@
+## 2026-10-25 — CI en dos niveles y master de nuevo en verde en GitHub
+
+**Problema:** el CI de GitHub lanzaba en cada push solo typecheck, unitarios y
+build, y master llevaba rojo desde el 20 de octubre, con el despliegue a Pages
+parado. La batería completa (`check:full`) solo se ejecutaba en local, en serie,
+durante unos 50 minutos.
+
+**Causa:** tres cosas distintas. (1) Node 24 en CI calcula `x ** 0.7` distinto
+en el último bit (ver `bugs.md`, misma fecha) y el checkpoint fijado no
+coincidía. (2) El timeout por defecto de 5 s se quedaba corto en el runner para
+los tests de guardado del mundo. (3) El botón «Rival households» tapaba ventanas
+emergentes (`z-index` 45).
+
+**Cambio:** `ci.yml`: push a ramas de trabajo → typecheck + `check:fast` +
+build; PR a master, push a master y lanzamiento manual → unitarios, matriz en 4
+trozos (`sim:check:all -- --shard N/4`) y e2e en 4 trozos, en paralelo, con
+anotaciones en la PR. La matriz ya no exige verde (R21): compara cada trozo con
+`fixtures/matrix-baseline.json` (copia de la matriz del gate 2.G) mediante
+`baseline:diff`, y falla solo si un check que pasaba deja de pasar.
+Node fijado a 22 en CI y deploy; deploy usa `--testTimeout=15000`.
+`RivalHouseView.css`: el botón baja a `z-index: 19`. Versión `0.16.20-alpha`.
+
+**Re-fijar la línea base de la matriz:** cuando una fase mueva el mundo a
+propósito, copiar su `matrix.json` a `fixtures/matrix-baseline.json` en el mismo
+commit, igual que `baseline:pin` para `switches-off.json`.
+
 ## 2026-10-24 — M16 2.G: la gira de capturas recupera el encuadre del árbol y margen de tiempo
 
 **Problema:** `npm.cmd run shots` moría en el marco 10 (`10-tree-menu.png`): el

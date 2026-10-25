@@ -24,6 +24,11 @@ if (transitions.length === 0) {
 } else {
   for (const transition of transitions) {
     console.log(`${transition.scenario}: ${transition.from} -> ${transition.to}: ${transition.checks.join(', ')}`);
+    // On GitHub Actions, put each change on the PR: a lost pass as an error, anything else as a notice.
+    if (process.env.GITHUB_ACTIONS) {
+      const lost = transition.from === 'passed';
+      console.log(`::${lost ? 'error' : 'notice'} title=${transition.scenario}: ${transition.from} -> ${transition.to}::${transition.checks.join(', ')}`);
+    }
   }
 }
 process.exit(isBaselineRegression(transitions) ? 1 : 0);

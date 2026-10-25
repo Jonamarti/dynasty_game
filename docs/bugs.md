@@ -1,3 +1,39 @@
+## 2026-10-25 — `x ** y` no es determinista entre versiones de Node
+
+**Abierto (mitigado en CI).** `seedInitialForest` calcula la edad inicial de cada
+árbol con `rng.range(0, 1) ** 0.7`. El V8 de Node 24 redondea esa potencia
+fraccionaria distinto en el último bit que el de Node 22/23: con la semilla `1`
+de `band`, 104 de los ~1.200 árboles nacen con una edad que difiere en 1 ULP
+(p. ej. `2751.623237044719` frente a `2751.6232370447196`). El resto del
+checkpoint (terreno, personas, ledgers, ejecución) es idéntico en el paso 0; a
+partir de ahí el mundo diverge y `switches-off.test.ts` deja de coincidir con
+`fixtures/switches-off.json` en las tres semillas. Por eso master llevaba en rojo
+en GitHub Actions (y sin desplegar a Pages) desde el 20 de octubre, mientras en la
+máquina del dueño pasaba.
+
+Mitigación: CI y deploy fijados a Node 22, la misma familia de resultados que la
+máquina del dueño. Quien actualice Node en local verá el mismo fallo.
+
+Arreglo de fondo pendiente (cambia el mundo, decide el dueño): sustituir las
+potencias de exponente fraccionario de `src/sim` por una función propia
+determinista, comprobada en las dos versiones de Node antes de adoptarla (no
+está demostrado que `Math.exp`/`Math.log` sean estables entre versiones; en el
+sondeo solo divergieron los árboles, lo que lo sugiere pero no lo prueba), y en el mismo
+commit re-fijar `switches-off.json` y `fixtures/matrix-baseline.json`. Hay 12
+llamadas con literal fraccionario en `src/sim` y alguna más con exponente
+variable.
+
+## 2026-10-25 — El botón «Rival households» tapaba ventanas emergentes
+
+**Resuelto el 2026-10-25** (`0.16.20-alpha`). `.rivalhouses-trigger` (fijo,
+abajo a la derecha) tenía `z-index: 45`, el mismo escalón que el menú de pausa y
+por encima del selector de cantidad (21) y de los grafos a pantalla completa
+(30). Se quedaba encima del botón *Confirm* al soltar objetos (`smoke.spec.ts`,
+«dropping puts goods…», 60 s esperando a un clic que interceptaba) y rompía
+`phase31-tribegraph-zoom.spec.ts` en vista móvil. Ahora es `z-index: 19`: por
+debajo de toda la escalera de ventanas (radial 20, selector 21…) y por encima
+del HUD. Ambos specs fallaban sin el cambio y pasan con él.
+
 ## 2026-10-24 — M16 1.7: falta cerrar los tiempos de área
 
 `check:area -- objects` ejecuta 24 escenarios y termina rojo con 61 fallos de
