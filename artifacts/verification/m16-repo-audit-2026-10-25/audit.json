@@ -1,0 +1,275 @@
+{
+  "date": "2026-10-25",
+  "sourceCommit": "19ea939e187c8b4466f1b02bb2ed809d4f88f9e0",
+  "version": "0.16.19-alpha",
+  "scope": "Repository, plan and GitHub audit; no gameplay implementation",
+  "local": {
+    "dirtyFilesPreexisting": 21,
+    "node": "v23.7.0",
+    "fast": {
+      "command": "npm.cmd run check:fast",
+      "exitCode": 0,
+      "filesPassed": 9,
+      "testsPassed": 46
+    },
+    "sim": {
+      "command": "npm.cmd run sim:check",
+      "exitCode": 1,
+      "totalChecksIncludingNA": 147,
+      "failed": [
+        "moods-move-choices",
+        "perf-budget"
+      ],
+      "stepsPerSecond": 550,
+      "cleanCommitValidation": false
+    }
+  },
+  "e2e": {
+    "specFiles": 117,
+    "registered": 96,
+    "omitted": [
+      "art-village.spec.ts",
+      "art.spec.ts",
+      "beads.spec.ts",
+      "begin-anywhere.spec.ts",
+      "bench-rest-animation.spec.ts",
+      "block9-shots.spec.ts",
+      "building-animation.spec.ts",
+      "farming-animation.spec.ts",
+      "garment-dyeing.spec.ts",
+      "hide-dressing.spec.ts",
+      "mending-animation.spec.ts",
+      "orchard.spec.ts",
+      "phase16-rug.spec.ts",
+      "phase16d-bench.spec.ts",
+      "phase16d-fat-lamp.spec.ts",
+      "phase19-pregnancy.spec.ts",
+      "phase26e-irrigation.spec.ts",
+      "phase40-bog-iron.spec.ts",
+      "save-load.spec.ts",
+      "screenshots.spec.ts",
+      "world-picker.spec.ts"
+    ]
+  },
+  "matrixProbes": [
+    {
+      "name": "missing-scenario",
+      "regression": false
+    },
+    {
+      "name": "missing-check",
+      "regression": false
+    },
+    {
+      "name": "new-failure-from-na",
+      "regression": false
+    },
+    {
+      "name": "new-failing-scenario",
+      "regression": false
+    }
+  ],
+  "github": {
+    "openIssuesBefore": 0,
+    "pullRequests": [
+      {
+        "number": 3,
+        "head": "67330b81f81376fe148f110c514ce9303f9165ab",
+        "base": "master",
+        "run": {
+          "id": 40193753400,
+          "name": "CI",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 177,
+          "jobs_url": "https://api.github.com/repos/Jonamarti/dynasty_game/actions/runs/40193753400/jobs",
+          "logs_url": "https://api.github.com/repos/Jonamarti/dynasty_game/actions/runs/40193753400/logs",
+          "workflow_id": 357002419
+        },
+        "failedUnitTests": 3
+      },
+      {
+        "number": 4,
+        "head": "a7f9d7751213c0364e40ef3443f641a034bf9f6a",
+        "base": "master",
+        "run": {
+          "id": 40212718025,
+          "name": "CI",
+          "status": "completed",
+          "conclusion": "success",
+          "run_number": 202,
+          "jobs_url": "https://api.github.com/repos/Jonamarti/dynasty_game/actions/runs/40212718025/jobs",
+          "logs_url": "https://api.github.com/repos/Jonamarti/dynasty_game/actions/runs/40212718025/logs",
+          "workflow_id": 357002419
+        },
+        "failedUnitTests": 0
+      },
+      {
+        "number": 5,
+        "head": "23b8cc16276ea84a1ebc6cb98f9ea0f4105c0277",
+        "base": "codex/m16-14-3-occupancy",
+        "run": {
+          "id": 40200778559,
+          "name": "CI",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 184,
+          "jobs_url": "https://api.github.com/repos/Jonamarti/dynasty_game/actions/runs/40200778559/jobs",
+          "logs_url": "https://api.github.com/repos/Jonamarti/dynasty_game/actions/runs/40200778559/logs",
+          "workflow_id": 357002419
+        },
+        "failedUnitTests": 14
+      },
+      {
+        "number": 6,
+        "head": "a068b08871a2f0b11bcc9b197d7046f448122bd3",
+        "base": "codex/m16-14-4-no-wood-before-hafting",
+        "run": {
+          "id": 40209553323,
+          "name": "CI",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 193,
+          "jobs_url": "https://api.github.com/repos/Jonamarti/dynasty_game/actions/runs/40209553323/jobs",
+          "logs_url": "https://api.github.com/repos/Jonamarti/dynasty_game/actions/runs/40209553323/logs",
+          "workflow_id": 357002419
+        },
+        "failedUnitTests": 17
+      },
+      {
+        "number": 7,
+        "head": "d934865999385c9988ab7aa1e5c1fc10a26e50a9",
+        "base": "codex/m16-14-5-lean-to",
+        "run": {
+          "id": 40209645459,
+          "name": "CI",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 197,
+          "jobs_url": "https://api.github.com/repos/Jonamarti/dynasty_game/actions/runs/40209645459/jobs",
+          "logs_url": "https://api.github.com/repos/Jonamarti/dynasty_game/actions/runs/40209645459/logs",
+          "workflow_id": 357002419
+        },
+        "failedUnitTests": 35
+      }
+    ],
+    "createdIssues": [
+      {
+        "number": 8,
+        "title": "[P1][CI] Detectar matrices incompletas y fallos nuevos antes de dar verde",
+        "url": "https://github.com/Jonamarti/dynasty_game/issues/8"
+      },
+      {
+        "number": 9,
+        "title": "[P1][CI] Registrar los E2E funcionales omitidos y evitar nuevas exclusiones silenciosas",
+        "url": "https://github.com/Jonamarti/dynasty_game/issues/9"
+      },
+      {
+        "number": 10,
+        "title": "[P1][CI] Ejecutar el gate completo también en PR apiladas y exponer un resultado global",
+        "url": "https://github.com/Jonamarti/dynasty_game/issues/10"
+      },
+      {
+        "number": 11,
+        "title": "[P1][CI] Publicar Pages solo tras validar completamente el mismo commit",
+        "url": "https://github.com/Jonamarti/dynasty_game/issues/11"
+      },
+      {
+        "number": 12,
+        "title": "[P2][Determinismo] Fijar el runtime local y comprobar la compatibilidad numérica de semillas",
+        "url": "https://github.com/Jonamarti/dynasty_game/issues/12"
+      },
+      {
+        "number": 13,
+        "title": "[P1][M16 14.3] Completar ocupación en todos los runtimes y cerrar la validación de #3",
+        "url": "https://github.com/Jonamarti/dynasty_game/issues/13"
+      },
+      {
+        "number": 14,
+        "title": "[P1][M16 14.4] Resolver regresiones y traducciones de la tala con hacha en #5",
+        "url": "https://github.com/Jonamarti/dynasty_game/issues/14"
+      },
+      {
+        "number": 15,
+        "title": "[P1][M16 14.5] Generar y verificar el arte del refugio de ramas de #6",
+        "url": "https://github.com/Jonamarti/dynasty_game/issues/15"
+      },
+      {
+        "number": 16,
+        "title": "[P1][M16 14.6] Resolver el interior de una casilla y las regresiones de la choza 3×3 en #7",
+        "url": "https://github.com/Jonamarti/dynasty_game/issues/16"
+      },
+      {
+        "number": 17,
+        "title": "[P1][M16 E5] Localizar y corregir la identidad compartida que se pierde al guardar/cargar",
+        "url": "https://github.com/Jonamarti/dynasty_game/issues/17"
+      },
+      {
+        "number": 18,
+        "title": "[P1][IA] Explicar y eliminar objetivos de recursos elegidos sin visión ni recuerdo",
+        "url": "https://github.com/Jonamarti/dynasty_game/issues/18"
+      },
+      {
+        "number": 19,
+        "title": "[P2][M16 A15] Diagnosticar por qué smiths mina cobre pero nunca lo funde",
+        "url": "https://github.com/Jonamarti/dynasty_game/issues/19"
+      },
+      {
+        "number": 20,
+        "title": "[P1][M16 N44] Concretar y añadir el aviso persistente de NPC sin agua alcanzable",
+        "url": "https://github.com/Jonamarti/dynasty_game/issues/20"
+      },
+      {
+        "number": 21,
+        "title": "[P1][M16 A14] Definir el agresor animal compartido y completar la defensa de compañeros",
+        "url": "https://github.com/Jonamarti/dynasty_game/issues/21"
+      },
+      {
+        "number": 22,
+        "title": "[P2][M16 11.5] Completar verbos/objetivos traducidos y aplicar el texto costero de D-19",
+        "url": "https://github.com/Jonamarti/dynasty_game/issues/22"
+      },
+      {
+        "number": 23,
+        "title": "[P2][M16 N7] Reescribir la capacidad de alineación para las capas reales de casas y arreglar el desfase",
+        "url": "https://github.com/Jonamarti/dynasty_game/issues/23"
+      },
+      {
+        "number": 24,
+        "title": "[P2][E2E] Impedir que las pruebas sobrescriban el historial de capturas",
+        "url": "https://github.com/Jonamarti/dynasty_game/issues/24"
+      },
+      {
+        "number": 25,
+        "title": "[P1][Plan] Reconciliar estado M16 y preparar las tarjetas para agentes de GitHub",
+        "url": "https://github.com/Jonamarti/dynasty_game/issues/25"
+      },
+      {
+        "number": 26,
+        "title": "[P2][M16 14.7] Concretar propiedad neutral e implementar cuevas con plazas persistentes",
+        "url": "https://github.com/Jonamarti/dynasty_game/issues/26"
+      },
+      {
+        "number": 27,
+        "title": "[P2][M16 14.8] Definir uso por persona e implementar desgaste y reparación material",
+        "url": "https://github.com/Jonamarti/dynasty_game/issues/27"
+      },
+      {
+        "number": 28,
+        "title": "[P2][M16 14.G] Validar la escalera de refugios con CI y cohortes reproducibles",
+        "url": "https://github.com/Jonamarti/dynasty_game/issues/28"
+      },
+      {
+        "number": 29,
+        "title": "[P2][M16 3.1] Mantener órdenes manuales ante necesidades y mostrar avisos graduados",
+        "url": "https://github.com/Jonamarti/dynasty_game/issues/29"
+      },
+      {
+        "number": 30,
+        "title": "[P2][M16 4.0] Medir la viabilidad sin planificador antes de desarrollar previsión",
+        "url": "https://github.com/Jonamarti/dynasty_game/issues/30"
+      }
+    ],
+    "index": "https://github.com/Jonamarti/dynasty_game/issues/31"
+  }
+}

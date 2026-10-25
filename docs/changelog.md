@@ -1,3 +1,35 @@
+## 2026-10-25 — M16: auditoría del repositorio, PR y cobertura de CI
+
+**Problema:** preparar tareas concretas para agentes en GitHub sin confundir
+planes, cambios locales, borradores y entregas validadas. Al comenzar había
+cero issues abiertas y cinco PR; cuatro forman una pila de refugios.
+
+**Causa:** el comparador de matrices ignora escenarios/checks ausentes y no
+rechaza fallos recién aplicables; la lista explícita de E2E omite capacidades
+funcionales. El workflow propuesto en #4 limita los eventos PR a master y el
+deploy sigue independiente del gate completo. Varias tarjetas conservan
+contratos pendientes o referencias anteriores al renderer y al estado M16.
+
+**Cambio:** creadas las tareas #8–#30 y el índice
+[#31](https://github.com/Jonamarti/dynasty_game/issues/31), con evidencias,
+dependencias y aceptación verificable. Las tareas de 14.3–14.6 continúan las
+PR existentes; cuevas, mantenimiento, aviso NPC sin agua y defensa ante
+animales requieren concretar primero sus contratos R0. Se registra la deuda
+en `docs/bugs.md` y un corte reproducible en
+`artifacts/verification/m16-repo-audit-2026-10-25/audit.json`.
+Solo documentación y evidencia: sin cambios de juego, versión ni estados de
+fase. Los 21 archivos con cambios previos se conservan fuera de este commit.
+
+**Verificación:** `check:fast` local pasa typecheck y 9 archivos/46 pruebas.
+`sim:check`, sobre el árbol local modificado y Node v23.7.0, termina con
+2/147 fallos (`moods-move-choices`, `perf-budget`); no es una validación del
+master limpio ni de las PR. Cuatro entradas mínimas reproducen los falsos
+negativos del comparador. Inventario: 117 specs E2E, 96 registrados, 21
+excluidos, entre ellos guardado/carga y selector del mundo. Se inspeccionaron
+los logs de Actions de los SHA enlazados: #4 pasa; #3/#5/#6/#7 muestran
+3/14/17/35 pruebas fallidas respectivamente. No se ejecutan otra matriz,
+suite completa ni cohortes para esta auditoría documental.
+
 ## 2026-10-24 — M16 2.G: la gira de capturas recupera el encuadre del árbol y margen de tiempo
 
 **Problema:** `npm.cmd run shots` moría en el marco 10 (`10-tree-menu.png`): el

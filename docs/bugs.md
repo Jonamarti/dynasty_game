@@ -1,3 +1,28 @@
+## 2026-10-25 — M16: deudas confirmadas por la auditoría de GitHub
+
+Índice y orden de ejecución:
+[#31](https://github.com/Jonamarti/dynasty_game/issues/31).
+Corte de código publicado: `19ea939e`; evidencia estructurada en
+`artifacts/verification/m16-repo-audit-2026-10-25/audit.json`. Los hallazgos
+siguientes quedan abiertos; crear una tarea no corrige su mecanismo.
+
+| Hallazgo | Reproducción / lectura | Seguimiento |
+|---|---|---|
+| Matriz incompleta o fallo nuevo puede dar verde | `compareScenarioMatrices` omite escenario/check sin pareja; `isBaselineRegression` solo rechaza PASS→FAIL/NA. Cuatro entradas mínimas dieron `false`: escenario eliminado, check aprobado eliminado, NA→FAIL y escenario nuevo fallido. No depende de semilla ni de un mundo largo. | [#8](https://github.com/Jonamarti/dynasty_game/issues/8) |
+| E2E funcionales fuera del comando estándar | `package.json` registra 96/117 specs; entre los 21 excluidos están `save-load`, `world-picker`, embarazo e irrigación. Algunos excluidos son tours: se debe clasificarlos, no incorporarlos todos a ciegas. | [#9](https://github.com/Jonamarti/dynasty_game/issues/9) |
+| CI propuesto deja sin gate completo a las PR apiladas | #4 filtra `pull_request.branches: [master]`, pero #5–#7 tienen otras ramas base; el push de esas ramas solo recibe el gate rápido. Es lectura del workflow propuesto, no fallo medido de un workflow ya integrado. | [#10](https://github.com/Jonamarti/dynasty_game/issues/10) |
+| Pages no espera escenarios/E2E del mismo SHA | `deploy.yml` se dispara por su cuenta y solo espera sus typecheck/unit/build; #4 conserva esa separación. No se hizo ningún despliegue de prueba. | [#11](https://github.com/Jonamarti/dynasty_game/issues/11) |
+| Ocupación limitada solo conectada en el camino detallado de #3 | La PR añade `NeedsHooks.peopleHash` en Simulation; los hooks de CompactBandNeeds no lo proporcionan y shelterAt conserva abrigo sin límite cuando falta. Falta la capacidad de correspondencia y continuación, no se afirma una cifra de impacto. | [#13](https://github.com/Jonamarti/dynasty_game/issues/13) |
+| Choza 3×3 deja una sola casilla interior | En #7, el anillo de paredes de HouseInterior reduce el interior a 1×1: un secadero 2×1 ya no cabe. El CI muestra fallos de muebles/preservación y atlas con dimensiones antiguas; distinguir premisas de fixtures de bugs reales. | [#16](https://github.com/Jonamarti/dynasty_game/issues/16) |
+
+Continúan abiertos E5 (aliases de guardado, test `it.fails`, #17), objetivos
+sin visión/recuerdo (#18), cadena autónoma de cobre (#19), N44 (#20),
+defensa ante depredadores (#21), etiquetas/costa D-19 (#22), alineación de
+capas N7 (#23) y sobrescritura de capturas históricas (#24). Sus causas no se
+dan por corregidas ni se atribuyen a otro cambio sin reproducción.
+La reconciliación de contratos/estado del plan está en #25; las nuevas fases
+14.7/14.8 y sus gates dependen de ella según el índice.
+
 ## 2026-10-24 — M16 1.7: falta cerrar los tiempos de área
 
 `check:area -- objects` ejecuta 24 escenarios y termina rojo con 61 fallos de
