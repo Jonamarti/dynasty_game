@@ -1,0 +1,29 @@
+name: fp-probe
+on:
+  push:
+    branches: [debug/fp-probe]
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [22, 24]
+        tz: [UTC, Europe/Madrid]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci || npm ci --legacy-peer-deps
+      - name: Probe
+        env:
+          TZ: ${{ matrix.tz }}
+        run: |
+          node -v
+          npx vite-node tools/fp-probe.ts > probe.txt
+          while IFS= read -r line; do echo "::notice title=node${{ matrix.node }} ${{ matrix.tz }}::$line"; done < probe.txt
+      - name: Vitest switches-off
+        env:
+          TZ: ${{ matrix.tz }}
+        run: npx vitest run src/sim/__tests__/switches-off.test.ts
