@@ -83,6 +83,10 @@ for (const row of rows) {
     pad(thousands(row.stepsPerSecond), 12) +
     (row.failed.length === 0 ? '-' : row.failed.join(', '))
   );
+  // On GitHub Actions, surface each failing scenario as a PR annotation.
+  if (process.env.GITHUB_ACTIONS && row.failed.length > 0) {
+    console.log(`::error title=Scenario ${row.name} (${row.passed}/${row.total})::failed checks: ${row.failed.join(', ')}`);
+  }
 }
 console.log('='.repeat(78));
 

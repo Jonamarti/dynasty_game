@@ -103,7 +103,7 @@ jobs:
       - name: Install Chromium for Playwright
         run: npx playwright install --with-deps chromium
       - name: Playwright (shard ${{ matrix.shard }}/4)
-        run: npm run e2e -- --shard=${{ matrix.shard }}/4
+        run: npm run e2e -- --shard=${{ matrix.shard }}/4 --reporter=github,list
       - name: Upload traces on failure
         if: failure()
         uses: actions/upload-artifact@v4
