@@ -1,5 +1,16 @@
 # M16 diary
 
+## Alpha-save policy — owner decision, 2026-10-25
+
+Historical **cross-version alpha save compatibility is deferred until beta**.
+Agents must not write more migrations, old-format fixtures or dedicated CI
+workflows for saves created by earlier alpha builds. Already implemented
+4x4 mud-hut migration may remain but is **not a phase acceptance gate**.
+Same-build checkpoint roundtrips, determinism and live save/load remain
+mandatory. At beta, ask the owner which older formats require support.
+See `AGENTS.md` and `docs/beta-save-compatibility.md`.
+
+
 ## M16 14.6 — Historical-save compatibility and follow-up (2026-10-25)
 
 **Applied on PR #7** after confirming the old restore path:

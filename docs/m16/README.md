@@ -1,5 +1,16 @@
 # Dynasty — M16 plan (v3, single-agent, phase cards)
 
+## Alpha-save policy — owner decision, 2026-10-25
+
+Historical **cross-version alpha save compatibility is deferred until beta**.
+Agents must not write more migrations, old-format fixtures or dedicated CI
+workflows for saves created by earlier alpha builds. Already implemented
+4x4 mud-hut migration may remain but is **not a phase acceptance gate**.
+Same-build checkpoint roundtrips, determinism and live save/load remain
+mandatory. At beta, ask the owner which older formats require support.
+See `AGENTS.md` and `docs/beta-save-compatibility.md`.
+
+
 Written 2026-10-16 against `0.15.160-alpha` (commit `0c2214e`). Replaces the
 earlier plan drafts (`m16_plan.md` v1/v2 and the QA reviews), which were
 removed from `docs/` and are kept in git history at commit `99a2ec5`
