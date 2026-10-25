@@ -261,6 +261,18 @@ export const BUILDINGS: BuildingArt[] = [
     + ell(72, 38, 6, 2.6, B.dark, B.L) + smoke(72, 34)
     + shape(smooth([[104, 96], [114, 90], [124, 94], [118, 102], [106, 102]]), '#2b2622', B.L)
     + ell(112, 96, 3, 1.6, '#4a423a') + ell(119, 97, 2.4, 1.4, '#3a342e')],
+  // M16 14.5: raised leaf roof with open sleeping space below.
+  ['lean_to', 'Choza de ramas y hojas', 'sin tecnología', 96, () =>
+    gShadow(72, 102, 54, 9)
+    + limb([[23, 100], [42, 35]], 4, WOOD, B.L)
+    + limb([[121, 100], [102, 35]], 4, WOOD, B.L)
+    + limb([[42, 35], [102, 35]], 4, WOOD, B.L)
+    + shape(poly([[18, 80], [42, 27], [102, 27], [126, 80], [113, 86], [95, 47], [49, 47], [31, 86]]), B.thatch, B.L)
+    + thatchLines(30, 114, 38, 80, 10)
+    + stroke('M49,47L95,47M40,59L104,59', B.thatchD, 2)
+    + limb([[43, 40], [26, 100]], 2.3, WOOD, B.L)
+    + limb([[101, 40], [118, 100]], 2.3, WOOD, B.L)
+    + [46, 68, 90, 110].map(x => ell(x, 94, 10, 3, B.thatchD)).join('')],
 ];
 
 const FLOOR = '#6b5236', PLANK = '#a4784c';
@@ -356,5 +368,11 @@ export const PLANS: PlanArt[] = [
     + shape(poly([[56, 48], [88, 48], [88, 66], [56, 66]]), PLANK, B.L)
     + [30, 50, 94, 114].map(x => ell(x, 98, 5, 5, '#e6dfcb', B.L)).join('')
     + `<rect x="62" y="92" width="20" height="16" fill="#b9ae94"/>` + stroke('M62,94L62,106M82,94L82,106', B.L, 2)],
+  ['lean_to', 'Choza de ramas y hojas', 96, () =>
+    shape(poly([[22, 12], [122, 12], [122, 102], [22, 102]]), '#ad9467', B.L)
+    + stroke('M22,12L122,12M22,12L22,102M122,12L122,102', WOOD, 3)
+    + [[40, 68], [55, 80], [73, 67], [90, 83], [106, 68]].map(([x, y]) =>
+      ell(x, y, 10, 4, B.thatch)).join('')
+    + stroke('M42,16L42,96M101,16L101,96', B.thatchD, 1.7)],
 ];
 

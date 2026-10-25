@@ -1,5 +1,32 @@
 # M16 diary
 
+## M16 14.5 — A roof of branches and leaves (2026-10-25; draft)
+
+Added the 2x2, two-place `lean_to`: 10 gathered sticks, eight thatch
+(the existing grass item stands for large leaves and straw), 200 work ticks,
+0.6 shelter, no mud, no felled wood, no technology or shore requirement.
+Its `roofed` flag gives real, open roofing without enclosing a room.
+Sleep, physical capacity and cold warmth agree on the footprint; the
+windbreak retains its historical margin. Orders walk under the eaves
+instead of counting sleepers merely standing beside it.
+
+The art generator now draws completed and planned versions; the renderer
+shows the plan when the roof is lifted. English labels, Spanish translations
+and 14.5 unit coverage were added. No new RNG streams or saved state.
+
+**R0 adaptation:** the existing generic cheap branch always chose a
+140-tick windbreak, and the better branch chose a warmer mud hut; neither
+would propose the 200-tick lean-to. Cheap shelter now prefers actual covered
+roofs via `roofed || interior`, not a design-specific name. The source
+disagreement is also logged in `doubts.md`.
+
+**Gate pending:** generate/commit `public/art/buildings*` with
+`npm run art:build -- buildings`, inspect `npm run art:sheet`, typecheck,
+new capability tests, full tests, `band`/cold/conception counters, screenshots,
+before/after and baseline re-pin. Parent PRs 14.3 and 14.4 remain red and
+unmerged; never claim this draft is finished.
+
+
 ## M16 14.4 — No wood before hafting (2026-10-25, implementation draft)
 
 The card's inventory was checked against the current code. `doChop`

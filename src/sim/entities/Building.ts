@@ -37,6 +37,8 @@ export interface BuildingDef {
   shelter: number;
   /** Sleeping/sheltering places; absent on structures that are not sleeping refuges. */
   places?: number;
+  /** A real roof with no enclosing walls; the covered footprint can hold sleepers. */
+  roofed?: boolean;
   /** A one-tile wall ring around a room, with one traversable doorway. */
   interior?: { door: 'toward_camp' };
   /** Item capacity. 0 means it stores nothing. */
@@ -800,6 +802,15 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     materials: { flint: 2, pottery: 2 }, workTicks: 140, shelter: 0, storage: 0,
     station: true, requiresTech: 'saltmaking', placement: 'salt_shore',
     description: 'Vessels at the saltwater edge for boiling brine beside a hearth.',
+  },
+  // M16 14.5: gathered branches and leaves, the first real roof away from water.
+  lean_to: {
+    id: 'lean_to', label: 'Leaf-and-branch lean-to', icon: '\u{1F3D5}',
+    width: 2, height: 2,
+    materials: { sticks: 10, thatch: 8 },
+    workTicks: 200, shelter: 0.6, places: 2, roofed: true,
+    storage: 0, requiresTech: null,
+    description: 'Sticks leant on a ridge and thatched with leaves and grass. Room for two, and warmer than a windbreak.',
   },
 };
 

@@ -104,6 +104,9 @@ export const ES_DATA: Record<string, string> = {
   "Stockpile": "Acopio",
   "Bare ground set aside for goods. Costs nothing and keeps nothing dry.": "Suelo desnudo reservado para bienes. No cuesta nada y no mantiene nada seco.",
   "Windbreak": "Cortavientos",
+  "Leaf-and-branch lean-to": "Choza de ramas y hojas",
+  "Sticks leant on a ridge and thatched with leaves and grass. Room for two, and warmer than a windbreak.":
+    "Palos apoyados en una cumbrera y cubiertos con hojas y hierba. Espacio para dos personas y más abrigo que un cortavientos.",
   "Sticks and thatch braced against the wind. An hour of work, no tree felled, and a cold night survived.": "Palos y paja apuntalados contra el viento. Una hora de trabajo, ningún árbol talado y una noche fría superada.",
   "Storage pit": "Silo",
   "A lined hollow. Holds a band’s surplus through a season.": "Un hoyo revestido. Guarda el excedente de una banda durante una estación.",
