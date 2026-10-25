@@ -1,0 +1,52 @@
+# One-time asset generation for the stacked M16 shelter PRs.
+# Remove this workflow after the generated files land on the branch.
+name: M16 shelter atlas regeneration
+on:
+  push:
+    branches:
+      - codex/m16-14-6-mud-hut-rebalance
+    paths:
+      - .github/workflows/m16-shelter-art-once.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: m16-shelter-art-once
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          ref: codex/m16-14-6-mud-hut-rebalance
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install dependencies
+        run: npm ci || npm ci --legacy-peer-deps
+      - name: Install Chromium for generated art
+        run: npx playwright install --with-deps chromium
+      - name: Regenerate only building sheets and manifest
+        run: npm run art:build -- buildings
+      - name: Typecheck generated project
+        run: npm run typecheck
+      - name: Validate new generated art against source
+        run: npm test -- --maxWorkers=1 --testTimeout=15000 src/render/__tests__/art.test.ts
+      - name: Commit generated building art to the phase branch
+        env:
+          BRANCH: codex/m16-14-6-mud-hut-rebalance
+        run: |
+          git add public/art/buildings.json public/art/buildings-*.png
+          if git diff --cached --quiet; then
+            echo "No generated changes to commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "art: regenerate M16 lean-to and 3x3 mud-hut building atlas"
+          git push origin HEAD:refs/heads/"$BRANCH"
