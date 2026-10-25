@@ -29,6 +29,7 @@ import type { ResourceNode } from '../entities/ResourceNode.ts';
 import type { World } from '../core/World.ts';
 import { perceivedFatigue } from '../core/Circadian.ts';
 import { Arrival, ARRIVAL_RADIUS, type MovementSystem } from './MovementSystem.ts';
+import { hasRoomFor } from '../ai/Occupancy.ts';
 import { companionBonus, rememberHurt } from './WildlifeSystem.ts';
 import type { SpatialHash } from '../core/SpatialHash.ts';
 import type { SocialSystem } from '../social/SocialSystem.ts';
@@ -3375,6 +3376,7 @@ export class ActionSystem {
   private doShelter(person: Person, ctx: ActionContext): void {
     const building = this.reachBuilding(person, ctx, undefined, 'trespass');
     if (!building) return;
+    if (!hasRoomFor(building, person, ctx.peopleHash)) { this.stop(person, 'roof_full', ctx); return; }
     telemetry.count('sheltering');
     // Being indoors is restful, so waiting out a cold night is not wasted time.
     person.needs.fatigue = Math.max(0, person.needs.fatigue - 0.2);
@@ -4541,6 +4543,7 @@ export class ActionSystem {
     const building = person.targetBuildingId === null
       ? null : this.reachBuilding(person, ctx, undefined, 'trespass');
     if (person.targetBuildingId !== null && !building) return;
+    if (building && !hasRoomFor(building, person, ctx.peopleHash)) { this.stop(person, 'roof_full', ctx); return; }
     if (building?.def.interior && !houseInteriorContains(building, person.x, person.y)) {
       // Reaching the doorway is not being in bed. Keep the order committed and
       // route from the opening to a room tile before sleep can restore fatigue.
