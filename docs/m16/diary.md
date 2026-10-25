@@ -1,5 +1,21 @@
 # M16 diary
 
+## M16 14.3 — Refuge capacity (2026-10-25; DRAFT, NOT GATED)
+
+Prototype branch `codex/m16-14-3-occupancy`: shelters now specify sleeping places
+(windbreak 3, mud hut 4, wattle hut 4, stone house 6, longhouse 10).
+The physical spatial hash supplies arrival-ordered occupants (arrival tick, then
+person id); carried infants use a carrier's place. Admission is shared by
+cold shelter, sleep, AI targeting, the midnight roof/conception ledger and the
+own-band inspector. Band planning now measures places, not building floor
+area; its historical fixed building cap was removed, with `shelter_short` and
+`roof_full` counters. New arrival state and old-save migrations are included.
+
+This is an unverified draft. CI, typecheck, focused and full tests, seeded
+scenarios, screenshots, and the changed-world baseline re-pin are outstanding.
+Do not merge or mark 14.3 complete until the review and measurement gate pass.
+
+
 ## M16 2.G — La gira de capturas recupera su encuadre (2026-10-24)
 
 Symptom: `npm.cmd run shots` died at frame 10 — right-click on the tour tree
