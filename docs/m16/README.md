@@ -369,7 +369,7 @@ A stage ends with the full level (§5) and a screenshot tour.
 | Step | Phase | Title | Status |
 |---|---|---|---|
 | 42 | [14.3](phases/14.3-occupancy.md) | Buildings have a capacity, and it is respected | todo |
-| 43 | [14.4](phases/14.4-no-wood-before-hafting.md) | No wood before hafting | todo |
+| 43 | [14.4](phases/14.4-no-wood-before-hafting.md) | No wood before hafting | implementation in draft PR; CI, scenarios and re-pin pending |
 | 44 | [14.5](phases/14.5-lean-to.md) | The stick-and-leaf lean-to | todo |
 | 45 | [14.6](phases/14.6-mud-hut-rebalance.md) | A cheaper, smaller, less warm mud hut | todo |
 | 46 | [14.7](phases/14.7-caves.md) | Caves | todo |

@@ -319,7 +319,7 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     label: 'Mud hut',
     icon: '\u{1F6D6}',
     width: 4, height: 4,
-    materials: { wood: 8, sticks: 6, thatch: 10, mud: 14 },
+    materials: { sticks: 14, thatch: 10, mud: 14 },
     workTicks: 520,
     shelter: 0.85,
     places: 4,
@@ -329,8 +329,8 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     preserves: 1.2,
     requiresTech: null,
     description:
-      'Daubed walls on a felled-timber frame, under thatch. Warm enough to ' +
-      'winter in, and the first thing worth cutting a tree for.',
+      'Daubed walls packed around a frame of gathered branches, under thatch. ' +
+      'Warm enough to winter in without felling a tree.',
   },
 
   // M15 phase 16d. Furniture is a walkable 1×1 Building so it can share the
@@ -611,7 +611,7 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     label: 'Loom',
     icon: '\u{1F9F6}',
     width: 3, height: 3,
-    materials: { wood: 6, sticks: 6 },
+    materials: { sticks: 12 },
     workTicks: 220,
     shelter: 0,
     storage: 0,
@@ -679,7 +679,7 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     label: 'Granary',
     icon: '\u{1F3FA}',
     width: 3, height: 3,
-    materials: { wood: 14, sticks: 10, thatch: 14, mud: 20, pottery: 6 },
+    materials: { sticks: 24, thatch: 14, mud: 20, pottery: 6 },
     workTicks: 900,
     shelter: 0.2,
     storage: 400,
@@ -791,9 +791,9 @@ export const BUILDINGS: Record<string, BuildingDef> = {
   },
   drying_rack: {
     id: 'drying_rack', label: 'Drying rack', icon: '🥩', width: 2, height: 1,
-    materials: { wood: 2, rope: 2 }, workTicks: 120, shelter: 0, storage: 0,
+    materials: { sticks: 6, rope: 2 }, workTicks: 120, shelter: 0, storage: 0,
     station: true, requiresTech: 'preserving', fitsIndoors: true,
-    description: 'An open wooden frame for drying strips of meat and fish.',
+    description: 'An open frame of gathered branches lashed together for drying meat and fish.',
   },
   salt_pan: {
     id: 'salt_pan', label: 'Salt pan', icon: '🧂', width: 2, height: 2,

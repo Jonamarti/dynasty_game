@@ -44,6 +44,7 @@ import {
   type BushSpecies, type ResourceKind,
 } from '../entities/ResourceNode.ts';
 import { canWork } from '../knowledge/Ore.ts';
+import { hasFellingAxe } from '../knowledge/Felling.ts';
 import { NeedsSystem } from '../systems/NeedsSystem.ts';
 import { MovementSystem } from '../systems/MovementSystem.ts';
 import { Pathfinder } from './Pathfinder.ts';
@@ -4440,6 +4441,10 @@ export class Simulation {
     }
     if (!canWalk(person, this.config.childhood)) {
       this.lastRefusal = t('babies cannot act on their own');
+      return false;
+    }
+    if (action === 'chop' && !hasFellingAxe(person)) {
+      this.lastRefusal = t('You need an axe to fell a tree');
       return false;
     }
     const equipmentSlot = manualEquipSlot(action);
