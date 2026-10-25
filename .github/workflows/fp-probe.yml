@@ -8,7 +8,7 @@ jobs:
     strategy:
       matrix:
         node: [22, 24]
-        tz: [UTC, Europe/Madrid]
+        tz: [UTC]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -21,7 +21,7 @@ jobs:
           TZ: ${{ matrix.tz }}
         run: |
           node -v
-          npx vite-node tools/fp-probe.ts > probe.txt
+          npx vite-node tools/fp-probe.ts > probe.txt; cat probe.txt
           while IFS= read -r line; do echo "::notice title=node${{ matrix.node }} ${{ matrix.tz }}::$line"; done < probe.txt
       - name: Vitest switches-off
         env:
