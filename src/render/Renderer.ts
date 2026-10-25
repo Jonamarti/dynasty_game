@@ -1781,7 +1781,17 @@ export class Renderer {
   /** Whether phase 16c should expose a real room under this building's roof. */
   private roofLifted(b: Building): boolean {
     if (this.hideRoofs) return true;
-    if (!b.def.interior) return false;
+    if (!b.def.interior && !b.def.roofed) return false;
+    if (b.def.roofed && !b.def.interior) {
+      // An open leaf roof has no wall layers; expose its plan on hover
+      // or while the directed/selected character is under its canopy.
+      const p = this.sim.player;
+      if (p && b.contains(p.x, p.y)) return true;
+      const id = this.frameHighlight?.personId;
+      const person = id === undefined ? null : this.sim.peopleById.get(id);
+      return !!(person && b.contains(person.x, person.y)) ||
+        !!(this.cursorWorld && b.contains(this.cursorWorld.x, this.cursorWorld.y));
+    }
     const p = this.sim.player;
     if (p && houseInteriorContains(b, p.x, p.y)) return true;
     const id = this.frameHighlight?.personId;

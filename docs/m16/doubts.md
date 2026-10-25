@@ -251,3 +251,13 @@ the ambiguity recorded below without claiming a full unit run takes <2 min.
 - **Resolución:** mantener la prueba roja y detener la fase según R0 hasta
   localizar la primera referencia concreta; no modificar el cargador con una
   causa no confirmada. Próxima fase independiente: 2.25.
+
+## M16 14.5 — Generic shelter planner cannot choose an intermediate roof (2026-10-25)
+
+Phase card assumes the cheapest/best-known shelter planner will naturally
+build the new lean-to. On the 14.4 branch, `BandSystem.planBuildings` chooses
+the 140-tick windbreak in the low-coverage branch and the 520-tick, warmer
+mud hut in the other branch. It never selects the 200-tick lean-to.
+The goal is unambiguous, so the generic low-coverage ranking now considers
+the cheapest physically covered roof (`roofed || interior`) instead.
+Verify that lean-to counts are nonzero in the band cohort before closing.
