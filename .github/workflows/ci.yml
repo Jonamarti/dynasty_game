@@ -1,30 +1,134 @@
 name: CI
 
+# Two levels, following the test pyramid:
+#   - every push to a work branch   -> fast gate (typecheck + check:fast + build), a few minutes
+#   - every pull request to master, and every push to master itself (agents
+#     integrate there directly) -> everything `npm run check:full` runs locally
+#     (unit, scenario matrix with --slow, Playwright e2e), split into parallel jobs
+#     so it runs in GitHub's CPU, not ours, and finishes sooner than the serial run.
+# The full suite can also be launched by hand from the Actions tab (workflow_dispatch).
+#
+# Node is pinned to 22 on purpose, not left at "latest". The simulation's pinned
+# fingerprints (fixtures/switches-off.json) and the matrix baseline were taken on
+# the owner's machine, and Node 24's V8 rounds `x ** y` for fractional y
+# differently in the last bit: the initial forest (`rng.range(0, 1) ** 0.7` in
+# ForestSystem.seedInitialForest) gets 104 tree ages one ULP apart and every
+# seeded world diverges from there. Moving CI to a newer Node is a world change:
+# re-pin and re-baseline in the same commit.
+
 on:
   push:
   pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A new commit on the same branch/PR cancels the run it makes obsolete.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  check:
+  fast:
+    name: Fast gate
+    if: github.event_name == 'push' && github.ref != 'refs/heads/master'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 22
           cache: npm
-
-      # Node 24 ships npm 11, which is past the npm 10.9.2 crash documented in
-      # the README. The retry is the escape hatch if it turns up anyway.
+      # npm 10.9.2 can crash in its resolver (see README); the retry with the
+      # legacy resolver is the escape hatch.
       - name: Install
         run: npm ci || npm ci --legacy-peer-deps
+      - name: Typecheck + fast tests
+        run: npm run check:fast
+      - name: Build
+        run: npx vite build
 
+  unit:
+    name: Unit + build
+    if: github.event_name != 'push' || github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install
+        run: npm ci || npm ci --legacy-peer-deps
       - name: Typecheck
         run: npm run typecheck
-
+      # Same flags as the `unit` step of tools/check-full-runner.ts.
       - name: Unit tests
-        run: npm test
-
+        run: npm test -- --maxWorkers=1 --testTimeout=15000
       - name: Build
-        run: npm run build
+        run: npx vite build
+
+  matrix:
+    name: Scenario matrix ${{ matrix.shard }}/4
+    if: github.event_name != 'push' || github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install
+        run: npm ci || npm ci --legacy-peer-deps
+      # The inherited matrix is red on purpose (M16 rule R21: "done" means no new
+      # failure, not a green matrix). So a failing check is not the verdict; a
+      # check that passed in fixtures/matrix-baseline.json and now fails (or goes
+      # n/a) is. Re-pin that file when a phase moves the baseline on purpose.
+      - name: Scenarios (shard ${{ matrix.shard }}/4)
+        run: |
+          set +e
+          npm run sim:check:all -- --slow --shard ${{ matrix.shard }}/4 --json matrix-shard.json
+          code=$?
+          set -e
+          # 1 = some inherited reds; anything above is a crash or a usage error.
+          if [ "$code" -gt 1 ]; then exit "$code"; fi
+      - name: Compare with the baseline
+        run: npm run baseline:diff -- fixtures/matrix-baseline.json matrix-shard.json
+
+  e2e:
+    name: E2E ${{ matrix.shard }}/4
+    if: github.event_name != 'push' || github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install
+        run: npm ci || npm ci --legacy-peer-deps
+      - name: Install Chromium for Playwright
+        run: npx playwright install --with-deps chromium
+      - name: Playwright (shard ${{ matrix.shard }}/4)
+        run: npm run e2e -- --shard=${{ matrix.shard }}/4 --reporter=github,list
+      - name: Upload traces on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-shard-${{ matrix.shard }}
+          path: artifacts/playwright
+          retention-days: 7

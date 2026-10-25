@@ -48,7 +48,19 @@ test('tribe graph keeps labels readable on mobile and supports pan and zoom', as
   await expect(viewport).toHaveCSS('touch-action', 'none');
   await page.screenshot({ path: SHOTS + '/01-mobile-tribe-graph.png' });
 
-  const box = await viewport.boundingBox();
+  // The world keeps running behind the graph, and the overlay rebuilds its
+  // markup whenever the layout digest changes: a single boundingBox() can land
+  // between the old viewport being detached and the new one being measured and
+  // come back null (1 run in 6 here). Ask again until a live node answers.
+  const liveBox = async () => {
+    for (let attempt = 0; attempt < 50; attempt++) {
+      const measured = await viewport.boundingBox();
+      if (measured) return measured;
+      await page.waitForTimeout(100);
+    }
+    return null;
+  };
+  const box = await liveBox();
   expect(box).not.toBeNull();
   await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
   await page.mouse.wheel(0, -400);

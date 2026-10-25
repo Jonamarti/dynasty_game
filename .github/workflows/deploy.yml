@@ -23,19 +23,22 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 22
           cache: npm
 
-      # Node 24 ships npm 11, which is past the npm 10.9.2 crash documented in
-      # the README. The retry is the escape hatch if it turns up anyway.
+      # npm 10.9.2 can crash in its resolver (see README); the retry with the
+      # legacy resolver is the escape hatch.
       - name: Install
         run: npm ci || npm ci --legacy-peer-deps
 
       - name: Typecheck
         run: npm run typecheck
 
+      # Same flags as the full check: the default 5 s per-test timeout is too
+      # short for the whole-world save/load tests on a GitHub runner.
+      # Node 22 for the same reason as ci.yml (pinned fingerprints).
       - name: Unit tests
-        run: npm test
+        run: npm test -- --maxWorkers=1 --testTimeout=15000
 
       - name: Build
         run: npm run build

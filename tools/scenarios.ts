@@ -25,6 +25,22 @@ if (areaIndex >= 0 && (!area || area.startsWith('--'))) {
 let selected: typeof SCENARIOS[string][];
 try { selected = selectScenarios(Object.values(SCENARIOS), area, includeSlow); }
 catch (error) { console.error((error as Error).message); process.exit(2); }
+
+// CI splits the matrix across parallel jobs: `--shard 2/4` keeps every fourth
+// scenario starting at the second. Round-robin rather than contiguous blocks so
+// the slow scenarios do not all land in the same job.
+const shardIndex = process.argv.indexOf('--shard');
+if (shardIndex >= 0) {
+  const match = /^(\d+)\/(\d+)$/.exec(process.argv[shardIndex + 1] ?? '');
+  const part = match ? Number(match[1]) : NaN;
+  const of = match ? Number(match[2]) : NaN;
+  if (!match || of < 1 || part < 1 || part > of) {
+    console.error('Usage: sim:check:all -- --shard <part>/<total>   (e.g. --shard 1/4)');
+    process.exit(2);
+  }
+  selected = selected.filter((_, i) => i % of === part - 1);
+  console.log(`[shard ${part}/${of}] ${selected.map(s => s.name).join(', ')}`);
+}
 const rows: { name: string; passed: number; total: number; failed: string[]; stepsPerSecond: number }[] = [];
 const matrixRecords: ScenarioMatrixRecord[] = [];
 const jsonIndex = process.argv.indexOf('--json');
