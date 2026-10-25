@@ -5,11 +5,12 @@ build, y master llevaba rojo desde el 20 de octubre, con el despliegue a Pages
 parado. La batería completa (`check:full`) solo se ejecutaba en local, en serie,
 durante unos 50 minutos.
 
-**Causa:** tres cosas distintas. (1) Node 24 en CI calcula `x ** 0.7` distinto
+**Causa:** cuatro cosas distintas. (1) Node 24 en CI calcula `x ** 0.7` distinto
 en el último bit (ver `bugs.md`, misma fecha) y el checkpoint fijado no
 coincidía. (2) El timeout por defecto de 5 s se quedaba corto en el runner para
 los tests de guardado del mundo. (3) El botón «Rival households» tapaba ventanas
-emergentes (`z-index` 45).
+emergentes (`z-index` 45). (4) Un spec del grafo de la tribu medía un nodo que se
+estaba redibujando.
 
 **Cambio:** `ci.yml`: push a ramas de trabajo → typecheck + `check:fast` +
 build; PR a master, push a master y lanzamiento manual → unitarios, matriz en 4
@@ -18,7 +19,8 @@ anotaciones en la PR. La matriz ya no exige verde (R21): compara cada trozo con
 `fixtures/matrix-baseline.json` (copia de la matriz del gate 2.G) mediante
 `baseline:diff`, y falla solo si un check que pasaba deja de pasar.
 Node fijado a 22 en CI y deploy; deploy usa `--testTimeout=15000`.
-`RivalHouseView.css`: el botón baja a `z-index: 19`. Versión `0.16.20-alpha`.
+`RivalHouseView.css`: el botón baja a `z-index: 19`. `phase31-tribegraph-zoom`
+reintenta la medida del viewport (carrera con el redibujado). Versión `0.16.20-alpha`.
 
 **Re-fijar la línea base de la matriz:** cuando una fase mueva el mundo a
 propósito, copiar su `matrix.json` a `fixtures/matrix-baseline.json` en el mismo

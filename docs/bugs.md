@@ -29,10 +29,18 @@ variable.
 abajo a la derecha) tenía `z-index: 45`, el mismo escalón que el menú de pausa y
 por encima del selector de cantidad (21) y de los grafos a pantalla completa
 (30). Se quedaba encima del botón *Confirm* al soltar objetos (`smoke.spec.ts`,
-«dropping puts goods…», 60 s esperando a un clic que interceptaba) y rompía
-`phase31-tribegraph-zoom.spec.ts` en vista móvil. Ahora es `z-index: 19`: por
-debajo de toda la escalera de ventanas (radial 20, selector 21…) y por encima
-del HUD. Ambos specs fallaban sin el cambio y pasan con él.
+«dropping puts goods…», 60 s esperando a un clic que interceptaba). Ahora es
+`z-index: 19`: por debajo de toda la escalera de ventanas (radial 20, selector
+21…) y por encima del HUD. El spec fallaba siempre sin el cambio y pasa 5/5 con él.
+
+## 2026-10-25 — `phase31-tribegraph-zoom.spec.ts` intermitente
+
+**Resuelto el 2026-10-25** (solo el spec). El mundo sigue corriendo detrás del
+grafo y el overlay reconstruye su HTML cuando cambia el digest del layout; un
+`boundingBox()` suelto podía caer entre que se desprende el viewport viejo y se
+mide el nuevo y devolver `null` (1 de cada 6 ejecuciones aquí, y una vez en CI).
+No se cierra: un sondeo sobre `hidden` lo confirmó. El spec ahora reintenta la
+medida; 12/12 tras el cambio.
 
 ## 2026-10-24 — M16 1.7: falta cerrar los tiempos de área
 
