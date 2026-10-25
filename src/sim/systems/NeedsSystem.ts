@@ -12,7 +12,6 @@ import { ITEMS } from '../entities/Item.ts';
 import type { SpatialHash } from '../core/SpatialHash.ts';
 import type { World } from '../core/World.ts';
 import { GARMENT_SLOTS } from '../entities/Equipment.ts';
-import { houseInteriorContains } from '../world/HouseInterior.ts';
 import { coversShelter, hasRoomFor } from '../ai/Occupancy.ts';
 import { bleeding, feverDrain, mendBody, poisonDrain, poisonHunger, poisonThirst } from '../entities/Body.ts';
 import { LETHAL_NEEDS } from '../entities/Person.ts';
