@@ -81,6 +81,7 @@ import {
   workableIdea as chooseWorkableIdea, weaponOf, weaponItemOf, weaponAmmoItem, armourOf, protectionOf, type Tech,
 } from '../knowledge/Tech.ts';
 import { MAX_IDEAS, PROTOTYPE_AT, type Idea } from '../knowledge/Synthesis.ts';
+import { hasFellingAxe } from '../knowledge/Felling.ts';
 import { mayUse, type PropertyUse } from '../social/Property.ts';
 import {
   caughtOffender, usingPropertyOf, isHeld, isBound, noteCall, INTERVENABLE,
@@ -2731,6 +2732,12 @@ export class ActionSystem {
    * only new trees anywhere come from seed cast by trees still standing.
    */
   private doChop(person: Person, ctx: ActionContext): void {
+    // Recheck each tick: a carried axe may be dropped, stolen or transferred
+    // after the order is issued. Do not move or advance trunk progress barehanded.
+    if (!hasFellingAxe(person)) {
+      this.abandon(person, 'no_felling_axe', ctx);
+      return;
+    }
     const tree = person.targetTreeId === null ? null : ctx.treesById.get(person.targetTreeId);
     if (!tree || !tree.standing) {
       this.abandon(person, 'tree_gone', ctx);

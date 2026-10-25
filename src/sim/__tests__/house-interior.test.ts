@@ -27,12 +27,12 @@ function houseSite(defId: string): { world: World; building: Building; anchor: {
 }
 
 describe('walled house interiors', () => {
-  it('defines room and wall footprints for the four house designs without changing their costs', () => {
+  it('defines room and wall footprints including the early stick-framed mud hut', () => {
     expect(['mud_hut', 'wattle_hut', 'stone_house', 'longhouse'].map(id => {
       const { width, height, materials, workTicks } = BUILDINGS[id]!;
       return [id, width, height, materials, workTicks];
     })).toEqual([
-      ['mud_hut', 4, 4, { wood: 8, sticks: 6, thatch: 10, mud: 14 }, 520],
+      ['mud_hut', 4, 4, { sticks: 14, thatch: 10, mud: 14 }, 520],
       ['wattle_hut', 4, 4, { sticks: 10, thatch: 12, mud: 10 }, 400],
       ['stone_house', 5, 5, { flint: 20, wood: 6, mud: 10 }, 750],
       ['longhouse', 8, 4, { wood: 34, sticks: 16, thatch: 30, mud: 24 }, 1800],

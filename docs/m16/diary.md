@@ -1,5 +1,41 @@
 # M16 diary
 
+## M16 14.4 — No wood before hafting (2026-10-25, implementation draft)
+
+The card's inventory was checked against the current code. `doChop`
+allowed barehanded progress; there was no tool gate. The new single
+`knowledge/Felling.ts` predicate requires an actual axe *and* its usable
+technology, checks direct orders before they start and rechecks execution
+if equipment is lost. NPCs never choose an impossible chop but retain the
+tree-work motive to pick up a real axe. `no_felling_axe` gives a visible
+English/Spanish refusal. Gathering sticks remains axe-free.
+
+Pre-hafting material changes (stated before verification, not tuned to tests):
+- `mud_hut` wood 8 + sticks 6 -> sticks 14: bundled branches packed
+  with mud can make an early shelter, unlike a felled timber frame.
+  This advances only its material change from 14.6; warmth, mud, places
+  and work ticks remain for 14.6.
+- `loom` wood 6 + sticks 6 -> sticks 12: poles or withies hold thread.
+- `granary` wood 14 + sticks 10 -> sticks 24: woven branches and
+  clay-fired vessels allow an early food store without squared beams.
+- `drying_rack` wood 2 -> sticks 6: lash found branches together.
+- `weaving` discovery prototype wood 3 + sticks 2 -> sticks 5:
+  technology reachable before hafting must itself be discoverable.
+
+Timber still belongs to `masonry`/carpentry, wells, logboats and later
+woodworking. The table-based regression inspects building, recipe and
+technology prototype dependencies transitively. `chop-knowledge` now
+exercises a stone house, not a pre-hafting mud hut. Legacy placed
+structures retain their serialized original design for compatibility;
+newly placed structures read the updated catalogue.
+
+This phase changes the world. **NOT COMPLETE:** run typecheck, new tests,
+unit suite, `band`, `craft`, count `chop`, `gather sticks` and shelter
+construction before/after, inspect Spanish refusal, re-pin baseline only
+after documenting expected deviations, and confirm the PR #3 dependency.
+Do not merge this draft or describe the gate as passed.
+
+
 ## M16 14.3 — Refuge capacity (2026-10-25; DRAFT, NOT GATED)
 
 Prototype branch `codex/m16-14-3-occupancy`: shelters now specify sleeping places

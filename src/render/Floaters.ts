@@ -304,6 +304,7 @@ export function actionLabel(
 export const STOP_REASONS: Record<string, string> = {
   // Ran out of room, need or patience.
   roof_full: 'the shelter had no free places',
+  no_felling_axe: 'You need an axe to fell a tree',
   hands_full: 'their hands are full',
   pickup_full: 'There is no room to carry another item',
   bundle_on_shoulder: 'A bundle is already on the shoulder',
