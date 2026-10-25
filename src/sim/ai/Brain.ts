@@ -33,6 +33,7 @@ import { earthworkWorkRefusal } from '../core/Earth.ts';
 import { SOW_SEED, SPREAD_LOAD } from '../entities/Field.ts';
 import { ORCHARD_SPACING, findPlantingSpot, plantable } from '../entities/Orchard.ts';
 import type { Building } from '../entities/Building.ts';
+import { hasRoomFor } from './Occupancy.ts';
 import { averageRenown, type Household } from '../entities/Household.ts';
 import { statusPressure } from './Status.ts';
 import { ATTEND, FEAST, FEAST_MIN_GUESTS, FEAST_RADIUS, feastVenue, mayHostFeast } from '../social/Feast.ts';
@@ -3690,7 +3691,7 @@ export class Brain {
       }
       restShelter = this.pickBest(ctx.buildingHash.queryRadius(person.x, person.y, ctx.sightRadius + 4)
         .filter(b => b.complete && !b.ruined && b.def.shelter > 0.2 &&
-          person.distanceTo({ x: b.centerX, y: b.centerY }) <= ctx.sightRadius &&
+          hasRoomFor(b, person, ctx.peopleHash) && person.distanceTo({ x: b.centerX, y: b.centerY }) <= ctx.sightRadius &&
           ctx.world.sameRegion(person.x, person.y, b.centerX, b.centerY) && this.canUse(person, b, ctx)),
         b => {
           const pieces = ctx.buildingHash.queryRadius(b.centerX, b.centerY,
@@ -3736,7 +3737,7 @@ export class Brain {
         // own promise — warmer the moment they arrive — would simply be false,
         // the same wasted-trip failure a ruined well's exclusion above avoids.
         ctx.buildings.filter(b =>
-          b.complete && !b.ruined && b.def.shelter > 0.2 && this.canUse(person, b, ctx)),
+          b.complete && !b.ruined && b.def.shelter > 0.2 && hasRoomFor(b, person, ctx.peopleHash) && this.canUse(person, b, ctx)),
         b => b.def.shelter * 40 - person.distanceTo({ x: b.centerX, y: b.centerY })
       );
       if (shelter) {
