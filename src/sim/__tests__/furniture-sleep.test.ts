@@ -656,8 +656,13 @@ describe('bedding and beds', () => {
     person.knownTech.add('fat_lamp');
     person.inventory.add('flint', 1);
     person.inventory.add('fat', 2);
-    for (const [itemId, offset] of [['bed', 0], ['bench', 1], ['shelf', 2]] as const) {
-      const piece = new Building(BUILDINGS[itemId]!, house.x + offset, house.y + 1, person.bandId, sim.ids);
+    // The existing 4x4 house has four actual floor tiles. Populate three
+    // valid ones, not a wall, leaving a genuine free place for the lamp.
+    expect(houseInteriorTiles(house)).toHaveLength(4);
+    for (const [index, itemId] of ['bed', 'bench', 'shelf'].entries()) {
+      const tile = houseInteriorTiles(house)[index]!;
+      const piece = new Building(BUILDINGS[itemId]!, Math.floor(tile.x), Math.floor(tile.y),
+        person.bandId, sim.ids);
       piece.hostId = house.id;
       piece.complete = true;
       sim.buildings.push(piece);

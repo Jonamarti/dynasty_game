@@ -37,6 +37,7 @@ jobs:
         run: npm run typecheck
       - name: Validate new generated art against source
         run: npm test -- --maxWorkers=1 --testTimeout=15000 src/render/__tests__/art.test.ts
+      # 14.6 final fixture check: distinguish actual room tiles from perimeter wall.
       - name: Verify shelter, interior, and furnishings (focused)
         run: |
           npm test -- --maxWorkers=1 --testTimeout=15000 \
