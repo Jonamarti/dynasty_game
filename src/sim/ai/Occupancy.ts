@@ -9,7 +9,7 @@ import { isUnderRoof } from '../systems/LifeSystem.ts';
 
 /** The open windbreak also protects a little margin against cold. */
 export function coversShelter(building: Building, person: Person): boolean {
-  return building.def.interior
+  return building.def.interior || building.def.roofed
     ? isUnderRoof(building, person.x, person.y)
     : building.contains(person.x, person.y, 1.5);
 }

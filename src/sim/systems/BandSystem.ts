@@ -1493,7 +1493,11 @@ export class BandSystem {
       // funerals.
       const shelters = buildable.filter(def => def.shelter > 0.3 && def.places !== undefined);
       if (roofPlaces * 2 < shelterDemand) {
-        wanted = this.cheapest(shelters)?.id ?? null;
+        // Generic early-roof contract: the 140-tick open windbreak is
+        // cheaper than a lean-to, but is not the first *covered* shelter.
+        // Prefer any real roof by capability, not by a hardcoded design id.
+        const covered = shelters.filter(def => def.roofed || def.interior);
+        wanted = this.cheapest(covered.length ? covered : shelters)?.id ?? null;
       } else {
         // The best roof they know how to raise — but nothing grander than a mud
         // hut until they have finished one, because a band whose first ever

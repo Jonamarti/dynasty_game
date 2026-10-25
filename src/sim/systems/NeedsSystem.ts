@@ -13,7 +13,7 @@ import type { SpatialHash } from '../core/SpatialHash.ts';
 import type { World } from '../core/World.ts';
 import { GARMENT_SLOTS } from '../entities/Equipment.ts';
 import { houseInteriorContains } from '../world/HouseInterior.ts';
-import { hasRoomFor } from '../ai/Occupancy.ts';
+import { coversShelter, hasRoomFor } from '../ai/Occupancy.ts';
 import { bleeding, feverDrain, mendBody, poisonDrain, poisonHunger, poisonThirst } from '../entities/Body.ts';
 import { LETHAL_NEEDS } from '../entities/Person.ts';
 import { telemetry } from '../core/Telemetry.ts';
@@ -131,12 +131,11 @@ export class NeedsSystem {
       // false for anything `Building.durability` was never set on, so an
       // ordinary hut with no sabotage in its history is unaffected.
       if (!building.complete || building.ruined || building.def.shelter <= best) continue;
-      // A walled house shelters its room. Open designs such as windbreaks keep
-      // the older nearby-warmth footprint.
-      if (building.def.interior ? houseInteriorContains(building, person.x, person.y)
-        : building.contains(person.x, person.y, 1.5)) {
-        if (!peopleHash || (building.def.places !== undefined && hasRoomFor(building, person, peopleHash))) best = building.def.shelter;
-      }
+      // Warmth and admission agree: passing beside a covered lean-to is
+      // not sleeping beneath it, while a windbreak retains its wider margin.
+      if (coversShelter(building, person) &&
+        (!peopleHash || (building.def.places !== undefined &&
+          hasRoomFor(building, person, peopleHash)))) best = building.def.shelter;
     }
     return best;
   }
