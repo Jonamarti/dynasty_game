@@ -1,0 +1,34 @@
+name: M16 14.6 historical-save regression
+on:
+  push:
+    branches:
+      - codex/m16-14-6-mud-hut-rebalance
+    paths:
+      - src/sim/__tests__/m16-legacy-mud-hut-places.test.ts
+      - src/sim/persistence/WorldObjectRecords.ts
+      - .github/workflows/m16-14-6-compat-audit.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  migration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Install dependencies
+        run: npm ci || npm ci --legacy-peer-deps
+      - name: TypeScript
+        run: npm run typecheck
+      - name: Historical saves, 3x3 interiors, and resumed simulation
+        run: |
+          npm test -- --maxWorkers=1 --testTimeout=15000 \
+            src/sim/__tests__/m16-legacy-mud-hut-places.test.ts \
+            src/sim/__tests__/m16-shelter-ladder-order.test.ts \
+            src/sim/__tests__/house-interior-lifecycle.test.ts
