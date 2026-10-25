@@ -1,0 +1,72 @@
+name: M16 14.6 diagnosis (one-off)
+on:
+  push:
+    branches:
+      - codex/m16-14-6-mud-hut-rebalance
+    paths:
+      - .github/workflows/m16-14-6-diagnosis.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: codex/m16-14-6-mud-hut-rebalance
+      - uses: actions/checkout@v4
+        with:
+          ref: codex/m16-14-5-lean-to
+          path: previous
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci || npm ci --legacy-peer-deps
+      - name: Run identical deterministic/persistence tests on both branches
+        shell: bash
+        run: |
+          set +e
+          ln -s "$GITHUB_WORKSPACE/node_modules" previous/node_modules
+          for side in previous current; do
+            if [ "$side" = previous ]; then root=previous; else root=.; fi
+            (cd "$root" && npm test -- --maxWorkers=1 --testTimeout=15000 \
+              src/sim/__tests__/switches-off.test.ts \
+              src/sim/__tests__/live-checkpoint-continuation.test.ts \
+              src/sim/__tests__/world-state-peoples.test.ts \
+              src/sim/__tests__/chop-knowledge.test.ts \
+              src/sim/__tests__/orders.test.ts \
+              src/sim/__tests__/pregnancy.test.ts \
+              src/sim/__tests__/iron-tools-check.test.ts) > "$side-tests.log" 2>&1
+            echo "$side tests exit=$?" | tee -a diagnostic-status.txt
+          done
+      - name: Run 3-seed harsh-winter cohorts on both versions
+        shell: bash
+        run: |
+          set +e
+          for side in previous current; do
+            if [ "$side" = previous ]; then root=previous; else root=.; fi
+            (cd "$root" && npm run sim:seeds -- --scenario harsh-winter --seeds 3 --steps 4000) > "$side-winter.log" 2>&1
+            echo "$side winter exit=$?" | tee -a diagnostic-status.txt
+          done
+      - name: Upload comparative logs, including failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m16-14-6-diagnostic-before-after
+          path: |
+            diagnostic-status.txt
+            previous-tests.log
+            current-tests.log
+            previous-winter.log
+            current-winter.log
+          retention-days: 14
+      - name: Report red results without changing baselines
+        shell: bash
+        run: |
+          cat diagnostic-status.txt
+          echo 'Review paired failures before any snapshot or CI timeout change.'
