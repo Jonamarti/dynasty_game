@@ -154,6 +154,33 @@ before a hover lands on it, so the panel never responds and nothing throws.
 
 ---
 
+## Save compatibility policy (owner decision, 2026-10-25)
+
+**Until the project owner explicitly declares the first beta, do NOT spend
+development, agent, review or CI time on compatibility with save files created
+by earlier alpha versions.** In particular:
+
+- Do not implement migrations for old-alpha checkpoints/serialized object graphs,
+  repair legacy building layouts, or write/update dedicated old-save regression
+  tests or historical fixtures just to support older versions.
+- Do not block an alpha feature PR or a milestone gate because a *previous*
+  alpha's save file cannot load. Label such issues `deferred-to-beta` and
+  document them in the beta compatibility backlog, rather than fixing them.
+- **Still required:** save/load and checkpoint continuation in the **same
+  current build**, deterministic replay, correct persistence of new state,
+  and valid current-version data. Do not mask failures in those tests.
+- At beta, the owner will decide which historical versions (if any) must be
+  supported and whether to migrate, reject with an explanation, or start a
+  new save format. Do not infer that all old alpha saves must become compatible.
+- Previously completed small fixes can stay; do not expand or reopen them
+  without an owner request.
+
+This policy overrides any older phase card or R11/R23/R24 wording that
+suggests migrating or regression-testing *old-alpha* saves while still in
+alpha. It does **not** waive the in-version round-trip tests those rules require.
+
+---
+
 ## M16 rules
 
 These rules supplement the project rules above. The full M16 protocol and phase

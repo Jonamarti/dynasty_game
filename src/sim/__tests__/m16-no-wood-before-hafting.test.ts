@@ -49,7 +49,7 @@ describe('m16-no-wood-before-hafting', () => {
       }
     }
     expect(offenders).toEqual([]);
-    expect(BUILDINGS.mud_hut!.materials).toEqual({ sticks: 14, thatch: 10, mud: 14 });
+    expect(BUILDINGS.mud_hut!.materials).toEqual({ sticks: 12, thatch: 10, mud: 8 });
   });
 
   it('refuses a tree without a real usable axe and reports why immediately', () => {

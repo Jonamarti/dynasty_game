@@ -32,7 +32,7 @@ describe('walled house interiors', () => {
       const { width, height, materials, workTicks } = BUILDINGS[id]!;
       return [id, width, height, materials, workTicks];
     })).toEqual([
-      ['mud_hut', 4, 4, { sticks: 14, thatch: 10, mud: 14 }, 520],
+      ['mud_hut', 3, 3, { sticks: 12, thatch: 10, mud: 8 }, 420],
       ['wattle_hut', 4, 4, { sticks: 10, thatch: 12, mud: 10 }, 400],
       ['stone_house', 5, 5, { flint: 20, wood: 6, mud: 10 }, 750],
       ['longhouse', 8, 4, { wood: 34, sticks: 16, thatch: 30, mud: 24 }, 1800],
@@ -83,7 +83,8 @@ describe('walled house interiors', () => {
     applyHouseWalls(world, building, anchor, people, true);
     expect(world.isWalkable(wallX, wallY)).toBe(false);
     expect(houseInteriorContains(building, person.x, person.y)).toBe(true);
-    expect(world.isWalkable(Math.floor(person.x + 0.5), Math.floor(person.y + 0.5))).toBe(true);
+    // World coordinates resolve by floor; rounding a 3x3 room's centre lands on the wall.
+    expect(world.isWalkable(Math.floor(person.x), Math.floor(person.y))).toBe(true);
     expect(people.queryRadius(person.x, person.y, 1)).toContain(person);
 
     // Terrain edits below a wall update the hidden ground state without

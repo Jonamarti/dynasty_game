@@ -315,10 +315,10 @@ const interiorFrontWall = (width: number, height: number, color: string, texture
 
 /** Separate room surfaces for the phase-16 roof lift; measurements are tile × 48 px. */
 export const INTERIORS: InteriorArt[] = [
-  { id: 'mud_hut', width: 4 * 48, height: 4 * 48,
-    floor: () => interiorFloor(4 * 48, 4 * 48, '#75583c'),
-    walls: side => interiorWalls(4 * 48, 4 * 48, B.mud, B.mudL, side),
-    front: side => interiorFrontWall(4 * 48, 4 * 48, B.mud, B.mudL, side) },
+  { id: 'mud_hut', width: 3 * 48, height: 3 * 48,
+    floor: () => interiorFloor(3 * 48, 3 * 48, '#75583c'),
+    walls: side => interiorWalls(3 * 48, 3 * 48, B.mud, B.mudL, side),
+    front: side => interiorFrontWall(3 * 48, 3 * 48, B.mud, B.mudL, side) },
   { id: 'wattle_hut', width: 4 * 48, height: 4 * 48,
     floor: () => interiorFloor(4 * 48, 4 * 48, '#7d6243'),
     walls: side => interiorWalls(4 * 48, 4 * 48, B.wattle, B.wattleD, side),

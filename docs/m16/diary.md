@@ -1,5 +1,103 @@
 # M16 diary
 
+## Alpha-save policy — owner decision, 2026-10-25
+
+Historical **cross-version alpha save compatibility is deferred until beta**.
+Agents must not write more migrations, old-format fixtures or dedicated CI
+workflows for saves created by earlier alpha builds. Already implemented
+4x4 mud-hut migration may remain but is **not a phase acceptance gate**.
+Same-build checkpoint roundtrips, determinism and live save/load remain
+mandatory. At beta, ask the owner which older formats require support.
+See `AGENTS.md` and `docs/beta-save-compatibility.md`.
+
+
+## M16 14.6 — Historical-save compatibility and follow-up (2026-10-25)
+
+**Applied on PR #7** after confirming the old restore path:
+`WorldObjectRecords.fromWorldObjectRecord` now recognises pre-14.3
+`mud_hut` definitions with a 4x4 footprint and no `places` field
+as four-place buildings, preserving their material, work-tick and warmth
+values. A 3x3 new hut remains 3-place, and explicitly saved capacities
+are never overwritten.
+
+Red/green evidence: GitHub Actions run `40231542419` failed the
+two legacy-restore tests before the migration correction; run
+`40231568804` passed TypeScript and all 9 focused tests afterward,
+including a JSON world-object roundtrip, a full checkpoint restored with
+the original wall/door overlay, and five equal simulation ticks.
+Tests live in `m16-legacy-mud-hut-places.test.ts`. No baseline re-pin.
+
+The latest previous full CI run at `1525234`, run `40224685177`,
+failed 24 of 2,494 tests: old 5-second deadlines, pre-existing
+felling-order assumptions, changing world fingerprints, plus other
+unresolved integration results. Do not call these failures an approved
+14.6 baseline. A one-off comparative workflow runs the same long-timeout
+checkpoint, order and technology suites on 14.5 vs 14.6 and a three-seed
+`harsh-winter` cohort in the same runner, storing both outputs as
+artifacts. Its results must be inspected before adjusting any snapshots.
+
+**Still blocked:** review comparisons, reproduce and fix genuine bugs,
+run the full scenario matrix, inspect in-game screenshots, re-pin
+only explained world changes, remove temporary diagnostic workflow after
+collecting its artifacts and leave PR draft until acceptance.
+
+## M16 14.6 — Mud hut rebalance (2026-10-25; draft / NOT GATED)
+
+Rebalanced the mud hut to a 3x3 footprint, 3 places, 0.75 shelter,
+420 work ticks and {sticks:12, thatch:10, mud:8}. This completes
+the material adjustment begun in 14.4 (which first removed felled wood).
+The existing HouseInterior tile and door logic supports 3x3 with one
+central interior tile; all four doorway orientations passed tests. The
+generated 3x3 interior art and the lean-to art are committed in
+`public/art/buildings.json` and `public/art/buildings-0.png`.
+`art:build -- buildings`, art parity and `art:sheet` completed on
+GitHub Actions; the `contact-buildings.png` sheet was visually reviewed
+and shows the covered open lean-to and the new mud hut correctly.
+
+Risk: old saves serialize building definitions and wall overlays, while new
+buildings use the current catalogue. The existing renderer detects old
+interior art dimensions and falls back; verify save/load and overlay repair
+on both old and new footprints. The stage-3 phases remain stacked drafts
+and full verification/seed cohorts are outstanding. Do not re-pin before
+diagnosing unexplained failures.
+
+
+### 14.6 review: small-room limits, cold measurement and save compatibility
+
+The new 3x3 hut has exactly one interior floor tile. Its room and four
+doors are traversable, but 2x1 stations cannot fit. The drying rack
+fixture uses a 4x4 wattle hut, and a negative test records this intentional
+limitation. The wall evacuation test now uses the world's `floor`
+coordinate convention rather than rounding a room-tile centre onto a wall.
+
+Tests now measure actual winter cold need across the five early shelters
+and round-trip the original 4x4 dimensions of a legacy hut record.
+Two descriptions from 14.4/14.6 now have Spanish translations; the
+`i18n.test.ts` suite passed. `src/sim/__tests__/furniture-sleep.test.ts`
+now uses a 4x4 wattle hut for multi-item furnishing tests and places
+pieces on actual room floor tiles instead of a perimeter wall. The
+7-file focused run passed **55/55** tests, and the art tests passed
+**29/29** with TypeScript clear. See GitHub Actions run
+https://github.com/Jonamarti/dynasty_game/actions/runs/40224426706.
+
+**Side-by-side band scenario:** 14.5 and 14.6 were measured on the same
+Node 22 GitHub runner at seed/default 3,000 steps, with full logs uploaded
+as `m16-14-6-band-before-after`. 14.5: 31/31 alive, 30 distinct AI
+actions, 2/147 red (`moods-move-choices`, `perf-budget`), 515 steps/s
+against runner threshold 1678. 14.6: 30/30 alive, 28 actions, 1/147 red
+(`perf-budget` only), 587 steps/s against threshold 1724. Both had
+`shelter-answers-cold` as n/a (peak mean cold 0.9); the independent
+winter needs test measures a strictly improving cold response over all five
+shelters. These 12-day counts are descriptive, **not** a statistically
+meaningful survival or performance gain. The GitHub VM speed gate fails
+on both builds, so do not infer local frame rate.
+
+**Still blocked:** inherited full-unit regressions in 14.3/14.4,
+scenario/seed matrix comparison, permanent screenshot tour and approved
+baseline re-pin. The temporary asset-generation workflow was removed
+once its generated PNG/JSON and comparison artifacts were recorded.
+Keep PR #7 in draft and do not merge it or mark the phase done.
+
 ## M16 14.5 — A roof of branches and leaves (2026-10-25; draft)
 
 Added the 2x2, two-place `lean_to`: 10 gathered sticks, eight thatch

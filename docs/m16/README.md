@@ -1,5 +1,16 @@
 # Dynasty — M16 plan (v3, single-agent, phase cards)
 
+## Alpha-save policy — owner decision, 2026-10-25
+
+Historical **cross-version alpha save compatibility is deferred until beta**.
+Agents must not write more migrations, old-format fixtures or dedicated CI
+workflows for saves created by earlier alpha builds. Already implemented
+4x4 mud-hut migration may remain but is **not a phase acceptance gate**.
+Same-build checkpoint roundtrips, determinism and live save/load remain
+mandatory. At beta, ask the owner which older formats require support.
+See `AGENTS.md` and `docs/beta-save-compatibility.md`.
+
+
 Written 2026-10-16 against `0.15.160-alpha` (commit `0c2214e`). Replaces the
 earlier plan drafts (`m16_plan.md` v1/v2 and the QA reviews), which were
 removed from `docs/` and are kept in git history at commit `99a2ec5`
@@ -371,7 +382,7 @@ A stage ends with the full level (§5) and a screenshot tour.
 | 42 | [14.3](phases/14.3-occupancy.md) | Buildings have a capacity, and it is respected | todo |
 | 43 | [14.4](phases/14.4-no-wood-before-hafting.md) | No wood before hafting | implementation in draft PR; CI, scenarios and re-pin pending |
 | 44 | [14.5](phases/14.5-lean-to.md) | The stick-and-leaf lean-to | draft PR — generated art, tests, scenarios and baseline pending |
-| 45 | [14.6](phases/14.6-mud-hut-rebalance.md) | A cheaper, smaller, less warm mud hut | todo |
+| 45 | [14.6](phases/14.6-mud-hut-rebalance.md) | A cheaper, smaller, less warm mud hut | PR #7 draft — old-save fix red/green verified (9/9), A/B winter diagnosis launched; full gate and re-pin pending |
 | 46 | [14.7](phases/14.7-caves.md) | Caves | todo |
 | 47 | [14.8](phases/14.8-upkeep.md) | Daily wear and repair: upkeep as the natural limit | todo |
 | 48 | [14.G](phases/14.G-gate.md) | Shelter ladder gate | todo |

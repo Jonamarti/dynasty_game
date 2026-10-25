@@ -320,19 +320,18 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     id: 'mud_hut',
     label: 'Mud hut',
     icon: '\u{1F6D6}',
-    width: 4, height: 4,
-    materials: { sticks: 14, thatch: 10, mud: 14 },
-    workTicks: 520,
-    shelter: 0.85,
-    places: 4,
+    width: 3, height: 3,
+    materials: { sticks: 12, thatch: 10, mud: 8 },
+    workTicks: 420,
+    shelter: 0.75,
+    places: 3,
     interior: { door: 'toward_camp' },
     storage: 40,
     // Indoors and out of the sun, but it is a house rather than a store.
     preserves: 1.2,
     requiresTech: null,
     description:
-      'Daubed walls packed around a frame of gathered branches, under thatch. ' +
-      'Warm enough to winter in without felling a tree.',
+      'Daubed walls on a frame of bound sticks, under thatch.',
   },
 
   // M15 phase 16d. Furniture is a walkable 1×1 Building so it can share the
