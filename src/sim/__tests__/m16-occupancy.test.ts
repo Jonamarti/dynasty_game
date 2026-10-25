@@ -74,7 +74,7 @@ describe('m16-occupancy', () => {
   it('does not make nonresidential buildings into beds', () => {
     expect(BUILDINGS.granary!.places).toBeUndefined();
     expect(BUILDINGS.library!.places).toBeUndefined();
-    expect(BUILDINGS.mud_hut!.places).toBe(4);
+    expect(BUILDINGS.mud_hut!.places).toBe(3);
     expect(BUILDINGS.wattle_hut!.places).toBe(4);
     expect(BUILDINGS.stone_house!.places).toBe(6);
     expect(BUILDINGS.longhouse!.places).toBe(10);

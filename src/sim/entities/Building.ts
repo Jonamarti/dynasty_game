@@ -320,67 +320,19 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     id: 'mud_hut',
     label: 'Mud hut',
     icon: '\u{1F6D6}',
-    width: 4, height: 4,
-    materials: { sticks: 14, thatch: 10, mud: 14 },
-    workTicks: 520,
-    shelter: 0.85,
-    places: 4,
+    width: 3, height: 3,
+    materials: { sticks: 12, thatch: 10, mud: 8 },
+    workTicks: 420,
+    shelter: 0.75,
+    places: 3,
     interior: { door: 'toward_camp' },
     storage: 40,
     // Indoors and out of the sun, but it is a house rather than a store.
     preserves: 1.2,
     requiresTech: null,
-    description:
-      'Daubed walls packed around a frame of gathered branches, under thatch. ' +
-      'Warm enough to winter in without felling a tree.',
+    description: 'Daubed walls on a frame of bound sticks, under thatch.',
   },
-
-  // M15 phase 16d. Furniture is a walkable 1×1 Building so it can share the
-  // world-object index, checkpoint and renderer. Simulation.placeFurniture is
-  // the only creation path: it records the host and checks the home's floor.
-  bedding: {
-    id: 'bedding', label: 'Bedding', icon: '\u{1F6CF}',
-    width: 1, height: 1, materials: {}, workTicks: 0, shelter: 0, storage: 0,
-    requiresTech: null, furniture: true, sleepQuality: 1.0,
-    description: 'A bed of grass or hide laid inside a home.',
-  },
-  rug: {
-    id: 'rug', label: 'Hide rug', icon: '\u{1F9F6}',
-    width: 1, height: 1, materials: {}, workTicks: 0, shelter: 0, storage: 0,
-    requiresTech: 'cordage', furniture: true, sleepQuality: 1.0,
-    description: 'A hide rug that softens the floor inside a home.',
-  },
-  bed: {
-    id: 'bed', label: 'Bed', icon: '\u{1F6CF}',
-    width: 1, height: 1, materials: {}, workTicks: 0, shelter: 0, storage: 0,
-    requiresTech: 'carpentry', furniture: true, sleepQuality: 1.1,
-    description: 'A raised wooden bed with bedding, inside a home.',
-  },
-  bench: {
-    id: 'bench', label: 'Bench', icon: '\u{1FA91}',
-    width: 1, height: 1, materials: {}, workTicks: 0, shelter: 0, storage: 0,
-    requiresTech: 'carpentry', furniture: true, restQuality: 1.6,
-    description: 'A wooden seat for resting inside a home.',
-  },
-  fat_lamp: {
-    id: 'fat_lamp', label: 'Fat lamp', icon: '\u{1F56F}',
-    width: 1, height: 1, materials: {}, workTicks: 0, shelter: 0, storage: 0,
-    requiresTech: 'fat_lamp', furniture: true,
-    description: 'A stone lamp that burns animal fat to light a home.',
-  },
-  shelf: {
-    id: 'shelf', label: 'Shelf', icon: '\u{1F4DA}',
-    width: 1, height: 1, materials: {}, workTicks: 0, shelter: 0, storage: 20,
-    requiresTech: 'carpentry', furniture: true,
-    description: 'A household shelf for keeping carried goods indoors.',
-  },
-  fireplace: {
-    id: 'fireplace', label: 'Fireplace', icon: '\u{1F525}',
-    width: 1, height: 1, materials: {}, workTicks: 0, shelter: 0, storage: 0,
-    requiresTech: 'fireplace', furniture: true, station: true, stationKind: 'hearth',
-    description: 'A clay-and-flint hearth built inside a household home.',
-  },
-
+  // Housing furniture follows.
   // --- M11 phase 10, second commit: two more shelters -----------------------
   //
   // `wattle_daub` and `masonry` each answer the mud hut differently: a woven

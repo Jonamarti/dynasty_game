@@ -1,5 +1,23 @@
 # M16 diary
 
+## M16 14.6 — Mud hut rebalance (2026-10-25; draft / NOT GATED)
+
+Rebalanced the mud hut to a 3x3 footprint, 3 places, 0.75 shelter,
+420 work ticks and {sticks:12, thatch:10, mud:8}. This completes
+the material adjustment begun in 14.4 (which first removed felled wood).
+The existing HouseInterior tile and door logic supports 3x3, with one
+central interior tile; all four orientations must be verified. Generated
+interior artwork now uses 3x3 dimensions, but the *committed atlas must
+be regenerated* and inspected before merge.
+
+Risk: old saves serialize building definitions and wall overlays, while new
+buildings use the current catalogue. The existing renderer detects old
+interior art dimensions and falls back; verify save/load and overlay repair
+on both old and new footprints. The stage-3 phases remain stacked drafts
+and full verification/seed cohorts are outstanding. Do not re-pin before
+diagnosing unexplained failures.
+
+
 ## M16 14.5 — A roof of branches and leaves (2026-10-25; draft)
 
 Added the 2x2, two-place `lean_to`: 10 gathered sticks, eight thatch

@@ -32,7 +32,7 @@ describe('walled house interiors', () => {
       const { width, height, materials, workTicks } = BUILDINGS[id]!;
       return [id, width, height, materials, workTicks];
     })).toEqual([
-      ['mud_hut', 4, 4, { sticks: 14, thatch: 10, mud: 14 }, 520],
+      ['mud_hut', 3, 3, { sticks: 12, thatch: 10, mud: 8 }, 420],
       ['wattle_hut', 4, 4, { sticks: 10, thatch: 12, mud: 10 }, 400],
       ['stone_house', 5, 5, { flint: 20, wood: 6, mud: 10 }, 750],
       ['longhouse', 8, 4, { wood: 34, sticks: 16, thatch: 30, mud: 24 }, 1800],
