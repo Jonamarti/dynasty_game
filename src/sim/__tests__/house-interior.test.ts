@@ -83,7 +83,8 @@ describe('walled house interiors', () => {
     applyHouseWalls(world, building, anchor, people, true);
     expect(world.isWalkable(wallX, wallY)).toBe(false);
     expect(houseInteriorContains(building, person.x, person.y)).toBe(true);
-    expect(world.isWalkable(Math.floor(person.x + 0.5), Math.floor(person.y + 0.5))).toBe(true);
+    // World coordinates resolve by floor; rounding a 3x3 room's centre lands on the wall.
+    expect(world.isWalkable(Math.floor(person.x), Math.floor(person.y))).toBe(true);
     expect(people.queryRadius(person.x, person.y, 1)).toContain(person);
 
     // Terrain edits below a wall update the hidden ground state without

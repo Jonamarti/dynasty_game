@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Simulation } from '../core/Simulation.ts';
 import { Building, BUILDINGS } from '../entities/Building.ts';
 import { BIOME_ID } from '../core/World.ts';
-import { applyHouseWalls } from '../world/HouseInterior.ts';
+import { applyHouseWalls, houseContainsFootprint, houseInteriorTiles } from '../world/HouseInterior.ts';
 import { toCheckpointRecord } from '../persistence/CheckpointRecords.ts';
 
 function fixture() {
@@ -13,7 +13,8 @@ function fixture() {
   for (let y = 8; y <= 17; y++) for (let x = 8; x <= 17; x++) {
     sim.world.biome[sim.world.index(x, y)] = BIOME_ID.grass; sim.world.setWalkable(x, y, true);
   }
-  const house = new Building(BUILDINGS.mud_hut!, 10, 10, person.bandId, sim.ids);
+  // A 3x3 mud hut only has one inner tile. Use a full two-tile-wide room.
+  const house = new Building(BUILDINGS.wattle_hut!, 10, 10, person.bandId, sim.ids);
   house.complete = true; house.durability = house.def.workTicks;
   sim.buildings.push(house); sim.buildingsById.set(house.id, house); sim.buildingHash.insert(house);
   person.x = 11; person.y = 12; person.targetX = 11; person.targetY = 12;
@@ -25,6 +26,14 @@ function fixture() {
 }
 
 describe('a drying rack fits a real house room', () => {
+  it('cannot fit a two-tile rack inside the reduced 3x3 mud hut', () => {
+    const hut = new Building(BUILDINGS.mud_hut!, 10, 10, 1);
+    hut.complete = true;
+    expect(houseInteriorTiles(hut)).toHaveLength(1);
+    expect(houseContainsFootprint(hut, 11, 11, 2, 1)).toBe(false);
+    expect(houseContainsFootprint(hut, 11, 11, 1, 1)).toBe(true);
+  });
+
   it('places wholly inside, dries food and persists its host through JSON', () => {
     const { sim, person, house } = fixture();
     const rack = sim.place('drying_rack', 11, 11, person.bandId)!;

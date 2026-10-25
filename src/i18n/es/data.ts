@@ -64,6 +64,10 @@ export const ES_DATA: Record<string, string> = {
   'Dry meat': 'Secar carne',
   'Dry fish': 'Secar pescado',
   'Drying rack': 'Secadero',
+  'Daubed walls on a frame of bound sticks, under thatch.':
+    'Paredes de barro sobre una estructura de palos atados, bajo un techo de paja.',
+  'An open frame of gathered branches lashed together for drying meat and fish.':
+    'Una estructura abierta de ramas recogidas y atadas para secar carne y pescado.',
   'An open wooden frame for drying strips of meat and fish.': 'Un armazón abierto de madera para secar tiras de carne y pescado.',
   "Fish": "Pescado",
   "Hide": "Piel",

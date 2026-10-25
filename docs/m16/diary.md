@@ -18,6 +18,21 @@ and full verification/seed cohorts are outstanding. Do not re-pin before
 diagnosing unexplained failures.
 
 
+### 14.6 review: small-room limits, cold measurement and save compatibility
+
+The new 3x3 hut has exactly one interior floor tile. Its room and four
+doors are traversable, but 2x1 stations cannot fit. The drying rack
+fixture uses a 4x4 wattle hut, and a negative test records this intentional
+limitation. The wall evacuation test now uses the world's `floor`
+coordinate convention rather than rounding a room-tile centre onto a wall.
+
+Tests now measure actual winter cold need across the five early shelters
+and round-trip the original 4x4 dimensions of a legacy hut record.
+Two English descriptions from 14.4/14.6 were missing Spanish data-table
+translations; these have been supplied. **New checks not yet validated.**
+The generated PNG atlas, before/after cohorts and baseline re-pin remain
+required before merging.
+
 ## M16 14.5 — A roof of branches and leaves (2026-10-25; draft)
 
 Added the 2x2, two-place `lean_to`: 10 gathered sticks, eight thatch
