@@ -107,6 +107,13 @@ export function fromPersonRecord(record: unknown): Person {
         typeof commitment.baselinePressure !== 'number' || !Number.isFinite(commitment.baselinePressure) || commitment.baselinePressure < 0 ||
         typeof commitment.goal !== 'string' || commitment.goal.length === 0) fail('Person commitment is malformed');
   }
+  // Older checkpoints lack stable shelter arrival information.
+  if (!Object.hasOwn(personState, 'shelterArrivalBuildingId')) person.shelterArrivalBuildingId = null;
+  else if (!(person.shelterArrivalBuildingId === null ||
+      Number.isSafeInteger(person.shelterArrivalBuildingId) && person.shelterArrivalBuildingId > 0)) fail('Invalid shelter arrival building');
+  if (!Object.hasOwn(personState, 'shelterArrivalTick')) person.shelterArrivalTick = null;
+  else if (!(person.shelterArrivalTick === null ||
+      Number.isSafeInteger(person.shelterArrivalTick) && person.shelterArrivalTick >= 0)) fail('Invalid shelter arrival tick');
   if (!Object.hasOwn(personState, 'transportAnimalId')) person.transportAnimalId = null;
   else if (!(person.transportAnimalId === null || Number.isSafeInteger(person.transportAnimalId) && person.transportAnimalId > 0)) fail('Person transport animal id is malformed');
   if (!Object.hasOwn(personState, 'transportMode')) person.transportMode = null;

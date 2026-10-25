@@ -1,7 +1,7 @@
 /** Detached snapshots of the entities placed in the world. No Simulation load. */
 import type { Simulation } from '../core/Simulation.ts';
 import { ResourceNode } from '../entities/ResourceNode.ts';
-import { Building, isEarthwork, isField, isTrap, isHerd, isHeap } from '../entities/Building.ts';
+import { Building, BUILDINGS, isEarthwork, isField, isTrap, isHerd, isHeap } from '../entities/Building.ts';
 import { Crop } from '../entities/Field.ts';
 import { Tree } from '../entities/Tree.ts';
 import { ItemPile } from '../entities/ItemPile.ts';
@@ -151,6 +151,9 @@ export function fromWorldObjectRecord(input: unknown, peopleById?: ReadonlyMap<n
     // Older world-object graphs have no fixed-lamp fuel field; no earlier build
     // could place one, so the only valid migration is the empty tank.
     if (!Object.hasOwn(building, 'fuelRemaining')) building.fuelRemaining = 0;
+    if (!Object.hasOwn(building.def, 'places') && BUILDINGS[building.def.id]?.places !== undefined) {
+      building.def.places = BUILDINGS[building.def.id]!.places;
+    }
   }
   for (const corpse of state.corpses) {
     if (!(corpse instanceof Corpse) || !corpse.person || !Number.isSafeInteger(corpse.person.id)) invalid('invalid corpse person reference');

@@ -40,7 +40,7 @@ import {
 export function roofOverSleeper(person: Person, buildingsById: ReadonlyMap<number, Building>): Building | null {
   if (!person.alive || person.action !== 'sleep' || person.targetBuildingId === null) return null;
   const roof = buildingsById.get(person.targetBuildingId);
-  return roof && roof.complete && roof.def.shelter > 0 && isUnderRoof(roof, person.x, person.y) ? roof : null;
+  return roof && roof.complete && !roof.ruined && roof.def.places !== undefined && roof.def.shelter > 0 && isUnderRoof(roof, person.x, person.y) ? roof : null;
 }
 
 /** Walled houses need the room itself; open shelters use the building margin. */
@@ -68,7 +68,7 @@ export function roofOverPrivateRest(
   if (!person.alive || person.action !== 'rest') return null;
   const roof = buildingAt(person.x, person.y);
   if (!roof || !buildingsById.has(roof.id) || !roof.complete || roof.ruined ||
-      roof.def.shelter <= 0 || !isUnderRoof(roof, person.x, person.y)) return null;
+      roof.def.shelter <= 0 || roof.def.places === undefined || !isUnderRoof(roof, person.x, person.y)) return null;
   const intruder = occupantsOf(roof).some(other =>
     other.id !== person.id && other.id !== person.spouseId &&
     other.alive && other.action !== 'sleep');

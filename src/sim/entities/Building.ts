@@ -35,6 +35,8 @@ export interface BuildingDef {
   workTicks: number;
   /** 0-1 reduction in cold for anyone standing inside. */
   shelter: number;
+  /** Sleeping/sheltering places; absent on structures that are not sleeping refuges. */
+  places?: number;
   /** A one-tile wall ring around a room, with one traversable doorway. */
   interior?: { door: 'toward_camp' };
   /** Item capacity. 0 means it stores nothing. */
@@ -283,6 +285,7 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     materials: { sticks: 8, thatch: 4 },
     workTicks: 140,
     shelter: 0.4,
+    places: 3,
     storage: 0,
     requiresTech: null,
     description:
@@ -319,6 +322,7 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     materials: { wood: 8, sticks: 6, thatch: 10, mud: 14 },
     workTicks: 520,
     shelter: 0.85,
+    places: 4,
     interior: { door: 'toward_camp' },
     storage: 40,
     // Indoors and out of the sun, but it is a house rather than a store.
@@ -393,6 +397,7 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     materials: { sticks: 10, thatch: 12, mud: 10 },
     workTicks: 400,
     shelter: 0.88,
+    places: 4,
     interior: { door: 'toward_camp' },
     storage: 40,
     preserves: 1.2,
@@ -409,6 +414,7 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     materials: { flint: 20, wood: 6, mud: 10 },
     workTicks: 750,
     shelter: 0.92,
+    places: 6,
     interior: { door: 'toward_camp' },
     storage: 50,
     preserves: 1.3,
@@ -706,6 +712,7 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     materials: { wood: 34, sticks: 16, thatch: 30, mud: 24 },
     workTicks: 1800,
     shelter: 0.95,
+    places: 10,
     interior: { door: 'toward_camp' },
     storage: 160,
     requiresTech: 'carpentry',

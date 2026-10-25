@@ -28,6 +28,7 @@ import type { Person } from '../sim/entities/Person.ts';
 import { BODY_PARTS, partWord } from '../sim/entities/Body.ts';
 import { BUSHES, WILD_PLANTS, type ResourceKind, type ResourceNode } from '../sim/entities/ResourceNode.ts';
 import { BUILDINGS, isStructure, type Building, type BuildingDef } from '../sim/entities/Building.ts';
+import { admittedOccupantsOf } from '../sim/ai/Occupancy.ts';
 import type { Tree } from '../sim/entities/Tree.ts';
 import type { ItemPile } from '../sim/entities/ItemPile.ts';
 import type { Animal } from '../sim/entities/Animal.ts';
@@ -760,7 +761,7 @@ export class Hud {
 
     const key = selectionKey(selection) + ':' + this.tab;
     const stateKey = key + (selection.kind === 'building'
-      ? ':' + this.buildingStateKey(selection.building)
+      ? ':' + this.buildingStateKey(selection.building, sim)
       : '');
     if (this.builtFor !== key || this.panelStateKey !== stateKey) {
       this.builtFor = key;
@@ -777,9 +778,11 @@ export class Hud {
     }
   }
 
-  private buildingStateKey(building: Building): string {
+  private buildingStateKey(building: Building, sim: Simulation): string {
+    const used = building.def.places === undefined ? -1 :
+      admittedOccupantsOf(building, sim.peopleHash).length;
     return [building.complete, building.ruined, building.store.version,
-      building.delivered.version, Math.floor(building.completion * 20)].join(':');
+      building.delivered.version, Math.floor(building.completion * 20), used].join(':');
   }
 
   private renderPanel(observer: Person, selection: Selection, sim: Simulation): void {
@@ -2045,6 +2048,11 @@ export class Hud {
             ? t('Full, and rotting no further until somebody carries it out.')
             : t('Rotting down: about {n} a day.', { n: building.def.matures.perDay.toFixed(1) })) +
         ' ' + t('{n} ready.', { n: ripe }) + '</div>');
+    }
+    if (known.knowsContents && building.def.places !== undefined) {
+      rows.push('<div class="hud-sub">' + escapeHtml(t('Places: {used}/{max}', {
+        used: admittedOccupantsOf(building, sim.peopleHash).length, max: building.def.places,
+      })) + '</div>');
     }
     if (building.def.shelter > 0) {
       rows.push('<div class="hud-sub">' + t('Shelter {pct}% — people inside stay warm.', {
