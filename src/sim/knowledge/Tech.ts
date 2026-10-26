@@ -1711,7 +1711,7 @@ export const TECH: Record<Tech, TechDef> = {
     age: 'neolithic', firstKnown: 'about 6,000 BC',
     kind: 'device',
     requires: ['spinning', 'basketry'], difficulty: 0.55, skill: 'build',
-    prototype: { wood: 3, sticks: 2 }, maxRefinement: 3,
+    prototype: { sticks: 5 }, maxRefinement: 3,
     sparks: [
       { needs: [{ kind: 'knows', tech: 'spinning' }, { kind: 'knows', tech: 'basketry' }],
         weight: 1.0, story: 'ran a thread over and under a row of withies the way a basket already goes' },

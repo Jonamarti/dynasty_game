@@ -44,12 +44,14 @@ import {
   type BushSpecies, type ResourceKind,
 } from '../entities/ResourceNode.ts';
 import { canWork } from '../knowledge/Ore.ts';
+import { hasFellingAxe } from '../knowledge/Felling.ts';
 import { NeedsSystem } from '../systems/NeedsSystem.ts';
 import { MovementSystem } from '../systems/MovementSystem.ts';
 import { Pathfinder } from './Pathfinder.ts';
 import { ActionSystem } from '../systems/ActionSystem.ts';
 import { thinkIntervalOf, wakesNow } from '../ai/ThinkCadence.ts';
 import { Brain, type BrainContext } from '../ai/Brain.ts';
+import { hasRoomFor, syncShelterArrival } from '../ai/Occupancy.ts';
 import { carerOf, childRadius } from '../ai/Anchor.ts';
 import { drivePressures, DRIVES } from '../ai/Drives.ts';
 import { carriesEdibleFood, commitmentGoal, shouldBreakCommitment } from '../ai/Commitment.ts';
@@ -4093,7 +4095,9 @@ export class Simulation {
     this.roofTonight.clear();
     for (const person of this.people) {
       if (!person.alive || person.action !== 'sleep') continue;
-      const roof = roofOverSleeper(person, this.buildingsById);
+      const possibleRoof = roofOverSleeper(person, this.buildingsById);
+      const roof = possibleRoof && hasRoomFor(possibleRoof, person, this.peopleHash) ? possibleRoof : null;
+      if (possibleRoof && !roof) telemetry.count('roof_full');
       const sheltered = roof !== null;
       const household = person.householdId === null ? null : this.householdsById.get(person.householdId);
       const band = this.bands.find(candidate => candidate.id === person.bandId && !candidate.outcast);
@@ -4197,7 +4201,8 @@ export class Simulation {
         building => this.peopleHash.queryRadius(building.centerX, building.centerY,
           Math.max(building.def.width, building.def.height))
           .filter(other => isUnderRoof(building, other.x, other.y)));
-      if (roof) this.roofTonight.set(person.id, roof.id);
+      if (roof && hasRoomFor(roof, person, this.peopleHash)) this.roofTonight.set(person.id, roof.id);
+      else if (roof) telemetry.count('roof_full');
     }
     for (const under of byRoof.values()) {
       this.social.hearth(under, this.time.tick);
@@ -4436,6 +4441,10 @@ export class Simulation {
     }
     if (!canWalk(person, this.config.childhood)) {
       this.lastRefusal = t('babies cannot act on their own');
+      return false;
+    }
+    if (action === 'chop' && !hasFellingAxe(person)) {
+      this.lastRefusal = t('You need an axe to fell a tree');
       return false;
     }
     const equipmentSlot = manualEquipSlot(action);
@@ -6141,6 +6150,7 @@ export class Simulation {
     this.advanceTorchFuels(this.people);
     advanceFatLamps(this.buildings);
     this.rebuildHashes();
+    for (const person of this.people) if (person.alive) syncShelterArrival(person, this.buildingHash, this.time.tick);
     stepMark?.('advance+rebuildHashes');
 
     // Regrowth is coarse-grained: once every 20 steps at 20x the rate costs a
@@ -6192,6 +6202,7 @@ export class Simulation {
     const nurslingFactor = nurslingHungerFactor(this.config.childhood.feedsPerDay,
       this.config.time.ticksPerDay, this.config.needs.hungerRate);
     this.needsSystem.update(this.people, this.time, this.buildings, this.buildingHash, {
+      peopleHash: this.peopleHash,
       // M15 phase 20 (owner, 2026-09-30): milk makes a woman half as hungry
       // again for as long as she has it, and a baby in arms never tires.
       //

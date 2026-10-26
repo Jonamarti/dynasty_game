@@ -12,7 +12,7 @@ import { ITEMS } from '../entities/Item.ts';
 import type { SpatialHash } from '../core/SpatialHash.ts';
 import type { World } from '../core/World.ts';
 import { GARMENT_SLOTS } from '../entities/Equipment.ts';
-import { houseInteriorContains } from '../world/HouseInterior.ts';
+import { coversShelter, hasRoomFor } from '../ai/Occupancy.ts';
 import { bleeding, feverDrain, mendBody, poisonDrain, poisonHunger, poisonThirst } from '../entities/Body.ts';
 import { LETHAL_NEEDS } from '../entities/Person.ts';
 import { telemetry } from '../core/Telemetry.ts';
@@ -103,6 +103,7 @@ export function thirstDriftPerTick(cfg: NeedsConfig, action: string, temperature
  * `update` by hand keeps the plain rates.
  */
 export interface NeedsHooks {
+  peopleHash?: SpatialHash<Person>;
   /** A multiplier on the hunger rate: 1.5 for a woman with milk. */
   hungerFactor?: (person: Person) => number;
   /** A baby that cannot walk yet: never tired, lonely only when put down. */
@@ -122,17 +123,18 @@ export class NeedsSystem {
    * handful of structures, not thousands, and a scan of five is cheaper than a
    * hash lookup. Revisit if settlements ever grow into towns.
    */
-  private shelterAt(person: Person, buildings: Building[]): number {
+  private shelterAt(person: Person, buildings: Building[], peopleHash?: SpatialHash<Person>): number {
     let best = 0;
     for (const building of buildings) {
       // M11 phase 11b: a ruin keeps neither wind nor cold out. `ruined` is
       // false for anything `Building.durability` was never set on, so an
       // ordinary hut with no sabotage in its history is unaffected.
       if (!building.complete || building.ruined || building.def.shelter <= best) continue;
-      // A walled house shelters its room. Open designs such as windbreaks keep
-      // the older nearby-warmth footprint.
-      if (building.def.interior ? houseInteriorContains(building, person.x, person.y)
-        : building.contains(person.x, person.y, 1.5)) best = building.def.shelter;
+      // Warmth and admission agree: passing beside a covered lean-to is
+      // not sleeping beneath it, while a windbreak retains its wider margin.
+      if (coversShelter(building, person) &&
+        (!peopleHash || (building.def.places !== undefined &&
+          hasRoomFor(building, person, peopleHash)))) best = building.def.shelter;
     }
     return best;
   }
@@ -216,7 +218,7 @@ export class NeedsSystem {
       // knowledge and unlit fuel do not: a fixed hearth warms only nearby.
       const carried = warmthFrom(person);
       const coldBefore = person.needs.cold;
-      const buildingShelter = this.shelterAt(person, buildings);
+      const buildingShelter = this.shelterAt(person, buildings, hooks.peopleHash);
       const shelter = Math.max(carried, buildingShelter);
       let hearth = 0;
       if (buildingHash) {

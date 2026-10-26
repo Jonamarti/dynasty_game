@@ -290,9 +290,6 @@ const STORE_PRESSURE = 0.6;
  */
 const STALE_SITE_DAYS = 6;
 
-/** Completed structures a band will hold, per this many members, plus two. */
-const MEMBERS_PER_STRUCTURE = 4;
-
 /**
  * How many traps one band will set. M8.1, mechanism 3.
  *
@@ -1456,32 +1453,10 @@ export class BandSystem {
     const underway = live.filter(b => !b.complete && !isEarthwork(b.def)).length;
     if (underway >= MAX_SITES) return;
 
-    // A hard ceiling, so that no combination of the conditions below can
-    // produce a field of huts. Whatever else is true, a band of twelve does not
-    // need eleven structures.
-    //
-    // Traps do not count against it, and must not. The ceiling is about roofs
-    // and pits — things a band needs a certain number of and no more — whereas a
-    // snare line is a food supply, and counting five of them would quietly stop
-    // a band ever raising another hut. It is also how `bands-dont-overbuild`
-    // would have started failing for a band that was doing exactly the right
-    // thing.
-    const built = live.filter(b =>
-      b.complete && !isTrap(b.def) && !isStation(b.def) && !isField(b.def) &&
-      !isHeap(b.def) && !isHerd(b.def) && !isWell(b.def) && !isEarthwork(b.def)).length;
-    if (built >= Math.ceil(members.length / MEMBERS_PER_STRUCTURE) + 2) return;
-
-    // Roof measured as floor area, not as a count of roofs. A 3x3 hut and a 2x2
-    // windbreak are not the same amount of shelter, and counting them as one
-    // each is how a band with two windbreaks decided it had housed ten people.
-    // `!b.ruined`, M11 phase 11b: a sabotaged hut's footprint is still there,
-    // but `NeedsSystem.shelterAt` gives it no credit, and this count must not
-    // disagree — a band standing in a burned-out camp that still reads
-    // "enough roof" on the strength of ash would never plan a repair or a
-    // replacement, which is the one thing a raid is supposed to cost it.
-    const roofArea = live
-      .filter(b => b.def.shelter > 0.3 && !b.ruined)
-      .reduce((sum, b) => sum + b.def.width * b.def.height, 0);
+    // Small shelters need several copies; upkeep in 14.8 is the natural limit.
+    const shelterDemand = members.filter(p => p.alive && p.carriedBy === null).length;
+    const roofPlaces = live.filter(b => b.def.places !== undefined && !b.ruined)
+      .reduce((sum, b) => sum + (b.def.places ?? 0), 0);
 
     const stores = live.filter(b => b.complete && b.def.storage >= 100);
     const plannedStores = live.filter(b => !b.complete && b.def.storage >= 100).length;
@@ -1508,16 +1483,21 @@ export class BandSystem {
       members.some(m => techPower(m, def.requiresTech as Tech) > 0));
 
     let wanted: string | null = null;
-    if (roofArea < members.length) {
+    if (roofPlaces < shelterDemand) {
+      telemetry.count('shelter_short', shelterDemand - roofPlaces);
       // A mud hut is warmer and holds goods, but it wants felled timber and the
       // better part of a season. A band that is *badly* short of roof — which
       // is what a population growing faster than it builds looks like — throws
       // up the cheapest roof there is instead: a quarter of the work, sticks
       // and thatch only, and the difference between a hard winter and twenty
       // funerals.
-      const shelters = buildable.filter(def => def.shelter > 0.3);
-      if (roofArea * 2 < members.length) {
-        wanted = this.cheapest(shelters)?.id ?? null;
+      const shelters = buildable.filter(def => def.shelter > 0.3 && def.places !== undefined);
+      if (roofPlaces * 2 < shelterDemand) {
+        // Generic early-roof contract: the 140-tick open windbreak is
+        // cheaper than a lean-to, but is not the first *covered* shelter.
+        // Prefer any real roof by capability, not by a hardcoded design id.
+        const covered = shelters.filter(def => def.roofed || def.interior);
+        wanted = this.cheapest(covered.length ? covered : shelters)?.id ?? null;
       } else {
         // The best roof they know how to raise — but nothing grander than a mud
         // hut until they have finished one, because a band whose first ever

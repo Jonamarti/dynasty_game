@@ -1,12 +1,12 @@
 import { mkdirSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
 
-test('m16-owner-france-seed keeps untouched building ground dry after the day-seven excavation', async ({ page }) => {
+test('m16-owner-france-seed floods an excavated bank without flooding untouched building ground', async ({ page }) => {
   await page.setViewportSize({ width: 1600, height: 1000 });
   await page.goto('/?seed=728083595&skipIntro=1&defaults=1&lang=en');
   await expect(page.locator('.hud-clock')).not.toBeEmpty();
   await page.locator('.hud-button', { hasText: 'Pause' }).click();
-  const dir = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m16-2026-10-22-exact-france/after';
+  const dir = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m16-2026-10-26-ci-water-depth';
   mkdirSync(dir, { recursive: true });
   await page.evaluate(async () => {
     const paths = ['/src/sim/world/WorldAtlas.ts', '/src/sim/world/WorldGeography.ts',
@@ -38,16 +38,38 @@ test('m16-owner-france-seed keeps untouched building ground dry after the day-se
   const result = await page.evaluate(() => {
     const { sim, renderer, initial, floods } = (window as any).__n39;
     while (sim.time.tick < 840) sim.step();
+    // The old fixture waited for autonomous people to happen to excavate this
+    // bank. A policy change could remove that action entirely, leaving the
+    // flood assertion unexercised. Perform the same physical earth edit the
+    // dig action uses on the first natural bank that can reach its water level.
+    const w = sim.world as any;
+    const neighbors: [number, number][] = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+    const bank = w.shoreTiles.find(({ x, y }: { x: number; y: number }) => {
+      if (w.isWater(x, y) || w.biomeAt(x, y) === 'rock') return false;
+      const i = w.index(x, y);
+      if (w.offset[i] < 0) return false;
+      return neighbors.some(([dx, dy]) => w.isWater(x + dx, y + dy));
+    });
+    if (!bank) throw new Error('The France fixture has no dry bank beside water');
+    const sourceSurface = neighbors
+      .filter(([dx, dy]) => w.isWater(bank.x + dx, bank.y + dy))
+      .map(([dx, dy]) => {
+        const sourceIndex = w.index(bank.x + dx, bank.y + dy);
+        return w.waterSurface?.[sourceIndex] ?? w.config.waterLevel;
+      }).sort((a, b) => b - a)[0];
+    const bankIndex = w.index(bank.x, bank.y);
+    const depth = Math.max(1, w.elevation[bankIndex] + w.offset[bankIndex] - sourceSurface + 0.01);
+    w.dig(bank.x, bank.y, depth);
     renderer.render(null);
     let untouchedFlooded = 0;
     for (let i = 0; i < initial.length; i++) {
       if (initial[i] !== 0 && initial[i] !== 6 && (sim.world.biome[i] === 0 || sim.world.biome[i] === 6) &&
           sim.world.offset[i] >= 0) untouchedFlooded++;
     }
-    return { untouchedFlooded, floods };
+    return { untouchedFlooded, floods, bank };
   });
   await page.locator('#n39-scene').screenshot({ path: `${dir}/02-after-day-seven.png` });
-  expect(result.floods.length, 'the real excavation must actually reach water').toBeGreaterThan(0);
+  expect(result.floods.length, 'excavating the bank must reach its water source').toBeGreaterThan(0);
   expect(result.untouchedFlooded).toBe(0);
 });
 

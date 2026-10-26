@@ -1,5 +1,7 @@
 /** Spanish for data. Keys are the English templates; see `i18n.ts`. */
 export const ES_DATA: Record<string, string> = {
+  'Daubed walls packed around a frame of gathered branches, under thatch. Warm enough to winter in without felling a tree.': 'Paredes de barro sobre un armazón de ramas recogidas, cubiertas de paja. Abrigada para pasar el invierno sin talar árboles.',
+  'An open frame of gathered branches lashed together for drying meat and fish.': 'Un armazón abierto de ramas recogidas y atadas para secar carne y pescado.',
   'Red ochre': 'Ocre rojo',
   'Red ochre deposit': 'Yacimiento de ocre rojo',
   'node|red_ochre': 'ocre rojo',
@@ -104,6 +106,9 @@ export const ES_DATA: Record<string, string> = {
   "Stockpile": "Acopio",
   "Bare ground set aside for goods. Costs nothing and keeps nothing dry.": "Suelo desnudo reservado para bienes. No cuesta nada y no mantiene nada seco.",
   "Windbreak": "Cortavientos",
+  "Leaf-and-branch lean-to": "Choza de ramas y hojas",
+  "Sticks leant on a ridge and thatched with leaves and grass. Room for two, and warmer than a windbreak.":
+    "Palos apoyados en una cumbrera y cubiertos con hojas y hierba. Espacio para dos personas y más abrigo que un cortavientos.",
   "Sticks and thatch braced against the wind. An hour of work, no tree felled, and a cold night survived.": "Palos y paja apuntalados contra el viento. Una hora de trabajo, ningún árbol talado y una noche fría superada.",
   "Storage pit": "Silo",
   "A lined hollow. Holds a band’s surplus through a season.": "Un hoyo revestido. Guarda el excedente de una banda durante una estación.",

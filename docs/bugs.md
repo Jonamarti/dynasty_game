@@ -498,7 +498,7 @@ la tasa 0,005/día es provisional y no está calibrada por cohortes. No se conoc
 un fallo de propiedad que impida el remiendo, pero su acción, materiales, refusal
 localizado y trabajo persistente siguen pendientes. Véase el
 [contrato](m15_garment_condition_design.md).
- 
+
 
 Las transferencias de prendas ahora revierten ambas mochilas si falla una
 inserción intermedia. La prueba nueva de regalos NPC requiere typecheck y Vitest;
@@ -4863,7 +4863,7 @@ screen cases pass. The named 2f/2g/2h/2k milestone images remain committed; the
 2i originals were restored after the tour regenerated them. This is a screenshot
 tour limitation, not a blocker for the new named captures.
 
-**M15 fase 3, resultados (2026-09-27):** hearths pasa sus tres checks; en la corrida final, 	he-hearth-warms midio 4969/12873 muestras frias aliviadas, 
+**M15 fase 3, resultados (2026-09-27):** hearths pasa sus tres checks; en la corrida final, 	he-hearth-warms midio 4969/12873 muestras frias aliviadas,
 oast-wins 256/292 y cooking-spreads 2 a 17 adultos. Cohortes de 20: hearths 99.7%, craft 99.9%, century 97.7% frente a referencia 95.5% (+2.2 puntos; gate <=3). No hubo mundos colapsados en century. Siguen los cinco fallos de rebaños y el timeout de and.test.ts heredados de fase 2; tambien falla perf-budget en los escenarios base.
 
 **M15 route oscillation, 2026-09-27:** take, store, and go_home can travel with no action timer, so a later think tick can replace the destination before arrival. Drink already refreshes a short timer. Brain now retains a valid active route and lets known water override it once thirst reaches the configured work limit. Blocked or invalid routes still end through ActionSystem. Regression coverage is in autonomy.test.ts.
@@ -6111,3 +6111,7 @@ are flagged for investigation instead of being attributed here (full context in
   worlds/bands simply never stood on high ground while sighting.
 
 Both are recorded, not fixed; the stage-3 block may consume them.
+
+## 2026-10-26 — CI de M16 tras 14.5
+
+La matriz se re-fijó usando las 132 transiciones anotadas por la ejecución CI 40283921764 de GitHub (Node 22), comparando 50b5c90e con 1fa2e00e; las 48 filas activas conservan escenario y checks. Los fallos restantes son resultados de salud heredados, no se afirma que la matriz quede verde. Detalle: docs/changelog.md.

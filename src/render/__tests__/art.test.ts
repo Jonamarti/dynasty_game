@@ -185,7 +185,7 @@ describe('art coverage', () => {
 
   it('gives every roofed building its floor plan', () => {
     // A building whose plan is missing would stay a solid block while somebody stands inside it.
-    for (const id of ['mud_hut', 'wattle_hut', 'stone_house', 'longhouse', 'granary', 'library']) {
+    for (const id of ['mud_hut', 'wattle_hut', 'stone_house', 'longhouse', 'granary', 'library', 'lean_to']) {
       expect(buildings.keys[`b/${id}/plan`], id).toBeDefined();
     }
   });

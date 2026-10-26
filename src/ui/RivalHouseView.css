@@ -11,5 +11,7 @@
 .rivalhouses-list h2 { margin-bottom: 8px; font-size: 1.05rem; }
 .rivalhouses-list p + p { margin-top: 7px; color: #c9bba0; }
 .rivalhouses-empty { padding: 12px; color: #c9bba0; }
-.rivalhouses-trigger { position: fixed; right: 18px; bottom: 66px; z-index: 45; padding: 8px 12px; border: 1px solid #897d65; border-radius: 6px; background: #24221c; color: #e8e2d2; cursor: pointer; }
+/* A resting HUD button: below every popup of the z-index ladder in style.css (radial 20, picker 21, ...).
+   At 45 it sat on top of the quantity picker and the full-screen graphs and swallowed their clicks. */
+.rivalhouses-trigger { position: fixed; right: 18px; bottom: 66px; z-index: 19; padding: 8px 12px; border: 1px solid #897d65; border-radius: 6px; background: #24221c; color: #e8e2d2; cursor: pointer; }
 .rivalhouses-trigger[hidden] { display: none; }

@@ -1,5 +1,8 @@
 /** Spanish for ui. Keys are the English templates; see `i18n.ts`. */
 export const ES_UI: Record<string, string> = {
+  'Places: {used}/{max}': 'Plazas: {used}/{max}',
+  'You need an axe to fell a tree': 'Necesitas un hacha para talar un árbol',
+  'the shelter had no free places': 'el refugio no tenía plazas libres',
   'World map': 'Mapa del mundo',
   'A generated world': 'Un mundo generado',
   'Click a place on the generated world, or take a random island': 'Haz clic en un lugar del mundo generado, o toma una isla aleatoria',

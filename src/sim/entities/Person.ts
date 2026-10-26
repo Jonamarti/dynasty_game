@@ -491,6 +491,9 @@ export class Person {
   targetSubjectId: number | null = null;
   /** Which structure the current action is aimed at, for building and storage. */
   targetBuildingId: number | null = null;
+  /** Arrival at the current refuge, retained across checkpoint save/load. */
+  shelterArrivalTick: number | null = null;
+  shelterArrivalBuildingId: number | null = null;
   /**
    * Who has been served at the feast this person is holding — M15 phase 38a.
    * Null whenever they are not holding one. Kept on the host rather than on

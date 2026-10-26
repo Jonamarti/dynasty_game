@@ -40,12 +40,14 @@ import {
 export function roofOverSleeper(person: Person, buildingsById: ReadonlyMap<number, Building>): Building | null {
   if (!person.alive || person.action !== 'sleep' || person.targetBuildingId === null) return null;
   const roof = buildingsById.get(person.targetBuildingId);
-  return roof && roof.complete && roof.def.shelter > 0 && isUnderRoof(roof, person.x, person.y) ? roof : null;
+  return roof && roof.complete && !roof.ruined && roof.def.places !== undefined && roof.def.shelter > 0 && isUnderRoof(roof, person.x, person.y) ? roof : null;
 }
 
-/** Walled houses need the room itself; open shelters use the building margin. */
+/** Rooms and open roofed lean-tos use their true covered floor. Legacy windbreak
+ * warmth and sleep keep their former one-tile open margin. */
 export function isUnderRoof(roof: Building, x: number, y: number): boolean {
-  return roof.def.interior ? houseInteriorContains(roof, x, y) : roof.contains(x, y, 1);
+  if (roof.def.interior) return houseInteriorContains(roof, x, y);
+  return roof.contains(x, y, roof.def.roofed ? 0 : 1);
 }
 
 /**
@@ -68,7 +70,7 @@ export function roofOverPrivateRest(
   if (!person.alive || person.action !== 'rest') return null;
   const roof = buildingAt(person.x, person.y);
   if (!roof || !buildingsById.has(roof.id) || !roof.complete || roof.ruined ||
-      roof.def.shelter <= 0 || !isUnderRoof(roof, person.x, person.y)) return null;
+      roof.def.shelter <= 0 || roof.def.places === undefined || !isUnderRoof(roof, person.x, person.y)) return null;
   const intruder = occupantsOf(roof).some(other =>
     other.id !== person.id && other.id !== person.spouseId &&
     other.alive && other.action !== 'sleep');

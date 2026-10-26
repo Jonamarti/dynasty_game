@@ -35,6 +35,10 @@ export interface BuildingDef {
   workTicks: number;
   /** 0-1 reduction in cold for anyone standing inside. */
   shelter: number;
+  /** Sleeping/sheltering places; absent on structures that are not sleeping refuges. */
+  places?: number;
+  /** A real roof with no enclosing walls; the covered footprint can hold sleepers. */
+  roofed?: boolean;
   /** A one-tile wall ring around a room, with one traversable doorway. */
   interior?: { door: 'toward_camp' };
   /** Item capacity. 0 means it stores nothing. */
@@ -283,6 +287,7 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     materials: { sticks: 8, thatch: 4 },
     workTicks: 140,
     shelter: 0.4,
+    places: 3,
     storage: 0,
     requiresTech: null,
     description:
@@ -316,17 +321,18 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     label: 'Mud hut',
     icon: '\u{1F6D6}',
     width: 4, height: 4,
-    materials: { wood: 8, sticks: 6, thatch: 10, mud: 14 },
+    materials: { sticks: 14, thatch: 10, mud: 14 },
     workTicks: 520,
     shelter: 0.85,
+    places: 4,
     interior: { door: 'toward_camp' },
     storage: 40,
     // Indoors and out of the sun, but it is a house rather than a store.
     preserves: 1.2,
     requiresTech: null,
     description:
-      'Daubed walls on a felled-timber frame, under thatch. Warm enough to ' +
-      'winter in, and the first thing worth cutting a tree for.',
+      'Daubed walls packed around a frame of gathered branches, under thatch. ' +
+      'Warm enough to winter in without felling a tree.',
   },
 
   // M15 phase 16d. Furniture is a walkable 1×1 Building so it can share the
@@ -393,6 +399,7 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     materials: { sticks: 10, thatch: 12, mud: 10 },
     workTicks: 400,
     shelter: 0.88,
+    places: 4,
     interior: { door: 'toward_camp' },
     storage: 40,
     preserves: 1.2,
@@ -409,6 +416,7 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     materials: { flint: 20, wood: 6, mud: 10 },
     workTicks: 750,
     shelter: 0.92,
+    places: 6,
     interior: { door: 'toward_camp' },
     storage: 50,
     preserves: 1.3,
@@ -605,7 +613,7 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     label: 'Loom',
     icon: '\u{1F9F6}',
     width: 3, height: 3,
-    materials: { wood: 6, sticks: 6 },
+    materials: { sticks: 12 },
     workTicks: 220,
     shelter: 0,
     storage: 0,
@@ -673,7 +681,7 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     label: 'Granary',
     icon: '\u{1F3FA}',
     width: 3, height: 3,
-    materials: { wood: 14, sticks: 10, thatch: 14, mud: 20, pottery: 6 },
+    materials: { sticks: 24, thatch: 14, mud: 20, pottery: 6 },
     workTicks: 900,
     shelter: 0.2,
     storage: 400,
@@ -706,6 +714,7 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     materials: { wood: 34, sticks: 16, thatch: 30, mud: 24 },
     workTicks: 1800,
     shelter: 0.95,
+    places: 10,
     interior: { door: 'toward_camp' },
     storage: 160,
     requiresTech: 'carpentry',
@@ -784,15 +793,24 @@ export const BUILDINGS: Record<string, BuildingDef> = {
   },
   drying_rack: {
     id: 'drying_rack', label: 'Drying rack', icon: '🥩', width: 2, height: 1,
-    materials: { wood: 2, rope: 2 }, workTicks: 120, shelter: 0, storage: 0,
+    materials: { sticks: 6, rope: 2 }, workTicks: 120, shelter: 0, storage: 0,
     station: true, requiresTech: 'preserving', fitsIndoors: true,
-    description: 'An open wooden frame for drying strips of meat and fish.',
+    description: 'An open frame of gathered branches lashed together for drying meat and fish.',
   },
   salt_pan: {
     id: 'salt_pan', label: 'Salt pan', icon: '🧂', width: 2, height: 2,
     materials: { flint: 2, pottery: 2 }, workTicks: 140, shelter: 0, storage: 0,
     station: true, requiresTech: 'saltmaking', placement: 'salt_shore',
     description: 'Vessels at the saltwater edge for boiling brine beside a hearth.',
+  },
+  // M16 14.5: gathered branches and leaves, the first real roof away from water.
+  lean_to: {
+    id: 'lean_to', label: 'Leaf-and-branch lean-to', icon: '\u{1F3D5}',
+    width: 2, height: 2,
+    materials: { sticks: 10, thatch: 8 },
+    workTicks: 200, shelter: 0.6, places: 2, roofed: true,
+    storage: 0, requiresTech: null,
+    description: 'Sticks leant on a ridge and thatched with leaves and grass. Room for two, and warmer than a windbreak.',
   },
 };
 

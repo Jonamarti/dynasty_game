@@ -18134,3 +18134,7 @@ completa 355 archivos, 2.454 aprobadas y una omitida. La matriz `world`
 conservó su lista heredada de fallos sin regresiones nuevas. Capturas:
 `artifacts/screenshots/m16-2026-10-21-2.21/`.
 
+
+## 2026-10-26 — CI: integrar reparación con master
+
+Se integran las correcciones de CI de M16 14.5: premisas de pruebas actualizadas, atlas generado y traducciones completas, E2E de profundidad de agua determinista y línea base de matriz ajustada a las anotaciones verificadas de GitHub en Node 22. No se subieron cambios a GitHub. Verificación local: check:fast 46/46, typecheck/build, E2E de agua 2/2 y capturas 19/19; suite unitaria: 2.482 aprobadas y 4 fallos de herramientas auxiliares por instalación local, cuyas suites focalizadas pasaron 8/8 tras restaurar dependencias.

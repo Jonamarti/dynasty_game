@@ -1,5 +1,84 @@
 # M16 diary
 
+## M16 14.5 — A roof of branches and leaves (2026-10-25; draft)
+
+Added the 2x2, two-place `lean_to`: 10 gathered sticks, eight thatch
+(the existing grass item stands for large leaves and straw), 200 work ticks,
+0.6 shelter, no mud, no felled wood, no technology or shore requirement.
+Its `roofed` flag gives real, open roofing without enclosing a room.
+Sleep, physical capacity and cold warmth agree on the footprint; the
+windbreak retains its historical margin. Orders walk under the eaves
+instead of counting sleepers merely standing beside it.
+
+The art generator now draws completed and planned versions; the renderer
+shows the plan when the roof is lifted. English labels, Spanish translations
+and 14.5 unit coverage were added. No new RNG streams or saved state.
+
+**R0 adaptation:** the existing generic cheap branch always chose a
+140-tick windbreak, and the better branch chose a warmer mud hut; neither
+would propose the 200-tick lean-to. Cheap shelter now prefers actual covered
+roofs via `roofed || interior`, not a design-specific name. The source
+disagreement is also logged in `doubts.md`.
+
+**Gate pending:** generate/commit `public/art/buildings*` with
+`npm run art:build -- buildings`, inspect `npm run art:sheet`, typecheck,
+new capability tests, full tests, `band`/cold/conception counters, screenshots,
+before/after and baseline re-pin. Parent PRs 14.3 and 14.4 remain red and
+unmerged; never claim this draft is finished.
+
+
+## M16 14.4 — No wood before hafting (2026-10-25, implementation draft)
+
+The card's inventory was checked against the current code. `doChop`
+allowed barehanded progress; there was no tool gate. The new single
+`knowledge/Felling.ts` predicate requires an actual axe *and* its usable
+technology, checks direct orders before they start and rechecks execution
+if equipment is lost. NPCs never choose an impossible chop but retain the
+tree-work motive to pick up a real axe. `no_felling_axe` gives a visible
+English/Spanish refusal. Gathering sticks remains axe-free.
+
+Pre-hafting material changes (stated before verification, not tuned to tests):
+- `mud_hut` wood 8 + sticks 6 -> sticks 14: bundled branches packed
+  with mud can make an early shelter, unlike a felled timber frame.
+  This advances only its material change from 14.6; warmth, mud, places
+  and work ticks remain for 14.6.
+- `loom` wood 6 + sticks 6 -> sticks 12: poles or withies hold thread.
+- `granary` wood 14 + sticks 10 -> sticks 24: woven branches and
+  clay-fired vessels allow an early food store without squared beams.
+- `drying_rack` wood 2 -> sticks 6: lash found branches together.
+- `weaving` discovery prototype wood 3 + sticks 2 -> sticks 5:
+  technology reachable before hafting must itself be discoverable.
+
+Timber still belongs to `masonry`/carpentry, wells, logboats and later
+woodworking. The table-based regression inspects building, recipe and
+technology prototype dependencies transitively. `chop-knowledge` now
+exercises a stone house, not a pre-hafting mud hut. Legacy placed
+structures retain their serialized original design for compatibility;
+newly placed structures read the updated catalogue.
+
+This phase changes the world. **NOT COMPLETE:** run typecheck, new tests,
+unit suite, `band`, `craft`, count `chop`, `gather sticks` and shelter
+construction before/after, inspect Spanish refusal, re-pin baseline only
+after documenting expected deviations, and confirm the PR #3 dependency.
+Do not merge this draft or describe the gate as passed.
+
+
+## M16 14.3 — Refuge capacity (2026-10-25; DRAFT, NOT GATED)
+
+Prototype branch `codex/m16-14-3-occupancy`: shelters now specify sleeping places
+(windbreak 3, mud hut 4, wattle hut 4, stone house 6, longhouse 10).
+The physical spatial hash supplies arrival-ordered occupants (arrival tick, then
+person id); carried infants use a carrier's place. Admission is shared by
+cold shelter, sleep, AI targeting, the midnight roof/conception ledger and the
+own-band inspector. Band planning now measures places, not building floor
+area; its historical fixed building cap was removed, with `shelter_short` and
+`roof_full` counters. New arrival state and old-save migrations are included.
+
+This is an unverified draft. CI, typecheck, focused and full tests, seeded
+scenarios, screenshots, and the changed-world baseline re-pin are outstanding.
+Do not merge or mark 14.3 complete until the review and measurement gate pass.
+
+
 ## M16 2.G — La gira de capturas recupera su encuadre (2026-10-24)
 
 Symptom: `npm.cmd run shots` died at frame 10 — right-click on the tour tree

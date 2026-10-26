@@ -33,6 +33,8 @@ import { earthworkWorkRefusal } from '../core/Earth.ts';
 import { SOW_SEED, SPREAD_LOAD } from '../entities/Field.ts';
 import { ORCHARD_SPACING, findPlantingSpot, plantable } from '../entities/Orchard.ts';
 import type { Building } from '../entities/Building.ts';
+import { hasRoomFor } from './Occupancy.ts';
+import { hasFellingAxe } from '../knowledge/Felling.ts';
 import { averageRenown, type Household } from '../entities/Household.ts';
 import { statusPressure } from './Status.ts';
 import { ATTEND, FEAST, FEAST_MIN_GUESTS, FEAST_RADIUS, feastVenue, mayHostFeast } from '../social/Feast.ts';
@@ -1093,6 +1095,9 @@ export class Brain {
 
     let fruitTree: Tree | null = null;
     let fellTree: Tree | null = null;
+    // Keep the material-work opportunity even when a tool is missing: it
+    // motivates picking up an available axe without offering an impossible chop.
+    let chopOpportunity = 0;
     let pickupPile: ItemPile | null = null;
     let pickupItem: string | null = null;
     // The score the current `pickupPile` earned, so a second reason to pick
@@ -3156,8 +3161,11 @@ export class Brain {
                 ctx.world.sameRegion(person.x, person.y, t.x, t.y) && withinReach(anchor, reach, t.x, t.y)
             );
             if (candidate) {
-              add('chop', (comfortNow - 0.45) * 1.5 * (0.4 + person.skillFactor('build'))
-                * this.proximityBonus(person, candidate, ctx.sightRadius));
+              chopOpportunity = (comfortNow - 0.45) * 1.5 * (0.4 + person.skillFactor('build'))
+                * this.proximityBonus(person, candidate, ctx.sightRadius);
+              // Before acquiring a usable hafted axe, do not walk to a tree
+              // and repeatedly abort. Retain the opportunity for axe pickup.
+              if (hasFellingAxe(person)) add('chop', chopOpportunity);
               fellTree = candidate;
             }
           } else {
@@ -3616,10 +3624,9 @@ export class Brain {
     // which rechecks ownership rules and carry capacity at execution time.
     if (!person.isPlayer && ctx.pileHash && ctx.pilesById?.size && ctx.carry &&
         person.carrying < person.carryCapacity && (fellTree || quarry)) {
-      const chopScore = fellTree ? scores.find(row => row.id === 'chop')?.score ?? 0 : 0;
+      const chopScore = fellTree ? chopOpportunity : 0;
       const huntScore = quarry ? scores.find(row => row.id === 'hunt')?.score ?? 0 : 0;
-      const needsAxe = chopScore > 0 && !AXE_TOOLS.some(tool =>
-        person.inventory.has(tool.item) && techPower(person, tool.tech) > 0);
+      const needsAxe = chopScore > 0 && !hasFellingAxe(person);
       const handsForWeapon = person.armsTaken === 0 ? 2 : 1;
       const needsWeapon = huntScore > 0 &&
         weaponItemOf(person, true, false, handsForWeapon) === null;
@@ -3690,7 +3697,7 @@ export class Brain {
       }
       restShelter = this.pickBest(ctx.buildingHash.queryRadius(person.x, person.y, ctx.sightRadius + 4)
         .filter(b => b.complete && !b.ruined && b.def.shelter > 0.2 &&
-          person.distanceTo({ x: b.centerX, y: b.centerY }) <= ctx.sightRadius &&
+          hasRoomFor(b, person, ctx.peopleHash) && person.distanceTo({ x: b.centerX, y: b.centerY }) <= ctx.sightRadius &&
           ctx.world.sameRegion(person.x, person.y, b.centerX, b.centerY) && this.canUse(person, b, ctx)),
         b => {
           const pieces = ctx.buildingHash.queryRadius(b.centerX, b.centerY,
@@ -3736,7 +3743,7 @@ export class Brain {
         // own promise — warmer the moment they arrive — would simply be false,
         // the same wasted-trip failure a ruined well's exclusion above avoids.
         ctx.buildings.filter(b =>
-          b.complete && !b.ruined && b.def.shelter > 0.2 && this.canUse(person, b, ctx)),
+          b.complete && !b.ruined && b.def.shelter > 0.2 && hasRoomFor(b, person, ctx.peopleHash) && this.canUse(person, b, ctx)),
         b => b.def.shelter * 40 - person.distanceTo({ x: b.centerX, y: b.centerY })
       );
       if (shelter) {
