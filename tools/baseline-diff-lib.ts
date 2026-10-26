@@ -81,5 +81,49 @@ export function compareScenarioMatrices(before: readonly ScenarioMatrixRecord[],
 }
 
 export function isBaselineRegression(transitions: readonly MatrixTransition[]): boolean {
-  return transitions.some(({ from, to }) => from === 'passed' && (to === 'failed' || to === 'na'));
+  return transitions.some(({ from, to }) => (to === 'failed' && from !== 'failed') || (from === 'passed' && to === 'na'));
+}
+
+
+/**
+ * A green diff is meaningless if the run silently skipped scenarios or checks.
+ * The pinned baseline supplies the expected inventory; never infer it from the
+ * result being validated. Each CI shard uses the same round-robin partition as
+ * tools/scenarios.ts (--shard part/total, applied after --slow selection).
+ *
+ * Updating the inventory is a deliberate baseline review, not an automatic
+ * side effect of adding a check or a scenario.
+ */
+export function validateMatrixCoverage(
+  baseline: readonly ScenarioMatrixRecord[],
+  actual: readonly ScenarioMatrixRecord[],
+  shard?: { part: number; total: number },
+): string[] {
+  const problems: string[] = [];
+  if (baseline.length === 0) return ['Pinned baseline is empty'];
+  const expected = shard
+    ? baseline.filter((_, index) => index % shard.total === shard.part - 1)
+    : baseline;
+  if (expected.length === 0) return ['Requested shard has no expected scenarios'];
+  const expectedByName = new Map(expected.map(row => [row.name, row]));
+  const actualByName = new Map(actual.map(row => [row.name, row]));
+  for (const row of expected) {
+    const found = actualByName.get(row.name);
+    if (!found) {
+      problems.push(`Missing scenario: ${row.name}`);
+      continue;
+    }
+    const expectedChecks = checkStates(row);
+    const actualChecks = checkStates(found);
+    for (const id of expectedChecks.keys()) {
+      if (!actualChecks.has(id)) problems.push(`Missing check: ${row.name}/${id}`);
+    }
+    for (const id of actualChecks.keys()) {
+      if (!expectedChecks.has(id)) problems.push(`Unexpected check (requires baseline review): ${row.name}/${id}`);
+    }
+  }
+  for (const row of actual) {
+    if (!expectedByName.has(row.name)) problems.push(`Unexpected scenario (requires baseline review): ${row.name}`);
+  }
+  return problems;
 }
