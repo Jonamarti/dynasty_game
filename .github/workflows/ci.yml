@@ -102,7 +102,7 @@ jobs:
           # 1 = some inherited reds; anything above is a crash or a usage error.
           if [ "$code" -gt 1 ]; then exit "$code"; fi
       - name: Compare with the baseline
-        run: npm run baseline:diff -- fixtures/matrix-baseline.json matrix-shard.json
+        run: npm run baseline:diff -- fixtures/matrix-baseline.json matrix-shard.json --shard ${{ matrix.shard }}/4
 
   e2e:
     name: E2E ${{ matrix.shard }}/4
