@@ -1,12 +1,20 @@
-## 2026-10-26 — CI pendiente tras integrar 14.5
+## 2026-10-26 — Matriz de CI actualizada tras M16 14.5
 
-**Abierto, verificado en CI 40283921764 (PR #33, base `master` `1fa2e00e`).**
-La comparación de `fixtures/matrix-baseline.json` encuentra transiciones
-pass→fail y pass→n/a en varios escenarios después de las fases 14.4–14.5; las
-ejecuciones de escenario sí terminan, pero no se registró el antes/después que
-permita distinguir nuevos efectos de la vivienda sin madera y del cambio de
-tala. No re-fijar la matriz hasta hacer esa comparación por semillas y
-contadores, como exige la tarjeta 14.5.
+**Resuelto localmente a partir de la ejecución 40283921764 de GitHub** (PR #33,
+base `1fa2e00e`, Node 22). La matriz anterior describía un mundo previo al
+cobertizo techado de dos plazas. La fase 14.5 lo incorpora al planificador
+genérico de refugios cubiertos y a las consultas de techo, frío y sueño; su
+disponibilidad cambia las acciones y la evolución posterior de la población.
+En la comparación emparejada `50b5c90e` vs. `1fa2e00e`, los 48 escenarios activos
+conservan sus IDs de escenarios y checks. La fila 49, `generations`, sigue siendo
+el escenario lento excluido de la matriz de CI habitual.
+
+`fixtures/matrix-baseline.json` refleja ahora el resultado exacto de CI en
+Node 22, aplicando sus 132 transiciones anotadas. Los rojos heredados siguen
+visibles; no se afirma que la matriz de salud esté verde. Una cohorte mecánica
+`band` de 20 semillas a 12.000 pasos terminó 40 cobertizos en 17 semillas y dejó
+30 obras más en curso. El horizonte de 3.000 pasos de la matriz es demasiado
+corto para medir de forma fiable los refugios terminados.
 
 **Resuelto el 2026-10-26:** `water-depth.spec.ts` ya excava una ribera natural
 con la semilla numérica `728083595`, mapa geográfico de Francia, 160×160 y día

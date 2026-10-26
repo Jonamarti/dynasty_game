@@ -1,4 +1,4 @@
-## 2026-10-26 — CI: cerrar unitarios y arte pendientes de 14.5
+## 2026-10-26 — CI: cerrar unitarios, arte y matriz de 14.5
 
 **Problema:** tras fusionar 14.5, el CI de `master` y de PR #33 fallaba en la
 suite unitaria. El atlas de edificios aún no contenía la choza de ramas y las
@@ -26,8 +26,13 @@ Con los paquetes copiados desde la instalación existente, las ocho pruebas de
 esas tres suites pasan. `check:fast`: 46/46, typecheck y build pasan; `water-depth`
 2/2 y recorrido de capturas 19/19. Contacto del atlas:
 `artifacts/art/contact-buildings.png`. Capturas de juego:
-`artifacts/screenshots/m16-2026-10-26-ci/`. La matriz de escenarios aún requiere
-comparar la fase 14.5 antes de re-fijar; sigue documentada en `docs/bugs.md`.
+`artifacts/screenshots/m16-2026-10-26-ci/`. Para la matriz, se compararon los
+48 escenarios activos antes (`50b5c90e`) y después (`1fa2e00e`) de 14.5; no
+cambiaron los IDs de escenarios ni checks. El run de GitHub 40283921764 generó
+132 transiciones de estado sobre la referencia anterior; `fixtures/matrix-baseline.json`
+se actualizó exactamente a ese resultado Node 22. La cohorte `band`, 20 semillas
+a 12.000 pasos, terminó 40 lean-tos en 17 semillas y dejó 30 sitios en curso.
+La matriz mantiene sus fallos de salud heredados y no se describe como verde.
 
 ## 2026-10-25 — CI en dos niveles y master de nuevo en verde en GitHub
 

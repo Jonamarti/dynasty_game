@@ -104,7 +104,6 @@
       "no-nan",
       "people-in-bounds",
       "people-on-land",
-      "people-survive",
       "deaths-explained",
       "nobody-stalls-under-orders",
       "walkers-do-not-grind",
@@ -154,17 +153,20 @@
       "herds-follow-the-grass",
       "predators-hunt",
       "fire-keeps-wolves-off",
-      "slopes-slow"
+      "slopes-slow",
+      "metal-is-cast",
+      "trials-accumulate",
+      "moods-move-choices",
+      "ore-becomes-metal"
     ],
     "failed": [
       "nights-are-slept",
-      "moods-move-choices",
       "gossip-is-aimed",
       "projects-find-backers",
       "roast-wins",
       "cooking-spreads",
       "discovery-is-situated",
-      "ore-becomes-metal"
+      "people-survive"
     ],
     "na": [
       "earthworks-are-dug",
@@ -185,7 +187,6 @@
       "sparks-are-various",
       "ideas-become-tech",
       "the-tree-is-climbed",
-      "trials-accumulate",
       "techs-are-refined",
       "records-are-cut",
       "food-spoils",
@@ -228,7 +229,6 @@
       "iron-is-carburised",
       "iron-tools-cut-the-day",
       "oxen-turn-the-field",
-      "metal-is-cast",
       "sleep-restores",
       "kin-outrank-strangers",
       "bands-take-sides",
@@ -309,7 +309,6 @@
       "paths-are-found",
       "nobody-walled-in",
       "people-drink",
-      "food-work-continues",
       "people-harvest",
       "people-eat",
       "ai-uses-many-actions",
@@ -332,15 +331,16 @@
       "world-has-land",
       "herds-follow-the-grass",
       "predators-hunt",
-      "slopes-slow"
+      "slopes-slow",
+      "building-starts-small",
+      "water-follows-the-trench",
+      "forest-is-used",
+      "materials-delivered"
     ],
     "failed": [
-      "moods-move-choices",
-      "materials-delivered",
-      "forest-is-used"
+      "moods-move-choices"
     ],
     "na": [
-      "water-follows-the-trench",
       "earthworks-are-dug",
       "orchards-are-planted",
       "containers-carry-more",
@@ -356,7 +356,6 @@
       "gossip-is-aimed",
       "rumor-propagates",
       "opinions-diverge",
-      "building-starts-small",
       "projects-find-backers",
       "shelter-answers-cold",
       "generations-turn-over",
@@ -443,7 +442,8 @@
       "perf-budget",
       "fire-keeps-wolves-off",
       "a-hunted-out-land-stays-empty",
-      "hills-see-farther"
+      "hills-see-farther",
+      "food-work-continues"
     ]
   },
   {
@@ -499,7 +499,10 @@
       "world-has-land",
       "herds-follow-the-grass",
       "predators-hunt",
-      "slopes-slow"
+      "slopes-slow",
+      "hills-see-farther",
+      "kin-outrank-strangers",
+      "the-wise-avoid-baneberries"
     ],
     "failed": [
       "moods-move-choices"
@@ -551,7 +554,6 @@
       "the-hurt-are-tended",
       "wounds-fester-untended",
       "raw-meat-sickens",
-      "the-wise-avoid-baneberries",
       "animals-are-tamed",
       "heads-direct-work",
       "kills-are-butchered-for-bone",
@@ -583,7 +585,6 @@
       "ore-becomes-metal",
       "metal-is-cast",
       "sleep-restores",
-      "kin-outrank-strangers",
       "bands-take-sides",
       "violence-concentrates",
       "peoples-drift-apart",
@@ -598,8 +599,7 @@
       "murders-are-solved",
       "perf-budget",
       "fire-keeps-wolves-off",
-      "a-hunted-out-land-stays-empty",
-      "hills-see-farther"
+      "a-hunted-out-land-stays-empty"
     ]
   },
   {
@@ -661,7 +661,6 @@
       "spatial-hash-spreads",
       "animals-move",
       "animals-flee",
-      "people-eat-meat",
       "fish-are-caught",
       "bands-dont-overbuild",
       "families-exist",
@@ -670,11 +669,10 @@
       "herds-follow-the-grass",
       "predators-hunt",
       "slopes-slow",
-      "hills-see-farther"
-    ],
-    "failed": [
+      "hills-see-farther",
       "moods-move-choices"
     ],
+    "failed": [],
     "na": [
       "earthworks-are-dug",
       "orchards-are-planted",
@@ -765,7 +763,8 @@
       "murders-are-solved",
       "perf-budget",
       "fire-keeps-wolves-off",
-      "a-hunted-out-land-stays-empty"
+      "a-hunted-out-land-stays-empty",
+      "people-eat-meat"
     ]
   },
   {
@@ -779,7 +778,6 @@
       "the-pregnant-are-spared",
       "cravings-steer-the-diet",
       "nights-are-spent-at-home",
-      "moods-move-choices",
       "children-keep-close",
       "no-nan",
       "people-in-bounds",
@@ -814,7 +812,6 @@
       "forest-persists",
       "bands-have-chiefs",
       "bands-decide-to-build",
-      "jobs-bias-work",
       "knowledge-is-found",
       "knowledge-is-passed-on",
       "children-are-taught",
@@ -826,7 +823,6 @@
       "trials-accumulate",
       "techs-are-refined",
       "raw-meat-sickens",
-      "discovery-is-situated",
       "population-bounded",
       "spatial-hash-spreads",
       "animals-move",
@@ -836,20 +832,21 @@
       "fish-are-caught",
       "bands-dont-overbuild",
       "families-exist",
-      "sleep-restores",
       "bodies-are-found",
       "world-has-land",
       "herds-follow-the-grass",
       "predators-hunt",
       "fire-keeps-wolves-off",
       "slopes-slow",
-      "hills-see-farther"
+      "conception-needs-a-roof",
+      "the-wise-avoid-baneberries"
     ],
     "failed": [
       "people-act-on-what-they-know",
       "nights-are-slept",
-      "the-wise-avoid-baneberries",
-      "bands-take-sides"
+      "bands-take-sides",
+      "discovery-is-situated",
+      "moods-move-choices"
     ],
     "na": [
       "earthworks-are-dug",
@@ -858,7 +855,6 @@
       "word-of-food-travels",
       "kin-are-defended",
       "the-young-run-to-their-own",
-      "conception-needs-a-roof",
       "opinions-diverge",
       "camps-move-when-the-land-fails",
       "rebellion-is-rare-but-happens",
@@ -923,7 +919,10 @@
       "captives-are-taken",
       "murders-are-solved",
       "perf-budget",
-      "a-hunted-out-land-stays-empty"
+      "a-hunted-out-land-stays-empty",
+      "hills-see-farther",
+      "jobs-bias-work",
+      "sleep-restores"
     ]
   },
   {
@@ -995,10 +994,12 @@
       "predators-hunt",
       "fire-keeps-wolves-off",
       "slopes-slow",
-      "hills-see-farther"
+      "hills-see-farther",
+      "bodies-are-found",
+      "the-watched-intervene",
+      "people-act-on-what-they-know"
     ],
     "failed": [
-      "people-act-on-what-they-know",
       "nights-are-slept",
       "sub-webs-are-climbed",
       "discovery-is-situated",
@@ -1077,9 +1078,7 @@
       "the-struck-respond",
       "wrongs-reach-the-chief",
       "upbringing-follows-culture",
-      "the-watched-intervene",
       "captives-are-taken",
-      "bodies-are-found",
       "murders-are-solved",
       "perf-budget",
       "a-hunted-out-land-stays-empty"
@@ -1102,7 +1101,6 @@
       "no-nan",
       "people-in-bounds",
       "people-on-land",
-      "people-survive",
       "deaths-explained",
       "nobody-stalls-under-orders",
       "walkers-do-not-grind",
@@ -1118,7 +1116,6 @@
       "health-holds-up",
       "events-witnessed",
       "people-talk",
-      "gossip-is-aimed",
       "rumor-propagates",
       "materials-delivered",
       "building-starts-small",
@@ -1135,8 +1132,6 @@
       "children-are-taught",
       "ideas-are-conceived",
       "sparks-are-various",
-      "research-is-social",
-      "trials-accumulate",
       "raw-meat-sickens",
       "discovery-is-situated",
       "population-bounded",
@@ -1149,17 +1144,20 @@
       "bands-dont-overbuild",
       "families-exist",
       "kin-outrank-strangers",
-      "the-watched-intervene",
       "world-has-land",
       "herds-follow-the-grass",
       "predators-hunt",
       "fire-keeps-wolves-off",
       "slopes-slow",
-      "hills-see-farther"
+      "hills-see-farther",
+      "bodies-are-found",
+      "the-wise-avoid-baneberries"
     ],
     "failed": [
       "nights-are-slept",
-      "the-wise-avoid-baneberries"
+      "gossip-is-aimed",
+      "people-survive",
+      "research-is-social"
     ],
     "na": [
       "earthworks-are-dug",
@@ -1237,10 +1235,11 @@
       "wrongs-reach-the-chief",
       "upbringing-follows-culture",
       "captives-are-taken",
-      "bodies-are-found",
       "murders-are-solved",
       "perf-budget",
-      "a-hunted-out-land-stays-empty"
+      "a-hunted-out-land-stays-empty",
+      "the-watched-intervene",
+      "trials-accumulate"
     ]
   },
   {
@@ -1270,14 +1269,12 @@
       "people-harvest",
       "people-eat",
       "ai-uses-many-actions",
-      "needs-not-pinned",
       "health-holds-up",
       "events-witnessed",
       "people-talk",
       "rumor-propagates",
       "materials-delivered",
       "building-starts-small",
-      "shelter-answers-cold",
       "work-runs-in-stretches",
       "foraging-bites",
       "forest-is-used",
@@ -1289,7 +1286,6 @@
       "sparks-are-various",
       "raw-meat-sickens",
       "the-wise-avoid-baneberries",
-      "discovery-is-situated",
       "population-bounded",
       "spatial-hash-spreads",
       "animals-move",
@@ -1299,14 +1295,17 @@
       "world-has-land",
       "herds-follow-the-grass",
       "a-hunted-out-land-stays-empty",
-      "slopes-slow"
+      "slopes-slow",
+      "moods-move-choices",
+      "projects-find-backers",
+      "research-is-social"
     ],
     "failed": [
       "nights-are-slept",
-      "moods-move-choices",
       "gossip-is-aimed",
-      "projects-find-backers",
-      "research-is-social"
+      "discovery-is-situated",
+      "needs-not-pinned",
+      "shelter-answers-cold"
     ],
     "na": [
       "earthworks-are-dug",
@@ -1434,7 +1433,6 @@
       "rumor-propagates",
       "materials-delivered",
       "building-starts-small",
-      "projects-find-backers",
       "shelter-answers-cold",
       "work-runs-in-stretches",
       "foraging-bites",
@@ -1449,11 +1447,8 @@
       "sparks-are-various",
       "research-is-social",
       "trials-accumulate",
-      "crafting-is-interruptible",
       "raw-meat-sickens",
       "the-wise-avoid-baneberries",
-      "crafts-happen-at-stations",
-      "the-hearth-warms",
       "cooking-spreads",
       "discovery-is-situated",
       "population-bounded",
@@ -1471,16 +1466,18 @@
       "predators-hunt",
       "fire-keeps-wolves-off",
       "slopes-slow",
-      "hills-see-farther"
+      "bodies-are-found",
+      "people-act-on-what-they-know"
     ],
     "failed": [
-      "people-act-on-what-they-know",
       "nights-are-slept",
       "moods-move-choices",
       "gossip-is-aimed",
       "roast-wins",
       "sub-webs-are-climbed",
-      "bands-take-sides"
+      "bands-take-sides",
+      "hills-see-farther",
+      "projects-find-backers"
     ],
     "na": [
       "earthworks-are-dug",
@@ -1554,10 +1551,12 @@
       "upbringing-follows-culture",
       "the-watched-intervene",
       "captives-are-taken",
-      "bodies-are-found",
       "murders-are-solved",
       "perf-budget",
-      "a-hunted-out-land-stays-empty"
+      "a-hunted-out-land-stays-empty",
+      "crafting-is-interruptible",
+      "crafts-happen-at-stations",
+      "the-hearth-warms"
     ]
   },
   {
@@ -1624,10 +1623,10 @@
       "world-has-land",
       "herds-follow-the-grass",
       "predators-hunt",
-      "slopes-slow"
+      "slopes-slow",
+      "nights-are-slept"
     ],
     "failed": [
-      "nights-are-slept",
       "moods-move-choices"
     ],
     "na": [
@@ -1770,7 +1769,6 @@
       "forest-persists",
       "bands-have-chiefs",
       "bands-decide-to-build",
-      "raids-are-organised",
       "knowledge-is-passed-on",
       "children-are-taught",
       "ideas-are-conceived",
@@ -1793,12 +1791,13 @@
       "predators-hunt",
       "fire-keeps-wolves-off",
       "slopes-slow",
-      "hills-see-farther"
+      "hills-see-farther",
+      "the-watched-intervene",
+      "discovery-is-situated",
+      "the-wise-avoid-baneberries"
     ],
     "failed": [
-      "nights-are-slept",
-      "the-wise-avoid-baneberries",
-      "discovery-is-situated"
+      "nights-are-slept"
     ],
     "na": [
       "earthworks-are-dug",
@@ -1875,12 +1874,12 @@
       "the-struck-respond",
       "wrongs-reach-the-chief",
       "upbringing-follows-culture",
-      "the-watched-intervene",
       "captives-are-taken",
       "bodies-are-found",
       "murders-are-solved",
       "perf-budget",
-      "a-hunted-out-land-stays-empty"
+      "a-hunted-out-land-stays-empty",
+      "raids-are-organised"
     ]
   },
   {
@@ -1912,7 +1911,6 @@
       "people-harvest",
       "people-eat",
       "ai-uses-many-actions",
-      "needs-not-pinned",
       "health-holds-up",
       "events-witnessed",
       "people-talk",
@@ -1933,7 +1931,6 @@
       "spatial-hash-spreads",
       "animals-move",
       "animals-flee",
-      "hunts-succeed-and-fail",
       "people-eat-meat",
       "fish-are-caught",
       "bands-dont-overbuild",
@@ -1945,7 +1942,8 @@
     ],
     "failed": [
       "shelter-answers-cold",
-      "hills-see-farther"
+      "hills-see-farther",
+      "needs-not-pinned"
     ],
     "na": [
       "earthworks-are-dug",
@@ -2036,7 +2034,8 @@
       "murders-are-solved",
       "perf-budget",
       "fire-keeps-wolves-off",
-      "a-hunted-out-land-stays-empty"
+      "a-hunted-out-land-stays-empty",
+      "hunts-succeed-and-fail"
     ]
   },
   {
@@ -2093,12 +2092,11 @@
       "world-has-land",
       "herds-follow-the-grass",
       "predators-hunt",
-      "slopes-slow"
+      "slopes-slow",
+      "projects-find-backers",
+      "walkers-do-not-grind"
     ],
-    "failed": [
-      "walkers-do-not-grind",
-      "projects-find-backers"
-    ],
+    "failed": [],
     "na": [
       "earthworks-are-dug",
       "orchards-are-planted",
@@ -2217,7 +2215,6 @@
       "people-act-on-what-they-know",
       "stale-memories-cost",
       "the-map-grows",
-      "the-pregnant-are-spared",
       "cravings-steer-the-diet",
       "nights-are-spent-at-home",
       "moods-move-choices",
@@ -2228,7 +2225,6 @@
       "people-survive",
       "deaths-explained",
       "nobody-stalls-under-orders",
-      "walkers-do-not-grind",
       "paths-are-found",
       "nobody-walled-in",
       "people-drink",
@@ -2244,7 +2240,6 @@
       "rumor-propagates",
       "materials-delivered",
       "building-starts-small",
-      "projects-find-backers",
       "shelter-answers-cold",
       "work-runs-in-stretches",
       "foraging-bites",
@@ -2254,7 +2249,6 @@
       "bands-have-chiefs",
       "bands-decide-to-build",
       "knowledge-is-passed-on",
-      "children-are-taught",
       "ideas-are-conceived",
       "research-is-social",
       "crafting-is-interruptible",
@@ -2265,9 +2259,7 @@
       "spatial-hash-spreads",
       "animals-move",
       "animals-flee",
-      "people-eat-meat",
       "fish-are-caught",
-      "bands-set-traps",
       "bands-dont-overbuild",
       "families-exist",
       "world-has-land",
@@ -2278,7 +2270,9 @@
     ],
     "failed": [
       "nights-are-slept",
-      "gossip-is-aimed"
+      "gossip-is-aimed",
+      "projects-find-backers",
+      "walkers-do-not-grind"
     ],
     "na": [
       "earthworks-are-dug",
@@ -2363,7 +2357,11 @@
       "murders-are-solved",
       "perf-budget",
       "a-hunted-out-land-stays-empty",
-      "hills-see-farther"
+      "hills-see-farther",
+      "bands-set-traps",
+      "children-are-taught",
+      "people-eat-meat",
+      "the-pregnant-are-spared"
     ]
   },
   {
@@ -2375,7 +2373,6 @@
       "people-act-on-what-they-know",
       "stale-memories-cost",
       "the-map-grows",
-      "the-pregnant-are-spared",
       "cravings-steer-the-diet",
       "nights-are-spent-at-home",
       "moods-move-choices",
@@ -2398,7 +2395,6 @@
       "health-holds-up",
       "events-witnessed",
       "people-talk",
-      "gossip-is-aimed",
       "rumor-propagates",
       "materials-delivered",
       "building-starts-small",
@@ -2420,10 +2416,8 @@
       "the-tree-is-climbed",
       "research-is-social",
       "trials-accumulate",
-      "techs-are-refined",
       "crafting-is-interruptible",
       "raw-meat-sickens",
-      "the-wise-avoid-baneberries",
       "discovery-is-situated",
       "population-bounded",
       "spatial-hash-spreads",
@@ -2432,7 +2426,6 @@
       "hunts-succeed-and-fail",
       "people-eat-meat",
       "fish-are-caught",
-      "bands-dont-overbuild",
       "families-exist",
       "sleep-restores",
       "bodies-are-found",
@@ -2440,13 +2433,19 @@
       "herds-follow-the-grass",
       "predators-hunt",
       "fire-keeps-wolves-off",
-      "slopes-slow"
+      "slopes-slow",
+      "crafts-happen-at-stations",
+      "generations-turn-over"
     ],
     "failed": [
       "nights-are-slept",
       "population-persists",
       "projects-find-backers",
-      "generations-turn-over"
+      "bands-take-sides",
+      "bands-dont-overbuild",
+      "gossip-is-aimed",
+      "techs-are-refined",
+      "the-wise-avoid-baneberries"
     ],
     "na": [
       "earthworks-are-dug",
@@ -2482,7 +2481,6 @@
       "animals-are-tamed",
       "heads-direct-work",
       "kills-are-butchered-for-bone",
-      "crafts-happen-at-stations",
       "the-hearth-warms",
       "roast-wins",
       "cooking-spreads",
@@ -2508,7 +2506,6 @@
       "ore-becomes-metal",
       "metal-is-cast",
       "kin-outrank-strangers",
-      "bands-take-sides",
       "violence-concentrates",
       "peoples-drift-apart",
       "peace-within-bands",
@@ -2521,7 +2518,8 @@
       "murders-are-solved",
       "perf-budget",
       "a-hunted-out-land-stays-empty",
-      "hills-see-farther"
+      "hills-see-farther",
+      "the-pregnant-are-spared"
     ]
   },
   {
@@ -2534,7 +2532,6 @@
       "the-map-grows",
       "cravings-steer-the-diet",
       "nights-are-spent-at-home",
-      "moods-move-choices",
       "children-keep-close",
       "no-nan",
       "people-in-bounds",
@@ -2576,7 +2573,6 @@
       "spatial-hash-spreads",
       "animals-move",
       "animals-flee",
-      "people-eat-meat",
       "fish-are-caught",
       "bands-dont-overbuild",
       "families-exist",
@@ -2584,14 +2580,16 @@
       "herds-follow-the-grass",
       "predators-hunt",
       "fire-keeps-wolves-off",
-      "slopes-slow"
+      "slopes-slow",
+      "children-are-taught",
+      "trials-accumulate",
+      "discovery-is-situated"
     ],
     "failed": [
       "people-act-on-what-they-know",
       "nights-are-slept",
       "gossip-is-aimed",
-      "kills-are-butchered-for-bone",
-      "discovery-is-situated"
+      "moods-move-choices"
     ],
     "na": [
       "earthworks-are-dug",
@@ -2609,11 +2607,9 @@
       "rebellion-is-rare-but-happens",
       "raids-are-organised",
       "knowledge-is-found",
-      "children-are-taught",
       "sparks-are-various",
       "ideas-become-tech",
       "the-tree-is-climbed",
-      "trials-accumulate",
       "techs-are-refined",
       "records-are-cut",
       "crafting-is-interruptible",
@@ -2679,7 +2675,9 @@
       "murders-are-solved",
       "perf-budget",
       "a-hunted-out-land-stays-empty",
-      "hills-see-farther"
+      "hills-see-farther",
+      "kills-are-butchered-for-bone",
+      "people-eat-meat"
     ]
   },
   {
@@ -2718,7 +2716,6 @@
       "materials-delivered",
       "building-starts-small",
       "projects-find-backers",
-      "shelter-answers-cold",
       "work-runs-in-stretches",
       "foraging-bites",
       "forest-is-used",
@@ -2731,7 +2728,6 @@
       "ideas-are-conceived",
       "sparks-are-various",
       "research-is-social",
-      "trials-accumulate",
       "stores-keep-food-better-than-packs",
       "raw-meat-sickens",
       "discovery-is-situated",
@@ -2739,7 +2735,6 @@
       "spatial-hash-spreads",
       "animals-move",
       "animals-flee",
-      "people-eat-meat",
       "fish-are-caught",
       "bands-dont-overbuild",
       "families-exist",
@@ -2747,12 +2742,14 @@
       "herds-follow-the-grass",
       "predators-hunt",
       "fire-keeps-wolves-off",
-      "slopes-slow"
+      "slopes-slow",
+      "the-wise-avoid-baneberries"
     ],
     "failed": [
       "nights-are-slept",
       "gossip-is-aimed",
-      "food-spoils"
+      "food-spoils",
+      "shelter-answers-cold"
     ],
     "na": [
       "earthworks-are-dug",
@@ -2791,7 +2788,6 @@
       "feasts-gather-the-band",
       "the-hurt-are-tended",
       "wounds-fester-untended",
-      "the-wise-avoid-baneberries",
       "animals-are-tamed",
       "heads-direct-work",
       "kills-are-butchered-for-bone",
@@ -2837,7 +2833,9 @@
       "murders-are-solved",
       "perf-budget",
       "a-hunted-out-land-stays-empty",
-      "hills-see-farther"
+      "hills-see-farther",
+      "people-eat-meat",
+      "trials-accumulate"
     ]
   },
   {
@@ -2846,7 +2844,6 @@
       "regions-stay-true",
       "water-follows-the-trench",
       "hands-limit-loads",
-      "people-act-on-what-they-know",
       "stale-memories-cost",
       "the-map-grows",
       "the-pregnant-are-spared",
@@ -2897,7 +2894,6 @@
       "research-is-social",
       "trials-accumulate",
       "raw-meat-sickens",
-      "discovery-is-situated",
       "population-bounded",
       "spatial-hash-spreads",
       "animals-move",
@@ -2913,12 +2909,16 @@
       "herds-follow-the-grass",
       "predators-hunt",
       "fire-keeps-wolves-off",
-      "slopes-slow"
+      "slopes-slow",
+      "the-hurt-are-tended",
+      "animals-are-tamed",
+      "techs-are-refined"
     ],
     "failed": [
       "nights-are-slept",
-      "techs-are-refined",
-      "animals-are-tamed"
+      "bands-take-sides",
+      "discovery-is-situated",
+      "people-act-on-what-they-know"
     ],
     "na": [
       "earthworks-are-dug",
@@ -2951,7 +2951,6 @@
       "the-beaten-pay-tribute",
       "serfs-are-owned",
       "feasts-gather-the-band",
-      "the-hurt-are-tended",
       "wounds-fester-untended",
       "the-wise-avoid-baneberries",
       "heads-direct-work",
@@ -2982,7 +2981,6 @@
       "ore-becomes-metal",
       "metal-is-cast",
       "kin-outrank-strangers",
-      "bands-take-sides",
       "violence-concentrates",
       "peoples-drift-apart",
       "peace-within-bands",
@@ -3007,8 +3005,6 @@
       "people-act-on-what-they-know",
       "stale-memories-cost",
       "the-map-grows",
-      "conception-needs-a-roof",
-      "the-pregnant-are-spared",
       "cravings-steer-the-diet",
       "nights-are-spent-at-home",
       "moods-move-choices",
@@ -3070,12 +3066,12 @@
       "herds-follow-the-grass",
       "predators-hunt",
       "fire-keeps-wolves-off",
-      "slopes-slow"
+      "slopes-slow",
+      "gossip-is-aimed",
+      "projects-find-backers"
     ],
     "failed": [
       "nights-are-slept",
-      "gossip-is-aimed",
-      "projects-find-backers",
       "animals-are-tamed",
       "discovery-is-situated"
     ],
@@ -3153,7 +3149,9 @@
       "murders-are-solved",
       "perf-budget",
       "a-hunted-out-land-stays-empty",
-      "hills-see-farther"
+      "hills-see-farther",
+      "conception-needs-a-roof",
+      "the-pregnant-are-spared"
     ]
   },
   {
@@ -3173,7 +3171,6 @@
       "no-nan",
       "people-in-bounds",
       "people-on-land",
-      "population-persists",
       "deaths-explained",
       "nobody-stalls-under-orders",
       "walkers-do-not-grind",
@@ -3185,7 +3182,6 @@
       "people-harvest",
       "people-eat",
       "ai-uses-many-actions",
-      "needs-not-pinned",
       "health-holds-up",
       "events-witnessed",
       "people-talk",
@@ -3205,18 +3201,15 @@
       "bands-decide-to-build",
       "knowledge-is-found",
       "knowledge-is-passed-on",
-      "children-are-taught",
       "ideas-are-conceived",
       "sparks-are-various",
       "ideas-become-tech",
       "the-tree-is-climbed",
       "research-is-social",
       "trials-accumulate",
-      "crafting-is-interruptible",
       "beer-answers-loneliness",
       "feasts-gather-the-band",
       "raw-meat-sickens",
-      "pots-reach-a-granary",
       "population-bounded",
       "spatial-hash-spreads",
       "animals-move",
@@ -3225,19 +3218,25 @@
       "people-eat-meat",
       "fish-are-caught",
       "bands-dont-overbuild",
-      "families-exist",
       "world-has-land",
       "herds-follow-the-grass",
       "predators-hunt",
       "fire-keeps-wolves-off",
       "slopes-slow",
-      "hills-see-farther"
+      "bodies-are-found",
+      "rebellion-is-rare-but-happens",
+      "the-hurt-are-tended"
     ],
     "failed": [
       "nights-are-slept",
       "techs-are-refined",
       "discovery-is-situated",
-      "bands-take-sides"
+      "bands-take-sides",
+      "families-exist",
+      "hills-see-farther",
+      "needs-not-pinned",
+      "population-persists",
+      "pots-reach-a-granary"
     ],
     "na": [
       "earthworks-are-dug",
@@ -3250,7 +3249,6 @@
       "opinions-diverge",
       "camps-move-when-the-land-fails",
       "jobs-bias-work",
-      "rebellion-is-rare-but-happens",
       "raids-are-organised",
       "records-are-cut",
       "food-spoils",
@@ -3267,7 +3265,6 @@
       "governments-declare-war-and-peace",
       "the-beaten-pay-tribute",
       "serfs-are-owned",
-      "the-hurt-are-tended",
       "wounds-fester-untended",
       "the-wise-avoid-baneberries",
       "animals-are-tamed",
@@ -3308,10 +3305,11 @@
       "upbringing-follows-culture",
       "the-watched-intervene",
       "captives-are-taken",
-      "bodies-are-found",
       "murders-are-solved",
       "perf-budget",
-      "a-hunted-out-land-stays-empty"
+      "a-hunted-out-land-stays-empty",
+      "children-are-taught",
+      "crafting-is-interruptible"
     ]
   },
   {
@@ -3328,7 +3326,6 @@
       "no-nan",
       "people-in-bounds",
       "people-on-land",
-      "population-persists",
       "deaths-explained",
       "nobody-stalls-under-orders",
       "walkers-do-not-grind",
@@ -3352,7 +3349,6 @@
       "shelter-answers-cold",
       "work-runs-in-stretches",
       "foraging-bites",
-      "generations-turn-over",
       "forest-is-used",
       "fruit-comes-and-goes-with-the-season",
       "forest-persists",
@@ -3379,22 +3375,22 @@
       "bands-dont-overbuild",
       "families-exist",
       "sleep-restores",
-      "kin-outrank-strangers",
       "bodies-are-found",
       "world-has-land",
       "herds-follow-the-grass",
       "predators-hunt",
       "fire-keeps-wolves-off",
       "slopes-slow",
-      "hills-see-farther"
+      "the-hurt-are-tended",
+      "moods-move-choices",
+      "techs-are-refined"
     ],
     "failed": [
       "people-act-on-what-they-know",
       "nights-are-slept",
-      "moods-move-choices",
-      "techs-are-refined",
       "discovery-is-situated",
-      "bands-take-sides"
+      "generations-turn-over",
+      "population-persists"
     ],
     "na": [
       "earthworks-are-dug",
@@ -3427,7 +3423,6 @@
       "the-beaten-pay-tribute",
       "serfs-are-owned",
       "feasts-gather-the-band",
-      "the-hurt-are-tended",
       "wounds-fester-untended",
       "the-wise-avoid-baneberries",
       "animals-are-tamed",
@@ -3469,7 +3464,10 @@
       "captives-are-taken",
       "murders-are-solved",
       "perf-budget",
-      "a-hunted-out-land-stays-empty"
+      "a-hunted-out-land-stays-empty",
+      "bands-take-sides",
+      "hills-see-farther",
+      "kin-outrank-strangers"
     ]
   },
   {
@@ -3478,7 +3476,6 @@
       "regions-stay-true",
       "water-follows-the-trench",
       "hands-limit-loads",
-      "people-act-on-what-they-know",
       "stale-memories-cost",
       "the-map-grows",
       "cravings-steer-the-diet",
@@ -3521,7 +3518,6 @@
       "raw-meat-sickens",
       "the-wise-avoid-baneberries",
       "heads-direct-work",
-      "discovery-is-situated",
       "population-bounded",
       "spatial-hash-spreads",
       "animals-move",
@@ -3537,7 +3533,8 @@
       "herds-follow-the-grass",
       "predators-hunt",
       "slopes-slow",
-      "hills-see-farther"
+      "hills-see-farther",
+      "research-is-social"
     ],
     "failed": [
       "nights-are-slept",
@@ -3545,7 +3542,8 @@
       "people-survive",
       "gossip-is-aimed",
       "shelter-answers-cold",
-      "research-is-social"
+      "discovery-is-situated",
+      "people-act-on-what-they-know"
     ],
     "na": [
       "earthworks-are-dug",
@@ -3682,7 +3680,6 @@
       "bands-have-chiefs",
       "bands-decide-to-build",
       "jobs-bias-work",
-      "raids-are-organised",
       "knowledge-is-found",
       "knowledge-is-passed-on",
       "children-are-taught",
@@ -3701,7 +3698,6 @@
       "civilisation-is-derived",
       "feasts-gather-the-band",
       "raw-meat-sickens",
-      "the-wise-avoid-baneberries",
       "heads-direct-work",
       "population-bounded",
       "spatial-hash-spreads",
@@ -3719,20 +3715,19 @@
       "herds-follow-the-grass",
       "predators-hunt",
       "fire-keeps-wolves-off",
-      "slopes-slow"
+      "slopes-slow",
+      "gossip-is-aimed",
+      "moods-move-choices",
+      "taxes-reach-the-temple"
     ],
     "failed": [
       "people-act-on-what-they-know",
       "nights-are-slept",
-      "moods-move-choices",
       "population-persists",
-      "gossip-is-aimed",
       "generations-turn-over",
       "techs-are-refined",
-      "taxes-reach-the-temple",
       "roast-wins",
       "cooking-spreads",
-      "pots-reach-a-granary",
       "discovery-is-situated",
       "hills-see-farther"
     ],
@@ -3795,7 +3790,10 @@
       "captives-are-taken",
       "murders-are-solved",
       "perf-budget",
-      "a-hunted-out-land-stays-empty"
+      "a-hunted-out-land-stays-empty",
+      "pots-reach-a-granary",
+      "raids-are-organised",
+      "the-wise-avoid-baneberries"
     ]
   },
   {
@@ -3816,10 +3814,8 @@
       "people-act-on-what-they-know",
       "stale-memories-cost",
       "the-map-grows",
-      "the-pregnant-are-spared",
       "cravings-steer-the-diet",
       "nights-are-spent-at-home",
-      "moods-move-choices",
       "children-keep-close",
       "no-nan",
       "people-in-bounds",
@@ -3854,7 +3850,6 @@
       "bands-have-chiefs",
       "bands-decide-to-build",
       "jobs-bias-work",
-      "rebellion-is-rare-but-happens",
       "knowledge-is-passed-on",
       "children-are-taught",
       "ideas-are-conceived",
@@ -3870,7 +3865,6 @@
       "governments-declare-war-and-peace",
       "feasts-gather-the-band",
       "raw-meat-sickens",
-      "the-wise-avoid-baneberries",
       "heads-direct-work",
       "population-bounded",
       "spatial-hash-spreads",
@@ -3884,7 +3878,6 @@
       "sleep-restores",
       "kin-outrank-strangers",
       "bands-take-sides",
-      "peoples-drift-apart",
       "the-watched-intervene",
       "bodies-are-found",
       "world-has-land",
@@ -3892,21 +3885,26 @@
       "predators-hunt",
       "fire-keeps-wolves-off",
       "slopes-slow",
-      "hills-see-farther"
+      "hills-see-farther",
+      "raids-are-organised",
+      "trials-accumulate",
+      "water-follows-the-trench",
+      "ideas-become-tech",
+      "knowledge-is-found",
+      "soldiers-are-kept"
     ],
     "failed": [
       "nights-are-slept",
       "projects-find-backers",
-      "knowledge-is-found",
-      "ideas-become-tech",
       "taxes-reach-the-temple",
-      "soldiers-are-kept",
       "roast-wins",
       "cooking-spreads",
-      "discovery-is-situated"
+      "discovery-is-situated",
+      "moods-move-choices",
+      "peoples-drift-apart",
+      "the-wise-avoid-baneberries"
     ],
     "na": [
-      "water-follows-the-trench",
       "earthworks-are-dug",
       "orchards-are-planted",
       "containers-carry-more",
@@ -3916,9 +3914,7 @@
       "conception-needs-a-roof",
       "opinions-diverge",
       "camps-move-when-the-land-fails",
-      "raids-are-organised",
       "sparks-are-various",
-      "trials-accumulate",
       "techs-are-refined",
       "food-spoils",
       "stores-keep-food-better-than-packs",
@@ -3963,7 +3959,9 @@
       "captives-are-taken",
       "murders-are-solved",
       "perf-budget",
-      "a-hunted-out-land-stays-empty"
+      "a-hunted-out-land-stays-empty",
+      "rebellion-is-rare-but-happens",
+      "the-pregnant-are-spared"
     ]
   },
   {
@@ -4150,7 +4148,6 @@
       "needs-not-pinned",
       "events-witnessed",
       "people-talk",
-      "gossip-is-aimed",
       "rumor-propagates",
       "materials-delivered",
       "building-starts-small",
@@ -4199,7 +4196,8 @@
       "ideas-become-tech",
       "the-tree-is-climbed",
       "families-exist",
-      "peoples-drift-apart"
+      "peoples-drift-apart",
+      "gossip-is-aimed"
     ],
     "na": [
       "earthworks-are-dug",
@@ -4317,7 +4315,6 @@
       "rumor-propagates",
       "materials-delivered",
       "building-starts-small",
-      "shelter-answers-cold",
       "work-runs-in-stretches",
       "foraging-bites",
       "forest-is-used",
@@ -4340,15 +4337,16 @@
       "herds-follow-the-grass",
       "predators-hunt",
       "fire-keeps-wolves-off",
-      "slopes-slow"
+      "slopes-slow",
+      "research-is-social"
     ],
     "failed": [
       "nights-are-slept",
       "needs-not-pinned",
       "gossip-is-aimed",
       "projects-find-backers",
-      "research-is-social",
-      "spatial-hash-spreads"
+      "spatial-hash-spreads",
+      "shelter-answers-cold"
     ],
     "na": [
       "orchards-are-planted",
@@ -4464,7 +4462,6 @@
       "nobody-walled-in",
       "people-drink",
       "drinking-is-paced",
-      "food-work-continues",
       "people-harvest",
       "people-eat",
       "ai-uses-many-actions",
@@ -4499,11 +4496,9 @@
       "fish-are-caught",
       "bands-dont-overbuild",
       "families-exist",
-      "bodies-are-found",
       "world-has-land",
       "herds-follow-the-grass",
       "predators-hunt",
-      "fire-keeps-wolves-off",
       "slopes-slow"
     ],
     "failed": [
@@ -4595,7 +4590,10 @@
       "murders-are-solved",
       "perf-budget",
       "a-hunted-out-land-stays-empty",
-      "hills-see-farther"
+      "hills-see-farther",
+      "bodies-are-found",
+      "fire-keeps-wolves-off",
+      "food-work-continues"
     ]
   },
   {
