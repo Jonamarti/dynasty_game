@@ -1,3 +1,34 @@
+## 2026-10-26 — CI: cerrar unitarios y arte pendientes de 14.5
+
+**Problema:** tras fusionar 14.5, el CI de `master` y de PR #33 fallaba en la
+suite unitaria. El atlas de edificios aún no contenía la choza de ramas y las
+pruebas de tala, embarazo y traspaso no preparaban el hacha requerida desde
+14.4. Una prueba de temporadas dejaba morir al observador por depredación.
+
+**Causa:** la fase 14.5 se fusionó con sus generadores de arte, pero sin ejecutar
+el generador que escribe los atlas. Algunas pruebas conservaron premisas
+anteriores al requisito de tala; la prueba estacional medía depredación además
+del aprendizaje de plantas. La prueba de obras contaba palos de toda la comarca
+y confundía devoluciones de la obra con otras recogidas.
+
+**Cambio:** regenerado `public/art/buildings` desde `art/src`, añadidas las dos
+traducciones de descripciones y actualizada la versión a `0.16.23-alpha`.
+Las pruebas ahora preparan las herramientas y tecnología que exige el juego,
+aislan el observador de depredadores y cotejan los materiales devueltos en la
+ubicación de la obra. Re-fijadas las huellas de `switches-off.json` tras la
+integración del cambio de tala de 14.4: `1` `c61a6bd8` → `beabf6f9`, `2`
+`98d972e4` → `7aabc27f`, `3` `988c035e` → `69fec403`.
+
+**Verificación:** pruebas focalizadas y typecheck; suite completa en curso al
+preparar esta entrada. La suite completa dio 2.482 aprobadas; cuatro pruebas
+auxiliares de CLI no encontraron paquetes en la instalación local incompleta.
+Con los paquetes copiados desde la instalación existente, las ocho pruebas de
+esas tres suites pasan. `check:fast`: 46/46, typecheck y build pasan; `water-depth`
+2/2 y recorrido de capturas 19/19. Contacto del atlas:
+`artifacts/art/contact-buildings.png`. Capturas de juego:
+`artifacts/screenshots/m16-2026-10-26-ci/`. La matriz de escenarios aún requiere
+comparar la fase 14.5 antes de re-fijar; sigue documentada en `docs/bugs.md`.
+
 ## 2026-10-25 — CI en dos niveles y master de nuevo en verde en GitHub
 
 **Problema:** el CI de GitHub lanzaba en cada push solo typecheck, unitarios y

@@ -60,6 +60,8 @@ describe('single-owner Simulation handoff', () => {
     expect(tree).toBeDefined();
     player.x = tree.x;
     player.y = tree.y;
+    player.knownTech.add('hafting');
+    player.inventory.add('handaxe', 1);
     expect(source.order(player, 'chop', { treeId: tree.id })).toBe(true);
     for (let tick = 0; tick < 6; tick++) source.step();
     expect(player.action).toBe('chop');

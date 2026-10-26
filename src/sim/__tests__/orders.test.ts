@@ -307,6 +307,8 @@ describe('felling', () => {
       t.standing && sim.world.sameRegion(person.x, person.y, t.x, t.y))!;
     person.x = tree.x;
     person.y = tree.y;
+    person.knownTech.add('hafting');
+    person.inventory.add('handaxe', 1);
     fillPack(person);
 
     sim.order(person, 'chop', { treeId: tree.id });
@@ -325,13 +327,13 @@ describe('felling', () => {
       t.standing && sim.world.sameRegion(person.x, person.y, t.x, t.y))!;
     person.x = tree.x;
     person.y = tree.y;
+    person.knownTech.add('hafting');
+    person.inventory.add('handaxe', 1);
 
     sim.order(person, 'chop', { treeId: tree.id });
     for (let i = 0; i < 10; i++) sim.step();
 
-    // `cycleProgress` is null throughout a chop — that is exactly why the panel
-    // showed nothing for the ninety seconds of felling a tree by hand.
-    expect(person.cycleProgress).toBeNull();
+    expect(person.action).toBe('chop');
     expect(workProgressOf(person, sim)).not.toBeNull();
   });
 
@@ -345,6 +347,8 @@ describe('felling', () => {
     if (!tree) return; // No grown tree on this seed; nothing to assert about.
     person.x = tree.x;
     person.y = tree.y;
+    person.knownTech.add('hafting');
+    person.inventory.add('handaxe', 1);
     fillPack(person);
 
     const before = sim.piles.length;

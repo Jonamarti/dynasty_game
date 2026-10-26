@@ -17,8 +17,12 @@ describe('timber discovery', () => {
     // Timber now belongs to designs behind hafting, not the early mud hut.
     for (const tech of ['hafting', 'stoneworking', 'carpentry', 'masonry']) person.knownTech.add(tech);
     person.inventory.add('handaxe', 1);
+    person.knownTech.add('hafting');
     const site = new Building(BUILDINGS.stone_house!, person.x, person.y, person.bandId, sim.ids);
     site.sponsorId = person.id;
+    for (const [item, amount] of Object.entries(site.def.materials)) {
+      if (item !== 'wood') site.delivered.add(item, amount);
+    }
     const brain = (sim as unknown as { brain: Brain }).brain;
     const score = brain.score.bind(brain);
     let checked = false;

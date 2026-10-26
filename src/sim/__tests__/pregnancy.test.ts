@@ -148,6 +148,8 @@ describe('M15 phase 19b: heavy work is refused with a reason', () => {
       sim.world.sameRegion(woman.x, woman.y, candidate.x, candidate.y))!;
     expect(tree).toBeDefined();
     woman.x = tree.x; woman.y = tree.y;
+    woman.knownTech.add('hafting');
+    woman.inventory.add('handaxe', 1);
     woman.needs.hunger = 0; woman.needs.thirst = 0;
     return { sim, woman, tree };
   }

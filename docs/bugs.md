@@ -1,3 +1,25 @@
+## 2026-10-26 — CI pendiente tras integrar 14.5
+
+**Abierto, verificado en CI 40283921764 (PR #33, base `master` `1fa2e00e`).**
+La comparación de `fixtures/matrix-baseline.json` encuentra transiciones
+pass→fail y pass→n/a en varios escenarios después de las fases 14.4–14.5; las
+ejecuciones de escenario sí terminan, pero no se registró el antes/después que
+permita distinguir nuevos efectos de la vivienda sin madera y del cambio de
+tala. No re-fijar la matriz hasta hacer esa comparación por semillas y
+contadores, como exige la tarjeta 14.5.
+
+**Resuelto el 2026-10-26:** `water-depth.spec.ts` ya excava una ribera natural
+con la semilla numérica `728083595`, mapa geográfico de Francia, 160×160 y día
+siete, usando `World.dig` después de preparar el mundo. El caso verifica que la
+excavación sí llega al agua y que no se inunda terreno natural sin excavar. E2E
+focal 2/2. Capturas: `artifacts/screenshots/m16-2026-10-26-ci/`.
+
+**Resuelto localmente el 2026-10-26:** `art.test.ts` fallaba porque el atlas de
+edificios no se había regenerado al fusionar 14.5; el generador fuente sí
+contenía la choza. También se actualizaron pruebas que aún preparaban tala sin
+hacha, que dejaban al observador de plantas morir por un oso o que medían
+devoluciones de materiales en toda la comarca. Ver `docs/changelog.md`.
+
 ## 2026-10-25 — `x ** y` no es determinista entre versiones de Node
 
 **Abierto (mitigado en CI).** `seedInitialForest` calcula la edad inicial de cada

@@ -1,5 +1,7 @@
 /** Spanish for data. Keys are the English templates; see `i18n.ts`. */
 export const ES_DATA: Record<string, string> = {
+  'Daubed walls packed around a frame of gathered branches, under thatch. Warm enough to winter in without felling a tree.': 'Paredes de barro sobre un armazón de ramas recogidas, cubiertas de paja. Abrigada para pasar el invierno sin talar árboles.',
+  'An open frame of gathered branches lashed together for drying meat and fish.': 'Un armazón abierto de ramas recogidas y atadas para secar carne y pescado.',
   'Red ochre': 'Ocre rojo',
   'Red ochre deposit': 'Yacimiento de ocre rojo',
   'node|red_ochre': 'ocre rojo',

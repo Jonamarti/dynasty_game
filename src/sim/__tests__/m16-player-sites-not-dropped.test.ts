@@ -38,13 +38,22 @@ describe('m16-player-sites-not-dropped', () => {
     npcSite.delivered.add('sticks', 3);
     const sticksBefore = groundCount(sim, 'sticks');
     const npcSiteId = npcSite.id;
+    let sticksDeliveredBeforeRetirement = npcSite.delivered.count('sticks');
 
-    for (let i = 0; i < sim.config.time.ticksPerDay * 10; i++) sim.step();
+    for (let i = 0; i < sim.config.time.ticksPerDay * 10; i++) {
+      sim.step();
+      if (sim.buildings.some(site => site.id === npcSiteId)) {
+        sticksDeliveredBeforeRetirement = npcSite.delivered.count('sticks');
+      }
+    }
 
     expect(playerSite.complete).toBe(false);
     expect(sim.buildings.some(site => site.id === playerSite.id)).toBe(true);
     expect(sim.buildings.some(site => site.id === npcSiteId)).toBe(false);
-    expect(groundCount(sim, 'sticks') - sticksBefore).toBe(3);
+    const siteSticks = sim.piles.filter(pile => pile.x === Math.round(npcSite.centerX) &&
+      pile.y === Math.round(npcSite.centerY)).reduce((sum, pile) => sum + pile.contents.count('sticks'), 0);
+    expect(siteSticks).toBe(sticksDeliveredBeforeRetirement);
+    expect(groundCount(sim, 'sticks')).toBeGreaterThanOrEqual(sticksBefore + 3);
     expect(npcSite.delivered.total).toBe(0);
     const notice = sim.insights.find(insight => insight.personId === npcSponsor.id && insight.text.includes('was shelved'));
     expect(notice).toMatchObject({ x: npcSite.centerX, y: npcSite.centerY, kind: 'setback' });

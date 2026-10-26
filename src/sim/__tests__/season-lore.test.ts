@@ -42,7 +42,7 @@ describe('season lore', () => {
 
 /** Short seasons keep most fixtures quick; the growth test opts into ten-day seasons. */
 function world(seed: string, sightRadius = 60, daysPerSeason = 1) {
-  const sim = new Simulation({ seed, world: { width: 48, height: 48 },
+  const sim = new Simulation({ seed, world: { width: 48, height: 48, predators: 0 },
     time: { daysPerSeason, startDay: 0 }, sightRadius,
     population: { bands: 1, peoplePerBand: 4 } });
   return sim;
@@ -117,7 +117,8 @@ describe('bush species and their seasons', () => {
     expect(learned.length).toBeGreaterThan(0);
     for (const kind of learned) {
       const bare = (['spring', 'summer', 'autumn', 'winter'] as const).filter(s => bushPhase(kind, s) === 'bare');
-      for (const season of bare) expect(person.seasonLore.barrenIn(`bush:${kind}`, season)).toBe(true);
+      for (const season of bare) expect(person.seasonLore.barrenIn(`bush:${kind}`, season),
+        `${kind} barren in ${season}`).toBe(true);
       expect(person.seasonLore.barrenIn(`bush:${kind}`, BUSHES[kind].ripens[0]!),
         `${kind} learned its fruiting season (${BUSHES[kind].ripens[0]}) as barren`).toBe(false);
     }
