@@ -5,7 +5,7 @@ const args = process.argv.slice(2).filter(value => value !== '--');
 const shardFlag = args.indexOf('--shard');
 let shard: { part: number; total: number } | undefined;
 if (shardFlag !== -1) {
-  const match = /^(\\d+)\\/(\\d+)$/.exec(args[shardFlag + 1] ?? '');
+  const match = /^([0-9]+)\/([0-9]+)$/.exec(args[shardFlag + 1] ?? '');
   if (!match) { console.error('Invalid --shard part/total'); process.exit(2); }
   const part = Number(match[1]);
   const total = Number(match[2]);
