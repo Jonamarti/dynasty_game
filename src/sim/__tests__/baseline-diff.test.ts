@@ -6,8 +6,8 @@ import { describe, expect, it } from 'vitest';
 
 const cli = resolve('node_modules/vite-node/dist/cli.mjs');
 
-function compare(before: string, after: string) {
-  return spawnSync(process.execPath, [cli, 'tools/baseline-diff.ts', '--', before, after], {
+function compare(before: string, after: string, extra: string[] = []) {
+  return spawnSync(process.execPath, [cli, 'tools/baseline-diff.ts', '--', before, after, ...extra], {
     cwd: process.cwd(), encoding: 'utf8', timeout: 10_000,
   });
 }
@@ -86,6 +86,28 @@ describe('baseline diff CLI', () => {
       expect(compare(before, after).status).toBe(0);
       writeFileSync(after, JSON.stringify([{ name: 'one', passed: [], failed: ['known', 'inactive'], na: [] }]));
       expect(compare(before, after).status).toBe(1);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('checks that a shard contains exactly its expected baseline partition', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'dynasty-shard-'));
+    try {
+      const before = join(dir, 'before.json');
+      const after = join(dir, 'after.json');
+      const rows = Array.from({ length: 5 }, (_, i) => ({
+        name: `case-${i}`, passed: ['healthy'], failed: [], na: [],
+      }));
+      writeFileSync(before, JSON.stringify(rows));
+      writeFileSync(after, JSON.stringify([rows[0], rows[2], rows[4]]));
+      expect(compare(before, after, ['--shard', '1/2']).status).toBe(0);
+      expect(compare(before, after, ['--shard', '2/2']).status).toBe(2);
+      writeFileSync(after, JSON.stringify([rows[0], rows[4]]));
+      const missing = compare(before, after, ['--shard', '1/2']);
+      expect(missing.status).toBe(2);
+      expect(missing.stderr).toContain('Missing scenario: case-2');
+      expect(compare(before, after, ['--shard', '0/2']).status).toBe(2);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
