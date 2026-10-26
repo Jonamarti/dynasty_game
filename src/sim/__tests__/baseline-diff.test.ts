@@ -49,4 +49,46 @@ describe('baseline diff CLI', () => {
       rmSync(dir, { recursive: true, force: true });
     }
   });
+  it('rejects missing scenarios, missing checks, and unexpected failed checks', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'dynasty-coverage-'));
+    try {
+      const before = join(dir, 'before.json');
+      const after = join(dir, 'after.json');
+      const baseline = [
+        { name: 'one', passed: ['stable'], failed: ['inherited'], na: ['inactive'] },
+        { name: 'two', passed: ['ok'], failed: [], na: [] },
+      ];
+      writeFileSync(before, JSON.stringify(baseline));
+      for (const [rows, message] of [
+        [[baseline[0]], 'Missing scenario: two'],
+        [[{ ...baseline[0], passed: [] }, baseline[1]], 'Missing check: one/stable'],
+        [[{ ...baseline[0], failed: ['inherited', 'new-bug'] }, baseline[1]], 'Unexpected check'],
+        [[...baseline, { name: 'three', passed: [], failed: [], na: [] }], 'Unexpected scenario'],
+      ] as const) {
+        writeFileSync(after, JSON.stringify(rows));
+        const result = compare(before, after);
+        expect(result.status).toBe(2);
+        expect(result.stderr).toContain(message);
+      }
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects an NA to FAIL regression and preserves known baseline failures', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'dynasty-transition-'));
+    try {
+      const before = join(dir, 'before.json');
+      const after = join(dir, 'after.json');
+      const baseline = [{ name: 'one', passed: [], failed: ['known'], na: ['inactive'] }];
+      writeFileSync(before, JSON.stringify(baseline));
+      writeFileSync(after, JSON.stringify(baseline));
+      expect(compare(before, after).status).toBe(0);
+      writeFileSync(after, JSON.stringify([{ name: 'one', passed: [], failed: ['known', 'inactive'], na: [] }]));
+      expect(compare(before, after).status).toBe(1);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
 });
