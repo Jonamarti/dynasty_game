@@ -48,7 +48,7 @@ test('a physical drying rack makes durable food and appears in the world', async
   await page.locator('.hud-tab[data-tab="kit"]').click();
   await expect(page.locator('.hud-panel')).toContainText('Carne seca');
   await expect(page.locator('.hud-panel')).toContainText('Pescado seco');
-  const shots = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m15-phase15b-drying-2026-10-10';
+  const shots = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/playwright/captures/preserving/m15-phase15b-drying-2026-10-10';
   mkdirSync(shots, { recursive: true });
   await page.screenshot({ path: `${shots}/01-secadero-y-comida-seca.png` });
   expect(errors).toEqual([]);
