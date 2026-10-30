@@ -121,6 +121,8 @@ jobs:
           cache: npm
       - name: Install
         run: npm ci || npm ci --legacy-peer-deps
+      - name: Reject historical screenshot paths and run guard fixture
+        run: node tools/check-e2e-captures.mjs
       - name: Install Chromium for Playwright
         run: npx playwright install --with-deps chromium
       - name: Playwright (shard ${{ matrix.shard }}/4)
