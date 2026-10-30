@@ -8,12 +8,12 @@
  *   DYNASTY_PORT=5401 node node_modules/@playwright/test/cli.js test e2e/phase19-pregnancy.spec.ts
  *
  * Paused throughout, with the camera fixed before any click (AGENTS.md).
- * Captures go to `artifacts/screenshots/m15-phase19-pregnancy-2026-10-07/`.
+ * Captures go to `artifacts/playwright/captures/phase19-pregnancy/m15-phase19-pregnancy-2026-10-07/`.
  */
 import { test, expect, type Page } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 
-const SHOTS = 'artifacts/screenshots/m15-phase19-pregnancy-2026-10-07';
+const SHOTS = 'artifacts/playwright/captures/phase19-pregnancy/m15-phase19-pregnancy-2026-10-07';
 
 type Woman = {
   id: number; x: number; y: number; bandId: number; sex: string; age: number; daysPerYear: number;

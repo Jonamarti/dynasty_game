@@ -46,7 +46,7 @@ for (const obstruction of ['hands', 'item-capacity'] as const) {
     const text = await page.evaluate(() => (window as any).__dynasty.renderer.floaters.items
       .find((item: any) => item.text.includes('receptor'))?.text);
     expect(text).toContain(obstruction === 'hands' ? 'mano' : 'antorcha');
-    const shots = 'artifacts/screenshots/m16-2026-10-24-2.26';
+    const shots = 'artifacts/playwright/captures/phase12d-torch/m16-2026-10-24-2.26';
     mkdirSync(shots, { recursive: true });
     await page.screenshot({ path: `${shots}/${obstruction === 'hands' ? '01-amends-recipient-no-free-hand' : '02-amends-recipient-torch-capacity'}-es.png` });
   });
@@ -60,7 +60,7 @@ test('a lit torch is visible and its fuel freezes with the paused world', async 
   await page.locator('.hud-button', { hasText: 'Pausa' }).click();
   await page.waitForFunction(() => !!(window as any).__dynasty?.renderer?.art);
   const shots = process.env.DYNASTY_CAPTURE_DIR ??
-    'artifacts/screenshots/m15-phase12d-torches-2026-10-10';
+    'artifacts/playwright/captures/phase12d-torch/m15-phase12d-torches-2026-10-10';
   mkdirSync(shots, { recursive: true });
 
   await page.evaluate(() => {
