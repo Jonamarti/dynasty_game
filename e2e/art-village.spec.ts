@@ -10,7 +10,7 @@
  */
 import { test, expect } from '@playwright/test';
 
-const DIR = 'artifacts/screenshots';
+const DIR = 'artifacts/playwright/captures/art-village';
 
 interface B { x: number; y: number; complete: boolean; def: { id: string; width: number; height: number; requiresTech: string | null } }
 interface Handle {
