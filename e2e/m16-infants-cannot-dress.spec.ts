@@ -1,7 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 
-const captureDir = 'artifacts/screenshots/m16-2026-10-18-2.27';
+const captureDir = 'artifacts/playwright/captures/m16-infants-cannot-dress/m16-2026-10-18-2.27';
 
 test('the Kit explains that a baby cannot dress itself until the child stage', async ({ page }) => {
   await page.setViewportSize({ width: 1400, height: 900 });

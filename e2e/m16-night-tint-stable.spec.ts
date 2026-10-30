@@ -1,14 +1,14 @@
 import { mkdirSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 
-const captureDir = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m16-2026-10-22-2.21/night';
+const captureDir = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/playwright/captures/m16-night-tint-stable/m16-2026-10-22-2.21/night';
 
 test('keeps spring ground stable while actually advancing days 5, 6 and 7', async ({ page }) => {
   await page.setViewportSize({ width: 1400, height: 900 });
   await page.goto('/?seed=530199218&skipIntro=1&defaults=1&lang=es');
   await expect(page.locator('.hud-clock')).not.toBeEmpty({ timeout: 15000 });
   await page.locator('.hud-button', { hasText: 'Pausa' }).click();
-  const dir = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m16-2026-10-22-2.21/after';
+  const dir = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/playwright/captures/m16-night-tint-stable/m16-2026-10-22-2.21/after';
   mkdirSync(dir, { recursive: true });
   const readings: { day: number; snow: number; pixel: number[] }[] = [];
   for (const day of [5, 6, 7]) {
