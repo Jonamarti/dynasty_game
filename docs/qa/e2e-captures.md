@@ -14,8 +14,13 @@
 ## Protección de CI
 
 1. Antes de Playwright, `node tools/check-e2e-captures.mjs` recorre todos los `e2e/*.spec.ts` y rechaza referencias a la ruta histórica, incluso con barras de Windows. Incluye casos de prueba positivos/negativos para el propio guard.
-2. Tras la suite, GitHub Actions utiliza `git diff --quiet -- artifacts/screenshots` para detectar y rechazar cualquier modificación de archivos históricos **versionados**.
-3. El directorio `artifacts/playwright` es desechable y no se versiona. El registro de hitos sigue deliberadamente separado.
+2. Tras la suite, `node tools/check-e2e-history.mjs` detecta cambios en imágenes versionadas **y** archivos nuevos (ignorados por Git) dentro del historial.
+3. `node --test tools/check-e2e-history.test.mjs tools/archive-e2e-milestone.test.mjs` prueba dos ejecuciones sintéticas, modificaciones del historial, archivos ignorados y rechazo de colisiones al archivar hitos.
+4. El directorio `artifacts/playwright` es desechable y no se versiona. El registro de hitos sigue deliberadamente separado.
+
+## Archivo explícito de hitos
+
+Una vez revisadas visualmente las capturas, se pueden copiar a una **nueva** carpeta de hito con `node tools/archive-e2e-milestone.mjs artifacts/playwright/captures/<spec> YYYY-MM-DD-slug`. El comando rechaza directorios de origen fuera de Playwright, enlaces simbólicos, archivos que no sean PNG, fechas incorrectas y carpetas de destino existentes; usa copia exclusiva. El hito nuevo debe añadirse manualmente con `git add -f` en una PR de aceptación visual separada. Nunca usar esta herramienta durante E2E rutinarias.
 
 ## Evidencias y límites
 
