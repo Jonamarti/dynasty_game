@@ -7,7 +7,7 @@
  */
 import { test, expect, type Page } from '@playwright/test';
 
-const SHOTS = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m15-phase31-globe-2026-10-06';
+const SHOTS = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/playwright/captures/globe/m15-phase31-globe-2026-10-06';
 
 function guardErrors(page: Page): string[] {
   const errors: string[] = [];

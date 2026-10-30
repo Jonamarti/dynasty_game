@@ -6,7 +6,7 @@
 import { mkdirSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 
-const SHOTS = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m15-fog-on-switch-2026-10-08';
+const SHOTS = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/playwright/captures/fog-on-switch/m15-fog-on-switch-2026-10-08';
 
 test('switching character blacks out everything beyond their sight, not their brain', async ({ page }) => {
   mkdirSync(SHOTS, { recursive: true });

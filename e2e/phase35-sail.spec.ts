@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const SHOTS = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m15-phase35-sail-2026-10-09';
+const SHOTS = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/playwright/captures/phase35-sail/m15-phase35-sail-2026-10-09';
 
 test('long sea journeys require logboat plus researched and physical sail', async ({ page }) => {
   await page.goto('/?skipIntro=1&seed=e2e-sail&world=random');

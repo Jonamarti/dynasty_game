@@ -1,8 +1,6 @@
 /** M15 phase 17: a real flint order drives the shared material-extraction gesture. */
-import { mkdirSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
 
-const SHOTS = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m15-extraction-animation-2026-10-10';
 
 test('a real flint pull shows the planted extraction stroke', async ({ page }) => {
   const errors: string[] = [];
@@ -35,7 +33,7 @@ test('a real flint pull shows the planted extraction stroke', async ({ page }) =
   expect(worker.action).toBe('gather');
   expect(worker.workedTicks).toBeGreaterThan(0);
   expect(worker.actionTimer).toBeGreaterThan(0);
-  mkdirSync(SHOTS, { recursive: true });
+  const SHOTS = test.info().outputPath('captures');
   await page.screenshot({ path: `${SHOTS}/00-active-flint-extraction.png` });
   expect(errors).toEqual([]);
 });

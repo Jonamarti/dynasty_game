@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-const DIR = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m15-river-tools-2026-10-08';
+const DIR = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/playwright/captures/earth-river-tools/m15-river-tools-2026-10-08';
 for (const [name, lon, lat] of [['Ebro', -0.88, 41.65], ['Danube', 12.1, 49]] as const) {
   test(`${name}: curved river, real bank resources, and working bank/crossing orders`, async ({ page }) => {
     const errors: string[] = [];

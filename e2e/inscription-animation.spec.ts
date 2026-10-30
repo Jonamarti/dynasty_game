@@ -70,7 +70,7 @@ test('a real inscription order animates four chisel strokes on its unfinished re
   });
   const frames = new Set<string>();
   const images = new Set<string>();
-  const shots = 'artifacts/screenshots/m15-inscription-animation-2026-10-13';
+  const shots = 'artifacts/playwright/captures/inscription-animation/m15-inscription-animation-2026-10-13';
   mkdirSync(shots, { recursive: true });
   for (let phase = 0; phase < 4; phase++) {
     const rendered = await page.evaluate(phase => {

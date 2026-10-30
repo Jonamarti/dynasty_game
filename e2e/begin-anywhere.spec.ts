@@ -13,7 +13,7 @@
  */
 import { test, expect, type Page } from '@playwright/test';
 
-const SHOTS = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m15-start-anywhere-rivers-2026-10-08';
+const SHOTS = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/playwright/captures/begin-anywhere/m15-start-anywhere-rivers-2026-10-08';
 
 function guardErrors(page: Page): string[] {
   const errors: string[] = [];

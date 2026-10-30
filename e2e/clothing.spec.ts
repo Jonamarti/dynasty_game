@@ -8,7 +8,7 @@ test('wearing a coat from the Kit warms the person and offers to take it off', a
   await expect(page.locator('.hud-clock')).not.toBeEmpty({ timeout: 15_000 });
   await page.locator('.hud-button', { hasText: 'Pause' }).click();
   await page.waitForFunction(() => !!(window as any).__dynasty?.renderer?.art);
-  const shots = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m15-phase14-ab-2026-10-10';
+  const shots = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/playwright/captures/clothing/m15-phase14-ab-2026-10-10';
   mkdirSync(shots, { recursive: true });
 
   await page.evaluate(() => {

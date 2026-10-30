@@ -1520,7 +1520,7 @@ test('a gathering NPC cycles visible poses, freezes while paused and releases th
     return npc.id;
   });
   await page.waitForTimeout(250); // Let the previous walking interpolation settle.
-  const captures = 'artifacts/screenshots/m15-gather-memory-' + new Date().toISOString().replace(/[:.]/g, '-');
+  const captures = 'artifacts/playwright/captures/smoke/m15-gather-memory-' + new Date().toISOString().replace(/[:.]/g, '-');
 
   // Observe the real renderer's aspect without changing which pixels it draws.
   await page.evaluate(() => {
@@ -1592,7 +1592,7 @@ test('digging tools appear in the craft bar and carried kit', async ({ page }) =
   await page.keyboard.press('m');
   await expect(page.locator('.hud-design-name', { hasText: 'Antler pick' })).toBeVisible();
   await expect(page.locator('.hud-design-name', { hasText: 'Wooden spade' })).toBeVisible();
-  const captures = 'artifacts/screenshots/m15-phase26b-' + new Date().toISOString().replace(/[:.]/g, '-');
+  const captures = 'artifacts/playwright/captures/smoke/m15-phase26b-' + new Date().toISOString().replace(/[:.]/g, '-');
   await page.screenshot({ path: captures + '/01-craft-tools.png' });
   await page.keyboard.press('Escape');
   await page.evaluate(() => {

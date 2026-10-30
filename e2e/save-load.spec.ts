@@ -7,7 +7,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 
-const SHOTS = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m15-phase33-save-2026-10-07';
+const SHOTS = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/playwright/captures/save-load/m15-phase33-save-2026-10-07';
 const WORLD = 'seed=e2e-globe&world=random';
 
 function guardErrors(page: Page): string[] {

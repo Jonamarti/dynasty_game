@@ -11,7 +11,7 @@ test('digging draws four clocked tool strokes only for a worker at the ground', 
   await page.waitForFunction(() => !!(window as any).__dynasty?.renderer?.art);
 
   const shots = process.env.DYNASTY_CAPTURE_DIR ??
-    'artifacts/screenshots/m15-dig-' + new Date().toISOString().replace(/[:.]/g, '-');
+    'artifacts/playwright/captures/dig-animation/m15-dig-' + new Date().toISOString().replace(/[:.]/g, '-');
   mkdirSync(shots, { recursive: true });
   await page.evaluate(() => {
     const d = (window as any).__dynasty;

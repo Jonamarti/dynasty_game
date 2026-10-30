@@ -58,7 +58,7 @@ test('a rack beside a hearth makes smoked food', async ({ page }) => {
   await page.locator('.hud-tab[data-tab="kit"]').click();
   await expect(page.locator('.hud-panel')).toContainText('Carne ahumada');
   await expect(page.locator('.hud-panel')).toContainText('Pescado ahumado');
-  const shots = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m15-phase15b-smoking-2026-10-10';
+  const shots = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/playwright/captures/smoking/m15-phase15b-smoking-2026-10-10';
   mkdirSync(shots, { recursive: true });
   await page.screenshot({ path: `${shots}/01-ahumado-junto-a-hoguera.png` });
   expect(errors).toEqual([]);

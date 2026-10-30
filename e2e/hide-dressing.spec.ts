@@ -27,7 +27,7 @@ test('Kit exposes hide dressing and sends the targeted action', async ({ page })
   const dress = page.locator('.hud-item-verbs [data-item="fur_coat"][data-verb="dress_hide"]');
   await expect(dress).toBeVisible();
   await expect(dress).toBeEnabled();
-  const shots = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/2026-10-12-hide-dressing';
+  const shots = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/playwright/captures/hide-dressing/2026-10-12-hide-dressing';
   mkdirSync(shots, { recursive: true });
   await page.screenshot({ path: `${shots}/01-hide-dressing-option.png` });
 

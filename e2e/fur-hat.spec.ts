@@ -31,7 +31,7 @@ test('a fur hat is worn from the Spanish Kit and visible on the head', async ({ 
     const { wornGarmentsOf } = await import(/* @vite-ignore */ path);
     return { item: d.sim.player.equipment.head?.item, drawn: wornGarmentsOf(d.sim.player).head };
   })).toEqual({ item: 'fur_hat', drawn: 'cap' });
-  const shots = 'artifacts/screenshots/m15-phase14c-fur-hat-2026-10-10';
+  const shots = 'artifacts/playwright/captures/fur-hat/m15-phase14c-fur-hat-2026-10-10';
   mkdirSync(shots, { recursive: true });
   await page.screenshot({ path: `${shots}/01-gorro-de-piel.png` });
   expect(errors).toEqual([]);

@@ -21,7 +21,7 @@ test('pemmican is made and preservation opens a populated Spanish web', async ({
   expect(count).toBe(2);
   await page.locator('.hud-tab[data-tab="kit"]').click();
   await expect(page.locator('.hud-panel')).toContainText('Pemmican');
-  const shots = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m15-phase15b-pemmican-2026-10-10';
+  const shots = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/playwright/captures/pemmican/m15-phase15b-pemmican-2026-10-10';
   mkdirSync(shots, { recursive: true });
   await page.screenshot({ path: `${shots}/01-pemmican-en-equipo.png` });
   await page.keyboard.press('g');

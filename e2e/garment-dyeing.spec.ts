@@ -41,7 +41,7 @@ test('red ochre dyes the exact worn garment, consumes pigment and renders its co
   });
   expect(appearance).toMatchObject({ dye: 'ochre', status: 1, pigment: 0, rendered: '#a33d23' });
   await expect(page.locator('.hud-panel')).toContainText('Abrigo de piel');
-  const shots = 'artifacts/screenshots/m15-phase14d-2026-10-12';
+  const shots = 'artifacts/playwright/captures/garment-dyeing/m15-phase14d-2026-10-12';
   mkdirSync(shots, { recursive: true });
   await page.evaluate(() => (window as any).__dynasty.renderer.floaters.clear());
   await page.mouse.move(0, 0);

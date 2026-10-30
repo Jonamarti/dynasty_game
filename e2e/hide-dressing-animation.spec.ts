@@ -48,7 +48,7 @@ test('an active hide-dressing order shows the treatment gesture', async ({ page 
     d.renderer.interpolator.clear();
     d.renderer.render(null, 0);
   });
-  const shots = 'artifacts/screenshots/m15-hide-dressing-animation-2026-10-13';
+  const shots = 'artifacts/playwright/captures/hide-dressing-animation/m15-hide-dressing-animation-2026-10-13';
   mkdirSync(shots, { recursive: true });
   await page.screenshot({ path: `${shots}/00-active-hide-dressing.png` });
   expect(errors).toEqual([]);

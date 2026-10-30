@@ -121,14 +121,22 @@ jobs:
           cache: npm
       - name: Install
         run: npm ci || npm ci --legacy-peer-deps
+      - name: Verify two isolated screenshot runs with a synthetic history
+        run: node --test tools/check-e2e-history.test.mjs tools/archive-e2e-milestone.test.mjs tools/capture-output-policy.test.mjs
+      - name: Reject historical screenshot paths and run guard fixture
+        run: node tools/check-e2e-captures.mjs
       - name: Install Chromium for Playwright
         run: npx playwright install --with-deps chromium
       - name: Playwright (shard ${{ matrix.shard }}/4)
         run: npm run e2e -- --shard=${{ matrix.shard }}/4 --reporter=github,list
-      - name: Upload traces on failure
-        if: failure()
+      - name: Protect historical screenshots (tracked and ignored)
+        if: always()
+        run: node tools/check-e2e-history.mjs
+      - name: Upload Playwright evidence
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-shard-${{ matrix.shard }}
           path: artifacts/playwright
+          if-no-files-found: ignore
           retention-days: 7

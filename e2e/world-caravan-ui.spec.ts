@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const SHOTS = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m15-phase36-caravans-2026-10-09';
+const SHOTS = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/playwright/captures/world-caravan-ui/m15-phase36-caravans-2026-10-09';
 
 test('the globe offers a caravan only for a known non-home comarca and sends the selected target', async ({ page }) => {
   await page.goto('/?skipIntro=1&seed=e2e-caravan-map&world=random');

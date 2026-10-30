@@ -42,7 +42,7 @@ test('a hosted rack dries meat inside a visible house room', async ({ page }) =>
   await page.locator('.hud-tab[data-tab="kit"]').click();
   await expect(page.locator('.hud-panel')).toContainText('Carne seca');
   await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve(null)))));
-  const shots = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m15-phase15b-indoor-rack-2026-10-10-final';
+  const shots = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/playwright/captures/indoor-preserving/m15-phase15b-indoor-rack-2026-10-10-final';
   mkdirSync(shots, { recursive: true });
   await page.screenshot({ path: `${shots}/03-secadero-interior-lejos-del-borde.png` });
   expect(errors).toEqual([]);

@@ -9,7 +9,7 @@ test('a humid forest comarca starts with a small drinking source without a no-wa
   const box = (await picker.locator('.worldpicker-canvas').boundingBox())!;
   await page.mouse.click(box.x + 47.5 / 96 * box.width, box.y + 11.5 / 48 * box.height);
   await picker.locator('[data-comarca-x="475"][data-comarca-y="115"]').click();
-  const dir = 'artifacts/screenshots/m16-2026-10-22-local-water';
+  const dir = 'artifacts/playwright/captures/world-map-choice/m16-2026-10-22-local-water';
   mkdirSync(dir, { recursive: true });
   await page.screenshot({ path: `${dir}/01-selected-forest.png` });
   await picker.locator('.worldpicker-begin').click();
@@ -28,7 +28,7 @@ test('a humid forest comarca starts with a small drinking source without a no-wa
 });
 
 const SHOTS = process.env.DYNASTY_CAPTURE_DIR ??
-  `artifacts/screenshots/m15-comarca-choice-${new Date().toISOString().replace(/[:.]/g, '-')}`;
+  `artifacts/playwright/captures/world-map-choice/m15-comarca-choice-${new Date().toISOString().replace(/[:.]/g, '-')}`;
 
 test('changing the atlas clears the old start and installs the selected map', async ({ page }) => {
   const errors: string[] = [];

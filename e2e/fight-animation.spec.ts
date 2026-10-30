@@ -63,7 +63,7 @@ test('a real attack order shows four guarded strike poses without changing comba
   expect(state.drawnPose).toMatch(/^k[0-3]$/);
   const frames = new Set<string>();
   const images = new Set<string>();
-  const shots = 'artifacts/screenshots/m15-fight-animation-2026-10-13';
+  const shots = 'artifacts/playwright/captures/fight-animation/m15-fight-animation-2026-10-13';
   mkdirSync(shots, { recursive: true });
   for (let phase = 0; phase < 4; phase++) {
     const rendered = await page.evaluate(phase => {

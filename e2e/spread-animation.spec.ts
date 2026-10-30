@@ -61,7 +61,7 @@ test('an active compost spreading order shows the soil-working gesture', async (
     d.renderer.interpolator.clear();
     d.renderer.render(null, 0);
   });
-  const shots = 'artifacts/screenshots/m15-spread-animation-2026-10-13';
+  const shots = 'artifacts/playwright/captures/spread-animation/m15-spread-animation-2026-10-13';
   mkdirSync(shots, { recursive: true });
   await page.screenshot({ path: `${shots}/00-active-compost-spreading.png` });
   expect(errors).toEqual([]);

@@ -63,7 +63,7 @@ test('a real ponder order animates generic thinking without disclosing its idea'
 
   const frames = new Set<string>();
   const images = new Set<string>();
-  const shots = 'artifacts/screenshots/m15-ponder-animation-2026-10-13';
+  const shots = 'artifacts/playwright/captures/ponder-animation/m15-ponder-animation-2026-10-13';
   mkdirSync(shots, { recursive: true });
   for (let phase = 0; phase < 4; phase++) {
     const rendered = await page.evaluate(phase => {

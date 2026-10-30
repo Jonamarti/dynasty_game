@@ -90,7 +90,7 @@ async function screenOf(page: Page, p: { x: number; y: number }): Promise<{ x: n
 }
 
 test('broth: the hearth offers it to somebody who knows stone boiling and holds two bones', async ({ page }) => {
-  const dir = 'artifacts/screenshots/m15-phase13d-stone_boiling-2026-10-06';
+  const dir = 'artifacts/playwright/captures/phase13d-nodes/m15-phase13d-stone_boiling-2026-10-06';
   mkdirSync(dir, { recursive: true });
   await openGame(page);
   const hearth = await furnish(page, {
@@ -110,7 +110,7 @@ test('broth: the hearth offers it to somebody who knows stone boiling and holds 
 });
 
 test('flatbread: the hearth offers it to somebody who knows it and holds a meal', async ({ page }) => {
-  const dir = 'artifacts/screenshots/m15-phase13d-flatbread-2026-10-06';
+  const dir = 'artifacts/playwright/captures/phase13d-nodes/m15-phase13d-flatbread-2026-10-06';
   mkdirSync(dir, { recursive: true });
   await openGame(page);
   const hearth = await furnish(page, {
@@ -128,7 +128,7 @@ test('flatbread: the hearth offers it to somebody who knows it and holds a meal'
 });
 
 test('projectile ammo: the hand-craft bar shows arrows and atlatl darts', async ({ page }) => {
-  const dir = 'artifacts/screenshots/m15-projectile-ammo-2026-10-12';
+  const dir = 'artifacts/playwright/captures/phase13d-nodes/m15-projectile-ammo-2026-10-12';
   mkdirSync(dir, { recursive: true });
   await openGame(page);
   await page.evaluate(() => {

@@ -31,7 +31,7 @@ test('leggings are worn from the Spanish Kit and visible on the legs', async ({ 
     const { wornGarmentsOf } = await import(/* @vite-ignore */ path);
     return { item: d.sim.player.equipment.legs?.item, drawn: wornGarmentsOf(d.sim.player).legs };
   })).toEqual({ item: 'leggings', drawn: 'trousers' });
-  const shots = 'artifacts/screenshots/m15-phase14c-leggings-2026-10-10';
+  const shots = 'artifacts/playwright/captures/leggings/m15-phase14c-leggings-2026-10-10';
   mkdirSync(shots, { recursive: true });
   await page.screenshot({ path: `${shots}/01-polainas.png` });
   expect(errors).toEqual([]);

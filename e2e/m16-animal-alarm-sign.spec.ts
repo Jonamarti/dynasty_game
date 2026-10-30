@@ -28,7 +28,7 @@ test('m16 animal alarm sign disappears when the alarm expires', async ({ page })
   await page.mouse.click(target.x, target.y);
   await page.locator('.picker-item', { hasText: target.label }).click();
   await expect(page.locator('.hud-doing')).toHaveText('bolting');
-  const shots = 'artifacts/screenshots/m16-2026-10-20-2.7-verified';
+  const shots = 'artifacts/playwright/captures/m16-animal-alarm-sign/m16-2026-10-20-2.7-verified';
   mkdirSync(shots, { recursive: true });
   await page.screenshot({ path: `${shots}/01-animal-alarmed.png` });
 

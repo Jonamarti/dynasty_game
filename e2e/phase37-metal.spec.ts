@@ -6,13 +6,13 @@
  *   DYNASTY_PORT=5399 node node_modules/@playwright/test/cli.js test e2e/phase37-metal.spec.ts
  *
  * Paused throughout, with the camera fixed on an open patch of ground before any
- * click (AGENTS.md). Captures go to `artifacts/screenshots/m15-phase37-metal-2026-10-07/`.
+ * click (AGENTS.md). Captures go to `artifacts/playwright/captures/phase37-metal/m15-phase37-metal-2026-10-07/`.
  */
 import { test, expect, type Page } from '@playwright/test';
 import { placeStationFixtureOnClaimedGround } from './helpers';
 import { mkdirSync } from 'node:fs';
 
-const SHOTS = 'artifacts/screenshots/m15-phase37-metal-2026-10-07';
+const SHOTS = 'artifacts/playwright/captures/phase37-metal/m15-phase37-metal-2026-10-07';
 
 type Debug = {
   __dynasty: {

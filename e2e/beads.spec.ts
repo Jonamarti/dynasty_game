@@ -27,7 +27,7 @@ test('bone beads are wearable, visible and retained as a physical status garment
     const { wornGarmentsOf } = await import(/* @vite-ignore */ path);
     return { item: d.sim.player.equipment.head?.item, drawn: wornGarmentsOf(d.sim.player).head };
   })).toEqual({ item: 'bone_beads', drawn: 'beads' });
-  const shots = 'artifacts/screenshots/m15-phase14d-2026-10-12';
+  const shots = 'artifacts/playwright/captures/beads/m15-phase14d-2026-10-12';
   mkdirSync(shots, { recursive: true });
   await page.screenshot({ path: `${shots}/01-bone-beads.png` });
 });

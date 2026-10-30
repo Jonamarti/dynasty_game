@@ -30,7 +30,7 @@ test('a globally allocated low-ID outcast still draws in neutral grey', async ({
   expect(bandId).toBeLessThan(1000);
   await expect.poll(() => page.evaluate(() => (window as any).__outcastColour)).toBe('#7d7d7d');
   const dir = process.env.DYNASTY_CAPTURE_DIR ??
-    'artifacts/screenshots/m15-group-colours-' + new Date().toISOString().replace(/[:.]/g, '-');
+    'artifacts/playwright/captures/group-colors/m15-group-colours-' + new Date().toISOString().replace(/[:.]/g, '-');
   await page.screenshot({ path: `${dir}/13-low-id-outcast.png` });
   expect(errors).toEqual([]);
 });
