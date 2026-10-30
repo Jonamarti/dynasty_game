@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-const SHOTS = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m15-phase34-travel-' + new Date().toISOString().replace(/[:.]/g, '-');
+const SHOTS = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/playwright/captures/comarca-travel/m15-phase34-travel-' + new Date().toISOString().replace(/[:.]/g, '-');
 
 test('the globe offers persistent travel controls and issues the chosen edge', async ({ page }) => {
   await page.goto('/?skipIntro=1&seed=e2e-globe&world=random');
