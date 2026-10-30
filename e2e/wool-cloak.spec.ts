@@ -40,7 +40,7 @@ test('a wool cloak replaces a hide cape from the Spanish Kit and is visible', as
   });
   expect(worn).toEqual({ item: 'wool_cloak', drawn: 'wool_cloak', warmth: 0.35, spare: 1 });
   await expect(page.locator('.hud-panel')).toContainText('Manto de lana');
-  const shots = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m15-phase14c-wool-cloak-2026-10-10';
+  const shots = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/playwright/captures/wool-cloak/m15-phase14c-wool-cloak-2026-10-10';
   mkdirSync(shots, { recursive: true });
   await page.screenshot({ path: `${shots}/01-manto-de-lana.png` });
   expect(errors).toEqual([]);
