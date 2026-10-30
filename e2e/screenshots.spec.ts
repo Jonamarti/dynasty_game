@@ -2,11 +2,10 @@
  * Screenshot tour. Not an assertion suite — a way to look at the game without
  * launching it, and to keep a visual record of how a change altered the view.
  *
- *   npm run shots   ->  artifacts/screenshots/
+ *   npm run shots   ->  artifacts/playwright/<test>/captures/ (isolated by Playwright)
  */
 import { test, expect } from '@playwright/test';
 
-const DIR = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots';
 
 /** A tour frame is useful only if its intended surface is actually visible. */
 async function capture(
@@ -52,7 +51,8 @@ async function clickThrough(
   await page.keyboard.press('Escape');
 }
 
-test('tour', async ({ page }) => {
+test('tour', async ({ page }, testInfo) => {
+  const DIR = testInfo.outputPath('captures');
   // The tour collects ~25 frames with settled waits between them and has run
   // right against the config's 60 s line since 1.2: on 2026-10-24 it died at
   // the overall timeout on its last frames on two serial runs even after the
