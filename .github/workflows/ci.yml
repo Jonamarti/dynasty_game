@@ -125,10 +125,20 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Playwright (shard ${{ matrix.shard }}/4)
         run: npm run e2e -- --shard=${{ matrix.shard }}/4 --reporter=github,list
-      - name: Upload traces on failure
-        if: failure()
+      - name: Protect versioned historical screenshots
+        if: always()
+        shell: bash
+        run: |
+          if ! git diff --quiet -- artifacts/screenshots; then
+            git diff --name-only -- artifacts/screenshots
+            echo "::error::E2E modified tracked milestone screenshots. Test captures must use testInfo.outputPath()."
+            exit 1
+          fi
+      - name: Upload Playwright evidence
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-shard-${{ matrix.shard }}
           path: artifacts/playwright
+          if-no-files-found: ignore
           retention-days: 7
