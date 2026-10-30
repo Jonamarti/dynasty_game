@@ -122,7 +122,7 @@ jobs:
       - name: Install
         run: npm ci || npm ci --legacy-peer-deps
       - name: Verify two isolated screenshot runs with a synthetic history
-        run: node --test tools/check-e2e-history.test.mjs tools/archive-e2e-milestone.test.mjs
+        run: node --test tools/check-e2e-history.test.mjs tools/archive-e2e-milestone.test.mjs tools/capture-output-policy.test.mjs
       - name: Reject historical screenshot paths and run guard fixture
         run: node tools/check-e2e-captures.mjs
       - name: Install Chromium for Playwright
