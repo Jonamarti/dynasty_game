@@ -8,8 +8,7 @@ const HISTORICAL = ['artifacts', 'screenshots'].join('/');
 
 function unsafeSource(source) {
   // Reject any reference, including dynamic path construction, to the historical root.
-  return source.includes(HISTORICAL) ||
-    /artifacts[\\\\\\/]+screenshots/i.test(source);
+  return source.replaceAll('\\\\', '/').includes(HISTORICAL);
 }
 
 function checkFixture() {
