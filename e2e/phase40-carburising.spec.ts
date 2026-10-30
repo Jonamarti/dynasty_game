@@ -3,7 +3,7 @@ import { test, expect, type Page } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 import { placeStationFixtureOnClaimedGround } from './helpers';
 
-const SHOTS = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m15-phase40-carburising-2026-10-08';
+const SHOTS = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/playwright/captures/phase40-carburising/m15-phase40-carburising-2026-10-08';
 
 async function openGame(page: Page): Promise<void> {
   await page.setViewportSize({ width: 1400, height: 900 });

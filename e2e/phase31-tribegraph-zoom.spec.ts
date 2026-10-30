@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 const SHOTS = process.env.DYNASTY_CAPTURE_DIR ??
-  'artifacts/screenshots/m15-tribegraph-mobile-zoom-2026-10-13';
+  'artifacts/playwright/captures/phase31-tribegraph-zoom/m15-tribegraph-mobile-zoom-2026-10-13';
 
 test('tribe graph keeps labels readable on mobile and supports pan and zoom', async ({ page }) => {
   const errors: string[] = [];

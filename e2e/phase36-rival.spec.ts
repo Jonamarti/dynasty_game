@@ -1,7 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
 
-const SHOTS = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m15-phase36-rival-integrated-2026-10-09';
+const SHOTS = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/playwright/captures/phase36-rival/m15-phase36-rival-integrated-2026-10-09';
 
 async function clickCell(page: import('@playwright/test').Page, col: number, row: number, cols: number, rows: number): Promise<void> {
   const box = (await page.locator('.worldmap-canvas').boundingBox())!;

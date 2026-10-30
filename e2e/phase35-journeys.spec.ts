@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 
-const SHOTS = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m15-phase35-journeys-2026-10-09';
+const SHOTS = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/playwright/captures/phase35-journeys/m15-phase35-journeys-2026-10-09';
 
 async function clickCell(page: Page, col: number, row: number, cols: number, rows: number): Promise<void> {
   const box = (await page.locator('.worldmap-canvas').boundingBox())!;

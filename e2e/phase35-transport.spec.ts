@@ -1,7 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
 
-const SHOTS = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m15-phase35-transport-2026-10-09';
+const SHOTS = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/playwright/captures/phase35-transport/m15-phase35-transport-2026-10-09';
 
 test('assigns a nearby donkey, shows it following, and keeps a released lease clear', async ({ page }) => {
   mkdirSync(SHOTS, { recursive: true });

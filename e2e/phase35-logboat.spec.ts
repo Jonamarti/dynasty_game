@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const DIR = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m15-phase35-logboat-2026-10-09';
+const DIR = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/playwright/captures/phase35-logboat/m15-phase35-logboat-2026-10-09';
 
 test('logboat knowledge and item unlock a sheltered salt-water crossing', async ({ page }) => {
   const errors: string[] = [];
