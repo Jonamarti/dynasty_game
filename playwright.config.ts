@@ -14,6 +14,10 @@ import { defineConfig } from '@playwright/test';
  * excludedportrange protocol=tcp` lists the ranges. Set DYNASTY_PORT to
  * anything outside them.
  */
+const customCapture = process.env.DYNASTY_CAPTURE_DIR?.replaceAll('\\\\', '/');
+if (customCapture && /(^|\\/)artifacts\\/screenshots(\\/|$)/.test(customCapture)) {
+  throw new Error('DYNASTY_CAPTURE_DIR cannot target historical artifacts/screenshots; use Playwright output paths.');
+}
 const PORT = Number(process.env.DYNASTY_PORT ?? 5173);
 const ORIGIN = 'http://localhost:' + PORT;
 
