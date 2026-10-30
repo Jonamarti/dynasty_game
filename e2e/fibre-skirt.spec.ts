@@ -2,7 +2,7 @@ import { mkdirSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 
 const SHOTS = process.env.DYNASTY_CAPTURE_DIR ??
-  'artifacts/screenshots/m15-phase14c-fibre-skirt-2026-10-10T-01';
+  'artifacts/playwright/captures/fibre-skirt/m15-phase14c-fibre-skirt-2026-10-10T-01';
 
 test('fibre skirt crafts in Spanish, equips in the hip slot, and can be removed', async ({ page }) => {
   const errors: string[] = [];
