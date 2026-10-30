@@ -8,7 +8,7 @@
 
 - Las specs que se han migrado a `test.info().outputPath('captures')` escriben dentro del directorio aislado por test, retry y worker.
 - Las demás specs escriben en `artifacts/playwright/captures/<nombre-spec>/` (también desechable). Es una ruta distinta por spec, no por test. No conservarla como registro de hitos.
-- `DYNASTY_CAPTURE_DIR` se mantiene como opción de salida, pero Playwright rechazará explícitamente un valor que dirija a `artifacts/screenshots`. Para capturas de hito hay que copiar **manualmente tras verificar el resultado** a una carpeta nueva por fecha e hito, mediante un PR independiente. No se permite que un test reescriba un hito existente.
+- `DYNASTY_CAPTURE_DIR` se mantiene como opción de salida, pero Playwright rechaza las variables `DYNASTY_*CAPTURE*`, `DYNASTY_*SCREENSHOT*` y `DYNASTY_*SHOTS*` que resuelvan al historial, incluidas rutas relativas con `..` y enlaces simbólicos. Para capturas de hito hay que copiar **manualmente tras verificar el resultado** a una carpeta nueva por fecha e hito, mediante un PR independiente. No se permite que un test reescriba un hito existente.
 - El workflow E2E adjunta `artifacts/playwright` en Actions tanto si las pruebas pasan como si fallan.
 
 ## Protección de CI
