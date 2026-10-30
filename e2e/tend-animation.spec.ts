@@ -71,7 +71,7 @@ test('a real tend order animates four dressing poses without changing the patien
 
   const frames = new Set<string>();
   const images = new Set<string>();
-  const shots = 'artifacts/screenshots/m15-tend-animation-2026-10-13';
+  const shots = 'artifacts/playwright/captures/tend-animation/m15-tend-animation-2026-10-13';
   mkdirSync(shots, { recursive: true });
   for (let phase = 0; phase < 4; phase++) {
     const rendered = await page.evaluate(phase => {

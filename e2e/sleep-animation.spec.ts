@@ -58,7 +58,7 @@ test('a real sleep order shows four lying poses only after arrival', async ({ pa
 
   const frames = new Set<string>();
   const images = new Set<string>();
-  const shots = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m15-sleep-animation-2026-10-13';
+  const shots = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/playwright/captures/sleep-animation/m15-sleep-animation-2026-10-13';
   mkdirSync(shots, { recursive: true });
   for (let phase = 0; phase < 4; phase++) {
     const rendered = await page.evaluate(phase => {
