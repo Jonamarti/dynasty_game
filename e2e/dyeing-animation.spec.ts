@@ -1,5 +1,5 @@
 /** M15 phase 17: dyeing a garment gets a visible four-stroke rubbing gesture. */
-import { mkdirSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
 
 const VERSION = JSON.parse(readFileSync('package.json', 'utf8')).version as string;
@@ -54,8 +54,7 @@ test('an active garment dye order shows rubbing work before the pigment commits'
     const d = (window as any).__dynasty;
     d.renderer.interpolator.clear(); d.renderer.render(null, 0);
   });
-  const shots = 'artifacts/screenshots/m15-dyeing-animation-2026-10-13';
-  mkdirSync(shots, { recursive: true });
+  const shots = test.info().outputPath('captures');
   await page.screenshot({ path: `${shots}/00-active-garment-dyeing.png` });
 
   const result = await page.evaluate(() => {
