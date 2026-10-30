@@ -69,7 +69,7 @@ test('a real hunt order animates the hunter only on active in-range work', async
   expect(state.drawnPose).toMatch(/^H[0-3]$/);
   const frames = new Set<string>();
   const images = new Set<string>();
-  const shots = 'artifacts/screenshots/m15-hunt-animation-2026-10-14';
+  const shots = 'artifacts/playwright/captures/hunt-animation/m15-hunt-animation-2026-10-14';
   mkdirSync(shots, { recursive: true });
   for (let phase = 0; phase < 4; phase++) {
     const rendered = await page.evaluate(phase => {

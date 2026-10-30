@@ -10,7 +10,7 @@ test('visible hearth light softens night without changing the paused world or pi
   await page.locator('.hud-button', { hasText: 'Pausa' }).click();
   await page.waitForFunction(() => !!(window as any).__dynasty?.renderer?.art);
   const shots = process.env.DYNASTY_CAPTURE_DIR ??
-    'artifacts/screenshots/m15-phase12c-light-' + new Date().toISOString().replace(/[:.]/g, '-');
+    'artifacts/playwright/captures/hearth-light/m15-phase12c-light-' + new Date().toISOString().replace(/[:.]/g, '-');
   mkdirSync(shots, { recursive: true });
 
   await page.evaluate(() => {
