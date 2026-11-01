@@ -10,6 +10,19 @@ import { dirname, resolve } from 'node:path';
 import { SCENARIOS, runScenario, formatReport, thousands, markMatrixRun } from './simcheck.ts';
 import { scenarioMatrixRecord, scenarioCheckDetails, type ScenarioMatrixRecord } from './scenario-matrix.ts';
 import { selectScenarios } from './scenario-selection.ts';
+import { validateScenarioOutputs } from './scenario-output.ts';
+
+const outputOption = (flag: string) => {
+  const index = process.argv.indexOf(flag);
+  return index < 0 ? undefined : process.argv[index + 1];
+};
+let validatedOutputs: ReturnType<typeof validateScenarioOutputs>;
+try {
+  validatedOutputs = validateScenarioOutputs(outputOption('--json'), outputOption('--details-json'));
+} catch (error) {
+  console.error(error instanceof Error ? error.message : String(error));
+  process.exit(2);
+}
 
 // M11 phase 17d: wall-clock checks report and do not judge in the matrix.
 markMatrixRun();
@@ -68,7 +81,7 @@ for (const scenario of selected) {
 }
 
 if (jsonPath) {
-  const outputPath = resolve(jsonPath);
+  const outputPath = validatedOutputs.matrix!;
   mkdirSync(dirname(outputPath), { recursive: true });
   writeFileSync(outputPath, JSON.stringify(matrixRecords, null, 2) + '\n', 'utf8');
 }
@@ -80,7 +93,7 @@ if (detailsIndex >= 0 && (!detailsPath || detailsPath.startsWith('--'))) {
   process.exit(2);
 }
 if (detailsPath) {
-  const outputPath = resolve(detailsPath);
+  const outputPath = validatedOutputs.details!;
   if (jsonPath && outputPath === resolve(jsonPath)) {
     console.error('Matrix and details must have different output paths');
     process.exit(2);
