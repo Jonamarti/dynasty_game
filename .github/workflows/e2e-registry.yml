@@ -17,6 +17,8 @@ jobs:
           node-version-file: .nvmrc
       - name: Negative tests
         run: node --test tools/check-e2e-registry.test.mjs
+      - name: Verify exact Node pin across production workflows
+        run: node --test tools/check-workflow-node-pin.test.mjs
       - name: Validate every Playwright spec is classified
         run: node tools/check-e2e-registry.mjs --json e2e-registry.json
       - name: Publish registry audit
