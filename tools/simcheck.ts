@@ -2486,7 +2486,10 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
     add('shelter-answers-cold',
       (tel.sheltering ?? 0) > 0 && last.avgCold < 80,
       'ticks spent sheltering=' + (tel.sheltering ?? 0) +
-        ' final avgCold=' + last.avgCold.toFixed(1));
+        ' final avgCold=' + last.avgCold.toFixed(1) +
+        '; capacity-denied roofs=' + (tel.roof_full ?? 0) +
+        '; midnight interior sleepers=' + (tel.sleep_home_samples ?? 0) +
+        '/' + (tel.sleep_mood_samples ?? 0));
   }
 
   // Wild food used to be scenery: two hundred bushes regrowing at a flat rate
@@ -2523,7 +2526,12 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
       (tel.marriage ?? 0) > 0 && (tel.birth ?? 0) > 0,
       'over ' + years + ' years: ' + (tel.courtship ?? 0) + ' courtships, ' +
         (tel.marriage ?? 0) + ' marriages, ' + (tel.conception ?? 0) + ' conceptions, ' +
-        (tel.birth ?? 0) + ' births, ' + (tel.succession ?? 0) + ' successions');
+        (tel.birth ?? 0) + ' births, ' + (tel.succession ?? 0) + ' successions' +
+        '; conception barriers: no-roof=' + (tel.conception_no_roof ?? 0) +
+        ', no-partner=' + (tel.conception_block_partner ?? 0) +
+        ', spacing=' + (tel.conception_block_spacing ?? 0) +
+        ', hunger=' + (tel.conception_block_hunger ?? 0) +
+        ', attempts=' + (tel.conception_attempt ?? 0));
   }
 
   // The wood is the one resource in this game that keeps time in years. These
