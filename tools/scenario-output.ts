@@ -1,4 +1,4 @@
-import { isAbsolute, relative, resolve, sep } from 'node:path';
+import { relative, resolve, sep } from 'node:path';
 
 /**
  * The matrix CLI produces disposable reports, NEVER canonical input fixtures.
