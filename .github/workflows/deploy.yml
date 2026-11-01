@@ -16,43 +16,42 @@ jobs:
     outputs:
       verified_sha: ${{ steps.verify.outputs.sha }}
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: master
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Test deployment authorization decisions
+        run: node --test tools/pages-authorization.test.mjs
       - name: Authorize exact CI commit and global verdict
         id: verify
         uses: actions/github-script@v7
         with:
           script: |
+            const {pathToFileURL} = require('node:url');
+            const {evaluatePagesAuthorization} = await import(
+              pathToFileURL(process.env.GITHUB_WORKSPACE + '/tools/pages-authorization.mjs').href
+            );
             const run = context.payload.workflow_run;
             const owner = context.repo.owner, repo = context.repo.repo;
-            if (run.repository?.full_name !== owner + '/' + repo ||
-                run.head_repository?.full_name !== owner + '/' + repo ||
-                run.name !== 'CI' || run.event !== 'push' ||
-                run.head_branch !== 'master' || run.conclusion !== 'success' ||
-                !/^[0-9a-f]{40}$/i.test(run.head_sha)) {
-              core.setFailed('CI event/repository/branch/SHA not authorized');
-              return;
-            }
             const { data: master } = await github.rest.repos.getBranch({owner, repo, branch:'master'});
-            if (master.commit.sha !== run.head_sha) {
-              core.setFailed('Master advanced since this CI run');
-              return;
-            }
             const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRunAttempt, {
               owner, repo, run_id:run.id, attempt_number:run.run_attempt, per_page:100
             });
-            const verdicts = jobs.filter(j => j.name === 'Full verification verdict');
-            if (verdicts.length !== 1 || verdicts[0].conclusion !== 'success') {
-              core.setFailed('Exactly one successful global verdict is required');
-              return;
-            }
             const artifacts = await github.paginate(github.rest.actions.listWorkflowRunArtifacts, {
               owner, repo, run_id:run.id, per_page:100
             });
-            const expected = 'ci-global-verdict-' + run.run_attempt;
-            if (artifacts.filter(a => a.name === expected && !a.expired).length !== 1) {
-              core.setFailed('Unique global-verdict artifact for this attempt missing');
+            const verdict = evaluatePagesAuthorization({
+              run, repository:owner + '/' + repo, masterSha:master.commit.sha,
+              jobs, artifacts
+            });
+            if (!verdict.allowed) {
+              core.setFailed(verdict.errors.join('; '));
               return;
             }
-            core.setOutput('sha',run.head_sha);
+            core.setOutput('sha',verdict.sha);
       - uses: actions/checkout@v4
         with:
           ref: ${{ steps.verify.outputs.sha }}
