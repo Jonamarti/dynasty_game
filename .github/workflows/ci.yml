@@ -103,6 +103,13 @@ jobs:
           if [ "$code" -gt 1 ]; then exit "$code"; fi
       - name: Compare with the baseline
         run: npm run baseline:diff -- fixtures/matrix-baseline.json matrix-shard.json --shard ${{ matrix.shard }}/4 --json matrix-diff.json --md matrix-diff.md
+      - name: Join regressions with their measurements
+        if: always()
+        run: |
+          node --test tools/matrix-failure-diagnostics.test.mjs
+          if [ -f matrix-diff.json ] && [ -f matrix-details.json ]; then
+            node tools/matrix-failure-diagnostics.mjs matrix-diff.json matrix-details.json matrix-measurements.md
+          fi
       - name: Upload scenario coverage and regression evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -113,6 +120,7 @@ jobs:
             matrix-details.json
             matrix-diff.json
             matrix-diff.md
+            matrix-measurements.md
           if-no-files-found: warn
           retention-days: 14
 
