@@ -1918,9 +1918,18 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
 
   const knowledgeChecked = tel.action_target_knowledge_checked ?? 0;
   const knowledgeUnknown = tel.action_target_knowledge_unknown ?? 0;
+  // A total such as 959/960 identifies a leak but not the action that chose
+  // the unknown target. Read the per-verb counters already emitted by Brain.
+  // No threshold is relaxed: a single unknown target still fails the matrix.
+  const unknownActions = ['forage', 'pick', 'drink', 'hunt', 'chop']
+    .map(action => ({ action, count: tel[`action_target_knowledge_unknown_${action}`] ?? 0 }))
+    .filter(({ count }) => count > 0);
+  const unknownDetail = unknownActions.length > 0
+    ? '; unknown by action: ' + unknownActions.map(({ action, count }) => `${action}=${count}`).join(', ')
+    : '';
   if (knowledgeChecked < 10) skip('people-act-on-what-they-know', knowledgeChecked + ' eligible resource targets (need 10)');
   else add('people-act-on-what-they-know', knowledgeUnknown === 0,
-    (knowledgeChecked - knowledgeUnknown) + '/' + knowledgeChecked + ' forage, pick, drink, hunt and chop targets visible or remembered');
+    (knowledgeChecked - knowledgeUnknown) + '/' + knowledgeChecked + ' forage, pick, drink, hunt and chop targets visible or remembered' + unknownDetail);
 
   const toldFoodTargets = tel.food_place_target_from_told ?? 0;
   if (base.scenario !== 'food-news') skip('word-of-food-travels', 'measured in food-news, where the rumour supplies the only food');
