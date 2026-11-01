@@ -882,6 +882,11 @@ const PREY_AT = 0.45;
 const JOB_BIAS_UP = 1.3;
 const JOB_BIAS_DOWN = 0.85;
 
+/** A remembered herd is knowledge of that species, not of every animal later at that spot. */
+export function rememberedHerdMatchesSpecies(kind: string, species: Animal['species']): boolean {
+  return kind === `herd:${species}`;
+}
+
 export class Brain {
   private readonly knownNodeCandidates: { node: ResourceNode; amount: number | null }[] = [];
   private readonly nearbyPiles: ItemPile[] = [];
@@ -3576,7 +3581,9 @@ export class Brain {
           (desperateForFood || withinReach(anchor, reach, place.x, place.y)));
       const rememberedQuarry = herdMemory
         ? ctx.animalHash.findNearest(herdMemory.x, herdMemory.y, 2,
-          animal => animal.alive && !animal.def.predator && Math.hypot(animal.x - herdMemory.x, animal.y - herdMemory.y) <= 1 &&
+          animal => animal.alive && !animal.def.predator &&
+            rememberedHerdMatchesSpecies(herdMemory.kind, animal.species) &&
+            Math.hypot(animal.x - herdMemory.x, animal.y - herdMemory.y) <= 1 &&
             ctx.world.sameRegion(person.x, person.y, animal.x, animal.y) &&
             (desperateForFood || withinReach(anchor, reach, animal.x, animal.y)))
         : null;
