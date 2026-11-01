@@ -1,0 +1,74 @@
+name: Deterministic runtime
+on:
+  pull_request:
+  push:
+    branches: [master]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  runtime:
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['22.23.3', '24']
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Test version gate
+        run: node --test tools/runtime-contract.test.mjs
+      - name: Verify accepted vs rejected runtime
+        shell: bash
+        run: |
+          if [[ "${{ matrix.node }}" == "22.23.3" ]]; then
+            node tools/runtime-contract.mjs assert --out runtime.json
+          else
+            if node tools/runtime-contract.mjs assert; then
+              echo "Unsupported Node accepted" >&2
+              exit 1
+            fi
+          fi
+      - name: Install dependencies for seeded replay
+        run: npm ci --legacy-peer-deps
+      - name: Replay pinned checkpoints (read-only)
+        run: ./node_modules/.bin/vite-node tools/runtime-checkpoint-probe.ts
+      - name: Upload checkpoint fingerprints
+        uses: actions/upload-artifact@v4
+        with:
+          name: checkpoints-${{ matrix.node }}
+          path: runtime-checkpoints.json
+          if-no-files-found: error
+      - name: Upload Node/V8 record
+        if: matrix.node == '22.23.3'
+        uses: actions/upload-artifact@v4
+        with:
+          name: runtime-22
+          path: runtime.json
+
+  compare-checkpoints:
+    needs: runtime
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: checkpoints-22.23.3
+          path: checkpoint-22
+      - uses: actions/download-artifact@v4
+        with:
+          name: checkpoints-24
+          path: checkpoint-24
+      - name: Test comparison contract and negative controls
+        run: node --test tools/runtime-checkpoint-compare.test.mjs
+      - name: Compare seeds 1-3 on Node 22 and 24
+        run: node tools/runtime-checkpoint-compare.mjs checkpoint-22/runtime-checkpoints.json checkpoint-24/runtime-checkpoints.json checkpoint-comparison.md
+      - name: Upload comparative evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: checkpoint-comparison
+          path: checkpoint-comparison.md
+          if-no-files-found: warn
