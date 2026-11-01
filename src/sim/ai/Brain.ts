@@ -4620,12 +4620,16 @@ export class Brain {
     let well: { x: number; y: number } | null = null;
     let wellDist = Infinity;
     for (const building of ctx.buildings) {
-      // `!building.ruined`, M11 phase 11b: a scorer that sent people to a
-      // sabotaged well would have them walk there, find nothing, and stand
-      // confused — the exact impossible-walk failure `canUse`'s own header
-      // warns about, one mechanism further on.
+      // A constructed well is not omniscient public knowledge. Like a
+      // natural shore, it must be visible or present in the person's own
+      // place memory. The old scan selected distant unseen wells, making a
+      // thirsty NPC use a resource target it had never discovered.
       if (!building.complete || building.ruined || !isWell(building.def)) continue;
-      const d = person.distanceTo({ x: building.centerX, y: building.centerY });
+      const x = building.centerX, y = building.centerY;
+      if (!this.canTravelTo(person, x, y, ctx)) continue;
+      if (person.distanceTo({ x, y }) > ctx.sightRadius &&
+          !person.placeMemory.hasNear(`building:${building.def.id}`, x, y)) continue;
+      const d = person.distanceTo({ x, y });
       if (d < wellDist) {
         wellDist = d;
         well = { x: building.centerX, y: building.centerY };
