@@ -102,7 +102,18 @@ jobs:
           # 1 = some inherited reds; anything above is a crash or a usage error.
           if [ "$code" -gt 1 ]; then exit "$code"; fi
       - name: Compare with the baseline
-        run: npm run baseline:diff -- fixtures/matrix-baseline.json matrix-shard.json --shard ${{ matrix.shard }}/4
+        run: npm run baseline:diff -- fixtures/matrix-baseline.json matrix-shard.json --shard ${{ matrix.shard }}/4 --json matrix-diff.json --md matrix-diff.md
+      - name: Upload scenario coverage and regression evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scenario-matrix-${{ matrix.shard }}
+          path: |
+            matrix-shard.json
+            matrix-diff.json
+            matrix-diff.md
+          if-no-files-found: warn
+          retention-days: 14
 
   e2e:
     name: E2E ${{ matrix.shard }}/4
