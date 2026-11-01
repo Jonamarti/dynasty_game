@@ -20,5 +20,5 @@ test('all production workflows use the exact shared Node version', () => {
 test('cross-runtime comparison remains explicitly multi-version', () => {
   const yaml = readFileSync('.github/workflows/runtime-compatibility.yml', 'utf8');
   assert.match(yaml, /matrix:\s*\n\s*node: \['22\.23\.3', '24'\]/);
-  assert.match(yaml, /node-version: \{\{ matrix\.node \}\}/);
+  assert.match(yaml, /node-version: \$\{\{ matrix\.node \}\}/);
 });
