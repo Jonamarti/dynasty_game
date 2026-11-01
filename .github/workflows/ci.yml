@@ -87,7 +87,7 @@ jobs:
       - name: Upload verified unit proof
         uses: actions/upload-artifact@v4
         with:
-          name: ci-gate-unit
+          name: ci-gate-${{ github.run_attempt }}-unit
           path: ci-gate-proofs/unit.json
           if-no-files-found: error
 
@@ -127,7 +127,7 @@ jobs:
       - name: Upload verified scenario proof
         uses: actions/upload-artifact@v4
         with:
-          name: ci-gate-matrix-${{ matrix.shard }}
+          name: ci-gate-${{ github.run_attempt }}-matrix-${{ matrix.shard }}
           path: ci-gate-proofs/matrix-${{ matrix.shard }}.json
           if-no-files-found: error
 
@@ -157,7 +157,7 @@ jobs:
       - name: Upload verified E2E proof
         uses: actions/upload-artifact@v4
         with:
-          name: ci-gate-e2e-${{ matrix.shard }}
+          name: ci-gate-${{ github.run_attempt }}-e2e-${{ matrix.shard }}
           path: ci-gate-proofs/e2e-${{ matrix.shard }}.json
           if-no-files-found: error
       - name: Upload traces on failure
@@ -182,7 +182,7 @@ jobs:
         if: needs.contract.result == 'success' && needs.unit.result == 'success' && needs.matrix.result == 'success' && needs.e2e.result == 'success'
         uses: actions/download-artifact@v4
         with:
-          pattern: ci-gate-*
+          pattern: ci-gate-${{ github.run_attempt }}-*
           path: ci-proof-downloads
           merge-multiple: true
       - name: Verify required jobs and every shard
@@ -196,6 +196,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ci-global-verdict
+          name: ci-global-verdict-${{ github.run_attempt }}
           path: ci-global-verdict.json
           if-no-files-found: warn
