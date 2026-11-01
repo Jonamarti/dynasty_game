@@ -1,0 +1,131 @@
+{
+  "version": 1,
+  "exclusions": [
+    {
+      "file": "e2e/art-village.spec.ts",
+      "category": "manual-visual",
+      "reason": "Historical visual review/capture workflow; not safe to add to standard E2E without approval and screenshot-history policy from PR #35.",
+      "tracking_issue": 9
+    },
+    {
+      "file": "e2e/art.spec.ts",
+      "category": "manual-visual",
+      "reason": "Historical visual review/capture workflow; not safe to add to standard E2E without approval and screenshot-history policy from PR #35.",
+      "tracking_issue": 9
+    },
+    {
+      "file": "e2e/block9-shots.spec.ts",
+      "category": "manual-visual",
+      "reason": "Historical visual review/capture workflow; not safe to add to standard E2E without approval and screenshot-history policy from PR #35.",
+      "tracking_issue": 9
+    },
+    {
+      "file": "e2e/screenshots.spec.ts",
+      "category": "manual-visual",
+      "reason": "Historical visual review/capture workflow; not safe to add to standard E2E without approval and screenshot-history policy from PR #35.",
+      "tracking_issue": 9
+    },
+    {
+      "file": "e2e/beads.spec.ts",
+      "category": "deferred-functional",
+      "reason": "Functional E2E omitted from standard suite; requires safe capture paths from PR #35 and individual run before enabling in CI.",
+      "tracking_issue": 9
+    },
+    {
+      "file": "e2e/begin-anywhere.spec.ts",
+      "category": "deferred-functional",
+      "reason": "Functional E2E omitted from standard suite; requires safe capture paths from PR #35 and individual run before enabling in CI.",
+      "tracking_issue": 9
+    },
+    {
+      "file": "e2e/bench-rest-animation.spec.ts",
+      "category": "deferred-functional",
+      "reason": "Functional E2E omitted from standard suite; requires safe capture paths from PR #35 and individual run before enabling in CI.",
+      "tracking_issue": 9
+    },
+    {
+      "file": "e2e/building-animation.spec.ts",
+      "category": "deferred-functional",
+      "reason": "Functional E2E omitted from standard suite; requires safe capture paths from PR #35 and individual run before enabling in CI.",
+      "tracking_issue": 9
+    },
+    {
+      "file": "e2e/farming-animation.spec.ts",
+      "category": "deferred-functional",
+      "reason": "Functional E2E omitted from standard suite; requires safe capture paths from PR #35 and individual run before enabling in CI.",
+      "tracking_issue": 9
+    },
+    {
+      "file": "e2e/garment-dyeing.spec.ts",
+      "category": "deferred-functional",
+      "reason": "Functional E2E omitted from standard suite; requires safe capture paths from PR #35 and individual run before enabling in CI.",
+      "tracking_issue": 9
+    },
+    {
+      "file": "e2e/hide-dressing.spec.ts",
+      "category": "deferred-functional",
+      "reason": "Functional E2E omitted from standard suite; requires safe capture paths from PR #35 and individual run before enabling in CI.",
+      "tracking_issue": 9
+    },
+    {
+      "file": "e2e/mending-animation.spec.ts",
+      "category": "deferred-functional",
+      "reason": "Functional E2E omitted from standard suite; requires safe capture paths from PR #35 and individual run before enabling in CI.",
+      "tracking_issue": 9
+    },
+    {
+      "file": "e2e/orchard.spec.ts",
+      "category": "deferred-functional",
+      "reason": "Functional E2E omitted from standard suite; requires safe capture paths from PR #35 and individual run before enabling in CI.",
+      "tracking_issue": 9
+    },
+    {
+      "file": "e2e/phase16-rug.spec.ts",
+      "category": "deferred-functional",
+      "reason": "Functional E2E omitted from standard suite; requires safe capture paths from PR #35 and individual run before enabling in CI.",
+      "tracking_issue": 9
+    },
+    {
+      "file": "e2e/phase16d-bench.spec.ts",
+      "category": "deferred-functional",
+      "reason": "Functional E2E omitted from standard suite; requires safe capture paths from PR #35 and individual run before enabling in CI.",
+      "tracking_issue": 9
+    },
+    {
+      "file": "e2e/phase16d-fat-lamp.spec.ts",
+      "category": "deferred-functional",
+      "reason": "Functional E2E omitted from standard suite; requires safe capture paths from PR #35 and individual run before enabling in CI.",
+      "tracking_issue": 9
+    },
+    {
+      "file": "e2e/phase19-pregnancy.spec.ts",
+      "category": "deferred-functional",
+      "reason": "Functional E2E omitted from standard suite; requires safe capture paths from PR #35 and individual run before enabling in CI.",
+      "tracking_issue": 9
+    },
+    {
+      "file": "e2e/phase26e-irrigation.spec.ts",
+      "category": "deferred-functional",
+      "reason": "Functional E2E omitted from standard suite; requires safe capture paths from PR #35 and individual run before enabling in CI.",
+      "tracking_issue": 9
+    },
+    {
+      "file": "e2e/phase40-bog-iron.spec.ts",
+      "category": "deferred-functional",
+      "reason": "Functional E2E omitted from standard suite; requires safe capture paths from PR #35 and individual run before enabling in CI.",
+      "tracking_issue": 9
+    },
+    {
+      "file": "e2e/save-load.spec.ts",
+      "category": "deferred-functional",
+      "reason": "Functional E2E omitted from standard suite; requires safe capture paths from PR #35 and individual run before enabling in CI.",
+      "tracking_issue": 9
+    },
+    {
+      "file": "e2e/world-picker.spec.ts",
+      "category": "deferred-functional",
+      "reason": "Functional E2E omitted from standard suite; requires safe capture paths from PR #35 and individual run before enabling in CI.",
+      "tracking_issue": 9
+    }
+  ]
+}
