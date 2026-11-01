@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 
 test('bog iron explains the missing mining knowledge in Spanish', async ({ page }) => {
-  const dir = 'artifacts/screenshots/m15-phase40-bog-iron-2026-10-07';
+  const dir = 'artifacts/playwright/captures/phase40-bog-iron/m15-phase40-bog-iron-2026-10-07';
   mkdirSync(dir, { recursive: true });
   await page.setViewportSize({ width: 1400, height: 900 });
   await page.goto('/?seed=metal-bog-iron&skipIntro=1&lang=es');

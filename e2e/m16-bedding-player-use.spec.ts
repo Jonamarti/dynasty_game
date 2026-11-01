@@ -1,7 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
 
-const captureDir = 'artifacts/screenshots/m16-2026-10-21-2.20';
+const captureDir = 'artifacts/playwright/captures/m16-bedding-player-use/m16-2026-10-21-2.20';
 
 test('orders sleep on household bedding and picks it up from the radial menu', async ({ page }) => {
   await page.setViewportSize({ width: 1400, height: 900 });

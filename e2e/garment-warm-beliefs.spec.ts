@@ -10,7 +10,7 @@ test('garment warmth is learned from wearing and only seen in public view', asyn
   await page.waitForFunction(() => !!(window as any).__dynasty?.renderer?.art);
 
   const shots = process.env.DYNASTY_CAPTURE_DIR ??
-    'artifacts/screenshots/m15-phase14c-garment-warm-beliefs-2026-10-10';
+    'artifacts/playwright/captures/garment-warm-beliefs/m15-phase14c-garment-warm-beliefs-2026-10-10';
   mkdirSync(shots, { recursive: true });
 
   await page.evaluate(() => {

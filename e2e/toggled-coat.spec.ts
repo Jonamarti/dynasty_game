@@ -32,7 +32,7 @@ test('a toggled coat is worn from the Spanish Kit and visible on the torso', asy
     const { wornGarmentsOf } = await import(/* @vite-ignore */ path);
     return { item: d.sim.player.equipment.torso?.item, drawn: wornGarmentsOf(d.sim.player).torso };
   })).toEqual({ item: 'toggled_coat', drawn: 'toggled_coat' });
-  const shots = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m15-phase14c-toggled-coat-2026-10-10';
+  const shots = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/playwright/captures/toggled-coat/m15-phase14c-toggled-coat-2026-10-10';
   mkdirSync(shots, { recursive: true });
   await page.screenshot({ path: `${shots}/01-abrigo-con-alamares.png` });
   expect(errors).toEqual([]);

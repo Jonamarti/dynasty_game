@@ -52,7 +52,7 @@ test('a real reflect order animates without inventing or revealing an idea', asy
   expect(state.target).toBeNull();
 
   const frames = new Set<string>(), images = new Set<string>();
-  const shots = 'artifacts/screenshots/m15-reflection-animation-2026-10-13';
+  const shots = 'artifacts/playwright/captures/reflect-animation/m15-reflection-animation-2026-10-13';
   mkdirSync(shots, { recursive: true });
   for (let phase = 0; phase < 4; phase++) {
     const rendered = await page.evaluate(phase => {

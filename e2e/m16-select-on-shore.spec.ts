@@ -1,7 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 
-const captureDir = 'artifacts/screenshots/m16-2026-10-18-2.23';
+const captureDir = 'artifacts/playwright/captures/m16-select-on-shore/m16-2026-10-18-2.23';
 
 async function clickPersonOnCoast(page: Page, kind: 'wading' | 'beach'): Promise<void> {
   await page.setViewportSize({ width: 1400, height: 900 });
