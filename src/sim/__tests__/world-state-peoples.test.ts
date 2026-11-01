@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createHash } from 'node:crypto';
+import { TREES } from '../entities/Tree.ts';
 import { randomWorldGeography } from '../world/WorldGeography.ts';
 import { findGlobeStart } from '../world/WorldTerrain.ts';
 import { WorldState } from '../world/WorldState.ts';
@@ -82,6 +83,14 @@ describe('saving the whole game (phase 33c)', () => {
     world.simulation.objects.graph = expand(world.simulation.objects.graph);
     return JSON.stringify(world);
   };
+
+  it('m16-load-rebinds-tree-species: a loaded tree and a new seedling share the same definition', () => {
+    const world = globe('wsp-1');
+    const loaded = deserializeSave(serializeSave(world, 1));
+    for (const tree of loaded.current.trees) {
+      expect(tree.def).toBe(TREES[tree.def.species]);
+    }
+  });
 
   it.fails('m16-load-keeps-sharing: save, load, and advance preserves the exact object graph', () => {
     const live = globe('wsp-1');
