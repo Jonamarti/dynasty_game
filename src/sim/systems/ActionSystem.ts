@@ -3380,12 +3380,22 @@ export class ActionSystem {
     this.finish(person);
   }
 
+/**
+ * A hut's footprint includes impassable walls and its doorway. Reaching that
+ * footprint is not the same as entering the insulated room. The cold system
+ * only protects somebody within isUnderRoof(), so the shelter action must use
+ * the very same predicate as sleeping before crediting a warm refuge.
+ */
+export function shelterNeedsEntry(building: Building, x: number, y: number): boolean {
+  return !!(building.def.interior || building.def.roofed) && !isUnderRoof(building, x, y);
+}
+
   /** Waits out the cold indoors, and leaves once there is no longer a reason. */
   private doShelter(person: Person, ctx: ActionContext): void {
     const building = this.reachBuilding(person, ctx, undefined, 'trespass');
     if (!building) return;
     if (!hasRoomFor(building, person, ctx.peopleHash)) { this.stop(person, 'roof_full', ctx); return; }
-    if (building.def.roofed && !isUnderRoof(building, person.x, person.y)) {
+    if (shelterNeedsEntry(building, person.x, person.y)) {
       person.targetX = building.centerX;
       person.targetY = building.centerY;
       this.travel(person, ctx);
