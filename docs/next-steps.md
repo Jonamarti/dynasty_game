@@ -1,8 +1,56 @@
-## Estado vigente — 2026-10-16
+## Estado vigente — 2026-11-02 (M16, todavía alfa)
 
-M15 sigue siendo el único plan activo y **permanece abierto**. El estado
-autoritativo de sus fases es [m15_plan.md](m15_plan.md); esta página conserva
-el diario de decisiones y entregas históricas debajo de este resumen.
+**M16 es el plan de desarrollo activo**, en `0.16.x-alpha`; la versión alfa no
+se abandona sin decisión expresa del propietario. El protocolo de fases está
+en [m16/README.md](m16/README.md) y la auditoría con dependencias, en
+[issue #31](https://github.com/Jonamarti/dynasty_game/issues/31). Los informes
+de M15 que aparecen más abajo son **históricos**, no instrucciones para iniciar
+otra vez M15 ni una señal de que las fases M16 estén cerradas.
+
+Corte de referencia: `master` `c87bf268` (2-11-2026). En GitHub se han integrado
+las PR #3, #5, #6 (ocupación, hacha, refugio inicial), #33 (contrato de cuevas),
+#35 (protección de capturas), #36 (inventario E2E), #39 (runtime fijado),
+#46 (pozos conocidos), #47 (diagnóstico de matrices), #48 (E2E de equipo),
+#50 (testigo de presa desconocida) y #40 (diagnóstico de identidad de grafo).
+**Una PR integrada no cierra automáticamente su issue ni acredita el resultado
+de una cohorte.**
+
+Prioridades actuales y dependencias:
+
+- **CI:** [#8](https://github.com/Jonamarti/dynasty_game/issues/8) mantiene
+  regresiones heredadas en las matrices; la pila #34 → #37 → #38
+  (inventario estricto, veredicto global y Pages seguro) sigue sin integrarse.
+  [#9](https://github.com/Jonamarti/dynasty_game/issues/9) conserva pruebas E2E
+  funcionales diferidas pese al inventario de #36.
+- **Persistencia actual:** [#17](https://github.com/Jonamarti/dynasty_game/issues/17)
+  tiene evidencia de pérdida de alias entre crónicas de actor y víctima tras
+  guardar/cargar; #40 es diagnóstico integrado, #51 es una corrección en
+  borrador. #42 (definiciones de árboles) también permanece en borrador.
+- **Conocimiento de la IA:** [#18](https://github.com/Jonamarti/dynasty_game/issues/18)
+  detecta caza de presas invisibles de otra especie junto a manadas recordadas.
+  #45 provoca regresiones; #52 ensaya rastrear el lugar conocido en vez de
+  perseguir el animal desconocido. Ambas siguen en borrador.
+- **Refugios y economía:** #49 corrige una incoherencia de entrada física bajo
+  techo, pero causa regresiones nuevas en las cuatro matrices y no resuelve
+  todavía el frío de `orchard`. No fusionar ni modificar la baseline para
+  ocultarlo. La choza 3×3 de #7 también requiere reconciliación y pruebas.
+- **Planificación:** [#25](https://github.com/Jonamarti/dynasty_game/issues/25)
+  sigue abierta para reconciliar tarjetas, dependencias, dudas y flujo de
+  agentes remotos; esta actualización solo corrige la portada del estado.
+
+Los cambios funcionales requieren pruebas de capacidad, E2E, matriz emparejada
+y análisis de nuevos PASS→FAIL/NA; los rojos heredados no se convierten en
+verdes ni se re-pinnean automáticamente. La política de guardados en
+[AGENTS.md](../AGENTS.md) exige continuidad dentro de la **misma versión
+actual**; la compatibilidad de partidas alfa antiguas queda aplazada hasta beta.
+
+---
+
+## Historial — estado declarado el 2026-10-16 (M15)
+
+En aquel corte, M15 seguía siendo el único plan activo y **permanecía abierto**.
+El estado autoritativo de sus fases era [m15_plan.md](m15_plan.md); esta página
+conserva el diario de decisiones y entregas históricas debajo de ese resumen.
 
 - **Respuesta a ataques (2026-10-16):** arreglado el ataque autónomo repetido
   contra un KO, con motivo visible y filtro del scorer. La orden explícita
