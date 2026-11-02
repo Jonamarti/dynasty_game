@@ -61,7 +61,7 @@ describe('M16: shelter only warms people inside a covered roof', () => {
   it('also requires an actual roofed lean-to footprint before claiming shelter', () => {
     const lean = new Building(BUILDINGS.lean_to!, 20, 20, 1);
     lean.complete = true;
-    expect(shelterNeedsEntry(lean, 19.5, 20.5)).toBe(true);
+    expect(shelterNeedsEntry(lean, 19.0, 20.5)).toBe(true); // contains() starts at x=19.5
     expect(shelterNeedsEntry(lean, lean.centerX, lean.centerY)).toBe(false);
   });
 
