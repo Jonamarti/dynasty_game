@@ -2,7 +2,7 @@
 
 - Corregida la restauración del mismo objeto `deed` entre el autor y la víctima tras guardar cada persona en un `PersonRecord` separado. El enlace se reconstruye solo si coinciden tick, texto, tipo y participantes, emparejando por orden los hechos repetidos en el mismo tick.
 - Pruebas nuevas para la identidad compartida, dos hechos idénticos distintos, crónicas sin contrapartida y guardado/carga real de la versión actual.
-- No se modifica el formato de guardado, RNG, semillas ni referencias de matrices. La comparación exhaustiva de grafos `m16-load-keeps-sharing` sigue como fallo conocido hasta demostrar la corrección de todas las identidades, no solo de las crónicas.
+- No se modifica el formato de guardado, RNG, semillas ni referencias de matrices. La comparación exhaustiva de grafos `m16-load-keeps-sharing` dejó de fallar en la CI inicial: los checkpoints 1/2/4/8/12/16/20 días y el hash final de grafo coinciden. Se convierte `it.fails` en prueba obligatoria y se exige que no haya divergencias intermedias; pendiente validar el nuevo commit completo antes del merge.
 
 ## 2026-11-02 — M16 0.16.24-alpha — pozos solo conocidos
 
