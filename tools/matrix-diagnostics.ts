@@ -10,6 +10,6 @@ export function matrixFailureDetails(
   checks: readonly Pick<Check, 'id' | 'ok' | 'skipped' | 'detail'>[],
 ): string[] {
   return checks
-    .filter(check => !check.ok && !check.skipped)
-    .map(check => `  ${scenario} / ${check.id}: ${check.detail}`);
+    .filter(check => !check.ok || check.skipped)
+    .map(check => `  ${check.skipped ? 'N/A' : 'FAIL'} ${scenario} / ${check.id}: ${check.detail}`);
 }
