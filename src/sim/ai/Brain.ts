@@ -882,6 +882,24 @@ const PREY_AT = 0.45;
 const JOB_BIAS_UP = 1.3;
 const JOB_BIAS_DOWN = 0.85;
 
+/**
+ * A memory of deer at this spot is knowledge of the spot, not of an unseen
+ * boar standing there now. If the scorer found a different species at a
+ * remembered herd site, travel to the remembered coordinates to look again;
+ * do not begin a chase of an exact animal the person has never perceived.
+ *
+ * The normal visible and correctly remembered hunts are untouched.
+ */
+export function rememberedHerdSiteForUnknownQuarry(
+  person: Person, quarry: Pick<Animal, 'x' | 'y' | 'species'>, sightRadius: number,
+): { x: number; y: number } | null {
+  if (person.distanceTo(quarry) <= sightRadius ||
+      person.placeMemory.hasNear(`herd:${quarry.species}`, quarry.x, quarry.y)) return null;
+  const place = person.placeMemory.nearestAny(quarry.x, quarry.y, 1,
+    record => record.kind.startsWith('herd:'));
+  return place ? { x: place.x, y: place.y } : null;
+}
+
 export class Brain {
   private readonly knownNodeCandidates: { node: ResourceNode; amount: number | null }[] = [];
   private readonly nearbyPiles: ItemPile[] = [];
@@ -1017,9 +1035,9 @@ export class Brain {
     if (urgentDrink || urgentFoodAction || urgentFoodExplore || continuingRoute) {
       const chosen = urgentDrink ? 'drink' : urgentFoodAction ? urgentFoodRow!.id :
         urgentFoodExplore ? 'explore' : person.action;
-      this.setup(person, chosen, ctx, found);
-      saveCommitment(chosen);
-      return recordDecision(chosen);
+      const actual = this.setupKnowledgeSafe(person, chosen, ctx, found);
+      saveCommitment(actual);
+      return recordDecision(actual);
     }
     // At `choiceSpread: 0` this is `pool[0]` and takes no draw, which is why
     // the commit that introduced it was bit-identical. Above 0 it picks among
@@ -1029,9 +1047,9 @@ export class Brain {
     const chosen = chooseAmongBest(decisionPool, ctx.choiceRng, ctx.choiceSpread)?.id
       ?? (allowed ? null : 'wander');
     if (chosen === null) return recordDecision(null);
-    this.setup(person, chosen, ctx, found);
-    saveCommitment(chosen);
-    return recordDecision(chosen);
+    const actual = this.setupKnowledgeSafe(person, chosen, ctx, found);
+    saveCommitment(actual);
+    return recordDecision(actual);
   }
 
   /**
@@ -5052,6 +5070,25 @@ export class Brain {
         reachDistance));
       include(person.placeMemory.nearest(`resource:${kind}`, person.x, person.y, accepts));
     }
+  }
+
+  /**
+   * Only the chosen autonomous hunt is redirected. Filtering the scorer's
+   * candidates earlier changes many non-selected options and has already
+   * destabilised unrelated population cohorts (#45).
+   */
+  private setupKnowledgeSafe(person: Person, chosen: string, ctx: BrainContext, found: FoundTargets): string {
+    if (chosen === 'hunt' && !person.isPlayer && person.order === null && found.quarry) {
+      const site = rememberedHerdSiteForUnknownQuarry(person, found.quarry, ctx.sightRadius);
+      if (site) {
+        found.explorePoint = site;
+        this.setup(person, 'explore', ctx, found);
+        telemetry.count('hunt_track_remembered_site');
+        return 'explore';
+      }
+    }
+    this.setup(person, chosen, ctx, found);
+    return chosen;
   }
 
   private setup(
