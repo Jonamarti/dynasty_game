@@ -13,6 +13,7 @@ export default defineConfig({
       'src/sim/__tests__/baseline-diff.test.ts',
       'src/sim/__tests__/scenario-matrix.test.ts',
       'src/sim/__tests__/scenario-selection.test.ts',
+      'src/sim/__tests__/m16-shelter-interior-arrival.test.ts',
       'src/render/__tests__/pixel-cache.test.ts',
     ],
     maxWorkers: 1,
