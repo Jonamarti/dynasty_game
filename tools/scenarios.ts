@@ -9,12 +9,14 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { SCENARIOS, runScenario, formatReport, thousands, markMatrixRun } from './simcheck.ts';
 import { scenarioMatrixRecord, type ScenarioMatrixRecord } from './scenario-matrix.ts';
+import { matrixFailureDetails } from './matrix-diagnostics.ts';
 import { selectScenarios } from './scenario-selection.ts';
 
 // M11 phase 17d: wall-clock checks report and do not judge in the matrix.
 markMatrixRun();
 
 const verbose = process.argv.includes('--verbose');
+const diagnose = process.argv.includes('--diagnose');
 const includeSlow = process.argv.includes('--slow');
 const areaIndex = process.argv.indexOf('--area');
 const area = areaIndex >= 0 ? process.argv[areaIndex + 1] : undefined;
@@ -43,6 +45,7 @@ if (shardIndex >= 0) {
 }
 const rows: { name: string; passed: number; total: number; failed: string[]; stepsPerSecond: number }[] = [];
 const matrixRecords: ScenarioMatrixRecord[] = [];
+const failureDetails: string[] = [];
 const jsonIndex = process.argv.indexOf('--json');
 const jsonPath = jsonIndex >= 0 ? process.argv[jsonIndex + 1] : undefined;
 if (jsonIndex >= 0 && (!jsonPath || jsonPath.startsWith('--'))) {
@@ -54,6 +57,7 @@ for (const scenario of selected) {
   const report = runScenario(scenario);
   if (verbose) console.log(formatReport(report));
   const failed = report.checks.filter(c => !c.ok);
+  if (diagnose) failureDetails.push(...matrixFailureDetails(scenario.name, report.checks));
   const applicable = report.checks.filter(c => !c.skipped);
   matrixRecords.push(scenarioMatrixRecord(scenario.name, report.checks));
   rows.push({
@@ -85,6 +89,12 @@ for (const row of rows) {
   );
 }
 console.log('='.repeat(78));
+
+if (diagnose && failureDetails.length > 0) {
+  console.log('');
+  console.log('FAILED / N/A CHECK DETAILS (measurements and missing preconditions, no baseline adjustment)');
+  for (const detail of failureDetails) console.log(detail);
+}
 
 const anyFailed = rows.some(r => r.failed.length > 0);
 console.log(anyFailed ? 'SOME SCENARIOS FAILED' : 'ALL SCENARIOS HEALTHY');

@@ -96,7 +96,7 @@ jobs:
       - name: Scenarios (shard ${{ matrix.shard }}/4)
         run: |
           set +e
-          npm run sim:check:all -- --slow --shard ${{ matrix.shard }}/4 --json matrix-shard.json
+          npm run sim:check:all -- --slow --shard ${{ matrix.shard }}/4 --json matrix-shard.json --diagnose
           code=$?
           set -e
           # 1 = some inherited reds; anything above is a crash or a usage error.

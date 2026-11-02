@@ -13,6 +13,7 @@ export default defineConfig({
       'src/sim/__tests__/profile-stats.test.ts',
       'src/sim/__tests__/baseline-diff.test.ts',
       'src/sim/__tests__/scenario-matrix.test.ts',
+      'src/sim/__tests__/matrix-diagnostics.test.ts',
       'src/sim/__tests__/scenario-selection.test.ts',
       'src/render/__tests__/pixel-cache.test.ts',
     ],
