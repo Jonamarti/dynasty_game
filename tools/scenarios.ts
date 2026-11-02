@@ -92,7 +92,7 @@ console.log('='.repeat(78));
 
 if (diagnose && failureDetails.length > 0) {
   console.log('');
-  console.log('FAILED CHECK DETAILS (measurements, no baseline adjustment)');
+  console.log('FAILED / N/A CHECK DETAILS (measurements and missing preconditions, no baseline adjustment)');
   for (const detail of failureDetails) console.log(detail);
 }
 
