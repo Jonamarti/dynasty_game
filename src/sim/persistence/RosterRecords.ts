@@ -102,7 +102,7 @@ function validateRoster(people: Person[], activePersonIds: number[], households:
  * identical deeds in one tick are paired in chronological insertion order,
  * never collapsed into one deed. This adds no persisted fields or RNG draws.
  */
-function restoreSharedChronicleDeeds(people: readonly Person[]): void {
+export function restoreSharedChronicleDeeds(people: readonly Person[]): void {
   type Event = Person['chronicle'][number];
   type Deed = NonNullable<Event['deed']>;
   const keyOf = (event: Event): string => {
