@@ -4595,9 +4595,20 @@ export class Brain {
 
   private noteKnownTarget(
     person: Person, action: string, x: number, y: number, kinds: readonly string[], sightRadius: number,
+    tick: number,
   ): void {
-    const visible = person.distanceTo({ x, y }) <= sightRadius;
+    const distance = person.distanceTo({ x, y });
+    const visible = distance <= sightRadius;
     const remembered = kinds.some(kind => person.placeMemory.hasNear(kind, x, y));
+    const unknownKey = `action_target_knowledge_unknown_${action}`;
+    // One diagnostic per action and scenario, only in telemetry-enabled
+    // headless tests. Preserve the strict zero-unknown contract without
+    // flooding the log during thousands of simulations.
+    if (telemetry.isEnabled() && !visible && !remembered && telemetry.get(unknownKey) === 0) {
+      console.warn(`[knowledge:first-unknown] tick=${tick} person=${person.id} action=${action}` +
+        ` target=(${x},${y}) distance=${distance.toFixed(2)} sight=${sightRadius}` +
+        ` expected-memory=${kinds.join('|')}`);
+    }
     telemetry.count('action_target_knowledge_checked');
     telemetry.count(visible || remembered ? 'action_target_knowledge_known' : 'action_target_knowledge_unknown');
     telemetry.count(`action_target_knowledge_${visible ? 'visible' : remembered ? 'remembered' : 'unknown'}_${action}`);
@@ -5081,7 +5092,7 @@ export class Brain {
         break;
       case 'drink':
         if (found.water) {
-          this.noteKnownTarget(person, 'drink', found.water.x, found.water.y, ['water'], ctx.sightRadius);
+          this.noteKnownTarget(person, 'drink', found.water.x, found.water.y, ['water'], ctx.sightRadius, ctx.time.tick);
           person.targetX = found.water.x;
           person.targetY = found.water.y;
         }
@@ -5089,7 +5100,7 @@ export class Brain {
       case 'hunt': {
         const animal = found.quarry;
         if (animal) {
-          this.noteKnownTarget(person, 'hunt', animal.x, animal.y, [`herd:${animal.species}`], ctx.sightRadius);
+          this.noteKnownTarget(person, 'hunt', animal.x, animal.y, [`herd:${animal.species}`], ctx.sightRadius, ctx.time.tick);
           person.targetAnimalId = animal.id;
           person.targetX = animal.x;
           person.targetY = animal.y;
@@ -5109,7 +5120,7 @@ export class Brain {
         const tree = action === 'pick' ? found.fruitTree : found.fellTree;
         if (tree) {
           const kind = action === 'pick' && tree.def.fruitItem ? `fruit:${tree.def.fruitItem}` : 'tree';
-          this.noteKnownTarget(person, action, tree.x, tree.y, [kind], ctx.sightRadius);
+          this.noteKnownTarget(person, action, tree.x, tree.y, [kind], ctx.sightRadius, ctx.time.tick);
           person.targetTreeId = tree.id;
           person.targetX = tree.x;
           person.targetY = tree.y;
@@ -5185,7 +5196,7 @@ export class Brain {
         const node = action === 'forage' ? found.foodNode : found.matNode;
         if (node) {
           if (action === 'forage') this.noteKnownTarget(person, action, node.x, node.y,
-            [`resource:${node.kind}`], ctx.sightRadius);
+            [`resource:${node.kind}`], ctx.sightRadius, ctx.time.tick);
           if (this.rememberedNodeTargets.has(node.id)) {
             telemetry.count('action_target_from_memory_' + action);
             if (action === 'forage' && this.toldNodeTargets.has(node.id)) telemetry.count('food_place_target_from_told');
