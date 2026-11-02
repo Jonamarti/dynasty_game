@@ -764,6 +764,16 @@ const DRINK_COMMIT = 6;
  */
 const SPREAD_COMMIT = 6;
 
+/**
+ * A hut's footprint includes impassable walls and its doorway. Reaching that
+ * footprint is not the same as entering the insulated room. The cold system
+ * only protects somebody within isUnderRoof(), so the shelter action must use
+ * the very same predicate as sleeping before crediting a warm refuge.
+ */
+export function shelterNeedsEntry(building: Building, x: number, y: number): boolean {
+  return !!(building.def.interior || building.def.roofed) && !isUnderRoof(building, x, y);
+}
+
 export class ActionSystem {
   execute(person: Person, ctx: ActionContext): void {
     if (!person.alive) return;
@@ -3379,16 +3389,6 @@ export class ActionSystem {
     if (!person.isPlayer) telemetry.count('npc_pickup', moved);
     this.finish(person);
   }
-
-/**
- * A hut's footprint includes impassable walls and its doorway. Reaching that
- * footprint is not the same as entering the insulated room. The cold system
- * only protects somebody within isUnderRoof(), so the shelter action must use
- * the very same predicate as sleeping before crediting a warm refuge.
- */
-export function shelterNeedsEntry(building: Building, x: number, y: number): boolean {
-  return !!(building.def.interior || building.def.roofed) && !isUnderRoof(building, x, y);
-}
 
   /** Waits out the cold indoors, and leaves once there is no longer a reason. */
   private doShelter(person: Person, ctx: ActionContext): void {
