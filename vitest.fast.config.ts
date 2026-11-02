@@ -9,6 +9,7 @@ export default defineConfig({
       'src/sim/__tests__/determinism.test.ts',
       'src/sim/__tests__/carry.test.ts',
       'src/sim/ai/__tests__/FoodChoice.test.ts',
+      'src/sim/__tests__/m16-remembered-herd.test.ts',
       'src/sim/__tests__/profile-stats.test.ts',
       'src/sim/__tests__/baseline-diff.test.ts',
       'src/sim/__tests__/scenario-matrix.test.ts',
