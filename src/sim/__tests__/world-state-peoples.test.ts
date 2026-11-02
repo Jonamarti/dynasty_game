@@ -168,6 +168,21 @@ describe('saving the whole game (phase 33c)', () => {
     return JSON.stringify(world);
   };
 
+  it('m16-load-shares-chronicle-deed: actor and victim retain the same deed after saving', () => {
+    const state = new WorldState({ seed: 'm16-shared-deed', population: { bands: 1, peoplePerBand: 4 } });
+    const [actor, victim] = state.current.people;
+    expect(actor).toBeDefined();
+    expect(victim).toBeDefined();
+    const deed = { type: 'assault' as const, actorId: actor!.id, targetId: victim!.id };
+    actor!.chronicle.push({ tick: 0, ageDays: actor!.age, text: 'A struck B', kind: 'did', deed });
+    victim!.chronicle.push({ tick: 0, ageDays: victim!.age, text: 'A struck B', kind: 'suffered', deed });
+    const loaded = deserializeSave(serializeSave(state, 0));
+    const loadedActor = loaded.current.peopleById.get(actor!.id)!;
+    const loadedVictim = loaded.current.peopleById.get(victim!.id)!;
+    expect(loadedActor.chronicle.at(-1)!.deed).toBe(loadedVictim.chronicle.at(-1)!.deed);
+    expect(loadedActor.chronicle.at(-1)!.deed).toEqual(deed);
+  });
+
   it.fails('m16-load-keeps-sharing: save, load, and advance preserves the exact object graph', () => {
     const live = globe('wsp-1');
     live.current.possessFirst();
