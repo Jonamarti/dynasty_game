@@ -114,18 +114,6 @@
       "category": "deferred-functional",
       "reason": "Functional E2E omitted from standard suite; requires safe capture paths from PR #35 and individual run before enabling in CI.",
       "tracking_issue": 9
-    },
-    {
-      "file": "e2e/save-load.spec.ts",
-      "category": "deferred-functional",
-      "reason": "Functional E2E omitted from standard suite; requires safe capture paths from PR #35 and individual run before enabling in CI.",
-      "tracking_issue": 9
-    },
-    {
-      "file": "e2e/world-picker.spec.ts",
-      "category": "deferred-functional",
-      "reason": "Functional E2E omitted from standard suite; requires safe capture paths from PR #35 and individual run before enabling in CI.",
-      "tracking_issue": 9
     }
   ]
 }
