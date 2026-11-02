@@ -9,7 +9,8 @@ describe('matrix diagnostic details', () => {
       { id: 'conception-needs-a-roof', ok: true, skipped: true, detail: 'no couples' },
     ];
     expect(matrixFailureDetails('orchard', checks)).toEqual([
-      '  orchard / shelter-answers-cold: final avgCold=97.6, roof_full=82',
+      '  FAIL orchard / shelter-answers-cold: final avgCold=97.6, roof_full=82',
+      '  N/A orchard / conception-needs-a-roof: no couples',
     ]);
     expect(checks[0]?.ok).toBe(false);
     expect(checks[2]?.skipped).toBe(true);
@@ -20,8 +21,8 @@ describe('matrix diagnostic details', () => {
       { id: 'unknown-target', ok: false, detail: 'unknown by action: hunt=1' },
       { id: 'gossip-is-aimed', ok: false, detail: '0 aimed reports' },
     ])).toEqual([
-      '  culture / unknown-target: unknown by action: hunt=1',
-      '  culture / gossip-is-aimed: 0 aimed reports',
+      '  FAIL culture / unknown-target: unknown by action: hunt=1',
+      '  FAIL culture / gossip-is-aimed: 0 aimed reports',
     ]);
   });
 });
