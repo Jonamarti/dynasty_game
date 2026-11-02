@@ -91,6 +91,49 @@ function validateRoster(people: Person[], activePersonIds: number[], households:
   return { peopleById, householdsById, bandsById };
 }
 
+/**
+ * Each PersonRecord is an independent object graph. SocialSystem.emit shares
+ * one deed object between the actor's and victim's chronicle, so decoding the
+ * roster without rejoining those references splits an alias. When both people
+ * later become corpses, that split changes the world-object graph after load.
+ *
+ * Rejoin only an actor's "did" entry with its target's "suffered" entry. A
+ * deed's tick, type, participants and rendered text must agree; repeated
+ * identical deeds in one tick are paired in chronological insertion order,
+ * never collapsed into one deed. This adds no persisted fields or RNG draws.
+ */
+function restoreSharedChronicleDeeds(people: readonly Person[]): void {
+  type Event = Person['chronicle'][number];
+  type Deed = NonNullable<Event['deed']>;
+  const keyOf = (event: Event): string => {
+    const deed = event.deed!;
+    return JSON.stringify([event.tick, event.text, deed.type, deed.actorId, deed.targetId]);
+  };
+  const byEvent = new Map<string, Deed[]>();
+  for (const actor of people) {
+    for (const event of actor.chronicle) {
+      if (event.kind !== 'did' || !event.deed ||
+          event.deed.actorId !== actor.id || event.deed.targetId === null) continue;
+      const key = keyOf(event);
+      const entries = byEvent.get(key);
+      if (entries) entries.push(event.deed);
+      else byEvent.set(key, [event.deed]);
+    }
+  }
+  const matched = new Map<string, number>();
+  for (const target of people) {
+    for (const event of target.chronicle) {
+      if (event.kind !== 'suffered' || !event.deed ||
+          event.deed.targetId !== target.id) continue;
+      const key = keyOf(event);
+      const index = matched.get(key) ?? 0;
+      const canonical = byEvent.get(key)?.[index];
+      if (canonical) event.deed = canonical;
+      matched.set(key, index + 1);
+    }
+  }
+}
+
 /** Capture one coherent tick without advancing it or serializing the world. */
 export function toRosterRecord(sim: Simulation, lastAdvancedTick = sim.time.tick): RosterRecord {
   if (!validTick(lastAdvancedTick) || lastAdvancedTick !== sim.time.tick) invalid('lastAdvancedTick must equal the current simulation tick');
@@ -139,6 +182,7 @@ export function fromRosterRecord(input: unknown): RosterState {
   const bands = input.bands.map(fromBandRecord);
   const activePersonIds = input.activePersonIds as number[];
   const maps = validateRoster(people, activePersonIds, households, bands);
+  restoreSharedChronicleDeeds(people);
   const relationships = fromRelationshipGraphRecord(input.relationships);
   const bandRelations = fromBandRelationsRecord(input.bandRelations);
   return {
