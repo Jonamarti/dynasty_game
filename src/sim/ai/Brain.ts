@@ -4625,7 +4625,13 @@ export class Brain {
       // confused — the exact impossible-walk failure `canUse`'s own header
       // warns about, one mechanism further on.
       if (!building.complete || building.ruined || !isWell(building.def)) continue;
-      const d = person.distanceTo({ x: building.centerX, y: building.centerY });
+      // A distant well is usable only if this person actually knows it.
+      // Building sightings are recorded under building:well, not water.
+      const x = building.centerX, y = building.centerY;
+      if (!this.canTravelTo(person, x, y, ctx)) continue;
+      if (person.distanceTo({ x, y }) > ctx.sightRadius &&
+          !person.placeMemory.hasNear(`building:${building.def.id}`, x, y)) continue;
+      const d = person.distanceTo({ x, y });
       if (d < wellDist) {
         wellDist = d;
         well = { x: building.centerX, y: building.centerY };
@@ -5070,7 +5076,7 @@ export class Brain {
         break;
       case 'drink':
         if (found.water) {
-          this.noteKnownTarget(person, 'drink', found.water.x, found.water.y, ['water'], ctx.sightRadius);
+          this.noteKnownTarget(person, 'drink', found.water.x, found.water.y, ['water', 'building:well'], ctx.sightRadius);
           person.targetX = found.water.x;
           person.targetY = found.water.y;
         }
