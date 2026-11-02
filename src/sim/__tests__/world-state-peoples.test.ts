@@ -183,7 +183,7 @@ describe('saving the whole game (phase 33c)', () => {
     expect(loadedActor.chronicle.at(-1)!.deed).toEqual(deed);
   });
 
-  it.fails('m16-load-keeps-sharing: save, load, and advance preserves the exact object graph', () => {
+  it('m16-load-keeps-sharing: save, load, and advance preserves the exact object graph', () => {
     const live = globe('wsp-1');
     live.current.possessFirst();
     days(live, 4);
@@ -204,6 +204,7 @@ describe('saving the whole game (phase 33c)', () => {
       }
     }
     if (!first) console.info('[M16 E5] no alias/content differences at sampled checkpoints; checking raw graph');
+    expect(first).toBeNull();
     const liveGraph = graph(live);
     const loadedGraph = JSON.parse(serializeSave(loaded, 0)).world.simulation.objects.graph;
     expect(loadedGraph.nodes.length).toBe(liveGraph.nodes.length);
