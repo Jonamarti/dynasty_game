@@ -51,7 +51,7 @@ describe('M16: autonomous water discovery is situated', () => {
     well.complete = false;
     expect(find()).toBeNull();
     well.complete = true;
-    well.ruined = true;
+    well.durability = 0; // ruined is derived from durability, not assignable
     expect(find()).toBeNull();
   });
 });
