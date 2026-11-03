@@ -92,7 +92,9 @@ jobs:
       # The inherited matrix is red on purpose (M16 rule R21: "done" means no new
       # failure, not a green matrix). So a failing check is not the verdict; a
       # check that passed in fixtures/matrix-baseline.json and now fails (or goes
-      # n/a) is. Re-pin that file when a phase moves the baseline on purpose.
+      # n/a) is. Re-pin that file when a phase moves the baseline on purpose, only
+      # with `npm run baseline:matrix-pin` and the artifacts of one run, never by
+      # transcribing annotations: GitHub caps those per level and per step.
       - name: Scenarios (shard ${{ matrix.shard }}/4)
         run: |
           set +e
