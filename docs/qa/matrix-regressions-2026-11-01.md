@@ -10,3 +10,7 @@ The same scenario transitions were observed in GitHub Actions master run 4034121
 The root cause of simulation divergences is not yet established. Do not re-pin fixtures automatically, change gameplay assumptions, or waive these failures. The new CLI produces `matrix-diff.json` / `matrix-diff.md` on exit 0/1/2, including known baseline reds, transitions, and coverage failures. CI uploads reports as artifacts even when the comparison fails. Review this issue separately from gameplay fixes.
 
 This tooling PR is based on #8. Stacked #37/#38 must be updated against its new head and rechecked after #34 is integrated.
+
+## 2026-11-03 — fail-closed empty-check records
+
+The matrix parser previously accepted a scenario with all three status lists empty. If both baseline and actual contained the same empty record, coverage comparison could return success despite exercising **zero checks** for that scenario. The CLI regression test `rejects a scenario with no checks, even if both inputs match` records the negative case; the parser now rejects such records as invalid (exit code 2), rather than reporting a green diff. The existing unexpected-scenario fixture now includes a real check so it still exercises the intended coverage branch. This changes only CI validation, not simulation or the pinned baseline. CI execution is still required on the updated branch; the PR remains draft with existing matrix failures and a merge conflict against current `master`.
