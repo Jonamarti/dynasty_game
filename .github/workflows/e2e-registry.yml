@@ -1,0 +1,30 @@
+name: E2E spec registration guard
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  e2e-registry:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Negative tests
+        run: node --test tools/check-e2e-registry.test.mjs
+      - name: Verify exact Node pin across production workflows
+        run: node --test tools/check-workflow-node-pin.test.mjs
+      - name: Validate every Playwright spec is classified
+        run: node tools/check-e2e-registry.mjs --json e2e-registry.json
+      - name: Publish registry audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-registry
+          path: e2e-registry.json
+          if-no-files-found: warn

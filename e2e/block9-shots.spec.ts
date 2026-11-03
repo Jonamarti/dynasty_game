@@ -2,7 +2,7 @@
  * Screenshots of M15 block IX's interface: the feast on the radial menu, the
  * Government section of a chief's Work tab, and a granary that is a temple.
  *
- *   npx playwright test e2e/block9-shots.spec.ts  ->  artifacts/screenshots/m15-block9-<date>/
+ *   npx playwright test e2e/block9-shots.spec.ts  ->  artifacts/playwright/captures/block9-shots/m15-block9-<date>/
  *
  * A capture, not a test of behaviour — those are in `smoke.spec.ts`. Kept
  * beside the tour (`screenshots.spec.ts`) rather than folded into it so the
@@ -12,7 +12,7 @@
 import { test, expect } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 
-const DIR = 'artifacts/screenshots/m15-block9-2026-10-03';
+const DIR = 'artifacts/playwright/captures/block9-shots/m15-block9-2026-10-03';
 
 type Debug = {
   __dynasty: {

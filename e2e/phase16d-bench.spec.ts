@@ -1,7 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
 
-const captureDir = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m15-phase16d-bench-2026-10-11';
+const captureDir = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/playwright/captures/phase16d-bench/m15-phase16d-bench-2026-10-11';
 
 test('places a bench in the household home and captures the in-world sprite', async ({ page }) => {
   await page.goto('/?seed=phase16d-bench&skipIntro=1');

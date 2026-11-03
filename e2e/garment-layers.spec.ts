@@ -35,7 +35,7 @@ test('a hide cape and sewn tunic can be worn together from the Kit', async ({ pa
   expect(worn).toEqual({ torso: 'sewn_tunic', cloak: 'hide_cape', warmth: 1 - 0.7 * 0.75 });
   await expect(page.locator('.hud-panel')).toContainText('Túnica cosida');
   await expect(page.locator('.hud-panel')).toContainText('Capa de piel');
-  const shots = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m15-phase14c-layers-2026-10-10';
+  const shots = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/playwright/captures/garment-layers/m15-phase14c-layers-2026-10-10';
   mkdirSync(shots, { recursive: true });
   await page.screenshot({ path: `${shots}/01-tunica-y-capa.png` });
   expect(errors).toEqual([]);

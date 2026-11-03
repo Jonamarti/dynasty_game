@@ -6,7 +6,7 @@ test('m16-owner-france-seed floods an excavated bank without flooding untouched 
   await page.goto('/?seed=728083595&skipIntro=1&defaults=1&lang=en');
   await expect(page.locator('.hud-clock')).not.toBeEmpty();
   await page.locator('.hud-button', { hasText: 'Pause' }).click();
-  const dir = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m16-2026-10-26-ci-water-depth';
+  const dir = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/playwright/captures/water-depth/m16-2026-10-26-ci-water-depth';
   mkdirSync(dir, { recursive: true });
   await page.evaluate(async () => {
     const paths = ['/src/sim/world/WorldAtlas.ts', '/src/sim/world/WorldGeography.ts',

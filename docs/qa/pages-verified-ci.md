@@ -17,3 +17,7 @@ A failing/cancelled/skipped E2E or scenario shard blocks the global verdict, the
 | Successful fast-only run without global verdict | Reject |
 | Old SHA after master moves | Reject |
 | Artifact from another attempt or absent verdict job | Reject |
+
+## 2026-11-03 — synchronize the verified-deploy branch
+
+The stacked branch is updated to include #37's current full-verdict workflow, the latest master screenshot-history protections, and the shared exact Node pin from `.nvmrc`. Both setup-node steps in `deploy.yml` and the authorization-test workflow now use `.nvmrc`, while the deployment still checks the triggering successful CI run, its same-SHA global verdict, and the current `master` tip before publishing. This synchronization does not deploy Pages and does not alter game mechanics or the matrix baseline. Fresh CI and the negative authorization tests must pass before the PR leaves draft.

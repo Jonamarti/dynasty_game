@@ -51,7 +51,7 @@ test('hide loincloth occupies the hip slot and draws only while worn', async ({ 
       visible: !equal(pixels(true, '#ff0000'), pixels(false, '#ff0000')) };
   });
   expect(colours).toEqual({ fitted: true, visible: true });
-  const shots = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m15-phase14c-hide-loincloth-2026-10-10';
+  const shots = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/playwright/captures/hide-loincloth/m15-phase14c-hide-loincloth-2026-10-10';
   mkdirSync(shots, { recursive: true });
   await page.screenshot({ path: `${shots}/T-01-hide-loincloth.png` });
 

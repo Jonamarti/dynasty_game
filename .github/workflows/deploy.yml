@@ -22,7 +22,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .nvmrc
       - name: Test deployment authorization decisions
         run: node --test tools/pages-authorization.test.mjs
       - name: Authorize exact CI commit and global verdict
@@ -58,7 +58,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: npm
       - name: Install
         run: npm ci || npm ci --legacy-peer-deps

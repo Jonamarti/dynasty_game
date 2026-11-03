@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const DIR = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m15-bank-resources-2026-10-08';
+const DIR = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/playwright/captures/bank-resources/m15-bank-resources-2026-10-08';
 
 test('random wooded river paints its generated clay banks and reeds', async ({ page }) => {
   await page.goto('/?seed=resource-audit&skipIntro=1');

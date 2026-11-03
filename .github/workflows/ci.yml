@@ -39,7 +39,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: npm
       # npm 10.9.2 can crash in its resolver (see README); the retry with the
       # legacy resolver is the escape hatch.
@@ -58,7 +58,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .nvmrc
       - name: Verify global verdict negative cases
         run: node --test tools/ci-full-verdict.test.mjs
 
@@ -71,7 +71,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: npm
       - name: Install
         run: npm ci || npm ci --legacy-peer-deps
@@ -104,7 +104,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: npm
       - name: Install
         run: npm ci || npm ci --legacy-peer-deps
@@ -115,13 +115,34 @@ jobs:
       - name: Scenarios (shard ${{ matrix.shard }}/4)
         run: |
           set +e
-          npm run sim:check:all -- --slow --shard ${{ matrix.shard }}/4 --json matrix-shard.json
+          npm run sim:check:all -- --slow --shard ${{ matrix.shard }}/4 --json matrix-shard.json --details-json matrix-details.json --diagnose
           code=$?
           set -e
           # 1 = some inherited reds; anything above is a crash or a usage error.
           if [ "$code" -gt 1 ]; then exit "$code"; fi
       - name: Compare with the baseline
-        run: npm run baseline:diff -- fixtures/matrix-baseline.json matrix-shard.json --shard ${{ matrix.shard }}/4
+        run: npm run baseline:diff -- fixtures/matrix-baseline.json matrix-shard.json --shard ${{ matrix.shard }}/4 --json matrix-diff.json --md matrix-diff.md
+      - name: Join regressions with their measurements
+        if: always()
+        run: |
+          node --test tools/matrix-failure-diagnostics.test.mjs
+          if [ -f matrix-diff.json ] && [ -f matrix-details.json ]; then
+            node tools/matrix-failure-diagnostics.mjs matrix-diff.json matrix-details.json matrix-measurements.md
+          fi
+      - name: Upload scenario coverage and regression evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scenario-matrix-${{ matrix.shard }}
+          path: |
+            matrix-shard.json
+            matrix-details.json
+            matrix-diff.json
+            matrix-diff.md
+            matrix-measurements.md
+          if-no-files-found: warn
+          retention-days: 14
+
       - name: Record verified scenario proof
         run: node tools/ci-full-verdict.mjs write matrix ${{ matrix.shard }}
       - name: Upload verified scenario proof
@@ -144,14 +165,21 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: npm
       - name: Install
         run: npm ci || npm ci --legacy-peer-deps
+      - name: Verify two isolated screenshot runs with a synthetic history
+        run: node --test tools/check-e2e-history.test.mjs tools/archive-e2e-milestone.test.mjs tools/capture-output-policy.test.mjs
+      - name: Reject historical screenshot paths and run guard fixture
+        run: node tools/check-e2e-captures.mjs
       - name: Install Chromium for Playwright
         run: npx playwright install --with-deps chromium
       - name: Playwright (shard ${{ matrix.shard }}/4)
         run: npm run e2e -- --shard=${{ matrix.shard }}/4 --reporter=github,list
+      - name: Protect historical screenshots (tracked and ignored)
+        if: always()
+        run: node tools/check-e2e-history.mjs
       - name: Record verified E2E proof
         run: node tools/ci-full-verdict.mjs write e2e ${{ matrix.shard }}
       - name: Upload verified E2E proof
@@ -160,13 +188,15 @@ jobs:
           name: ci-gate-${{ github.run_attempt }}-e2e-${{ matrix.shard }}
           path: ci-gate-proofs/e2e-${{ matrix.shard }}.json
           if-no-files-found: error
-      - name: Upload traces on failure
-        if: failure()
+      - name: Upload Playwright evidence
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-shard-${{ matrix.shard }}
           path: artifacts/playwright
+          if-no-files-found: ignore
           retention-days: 7
+
 
   verdict:
     name: Full verification verdict

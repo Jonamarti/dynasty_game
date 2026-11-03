@@ -2,7 +2,7 @@
 import { mkdirSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 
-const SHOTS = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m15-phase26e-irrigation-2026-10-11';
+const SHOTS = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/playwright/captures/phase26e-irrigation/m15-phase26e-irrigation-2026-10-11';
 
 test('Field web explains irrigation and terracing in Spanish', async ({ page }) => {
   mkdirSync(SHOTS, { recursive: true });
@@ -37,7 +37,7 @@ test('Field web explains irrigation and terracing in Spanish', async ({ page }) 
 });
 
 test('Earthworks node describes the first ditch design in Spanish', async ({ page }) => {
-  const shots = 'artifacts/screenshots/m15-phase26e-earthworks-2026-10-11';
+  const shots = 'artifacts/playwright/captures/phase26e-irrigation/m15-phase26e-earthworks-2026-10-11';
   mkdirSync(shots, { recursive: true });
   await page.setViewportSize({ width: 1400, height: 900 });
   await page.goto('/?seed=m15-phase26e-earthworks&skipIntro=1&lang=es');
@@ -62,7 +62,7 @@ test('Earthworks node describes the first ditch design in Spanish', async ({ pag
 });
 
 test('the locked moat names its earthworks gate in the Spanish build bar', async ({ page }) => {
-  const shots = 'artifacts/screenshots/m15-phase26e-moat-2026-10-11';
+  const shots = 'artifacts/playwright/captures/phase26e-irrigation/m15-phase26e-moat-2026-10-11';
   mkdirSync(shots, { recursive: true });
   await page.setViewportSize({ width: 1400, height: 900 });
   await page.goto('/?seed=m15-phase26e-moat&skipIntro=1&lang=es');

@@ -2,7 +2,7 @@
 import { mkdirSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
 
-const SHOTS = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m15-infant-care-2026-10-16';
+const SHOTS = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/playwright/captures/infant-care-animation/m15-infant-care-2026-10-16';
 
 test('infant lying, carrying, and nursing use the actual person and pause with simulation state', async ({ page }) => {
   const errors: string[] = [];

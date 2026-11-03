@@ -14,6 +14,8 @@ import { defineConfig } from '@playwright/test';
  * excludedportrange protocol=tcp` lists the ranges. Set DYNASTY_PORT to
  * anything outside them.
  */
+import { assertSafeCaptureEnvironment } from './tools/capture-output-policy.mjs';
+assertSafeCaptureEnvironment();
 const PORT = Number(process.env.DYNASTY_PORT ?? 5173);
 const ORIGIN = 'http://localhost:' + PORT;
 
