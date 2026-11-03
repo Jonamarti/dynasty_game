@@ -1,8 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { Animal } from '../entities/Animal.ts';
 import { RNG } from '../core/RNG.ts';
 import { SpatialHash } from '../core/SpatialHash.ts';
 import { PlaceMemory } from '../social/PlaceMemory.ts';
+import { telemetry } from '../core/Telemetry.ts';
 import { findRememberedHerdQuarry, rememberedHerdMatchesSpecies } from '../ai/HerdMemory.ts';
 
 const origin = { x: 10, y: 10 };
@@ -35,6 +36,28 @@ describe('M16: remembered herds identify only their observed species', () => {
     memories.remember('herd:boar', 26, 10, 1, 2);
     const boar = add('boar', 26, 10);
     expect(search()).toBe(boar);
+  });
+
+  it('resolves each inspected remembered location only once and reports its fallbacks', () => {
+    const { memories, animals, add, search } = setup();
+    memories.remember('herd:deer', 13, 10, 1, 2);
+    memories.remember('herd:hare', 23, 10, 1, 2);
+    const hare = add('hare', 23, 10);
+    const find = vi.spyOn(animals, 'findNearest');
+    telemetry.reset();
+    telemetry.enable();
+    try {
+      expect(search()).toBe(hare);
+      expect(find).toHaveBeenCalledTimes(2);
+      expect(telemetry.get('herd_memory_searches')).toBe(1);
+      expect(telemetry.get('herd_memory_checked')).toBe(2);
+      expect(telemetry.get('herd_memory_stale_candidates')).toBe(1);
+      expect(telemetry.get('herd_memory_fallback_matches')).toBe(1);
+    } finally {
+      telemetry.disable();
+      telemetry.reset();
+      find.mockRestore();
+    }
   });
 
   it('never discovers an unseen different species at a remembered position', () => {
