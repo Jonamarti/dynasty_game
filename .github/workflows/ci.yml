@@ -19,7 +19,6 @@ name: CI
 on:
   push:
   pull_request:
-    branches: [master]
   workflow_dispatch:
 
 permissions:
@@ -51,6 +50,18 @@ jobs:
       - name: Build
         run: npx vite build
 
+  contract:
+    name: CI contract
+    if: github.event_name != 'push' || github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Verify global verdict negative cases
+        run: node --test tools/ci-full-verdict.test.mjs
+
   unit:
     name: Unit + build
     if: github.event_name != 'push' || github.ref == 'refs/heads/master'
@@ -71,6 +82,14 @@ jobs:
         run: npm test -- --maxWorkers=1 --testTimeout=15000
       - name: Build
         run: npx vite build
+      - name: Record verified unit proof
+        run: node tools/ci-full-verdict.mjs write unit
+      - name: Upload verified unit proof
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-gate-${{ github.run_attempt }}-unit
+          path: ci-gate-proofs/unit.json
+          if-no-files-found: error
 
   matrix:
     name: Scenario matrix ${{ matrix.shard }}/4
@@ -124,6 +143,15 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+      - name: Record verified scenario proof
+        run: node tools/ci-full-verdict.mjs write matrix ${{ matrix.shard }}
+      - name: Upload verified scenario proof
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-gate-${{ github.run_attempt }}-matrix-${{ matrix.shard }}
+          path: ci-gate-proofs/matrix-${{ matrix.shard }}.json
+          if-no-files-found: error
+
   e2e:
     name: E2E ${{ matrix.shard }}/4
     if: github.event_name != 'push' || github.ref == 'refs/heads/master'
@@ -152,6 +180,14 @@ jobs:
       - name: Protect historical screenshots (tracked and ignored)
         if: always()
         run: node tools/check-e2e-history.mjs
+      - name: Record verified E2E proof
+        run: node tools/ci-full-verdict.mjs write e2e ${{ matrix.shard }}
+      - name: Upload verified E2E proof
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-gate-${{ github.run_attempt }}-e2e-${{ matrix.shard }}
+          path: ci-gate-proofs/e2e-${{ matrix.shard }}.json
+          if-no-files-found: error
       - name: Upload Playwright evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -160,3 +196,37 @@ jobs:
           path: artifacts/playwright
           if-no-files-found: ignore
           retention-days: 7
+
+
+  verdict:
+    name: Full verification verdict
+    if: always() && (github.event_name != 'push' || github.ref == 'refs/heads/master')
+    needs: [contract, unit, matrix, e2e]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download all CI proofs
+        if: always()
+        uses: actions/download-artifact@v4
+        with:
+          pattern: ci-gate-${{ github.run_attempt }}-*
+          path: ci-proof-downloads
+          merge-multiple: true
+      - name: Verify required jobs and every shard
+        if: always()
+        env:
+          CI_CONTRACT_RESULT: ${{ needs.contract.result }}
+          CI_UNIT_RESULT: ${{ needs.unit.result }}
+          CI_MATRIX_RESULT: ${{ needs.matrix.result }}
+          CI_E2E_RESULT: ${{ needs.e2e.result }}
+        run: node tools/ci-full-verdict.mjs verify ci-proof-downloads
+      - name: Publish global verdict
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-global-verdict-${{ github.run_attempt }}
+          path: ci-global-verdict.json
+          if-no-files-found: warn

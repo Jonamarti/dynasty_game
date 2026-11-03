@@ -23,6 +23,23 @@ async function ready(page: Page, query: string): Promise<void> {
   await expect(page.locator('.hud-name')).not.toBeEmpty();
 }
 
+/**
+ * Loading or importing a save intentionally sets location.search and reloads.
+ * Wait for the *new document*, not a still-visible HUD in the old document,
+ * before evaluating __dynasty; otherwise the old execution context can die
+ * between the HUD assertion and page.evaluate (CI run 41699668341).
+ */
+async function waitForSaveReload(page: Page, action: () => Promise<void>): Promise<void> {
+  await Promise.all([
+    page.waitForURL(url => !url.searchParams.has('seed') && !url.searchParams.has('load'), {
+      waitUntil: 'domcontentloaded', timeout: 30_000,
+    }),
+    action(),
+  ]);
+  await expect(page.locator('.hud-clock')).not.toBeEmpty({ timeout: 30_000 });
+  await page.waitForFunction(() => (window as any).__dynasty?.sim?.time.tick >= 0, undefined, { timeout: 30_000 });
+}
+
 /** What a load must give back exactly. */
 async function state(page: Page) {
   return page.evaluate(() => {
@@ -54,9 +71,7 @@ test('save, load: the game comes back exactly where it was, paused, and says so'
   expect(saved.peoples).toBeGreaterThan(20);
   await page.screenshot({ path: `${SHOTS}/01-pause-menu-saved.png` });
 
-  await page.locator('[data-act="load"]').click();
-  await expect(page.locator('.hud-clock')).not.toBeEmpty({ timeout: 30_000 });
-  await page.waitForFunction(() => (window as any).__dynasty?.sim?.time.tick >= 0, undefined, { timeout: 30_000 });
+  await waitForSaveReload(page, () => page.locator('[data-act="load"]').click());
   const loaded = await state(page);
   expect(loaded).toEqual(saved);
   // Opens paused: nothing moves until the player says so.
@@ -105,9 +120,7 @@ test('export a file and import it back; a bad file is refused with a reason and 
   expect((await state(page)).tick).toBe(before.tick);
 
   // The real one comes back, on a fresh page that never saw this world.
-  await page.locator('.pausemenu-file').setInputFiles(path);
-  await expect(page.locator('.hud-clock')).not.toBeEmpty({ timeout: 30_000 });
-  await page.waitForFunction(() => (window as any).__dynasty?.sim?.time.tick >= 0, undefined, { timeout: 30_000 });
+  await waitForSaveReload(page, () => page.locator('.pausemenu-file').setInputFiles(path));
   const after = await state(page);
   expect(after.tick).toBe(parsed.summary.tick);
   expect(after.seed).toBe('e2e-globe');
