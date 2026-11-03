@@ -8,9 +8,22 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { SCENARIOS, runScenario, formatReport, thousands, markMatrixRun } from './simcheck.ts';
-import { scenarioMatrixRecord, type ScenarioMatrixRecord } from './scenario-matrix.ts';
+import { scenarioMatrixRecord, scenarioCheckDetails, type ScenarioMatrixRecord } from './scenario-matrix.ts';
 import { matrixFailureDetails } from './matrix-diagnostics.ts';
 import { selectScenarios } from './scenario-selection.ts';
+import { validateScenarioOutputs } from './scenario-output.ts';
+
+const outputOption = (flag: string) => {
+  const index = process.argv.indexOf(flag);
+  return index < 0 ? undefined : process.argv[index + 1];
+};
+let validatedOutputs: ReturnType<typeof validateScenarioOutputs>;
+try {
+  validatedOutputs = validateScenarioOutputs(outputOption('--json'), outputOption('--details-json'));
+} catch (error) {
+  console.error(error instanceof Error ? error.message : String(error));
+  process.exit(2);
+}
 
 // M11 phase 17d: wall-clock checks report and do not judge in the matrix.
 markMatrixRun();
@@ -45,6 +58,7 @@ if (shardIndex >= 0) {
 }
 const rows: { name: string; passed: number; total: number; failed: string[]; stepsPerSecond: number }[] = [];
 const matrixRecords: ScenarioMatrixRecord[] = [];
+const checkDetails: ReturnType<typeof scenarioCheckDetails>[] = [];
 const failureDetails: string[] = [];
 const jsonIndex = process.argv.indexOf('--json');
 const jsonPath = jsonIndex >= 0 ? process.argv[jsonIndex + 1] : undefined;
@@ -60,6 +74,7 @@ for (const scenario of selected) {
   if (diagnose) failureDetails.push(...matrixFailureDetails(scenario.name, report.checks));
   const applicable = report.checks.filter(c => !c.skipped);
   matrixRecords.push(scenarioMatrixRecord(scenario.name, report.checks));
+  checkDetails.push(scenarioCheckDetails(scenario.name, report.checks));
   rows.push({
     name: scenario.name,
     passed: applicable.length - failed.length,
@@ -70,11 +85,26 @@ for (const scenario of selected) {
 }
 
 if (jsonPath) {
-  const outputPath = resolve(jsonPath);
+  const outputPath = validatedOutputs.matrix!;
   mkdirSync(dirname(outputPath), { recursive: true });
   writeFileSync(outputPath, JSON.stringify(matrixRecords, null, 2) + '\n', 'utf8');
 }
 
+const detailsIndex = process.argv.indexOf('--details-json');
+const detailsPath = detailsIndex >= 0 ? process.argv[detailsIndex + 1] : undefined;
+if (detailsIndex >= 0 && (!detailsPath || detailsPath.startsWith('--'))) {
+  console.error('Usage: sim:check:all -- --details-json <path>');
+  process.exit(2);
+}
+if (detailsPath) {
+  const outputPath = validatedOutputs.details!;
+  if (jsonPath && outputPath === resolve(jsonPath)) {
+    console.error('Matrix and details must have different output paths');
+    process.exit(2);
+  }
+  mkdirSync(dirname(outputPath), { recursive: true });
+  writeFileSync(outputPath, JSON.stringify({ version: 1, scenarios: checkDetails }, null, 2) + '\n', 'utf8');
+}
 const pad = (s: string, n: number) => s.padEnd(n);
 console.log('');
 console.log('SCENARIO MATRIX');

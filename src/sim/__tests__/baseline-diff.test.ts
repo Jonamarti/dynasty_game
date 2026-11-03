@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -6,8 +6,8 @@ import { describe, expect, it } from 'vitest';
 
 const cli = resolve('node_modules/vite-node/dist/cli.mjs');
 
-function compare(before: string, after: string) {
-  return spawnSync(process.execPath, [cli, 'tools/baseline-diff.ts', '--', before, after], {
+function compare(before: string, after: string, extra: string[] = []) {
+  return spawnSync(process.execPath, [cli, 'tools/baseline-diff.ts', '--', before, after, ...extra], {
     cwd: process.cwd(), encoding: 'utf8', timeout: 10_000,
   });
 }
@@ -49,4 +49,113 @@ describe('baseline diff CLI', () => {
       rmSync(dir, { recursive: true, force: true });
     }
   });
+  it('rejects missing scenarios, missing checks, and unexpected failed checks', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'dynasty-coverage-'));
+    try {
+      const before = join(dir, 'before.json');
+      const after = join(dir, 'after.json');
+      const baseline = [
+        { name: 'one', passed: ['stable'], failed: ['inherited'], na: ['inactive'] },
+        { name: 'two', passed: ['ok'], failed: [], na: [] },
+      ];
+      writeFileSync(before, JSON.stringify(baseline));
+      for (const [rows, message] of [
+        [[baseline[0]], 'Missing scenario: two'],
+        [[{ ...baseline[0], passed: [] }, baseline[1]], 'Missing check: one/stable'],
+        [[{ ...baseline[0], failed: ['inherited', 'new-bug'] }, baseline[1]], 'Unexpected check'],
+        [[...baseline, { name: 'three', passed: ['extra'], failed: [], na: [] }], 'Unexpected scenario'],
+      ] as const) {
+        writeFileSync(after, JSON.stringify(rows));
+        const result = compare(before, after);
+        expect(result.status).toBe(2);
+        expect(result.stderr).toContain(message);
+      }
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects a scenario with no checks, even if both inputs match', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'dynasty-empty-checks-'));
+    try {
+      const file = join(dir, 'matrix.json');
+      writeFileSync(file, JSON.stringify([{ name: 'empty', passed: [], failed: [], na: [] }]));
+      const result = compare(file, file);
+      expect(result.status).toBe(2);
+      expect(result.stderr).toContain('has no checks');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects an NA to FAIL regression and preserves known baseline failures', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'dynasty-transition-'));
+    try {
+      const before = join(dir, 'before.json');
+      const after = join(dir, 'after.json');
+      const baseline = [{ name: 'one', passed: [], failed: ['known'], na: ['inactive'] }];
+      writeFileSync(before, JSON.stringify(baseline));
+      writeFileSync(after, JSON.stringify(baseline));
+      expect(compare(before, after).status).toBe(0);
+      writeFileSync(after, JSON.stringify([{ name: 'one', passed: [], failed: ['known', 'inactive'], na: [] }]));
+      expect(compare(before, after).status).toBe(1);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('checks that a shard contains exactly its expected baseline partition', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'dynasty-shard-'));
+    try {
+      const before = join(dir, 'before.json');
+      const after = join(dir, 'after.json');
+      const rows = Array.from({ length: 5 }, (_, i) => ({
+        name: `case-${i}`, passed: ['healthy'], failed: [], na: [],
+      }));
+      writeFileSync(before, JSON.stringify(rows));
+      writeFileSync(after, JSON.stringify([rows[0], rows[2], rows[4]]));
+      expect(compare(before, after, ['--shard', '1/2']).status).toBe(0);
+      expect(compare(before, after, ['--shard', '2/2']).status).toBe(2);
+      writeFileSync(after, JSON.stringify([rows[0], rows[4]]));
+      const missing = compare(before, after, ['--shard', '1/2']);
+      expect(missing.status).toBe(2);
+      expect(missing.stderr).toContain('Missing scenario: case-2');
+      expect(compare(before, after, ['--shard', '0/2']).status).toBe(2);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('emits JSON and Markdown evidence for NA to FAIL without modifying the baseline', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'dynasty-evidence-'));
+    try {
+      const before = join(dir, 'before.json'), after = join(dir, 'after.json');
+      const report = join(dir, 'diff.json'), md = join(dir, 'diff.md');
+      const original = JSON.stringify([{ name: 'lean', passed: [], failed: ['inherited'], na: ['refining'] }]);
+      writeFileSync(before, original);
+      writeFileSync(after, JSON.stringify([{ name: 'lean', passed: [], failed: ['inherited', 'refining'], na: [] }]));
+      const result = compare(before, after, ['--json', report, '--md', md]);
+      expect(result.status).toBe(1);
+      const parsed = JSON.parse(readFileSync(report, 'utf8'));
+      expect(parsed.verdict).toBe('regression');
+      expect(parsed.baseline_known_failed_checks).toBe(1);
+      expect(parsed.regressions[0].checks).toContain('refining');
+      expect(readFileSync(md, 'utf8')).toContain('lean');
+      expect(readFileSync(before, 'utf8')).toBe(original);
+    } finally { rmSync(dir, { recursive: true, force: true }); }
+  });
+
+  it('exports invalid coverage evidence and returns 2 for a missing scenario', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'dynasty-invalid-evidence-'));
+    try {
+      const before = join(dir, 'before.json'), after = join(dir, 'after.json'), report = join(dir, 'diff.json');
+      writeFileSync(before, JSON.stringify([{ name: 'missing', passed: ['check'], failed: [], na: [] }]));
+      writeFileSync(after, '[]');
+      expect(compare(before, after, ['--json', report]).status).toBe(2);
+      const parsed = JSON.parse(readFileSync(report, 'utf8'));
+      expect(parsed.verdict).toBe('invalid');
+      expect(parsed.coverage_errors.join(' ')).toContain('Missing scenario');
+    } finally { rmSync(dir, { recursive: true, force: true }); }
+  });
+
 });

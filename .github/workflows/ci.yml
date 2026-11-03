@@ -96,13 +96,33 @@ jobs:
       - name: Scenarios (shard ${{ matrix.shard }}/4)
         run: |
           set +e
-          npm run sim:check:all -- --slow --shard ${{ matrix.shard }}/4 --json matrix-shard.json --diagnose
+          npm run sim:check:all -- --slow --shard ${{ matrix.shard }}/4 --json matrix-shard.json --details-json matrix-details.json --diagnose
           code=$?
           set -e
           # 1 = some inherited reds; anything above is a crash or a usage error.
           if [ "$code" -gt 1 ]; then exit "$code"; fi
       - name: Compare with the baseline
-        run: npm run baseline:diff -- fixtures/matrix-baseline.json matrix-shard.json
+        run: npm run baseline:diff -- fixtures/matrix-baseline.json matrix-shard.json --shard ${{ matrix.shard }}/4 --json matrix-diff.json --md matrix-diff.md
+      - name: Join regressions with their measurements
+        if: always()
+        run: |
+          node --test tools/matrix-failure-diagnostics.test.mjs
+          if [ -f matrix-diff.json ] && [ -f matrix-details.json ]; then
+            node tools/matrix-failure-diagnostics.mjs matrix-diff.json matrix-details.json matrix-measurements.md
+          fi
+      - name: Upload scenario coverage and regression evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scenario-matrix-${{ matrix.shard }}
+          path: |
+            matrix-shard.json
+            matrix-details.json
+            matrix-diff.json
+            matrix-diff.md
+            matrix-measurements.md
+          if-no-files-found: warn
+          retention-days: 14
 
   e2e:
     name: E2E ${{ matrix.shard }}/4
