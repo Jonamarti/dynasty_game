@@ -54,12 +54,12 @@ test('partial successful proofs remain visible but a failed matrix cannot pass',
  assert.equal(report.found_proofs,6);
  assert.equal(report.expected_proofs,9);
  assert.equal(report.errors.filter(e=>e.startsWith('Missing proof: matrix-')).length,3);
- assert.match(report.errors.join('\\n'),/Required job matrix is failure/);
+ assert.match(report.errors.join('\n'),/Required job matrix is failure/);
 }));
 test('the verdict downloads and inspects partial proofs even after upstream failure',()=>{
  const workflow=readFileSync(new URL('../.github/workflows/ci.yml',import.meta.url),'utf8');
- assert.match(workflow,/      - name: Download all CI proofs\\n        if: always\\(\\)\\n        uses: actions\\/download-artifact@v4/);
- assert.match(workflow,/      - name: Verify required jobs and every shard\\n        if: always\\(\\)\\n/);
+ assert.match(workflow,/      - name: Download all CI proofs\n        if: always\(\)\n        uses: actions\/download-artifact@v4/);
+ assert.match(workflow,/      - name: Verify required jobs and every shard\n        if: always\(\)\n/);
 });
 test('invalid shard rejected at source',()=>{
  assert.throws(()=>makeProof('matrix',5,env),/Unknown proof/);
