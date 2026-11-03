@@ -63,13 +63,26 @@ describe('baseline diff CLI', () => {
         [[baseline[0]], 'Missing scenario: two'],
         [[{ ...baseline[0], passed: [] }, baseline[1]], 'Missing check: one/stable'],
         [[{ ...baseline[0], failed: ['inherited', 'new-bug'] }, baseline[1]], 'Unexpected check'],
-        [[...baseline, { name: 'three', passed: [], failed: [], na: [] }], 'Unexpected scenario'],
+        [[...baseline, { name: 'three', passed: ['extra'], failed: [], na: [] }], 'Unexpected scenario'],
       ] as const) {
         writeFileSync(after, JSON.stringify(rows));
         const result = compare(before, after);
         expect(result.status).toBe(2);
         expect(result.stderr).toContain(message);
       }
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects a scenario with no checks, even if both inputs match', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'dynasty-empty-checks-'));
+    try {
+      const file = join(dir, 'matrix.json');
+      writeFileSync(file, JSON.stringify([{ name: 'empty', passed: [], failed: [], na: [] }]));
+      const result = compare(file, file);
+      expect(result.status).toBe(2);
+      expect(result.stderr).toContain('has no checks');
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
