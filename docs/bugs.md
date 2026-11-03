@@ -1,3 +1,15 @@
+## 2026-11-04 — M16 CI: 21 checks aceptados como rojos conocidos al corregir la referencia
+
+Abierto en [#58](https://github.com/Jonamarti/dynasty_game/issues/58). Corregir la referencia no los resuelve; solo dejan de bloquear el CI. Cambiaron en algún punto entre `50b5c90e` y `8a7648b4`, sin bisecar, y son anteriores a `ba7cb0d8`.
+
+- `herders`: `generations-turn-over`, `health-holds-up`, `moods-move-choices`, `needs-not-pinned`, `population-persists`, `techs-are-refined`, `bands-take-sides`
+- `generations`: `bands-dont-overbuild`, `moods-move-choices`, `shelter-answers-cold`, `crafting-is-interruptible` (na), `the-hurt-are-tended` (na)
+- `orchard`: `gossip-is-aimed`, `needs-not-pinned`, `shelter-answers-cold`
+- `lean`: `research-is-social`, `techs-are-refined`
+- `conquest`: `pictures-are-painted`, `techs-are-refined`
+- `labour-from`: `jobs-bias-work`
+- `culture`: `people-act-on-what-they-know`
+
 ## 2026-10-25 — M16: deudas confirmadas por la auditoría de GitHub
 
 Índice y orden de ejecución:
