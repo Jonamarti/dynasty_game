@@ -6,6 +6,8 @@
 
 **Cambio:** `findRememberedHerdQuarry` filtra el índice espacial de memoria por presas compatibles, vivas y alcanzables, y continúa hasta encontrar un recuerdo válido. Mantiene preferencia de animales visibles, radio y restricciones territoriales. No hay nuevas llamadas RNG, baseline ni formato de guardado.
 
+**Diagnóstico 2026-11-03:** la primera CI del HEAD `58e84d4` confirmó regresiones nuevas en los cuatro shards (escenarios de caza, supervivencia y cobertura), además de un E2E de importación de partidas fallido por navegación durante `page.evaluate`. No fusionar ni re-pinear por el fallo: hay que contrastar mecanismo y escenario frente a master. El primer arreglo evaluaba dos veces la misma presa recordada; ahora la devuelve desde la validación cacheada y mide `herd_memory_searches`, `herd_memory_checked`, `herd_memory_stale_candidates`, `herd_memory_live_matches` y `herd_memory_fallback_matches`. Test focal de resolución única incluido. La nueva CI queda pendiente.
+
 **Verificación:** pruebas deterministas nuevas para recuerdo compatible, recuerdo cercano obsoleto con alternativa, especie incompatible y presa muerta, inaccesible o fuera de alcance. La prueba queda registrada en `check:fast`. **CI completa y comparación de matrices pendientes; mantener draft y no re-pin hasta confirmar que no aparecen regresiones nuevas.**
 
 ## 2026-11-02 — M16 0.16.24-alpha — pozos solo conocidos
