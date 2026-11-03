@@ -25,3 +25,22 @@ The verdict now downloads whatever proofs are available **even after an upstream
 Run [41699668341](https://github.com/Jonamarti/dynasty_game/actions/runs/41699668341) failed one test in E2E shard 3/4: `e2e/save-load.spec.ts` reported "Execution context was destroyed, most likely because of a navigation" on `state(page)` after importing a valid save. `main.ts:reloadInto` intentionally assigns `location.search` after an asynchronous IndexedDB write, while the old test's HUD presence check could pass in the **previous** document before its navigation started. The same test passed in the concurrent #38 branch, consistent with a timing race rather than proof of a functional save regression.
 
 Both the in-browser Load path and the imported-file path now explicitly wait for a new document that has left the `seed` and temporary `load` query flags, then for the new HUD and `__dynasty` to initialize. All save values, exact state round-trip comparisons, invalid-import refusals and runtime-error assertions remain unchanged. New CI on the updated head must pass the focused E2E before this is considered resolved. No game behavior or matrix baseline changed.
+
+## 2026-11-03 — retarget to master after #34 merge
+
+PR #34's fail-closed scenario validator is now integrated on master at `494c5be`.
+PR #37 has been retargeted from the old #34 branch to `master`; the diff remains
+limited to its CI workflow, same-run proof tooling and tests, the existing
+save/import E2E synchronization fix, and these notes. The CI run on the prior
+stacked base, [41708455207](https://github.com/Jonamarti/dynasty_game/actions/runs/41708455207),
+passed the unit/build, CI contract and all four E2E shards. Its matrix 1/4,
+2/4 and 4/4 remained red with **exactly the same scenario status transitions**
+as master on all four shards. The aggregate gate correctly stayed red; this is
+not a waiver or a green verdict.
+
+This documentation update triggers a new head SHA check against `master`.
+For M16 R21 integration, compare again with master and inspect every mandatory
+check before merging. The global verdict must remain fail-closed even though
+the inherited baseline debt is permitted as explicitly documented at session
+close. Configuring repository branch protection to require
+`Full verification verdict` is a separate repository-settings prerequisite.
