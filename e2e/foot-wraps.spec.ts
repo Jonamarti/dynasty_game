@@ -31,7 +31,7 @@ test('foot wraps are worn from the Spanish Kit and visible on the feet', async (
     const { wornGarmentsOf } = await import(/* @vite-ignore */ path);
     return { item: d.sim.player.equipment.feet?.item, drawn: wornGarmentsOf(d.sim.player).feet };
   })).toEqual({ item: 'foot_wraps', drawn: 'wraps' });
-  const shots = 'artifacts/screenshots/m15-phase14c-foot-wraps-2026-10-10';
+  const shots = 'artifacts/playwright/captures/foot-wraps/m15-phase14c-foot-wraps-2026-10-10';
   mkdirSync(shots, { recursive: true });
   await page.screenshot({ path: `${shots}/02-envolturas-de-pies-diurnas.png` });
   expect(errors).toEqual([]);

@@ -14,7 +14,7 @@ test('an earthwork is previewed, refused with a reason, turned, placed and dug',
   await expect(page.locator('.hud-clock')).not.toBeEmpty({ timeout: 15_000 });
   await page.locator('.hud-button', { hasText: 'Pause' }).click();
   const shots = process.env.DYNASTY_CAPTURE_DIR ??
-    'artifacts/screenshots/m15-earthworks-' + new Date().toISOString().replace(/[:.]/g, '-');
+    'artifacts/playwright/captures/earthworks/m15-earthworks-' + new Date().toISOString().replace(/[:.]/g, '-');
   mkdirSync(shots, { recursive: true });
 
   // Open ground a few tiles from the player, found by the sim's own rule.

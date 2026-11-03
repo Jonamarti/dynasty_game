@@ -10,7 +10,7 @@
  */
 import { test, expect } from '@playwright/test';
 
-const DIR = 'artifacts/screenshots';
+const DIR = 'artifacts/playwright/captures/art';
 
 interface Handle {
   sim: {

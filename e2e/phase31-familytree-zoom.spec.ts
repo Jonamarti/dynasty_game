@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 const SHOTS = process.env.DYNASTY_CAPTURE_DIR ??
-  'artifacts/screenshots/m15-familytree-mobile-zoom-2026-10-13';
+  'artifacts/playwright/captures/phase31-familytree-zoom/m15-familytree-mobile-zoom-2026-10-13';
 
 test('family tree keeps names readable on mobile and supports zooming', async ({ page }) => {
   const errors: string[] = [];

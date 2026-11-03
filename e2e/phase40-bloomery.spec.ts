@@ -4,13 +4,13 @@
  *
  * DYNASTY_PORT=5399 node node_modules/@playwright/test/cli.js test e2e/phase40-bloomery.spec.ts
  *
- * Captures go to artifacts/screenshots/m15-phase40-bloomery-2026-10-07/.
+ * Captures go to artifacts/playwright/captures/phase40-bloomery/m15-phase40-bloomery-2026-10-07/.
  */
 import { test, expect, type Page } from '@playwright/test';
 import { placeStationFixtureOnClaimedGround } from './helpers';
 import { mkdirSync } from 'node:fs';
 
-const SHOTS = 'artifacts/screenshots/m15-phase40-bloomery-2026-10-07';
+const SHOTS = 'artifacts/playwright/captures/phase40-bloomery/m15-phase40-bloomery-2026-10-07';
 
 async function openGame(page: Page): Promise<void> {
   await page.setViewportSize({ width: 1400, height: 900 });

@@ -1,7 +1,9 @@
+import { assertSupportedRuntime } from './runtime-contract.mjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { switchesOffFingerprints } from './switches-off-checkpoint.ts';
 
+assertSupportedRuntime();
 const output = resolve('fixtures/switches-off.json');
 const fingerprints = switchesOffFingerprints();
 mkdirSync(dirname(output), { recursive: true });

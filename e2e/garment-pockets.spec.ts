@@ -37,7 +37,7 @@ test('a worn linen tunic adds visible carrying room for small items', async ({ p
   await expect(page.locator('.hud-panel')).toContainText('6 of 14');
   expect(await page.evaluate(() => (window as any).__dynasty.sim.player.equipment.torso?.item)).toBe('linen_tunic');
 
-  const shots = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m15-phase14c-garment-pockets-2026-10-11';
+  const shots = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/playwright/captures/garment-pockets/m15-phase14c-garment-pockets-2026-10-11';
   mkdirSync(shots, { recursive: true });
   await page.screenshot({ path: `${shots}/01-tunica-con-bolsillo.png` });
   const takeOff = page.locator('.hud-item-verbs [data-item="linen_tunic"][data-verb="take_off_garment"]');

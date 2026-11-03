@@ -1,7 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 
-const captureDir = 'artifacts/screenshots/m16-2026-10-21-2.18';
+const captureDir = 'artifacts/playwright/captures/m16-mud-shore-markers/m16-2026-10-21-2.18';
 
 test('shows the freshwater mud-bank markers in Spanish', async ({ page }) => {
   await page.setViewportSize({ width: 1400, height: 900 });

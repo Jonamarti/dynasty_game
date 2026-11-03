@@ -9,7 +9,7 @@ test('a real felling order swings four axe poses, freezes and releases the gestu
   await page.locator('.hud-button', { hasText: 'Pause' }).click();
   await page.waitForFunction(() => !!(window as any).__dynasty?.renderer?.art);
   const shots = process.env.DYNASTY_CAPTURE_DIR ??
-    'artifacts/screenshots/m15-chop-' + new Date().toISOString().replace(/[:.]/g, '-');
+    'artifacts/playwright/captures/chop-animation/m15-chop-' + new Date().toISOString().replace(/[:.]/g, '-');
   mkdirSync(shots, { recursive: true });
 
   await page.evaluate(() => {

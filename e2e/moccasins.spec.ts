@@ -31,7 +31,7 @@ test('moccasins are worn from the Spanish Kit and visible on the feet', async ({
     const { wornGarmentsOf } = await import(/* @vite-ignore */ path);
     return { item: d.sim.player.equipment.feet?.item, drawn: wornGarmentsOf(d.sim.player).feet };
   })).toEqual({ item: 'moccasins', drawn: 'boots' });
-  const shots = 'artifacts/screenshots/m15-phase14c-moccasins-2026-10-10';
+  const shots = 'artifacts/playwright/captures/moccasins/m15-phase14c-moccasins-2026-10-10';
   mkdirSync(shots, { recursive: true });
   await page.screenshot({ path: `${shots}/01-mocasines.png` });
   expect(errors).toEqual([]);

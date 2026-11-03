@@ -47,7 +47,7 @@ test('a reached bench rest order shows four seated poses without changing the re
   });
 
   const poses = new Set<string>(), sprites = new Set<string>();
-  const shots = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m15-bench-rest-animation-2026-10-13';
+  const shots = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/playwright/captures/bench-rest-animation/m15-bench-rest-animation-2026-10-13';
   mkdirSync(shots, { recursive: true });
   for (let phase = 0; phase < 4; phase++) {
     const rendered = await page.evaluate(phase => {

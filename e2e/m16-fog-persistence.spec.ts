@@ -1,7 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 
-const SHOTS = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m16-2026-10-20-2.3';
+const SHOTS = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/playwright/captures/m16-fog-persistence/m16-2026-10-20-2.3';
 
 test('m16-fog-saved: the reveal grid survives save, reload, and a legacy save defaults inactive', async ({ page }) => {
   mkdirSync(SHOTS, { recursive: true });
