@@ -13,3 +13,9 @@ The repository's branch metadata currently reports `master` unprotected, and `/r
 ## 2026-11-03 — stacked branch synchronization
 
 The #37 branch is synchronized with the updated #34 branch (`3ea06bc`). The combined CI workflow preserves #34's fail-closed scenario inventory and measurement artifacts, master Node pin and E2E screenshot-history guards, and #37's same-run proof records and aggregate verdict. E2E proofs are now written **after** the always-run screenshot-history check, so a history violation cannot produce a successful proof. Full CI on this combined commit is still required; no baseline is re-pinned and the PR remains draft.
+
+## 2026-11-03 — preserve partial proof evidence on a red matrix
+
+In run `41690720830`, all four E2E shards and unit/build passed and uploaded their same-run proof artifacts, but matrix shards 1/4, 2/4 and 4/4 failed. The aggregate job skipped artifact download whenever any upstream job was red, then misleadingly reported **0/9 proofs** despite six available. It still failed closed, but obscured what passed.
+
+The verdict now downloads whatever proofs are available **even after an upstream failure** and always executes the verifier. It must still fail when a required job is not successful or any of the nine proofs is missing, stale, duplicated or invalid. The focused contract tests assert the workflow's unconditional download/verification and a representative **6/9** partial-evidence failure. This is an observability fix, not a green-light exception or baseline change. Full CI on the updated stacked branch is required.

@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtempSync,mkdirSync,writeFileSync,rmSync,unlinkSync} from 'node:fs';
+import {mkdtempSync,mkdirSync,readFileSync,writeFileSync,rmSync,unlinkSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {expectedProofs,makeProof,verifyFullGate} from './ci-full-verdict.mjs';
@@ -47,6 +47,20 @@ test('invalid identity and malformed JSON fail',()=>fixture(root=>{
  writeFileSync(join(root,'e2e-2.json'),JSON.stringify({...makeProof('e2e',2,env),shard:3}));
  assert.match(verifyFullGate(ok,root,env).errors.join('\n'),/Invalid proof identity/);
 }));
+test('partial successful proofs remain visible but a failed matrix cannot pass',()=>fixture(root=>{
+ for(const shard of [1,2,4]) unlinkSync(join(root,'matrix-'+shard+'.json'));
+ const report=verifyFullGate({...ok,matrix:'failure'},root,env);
+ assert.equal(report.status,'failure');
+ assert.equal(report.found_proofs,6);
+ assert.equal(report.expected_proofs,9);
+ assert.equal(report.errors.filter(e=>e.startsWith('Missing proof: matrix-')).length,3);
+ assert.match(report.errors.join('\n'),/Required job matrix is failure/);
+}));
+test('the verdict downloads and inspects partial proofs even after upstream failure',()=>{
+ const workflow=readFileSync(new URL('../.github/workflows/ci.yml',import.meta.url),'utf8');
+ assert.match(workflow,/      - name: Download all CI proofs\n        if: always\(\)\n        uses: actions\/download-artifact@v4/);
+ assert.match(workflow,/      - name: Verify required jobs and every shard\n        if: always\(\)\n/);
+});
 test('invalid shard rejected at source',()=>{
  assert.throws(()=>makeProof('matrix',5,env),/Unknown proof/);
 });
