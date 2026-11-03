@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-const DIR = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m15-river-geometry-2026-10-08';
+const DIR = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/playwright/captures/earth-river-map/m15-river-geometry-2026-10-08';
 for (const [name, lon, lat] of [['Ebro', -0.88, 41.65], ['Danube', 12.1, 49], ['Rhine', 6.96, 50.9], ['Tagus', -4, 39.9]] as const) {
   test(`${name} retains its detailed course and bank resources`, async ({ page }) => {
     await page.goto('/?seed=river-geometry&skipIntro=1');

@@ -59,7 +59,7 @@ describe('saving the whole game (phase 33c)', () => {
   // compared exactly except the world-object graph, which is compared by content with each shared object written out where it
   // is used: after a load some objects that were one object are two equal ones (see docs/bugs.md, "the loader does not restore
   // sharing"), and the graph's node numbering moves with that although nothing in it differs.
-  type Graph = { root: unknown; nodes: { kind: string; prototype?: string; fields?: [string, unknown][]; values?: unknown[]; entries?: [unknown, unknown][] }[] };
+  type Graph = { root: unknown; nodes: { kind: string; prototype?: string; type?: string; fields?: [string, unknown][]; values?: unknown[]; entries?: [unknown, unknown][] }[] };
   function expand(g: Graph): string {
     const memo = new Map<number, string>(), open = new Set<number>();
     const val = (v: unknown): string => v && typeof v === 'object' && 'ref' in v ? node((v as { ref: number }).ref) : JSON.stringify(v);
@@ -77,6 +77,91 @@ describe('saving the whole game (phase 33c)', () => {
     };
     return val(g.root);
   }
+
+  /**
+   * Compare a snapshot's graph by its references, not by its incidental node
+   * numbering. Report the FIRST path where a previously shared object is split
+   * (or where separate live objects have been merged on load).
+   *
+   * Diagnostic only: this must not rewrite graph IDs, snapshot baselines, or
+   * make the existing it.fails regression silently pass.
+   */
+  function firstGraphDifference(live: Graph, loaded: Graph): string | null {
+    const liveOwners = new Map<number, { id: number; path: string }>();
+    const loadedOwners = new Map<number, { id: number; path: string }>();
+    type Pair = { left: unknown; right: unknown; path: string };
+    const pairs: Pair[] = [{ left: live.root, right: loaded.root, path: 'objects' }];
+    const ref = (value: unknown): number | null => {
+      if (value === null || typeof value !== 'object' || Array.isArray(value) || !Object.hasOwn(value, 'ref')) return null;
+      const id = (value as { ref: unknown }).ref;
+      return typeof id === 'number' && Number.isSafeInteger(id) && id >= 0 ? id : null;
+    };
+    const show = (value: unknown) => (JSON.stringify(value) ?? String(value)).slice(0, 100);
+    while (pairs.length) {
+      const { left, right, path } = pairs.pop()!;
+      const a = ref(left), b = ref(right);
+      if ((a === null) !== (b === null)) return `${path}: reference vs literal (${show(left)} / ${show(right)})`;
+      if (a === null || b === null) {
+        if (JSON.stringify(left) !== JSON.stringify(right)) return `${path}: value ${show(left)} vs ${show(right)}`;
+        continue;
+      }
+      const oldA = liveOwners.get(a), oldB = loadedOwners.get(b);
+      if (oldA && oldA.id !== b) return `${path}: live node ${a} first seen at ${oldA.path}, but loaded split it between nodes ${oldA.id} and ${b}`;
+      if (oldB && oldB.id !== a) return `${path}: loaded node ${b} first seen at ${oldB.path}, but live split it between nodes ${oldB.id} and ${a}`;
+      if (oldA || oldB) continue;
+      liveOwners.set(a, { id: b, path });
+      loadedOwners.set(b, { id: a, path });
+      const x = live.nodes[a], y = loaded.nodes[b];
+      if (!x || !y || x.kind !== y.kind || x.prototype !== y.prototype || x.type !== y.type) {
+        return `${path}: incompatible nodes ${a}/${b} (${x?.kind ?? 'missing'} / ${y?.kind ?? 'missing'})`;
+      }
+      const children: Pair[] = [];
+      if (x.kind === 'object') {
+        const lf = x.fields ?? [], rf = y.fields ?? [];
+        if (lf.length !== rf.length) return `${path}: ${lf.length} vs ${rf.length} fields`;
+        for (let i = 0; i < lf.length; i++) {
+          const aField = lf[i]!, bField = rf[i]!;
+          if (aField[0] !== bField[0]) return `${path}: field name/order differs at ${i}: ${aField[0]} / ${bField[0]}`;
+          children.push({ left: aField[1], right: bField[1], path: `${path}.${aField[0]}` });
+        }
+      } else if (x.kind === 'array' || x.kind === 'set' || x.kind === 'typed') {
+        const lv = x.values ?? [], rv = y.values ?? [];
+        if (lv.length !== rv.length) return `${path}: ${lv.length} vs ${rv.length} values`;
+        for (let i = 0; i < lv.length; i++) children.push({ left: lv[i], right: rv[i], path: `${path}[${i}]` });
+      } else if (x.kind === 'map') {
+        const le = x.entries ?? [], re = y.entries ?? [];
+        if (le.length !== re.length) return `${path}: ${le.length} vs ${re.length} entries`;
+        for (let i = 0; i < le.length; i++) {
+          const ae = le[i]!, be = re[i]!;
+          children.push({ left: ae[0], right: be[0], path: `${path}.entry[${i}].key` });
+          children.push({ left: ae[1], right: be[1], path: `${path}.entry[${i}].value` });
+        }
+      }
+      // Reverse-push preserves natural field / array order in the reported path.
+      for (let i = children.length - 1; i >= 0; i--) pairs.push(children[i]!);
+    }
+    return null;
+  }
+
+  it('M16 E5 graph comparer reports split aliases but accepts renumbered nodes', () => {
+    const shared: Graph = { root: { ref: 0 }, nodes: [
+      { kind: 'array', values: [{ ref: 1 }, { ref: 1 }] },
+      { kind: 'object', prototype: 'Object', fields: [['value', 9]] },
+    ] };
+    const renumbered: Graph = { root: { ref: 1 }, nodes: [
+      { kind: 'object', prototype: 'Object', fields: [['value', 9]] },
+      { kind: 'array', values: [{ ref: 0 }, { ref: 0 }] },
+    ] };
+    const split: Graph = { root: { ref: 0 }, nodes: [
+      { kind: 'array', values: [{ ref: 1 }, { ref: 2 }] },
+      { kind: 'object', prototype: 'Object', fields: [['value', 9]] },
+      { kind: 'object', prototype: 'Object', fields: [['value', 9]] },
+    ] };
+    expect(firstGraphDifference(shared, renumbered)).toBeNull();
+    expect(firstGraphDifference(shared, split)).toContain('loaded split');
+    expect(firstGraphDifference(split, shared)).toContain('live split');
+  });
+
   const whole = (s: WorldState) => {
     const world = JSON.parse(serializeSave(s, 0)).world;
     world.simulation.objects.graph = expand(world.simulation.objects.graph);
@@ -88,9 +173,23 @@ describe('saving the whole game (phase 33c)', () => {
     live.current.possessFirst();
     days(live, 4);
     const loaded = deserializeSave(serializeSave(live, 1234));
-    days(live, 20);
-    days(loaded, 20);
-    const liveGraph = JSON.parse(serializeSave(live, 0)).world.simulation.objects.graph;
+    const graph = (world: WorldState): Graph => JSON.parse(serializeSave(world, 0)).world.simulation.objects.graph;
+    let first = firstGraphDifference(graph(live), graph(loaded));
+    if (first) console.info('[M16 E5] divergence immediately after loading: ' + first);
+    const checkpoints = new Set([1, 2, 4, 8, 12, 16, 20]);
+    for (let day = 1; day <= 20; day++) {
+      days(live, 1);
+      days(loaded, 1);
+      if (!first && checkpoints.has(day)) {
+        const difference = firstGraphDifference(graph(live), graph(loaded));
+        if (difference) {
+          first = difference;
+          console.info('[M16 E5] first detected on or before day ' + day + ': ' + difference);
+        }
+      }
+    }
+    if (!first) console.info('[M16 E5] no alias/content differences at sampled checkpoints; checking raw graph');
+    const liveGraph = graph(live);
     const loadedGraph = JSON.parse(serializeSave(loaded, 0)).world.simulation.objects.graph;
     expect(loadedGraph.nodes.length).toBe(liveGraph.nodes.length);
     const hash = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');

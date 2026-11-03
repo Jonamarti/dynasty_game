@@ -67,7 +67,7 @@ test('a real read order animates four attention frames while reading a record', 
 
   const frames = new Set<string>();
   const images = new Set<string>();
-  const shots = 'artifacts/screenshots/m15-reading-animation-2026-10-14';
+  const shots = 'artifacts/playwright/captures/read-animation/m15-reading-animation-2026-10-14';
   mkdirSync(shots, { recursive: true });
   for (let phase = 0; phase < 4; phase++) {
     const rendered = await page.evaluate(phase => {

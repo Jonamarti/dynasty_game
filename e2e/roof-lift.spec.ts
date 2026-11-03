@@ -9,7 +9,7 @@ test('house roof lifts on hover, when occupied, and with V while paused', async 
   await page.locator('.hud-button', { hasText: 'Pause' }).click();
   await page.waitForFunction(() => !!(window as any).__dynasty?.renderer?.art);
   const shots = process.env.DYNASTY_CAPTURE_DIR ??
-    'artifacts/screenshots/m15-roof-lift-' + new Date().toISOString().replace(/[:.]/g, '-');
+    'artifacts/playwright/captures/roof-lift/m15-roof-lift-' + new Date().toISOString().replace(/[:.]/g, '-');
   mkdirSync(shots, { recursive: true });
 
   const fixture = await page.evaluate(async () => {

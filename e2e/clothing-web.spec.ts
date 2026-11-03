@@ -28,7 +28,7 @@ test('clothing knowledge opens its own Spanish web with working recipe nodes', a
   for (const tech of ['toggles', 'linen_tunic', 'wool_cloak']) {
     await expect(page.locator(`.techweb-node[data-tech="${tech}"]`)).toBeVisible();
   }
-  const shots = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m15-phase14c-clothing-web-2026-10-10';
+  const shots = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/playwright/captures/clothing-web/m15-phase14c-clothing-web-2026-10-10';
   mkdirSync(shots, { recursive: true });
   await page.screenshot({ path: `${shots}/01-red-de-ropa.png` });
   await page.keyboard.press('Escape');

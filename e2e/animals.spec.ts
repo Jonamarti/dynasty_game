@@ -44,7 +44,7 @@ test('animal events draw four distinct shared frames and freeze while paused', a
     return animal.id;
   });
   // Test captures are disposable. The reviewed milestone screenshots live in
-  // artifacts/screenshots and must never be overwritten by a rerun.
+  // artifacts/playwright/captures/animals and must never be overwritten by a rerun.
   const shots = 'test-results/m15-animal-sleep';
   mkdirSync(shots, { recursive: true });
   const scales = new Set<number>();

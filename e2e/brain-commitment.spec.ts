@@ -7,7 +7,7 @@ import { mkdirSync } from 'node:fs';
 import { test, expect, type Page } from '@playwright/test';
 import { commitmentGoal, type CommitmentTarget } from '../src/sim/ai/Commitment.ts';
 
-const SHOTS = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots/m15-brain-commitment-2026-10-08T-01';
+const SHOTS = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/playwright/captures/brain-commitment/m15-brain-commitment-2026-10-08T-01';
 
 type Fixture = { personId: number; name: string | null; target: CommitmentTarget };
 

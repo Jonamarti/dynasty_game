@@ -15,7 +15,7 @@ test('the radial menu offers planting, says why not, and plants', async ({ page 
   await expect(page.locator('.hud-clock')).not.toBeEmpty({ timeout: 15_000 });
   await page.locator('.hud-button', { hasText: 'Pause' }).click();
   const shots = process.env.DYNASTY_CAPTURE_DIR ??
-    'artifacts/screenshots/m15-orchard-' + new Date().toISOString().replace(/[:.]/g, '-');
+    'artifacts/playwright/captures/orchard/m15-orchard-' + new Date().toISOString().replace(/[:.]/g, '-');
   mkdirSync(shots, { recursive: true });
 
   // A growing season, the idea in the player's head and open ground to plant in.

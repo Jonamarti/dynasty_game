@@ -9,7 +9,7 @@ test('a real craft order manipulates its work, hides a packed spear and freezes 
   await page.locator('.hud-button', { hasText: 'Pause' }).click();
   await page.waitForFunction(() => !!(window as any).__dynasty?.renderer?.art);
   const shots = process.env.DYNASTY_CAPTURE_DIR ??
-    'artifacts/screenshots/m15-craft-' + new Date().toISOString().replace(/[:.]/g, '-');
+    'artifacts/playwright/captures/craft-animation/m15-craft-' + new Date().toISOString().replace(/[:.]/g, '-');
   mkdirSync(shots, { recursive: true });
 
   await page.evaluate(() => {

@@ -1,5 +1,5 @@
 /** M15 phase 17: feast guests visibly sit once they reach the host's public target. */
-import { mkdirSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
 
 const VERSION = JSON.parse(readFileSync('package.json', 'utf8')).version as string;
@@ -149,8 +149,7 @@ test('a reached feast guest sits through the active attend order', async ({ page
   });
   expect(rendered.pose).toBe('v2');
   expect(rendered.stoolPixels).toBeGreaterThan(20);
-  const shots = 'artifacts/screenshots/m15-attend-feast-animation-2026-10-13';
-  mkdirSync(shots, { recursive: true });
+  const shots = test.info().outputPath('captures');
   await page.screenshot({ path: `${shots}/00-seated-feast-guest.png` });
   expect(rendered.key).toBe('p/legs/base/adult.m/S/v2');
   expect(rendered.keyExists).toBe(true);

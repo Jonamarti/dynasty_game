@@ -63,7 +63,7 @@ test('a real greeting order animates its speaker without resolving the conversat
   expect(state.drawnPose).toMatch(/^l[0-3]$/);
   await expect(page.locator('.game-version')).toContainText(`v${VERSION}`);
   const poses = new Set<string>(), images = new Set<string>();
-  const shots = 'artifacts/screenshots/m15-conversation-animation-2026-10-13';
+  const shots = 'artifacts/playwright/captures/talk-animation/m15-conversation-animation-2026-10-13';
   mkdirSync(shots, { recursive: true });
   for (let phase = 0; phase < 4; phase++) {
     const rendered = await page.evaluate(phase => {

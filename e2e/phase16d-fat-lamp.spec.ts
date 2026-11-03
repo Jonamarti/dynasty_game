@@ -2,7 +2,7 @@ import { mkdirSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
 
 const captureDir = process.env.DYNASTY_CAPTURE_DIR ??
-  'artifacts/screenshots/m15-phase16d-fat-lamp-2026-10-11';
+  'artifacts/playwright/captures/phase16d-fat-lamp/m15-phase16d-fat-lamp-2026-10-11';
 
 test('shows and captures the refuel option for a lit indoor fat lamp in Spanish', async ({ page }) => {
   await page.goto('/?seed=phase16d-fat-lamp&skipIntro=1&lang=es');

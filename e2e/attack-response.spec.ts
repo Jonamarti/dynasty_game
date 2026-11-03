@@ -1,8 +1,6 @@
 /** M15 phase 41: an autonomous attack stops and explains when its target is unconscious. */
-import { mkdirSync } from 'node:fs';
 import { test, expect, type Page } from '@playwright/test';
 
-const SHOTS = 'artifacts/screenshots/m15-attack-response-2026-10-16';
 
 async function openGame(page: Page, lang: 'en' | 'es'): Promise<number> {
   await page.setViewportSize({ width: 1400, height: 900 });
@@ -61,7 +59,7 @@ async function openGame(page: Page, lang: 'en' | 'es'): Promise<number> {
 }
 
 test('a familiar autonomous attacker says why it stopped in English and Spanish', async ({ page }) => {
-  mkdirSync(SHOTS, { recursive: true });
+  const SHOTS = test.info().outputPath('captures');
 
   for (const [index, lang] of (['en', 'es'] as const).entries()) {
     const attackerId = await openGame(page, lang);

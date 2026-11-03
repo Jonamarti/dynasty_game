@@ -2,7 +2,7 @@
 import { mkdirSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
 
-const SHOTS = 'artifacts/screenshots/m15-site-abandonment-2026-10-15';
+const SHOTS = 'artifacts/playwright/captures/site-abandonment-notice/m15-site-abandonment-2026-10-15';
 
 test('shows the reason over an abandoned site in view', async ({ page }) => {
   const errors: string[] = [];

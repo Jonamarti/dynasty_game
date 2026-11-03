@@ -23,5 +23,5 @@ test('a geographic rebuild keeps the autonomy shown in the HUD', async ({ page }
   });
   expect(active.mode).toBe('auto');
   expect(active.action).not.toBe('idle');
-  await page.screenshot({ path: 'artifacts/screenshots/m15-autonomy-rebuild-2026-10-08/01-auto-earth.png' });
+  await page.screenshot({ path: 'artifacts/playwright/captures/autonomy-rebuild/m15-autonomy-rebuild-2026-10-08/01-auto-earth.png' });
 });

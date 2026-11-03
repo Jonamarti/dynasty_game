@@ -32,6 +32,7 @@ export function parseScenarioMatrix(input: unknown): ScenarioMatrixRecord[] {
     const failed = record.failed as string[];
     const na = record.na as string[];
     const memberships = [...passed, ...failed, ...na];
+    if (memberships.length === 0) throw new TypeError(`scenario ${record.name} has no checks`);
     if (new Set(memberships).size !== memberships.length) throw new TypeError(`scenario ${record.name} lists a check more than once`);
     return {
       name: record.name,

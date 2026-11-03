@@ -12,7 +12,7 @@ import { test, expect, type Page } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 import { SUB_WEBS, TECH, WEBS, techsOfWeb, webOf, type Tech } from '../src/sim/knowledge/Tech.ts';
 
-const SHOTS = 'artifacts/screenshots/m15-phase13c-subwebs-2026-10-06';
+const SHOTS = 'artifacts/playwright/captures/tech-subwebs/m15-phase13c-subwebs-2026-10-06';
 
 type Debug = {
   __dynasty: {
