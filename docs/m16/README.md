@@ -376,6 +376,13 @@ A stage ends with the full level (§5) and a screenshot tour.
 | 47 | [14.8](phases/14.8-upkeep.md) | Daily wear and repair: upkeep as the natural limit | todo |
 | 48 | [14.G](phases/14.G-gate.md) | Shelter ladder gate | todo |
 
+**Decisión adicional #55 (2026-11-03, pendiente de verificar):** al generar una
+banda nueva no deben precolocarse chozas y almacenes. Solo el planificador
+habitual de la banda puede originar sus primeras propuestas, con proponente
+real. Validar matriz y supervivencia; este cambio no cierra 14.G ni adelanta
+4.6/6.7. Según `AGENTS.md`, la compatibilidad de partidas alfa de versiones
+anteriores se aplaza hasta beta; sí se exige guardado/carga en la misma versión.
+
 ### Stage 4 — Player control
 
 | Step | Phase | Title | Status |

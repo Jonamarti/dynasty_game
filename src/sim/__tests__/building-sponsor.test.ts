@@ -8,8 +8,13 @@ const SMALL = {
 };
 
 describe('building sponsors', () => {
-  it('gives each starter project a living adult from its band', () => {
+  it('gives each band-planned project a living adult from its band', () => {
     const sim = new Simulation(SMALL);
+    // Founders have not chosen an actual project at tick zero.
+    expect(sim.buildings).toHaveLength(0);
+    for (let tick = 0; tick < sim.config.time.ticksPerDay * 4 && sim.buildings.length === 0; tick++) {
+      sim.step();
+    }
     const sites = sim.buildings.filter(building => !building.complete);
 
     expect(sites.length).toBeGreaterThan(0);
