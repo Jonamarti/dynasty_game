@@ -209,13 +209,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Download all CI proofs
-        if: needs.contract.result == 'success' && needs.unit.result == 'success' && needs.matrix.result == 'success' && needs.e2e.result == 'success'
+        if: always()
         uses: actions/download-artifact@v4
         with:
           pattern: ci-gate-${{ github.run_attempt }}-*
           path: ci-proof-downloads
           merge-multiple: true
       - name: Verify required jobs and every shard
+        if: always()
         env:
           CI_CONTRACT_RESULT: ${{ needs.contract.result }}
           CI_UNIT_RESULT: ${{ needs.unit.result }}
