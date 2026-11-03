@@ -18,3 +18,7 @@ The matrix parser previously accepted a scenario with all three status lists emp
 ## 2026-11-03 — integration with current master
 
 Merged `master` at `011463bd` into the #8 branch while retaining both independent tooling changes: `--diagnose` and detailed matrix JSON output in `tools/scenarios.ts`, and the master Node pin, screenshot-history guards and E2E steps in `.github/workflows/ci.yml`. No simulation, pinned baseline or screenshot history was changed by this reconciliation. Fresh full CI must verify the combined revision before any merge.
+
+## 2026-11-03 — merge current master after E2E registration #54
+
+Merged master `d26b437` (#54) into this tooling branch without overlapping file changes. The recovered current-build save/load and world-picker E2E specs now run in this branch's full suite. The existing scenario regressions are still inherited from master and the pinned matrix baseline is unchanged. The stricter #8 validator intentionally also flags inherited NA-to-FAIL transitions; these require separate investigation rather than an automatic baseline re-pin. New CI on the combined commit is required before integration.
