@@ -103,6 +103,7 @@ import type { ChildhoodConfig, MotivationConfig } from '../core/Config.ts';
 import { anchorOf, childRadius, reachOf, withinReach, type Anchor } from './Anchor.ts';
 import { cryOf, infantNeedingNursing } from './Nursing.ts';
 import type { PlaceRecord } from '../social/PlaceMemory.ts';
+import { findRememberedHerdQuarry } from './HerdMemory.ts';
 import { CHILD_FEED_AT, feederRole, starvingInCare } from './Feeding.ts';
 import { canDressSelf, canForage, canHunt, isNursling } from '../entities/LifeStage.ts';
 import { HEAVY_ACTIONS, trimesterOf } from '../entities/Pregnancy.ts';
@@ -881,11 +882,6 @@ const PREY_AT = 0.45;
 
 const JOB_BIAS_UP = 1.3;
 const JOB_BIAS_DOWN = 0.85;
-
-/** A remembered herd only identifies the species actually observed. */
-export function rememberedHerdMatchesSpecies(kind: string, species: Animal['species']): boolean {
-  return kind === `herd:${species}`;
-}
 
 export class Brain {
   private readonly knownNodeCandidates: { node: ResourceNode; amount: number | null }[] = [];
@@ -3575,18 +3571,11 @@ export class Brain {
         person.x, person.y, ctx.sightRadius,
         a => a.alive && !a.def.predator && (desperateForFood || withinReach(anchor, reach, a.x, a.y))
       );
-      const herdMemory = person.placeMemory.nearestAny(person.x, person.y,
-        ctx.sightRadius * 3, place => place.kind.startsWith('herd:') &&
-          ctx.world.sameRegion(person.x, person.y, place.x, place.y) &&
-          (desperateForFood || withinReach(anchor, reach, place.x, place.y)));
-      const rememberedQuarry = herdMemory
-        ? ctx.animalHash.findNearest(herdMemory.x, herdMemory.y, 2,
-          animal => animal.alive && !animal.def.predator &&
-            rememberedHerdMatchesSpecies(herdMemory.kind, animal.species) &&
-            Math.hypot(animal.x - herdMemory.x, animal.y - herdMemory.y) <= 1 &&
-            ctx.world.sameRegion(person.x, person.y, animal.x, animal.y) &&
-            (desperateForFood || withinReach(anchor, reach, animal.x, animal.y)))
-        : null;
+      const rememberedQuarry = findRememberedHerdQuarry(
+        person.placeMemory, ctx.animalHash, person, ctx.sightRadius * 3,
+        (x, y) => ctx.world.sameRegion(person.x, person.y, x, y) &&
+          (desperateForFood || withinReach(anchor, reach, x, y)),
+      );
       quarry = visibleQuarry ?? rememberedQuarry;
       // Do not *begin* a chase already over the line, the same rule crafting
       // learned. A hunt checks its interruption during the work rather than
