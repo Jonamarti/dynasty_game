@@ -16,8 +16,10 @@ test('an active compost spreading order shows the soil-working gesture', async (
   const worker = await page.evaluate(async () => {
     const d = (window as any).__dynasty, sim = d.sim, person = sim.player;
     if (!person) throw new Error('No player fixture');
-    const Building = sim.buildings[0]?.constructor;
-    if (!Building) throw new Error('No building constructor');
+    // M16 #55 begins with no prefabricated construction, so obtain the real
+    // constructor rather than borrowing it from the first existing site.
+    const buildingModulePath = '/src/sim/entities/Building.ts';
+    const { Building } = await import(buildingModulePath);
     const def = { id: 'field', label: 'Field', icon: '🌾', width: 4, height: 4, materials: {}, workTicks: 300,
       shelter: 0, storage: 0, field: true, placement: 'arable', description: 'field' };
     const field = new Building(def, Math.floor(person.x) - 1, Math.floor(person.y) - 1, person.bandId, sim.ids);

@@ -181,11 +181,16 @@ function validateState(state: CheckpointState): void {
   for (const eventId of eventIds) {
     if (!Number.isSafeInteger(eventId) || eventId < 1 || eventId >= counters.next.socialEvent) invalid('allocator does not cover social event');
   }
-  for (const [, entities] of allocations.slice(2)) {
+  for (const [kind, entities] of allocations.slice(2)) {
     for (const entity of entities) {
       const positioned = entity as { id: number; x: number; y: number };
       if (!Number.isFinite(positioned.x) || !Number.isFinite(positioned.y) ||
-          positioned.x < 0 || positioned.y < 0 || positioned.x >= world.width || positioned.y >= world.height) invalid('world object outside terrain');
+          positioned.x < 0 || positioned.y < 0 || positioned.x >= world.width || positioned.y >= world.height) {
+        // Show the offending kind, identity and coordinates: this is a broken
+        // *world* object, not an absent matrix file. Keep the strict validation
+        // while locating the placement path that produced it (M16 #55).
+        invalid(`world object outside terrain: ${kind} #${positioned.id} at (${positioned.x}, ${positioned.y}) in ${world.width}x${world.height}`);
+      }
     }
   }
   for (const corpse of objects.corpses) {

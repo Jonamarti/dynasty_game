@@ -1711,11 +1711,10 @@ export class Simulation {
       this.bands.push(band);
       this.normsByBand.set(band.id, norms);
 
-      // Every band starts with plans rather than buildings: a hut site and a
-      // storage pit marked out at the camp centre, waiting for someone to
-      // fetch the wood. This is what makes construction observable in a
-      // headless run without the player having to place anything.
-      this.placeCampSites(band, rng);
+      // Founders start with people and needs, not preselected blueprints.
+      // Their first sites come from the band's actual planning pass, with a
+      // living proponent. Prefilling projects made a decision before its
+      // supposed decision-makers existed (M16 #55).
 
       // The band is filled with families rather than with unrelated adults.
       // See `systems/Founding.ts` — every part of it goes through the same code
@@ -1759,20 +1758,6 @@ export class Simulation {
         this.households.push(household);
         this.householdsById.set(household.id, household);
       }
-      // The first camp sites predate their people, so give them a proponent as
-      // soon as the founding families exist. Waiting for the first planning
-      // day left a fresh band with nobody eligible to continue its starter hut.
-      const adults = founded.people.filter(person => !person.isChild && person.alive);
-      for (const site of this.buildings) {
-        if (site.ownerBandId !== band.id || site.complete || site.sponsorId !== null) continue;
-        const score = (person: Person): number => site.def.shelter > 0
-          ? person.needs.cold + Math.max(0, -person.mood.security)
-          : Math.max(0, 1 - person.inventory.total / 20) * 100;
-        const sponsor = adults.reduce<Person | null>((best, person) =>
-          !best || score(person) > score(best) ||
-            (score(person) === score(best) && person.id < best.id) ? person : best, null);
-        site.sponsorId = sponsor?.id ?? null;
-      }
     }
   }
 
@@ -1801,20 +1786,6 @@ export class Simulation {
         return this.world.findWalkableNear(x, y) ?? { x, y };
       },
     };
-  }
-
-  /** Marks out a band's first two structures somewhere near their camp. */
-  private placeCampSites(band: Band, rng: RNG): void {
-    // Two huts, because one three-by-three shelter cannot hold a band of
-    // fifteen through a winter, and nobody but the player can order a new one
-    // built until bands plan for themselves in M3.
-    for (const defId of ['mud_hut', 'mud_hut', 'storage_pit']) {
-      for (let attempt = 0; attempt < 40; attempt++) {
-        const x = Math.round(band.homeX + rng.range(-6, 6));
-        const y = Math.round(band.homeY + rng.range(-6, 6));
-        if (this.place(defId, x, y, band.id)) break;
-      }
-    }
   }
 
   /**

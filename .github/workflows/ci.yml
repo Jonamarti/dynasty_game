@@ -99,8 +99,13 @@ jobs:
           npm run sim:check:all -- --slow --shard ${{ matrix.shard }}/4 --json matrix-shard.json --diagnose
           code=$?
           set -e
-          # 1 = some inherited reds; anything above is a crash or a usage error.
-          if [ "$code" -gt 1 ]; then exit "$code"; fi
+          # 1 can mean inherited reds OR an unhandled runtime exception.
+          # The scenario runner only writes JSON after finishing every scenario.
+          # Never misreport an exception as a missing-file baseline comparison.
+          if [ "$code" -gt 1 ] || [ ! -s matrix-shard.json ]; then
+            echo "::error::Scenario matrix shard failed before producing a complete JSON report (exit $code). See the scenario output above."
+            exit 2
+          fi
       - name: Compare with the baseline
         run: npm run baseline:diff -- fixtures/matrix-baseline.json matrix-shard.json
 
