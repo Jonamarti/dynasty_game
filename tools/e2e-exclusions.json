@@ -26,12 +26,6 @@
       "tracking_issue": 9
     },
     {
-      "file": "e2e/beads.spec.ts",
-      "category": "deferred-functional",
-      "reason": "Functional E2E omitted from standard suite; requires safe capture paths from PR #35 and individual run before enabling in CI.",
-      "tracking_issue": 9
-    },
-    {
       "file": "e2e/begin-anywhere.spec.ts",
       "category": "deferred-functional",
       "reason": "Functional E2E omitted from standard suite; requires safe capture paths from PR #35 and individual run before enabling in CI.",
@@ -57,12 +51,6 @@
     },
     {
       "file": "e2e/garment-dyeing.spec.ts",
-      "category": "deferred-functional",
-      "reason": "Functional E2E omitted from standard suite; requires safe capture paths from PR #35 and individual run before enabling in CI.",
-      "tracking_issue": 9
-    },
-    {
-      "file": "e2e/hide-dressing.spec.ts",
       "category": "deferred-functional",
       "reason": "Functional E2E omitted from standard suite; requires safe capture paths from PR #35 and individual run before enabling in CI.",
       "tracking_issue": 9
