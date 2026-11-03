@@ -1,64 +1,96 @@
 name: Deploy to GitHub Pages
-
 on:
-  push:
-    branches: [master]
-  workflow_dispatch:
-
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
 permissions:
   contents: read
-  pages: write
-  id-token: write
-
-# Let a running deploy finish rather than cancelling it half-published.
+  actions: read
 concurrency:
   group: pages
   cancel-in-progress: false
-
 jobs:
   build:
-    # Temporary safety interlock for issue #11: legacy Pages must not deploy
-    # while master has no same-SHA full-CI authorization. PR #38 replaces
-    # this workflow with a verified workflow_run gate; keep it disabled until then.
-    if: ${{ false }}
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'master'
     runs-on: ubuntu-latest
+    outputs:
+      verified_sha: ${{ steps.verify.outputs.sha }}
     steps:
       - uses: actions/checkout@v4
-
+        with:
+          ref: master
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Test deployment authorization decisions
+        run: node --test tools/pages-authorization.test.mjs
+      - name: Authorize exact CI commit and global verdict
+        id: verify
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const {pathToFileURL} = require('node:url');
+            const {evaluatePagesAuthorization} = await import(
+              pathToFileURL(process.env.GITHUB_WORKSPACE + '/tools/pages-authorization.mjs').href
+            );
+            const run = context.payload.workflow_run;
+            const owner = context.repo.owner, repo = context.repo.repo;
+            const { data: master } = await github.rest.repos.getBranch({owner, repo, branch:'master'});
+            const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRunAttempt, {
+              owner, repo, run_id:run.id, attempt_number:run.run_attempt, per_page:100
+            });
+            const artifacts = await github.paginate(github.rest.actions.listWorkflowRunArtifacts, {
+              owner, repo, run_id:run.id, per_page:100
+            });
+            const verdict = evaluatePagesAuthorization({
+              run, repository:owner + '/' + repo, masterSha:master.commit.sha,
+              jobs, artifacts
+            });
+            if (!verdict.allowed) {
+              core.setFailed(verdict.errors.join('; '));
+              return;
+            }
+            core.setOutput('sha',verdict.sha);
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.verify.outputs.sha }}
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
           cache: npm
-
-      # npm 10.9.2 can crash in its resolver (see README); the retry with the
-      # legacy resolver is the escape hatch.
       - name: Install
         run: npm ci || npm ci --legacy-peer-deps
-
-      - name: Typecheck
-        run: npm run typecheck
-
-      # Same flags as the full check: the default 5 s per-test timeout is too
-      # short for the whole-world save/load tests on a GitHub runner.
-      # Node 22 for the same reason as ci.yml (pinned fingerprints).
-      - name: Unit tests
-        run: npm test -- --maxWorkers=1 --testTimeout=15000
-
-      - name: Build
+      - name: Build the exact verified revision
         run: npm run build
-
       - uses: actions/configure-pages@v5
-
       - uses: actions/upload-pages-artifact@v3
         with:
           path: ./dist
-
   deploy:
     needs: build
+    if: needs.build.result == 'success'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - name: Reject superseded master before publishing
+        uses: actions/github-script@v7
+        env:
+          VERIFIED_SHA: ${{ needs.build.outputs.verified_sha }}
+        with:
+          script: |
+            const {data} = await github.rest.repos.getBranch({
+              owner:context.repo.owner,repo:context.repo.repo,branch:'master'
+            });
+            if (data.commit.sha !== process.env.VERIFIED_SHA) {
+              core.setFailed('Master changed after build; refusing stale deploy');
+            }
       - id: deployment
         uses: actions/deploy-pages@v4
