@@ -17,6 +17,16 @@
 - **Cambio:** `npm run baseline:matrix-pin` recibe los cuatro `matrix-shard.json` de una ejecución, reconstruye el catálogo con el mismo reparto de shards y se niega a escribir si falta un shard, falta un escenario, el orden no coincide o sobra algo. Sigue exigiendo el Node fijado.
 - **Verificación:** `m16-matrix-baseline-pin.test.ts` en `check:fast`. Con los JSON de `ba7cb0d8`, tres shards y dos shards intercambiados se rechazan, y cuatro generan los 49 escenarios. No cambia la simulación.
 
+## 2026-11-03 — E2E: esperar la navegación al cargar e importar partidas
+
+**Problema:** `save-load.spec.ts` podía ejecutar `page.evaluate()` durante la recarga completa al importar un archivo válido; la CI de PR #60 ([run 41723472828](https://github.com/Jonamarti/dynasty_game/actions/runs/41723472828), E2E 3/4) registró `Execution context was destroyed, most likely because of a navigation`.
+
+**Causa:** `importGame()` persiste la partida y después ejecuta `location.search` en `reloadInto()`; las pruebas sólo esperaban un HUD no vacío, que también podía corresponder al documento anterior.
+
+**Cambio:** esperar explícitamente `page.waitForNavigation({ waitUntil: 'domcontentloaded' })` en paralelo con los comandos Load e Import, antes de inspeccionar el estado. Se mantienen las aserciones de persistencia, errores de entrada, tick y pausa. No cambia la lógica de guardado, juego, baseline ni versiones.
+
+**Verificación:** el fallo volvió a aparecer en `master` tras #62 ([run 41797559975](https://github.com/Jonamarti/dynasty_game/actions/runs/41797559975), E2E 3/4). Se comprueba en la CI de esta PR actualizada sobre `master` antes de integrarla. Al ser intermitente, una pasada no demuestra que haya desaparecido.
+
 ## 2026-11-02 — M16 0.16.24-alpha — pozos solo conocidos
 
 - La IA puede buscar un pozo visible o recordado como `building:well`, pero no obtiene acceso global a pozos lejanos nunca descubiertos.
