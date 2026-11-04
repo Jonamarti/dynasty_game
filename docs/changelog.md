@@ -1,3 +1,8 @@
+## 2026-11-04 — M16: diagnóstico de nacimientos y refugio nocturno, sin arreglo
+
+- **Problema:** en varios mundos no nace casi nadie y casi nadie duerme bajo techo.
+- **Resultado:** mecanismos medidos y variantes descartadas; detalle en `docs/bugs.md`. No cambia el juego ni la referencia.
+
 ## 2026-11-04 — M16 CI: la referencia de la matriz vuelve a describir ejecuciones reales
 
 - **Problema:** las matrices 1, 2 y 4 de `master` fallaban en cada ejecución comparando con la referencia, en cualquier PR, aunque no tocara la simulación.
