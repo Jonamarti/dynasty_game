@@ -1,3 +1,41 @@
+## 2026-11-04 — M16: casi nadie concibe porque casi nadie duerme bajo techo
+
+Abierto en [#58](https://github.com/Jonamarti/dynasty_game/issues/58) y relacionado con #55 y #28. **Sin arreglo todavía:** las variantes medidas se descartaron.
+
+**Medido en `herders` y `orchard`:**
+
+- Casi todas las concepciones que superan la tirada se pierden en `conception_no_roof`: 323 frente a 4 logradas en `herders`, con 8 semillas y el código de `master`.
+- Solo el 7,6 % de las noches de adulto en `herders` y el 1,1 % en `orchard` se pasan durmiendo bajo techo.
+- En `orchard`, semilla por defecto, las dos chozas de `placeCampSites` ocupan los dos `MAX_SITES` durante unos 30 días. Reciben material sin llegar a empezarse y se abandonan en invierno con 33/38 y 35/38 materiales. El primer refugio se termina hacia el día 44.
+- `capacity-denied roofs=0` no descarta la capacidad: `Brain` filtra los techos llenos con `hasRoomFor` antes de elegir, así que `roof_full` casi nunca cuenta esos casos.
+- `midnight interior sleepers` no cuenta el lean-to, que tiene `roofed` y no `interior`: un 0/167 no significa que nadie use un techo.
+
+**Descartado por medición (8 semillas por escenario):**
+
+| Variante | `herders` vivos | `orchard` vivos | `orchard` muertos de hambre | Concepciones en `herders` |
+|---|---|---|---|---|
+| `master` | 15,0 | 9,9 | 11 | 4 |
+| Sin obras prefijadas (#56) | 13,4 | 6,8 | 30 | 7 |
+| #56 y preferencia de pareja por el mismo techo | 16,1 | 6,8 | 31 | 2 |
+
+- **#56** aumenta el uso de techo y baja un 35-40 % el daño por frío, pero en `orchard` casi triplica las muertes por hambre. No se conoce la causa. Con #56 fallan además 22 tests en Windows, sin comparar con `master`; varios de los revisados dependen de que existan esas obras.
+- **La preferencia de pareja** no aumenta ni las noches bajo el mismo techo ni las concepciones: se revirtió.
+- **Sumar el cansancio al `go_home` del anochecer** empeoró `orchard` con la semilla por defecto (una sola semilla): se revirtió.
+
+Diferencias de menos de unos diez puntos no se resuelven con estas semillas. Falta explicar por qué cerca del 60 % de los adultos sigue despierto y fuera de `sleep` y `rest` a medianoche en `herders`; hay muchos `woke_hungry` y `woke_thirsty`.
+
+## 2026-11-04 — M16 CI: 21 checks aceptados como rojos conocidos al corregir la referencia
+
+Abierto en [#58](https://github.com/Jonamarti/dynasty_game/issues/58). Corregir la referencia no los resuelve; solo dejan de bloquear el CI. Cambiaron en algún punto entre `50b5c90e` y `8a7648b4`, sin bisecar, y son anteriores a `ba7cb0d8`.
+
+- `herders`: `generations-turn-over`, `health-holds-up`, `moods-move-choices`, `needs-not-pinned`, `population-persists`, `techs-are-refined`, `bands-take-sides`
+- `generations`: `bands-dont-overbuild`, `moods-move-choices`, `shelter-answers-cold`, `crafting-is-interruptible` (na), `the-hurt-are-tended` (na)
+- `orchard`: `gossip-is-aimed`, `needs-not-pinned`, `shelter-answers-cold`
+- `lean`: `research-is-social`, `techs-are-refined`
+- `conquest`: `pictures-are-painted`, `techs-are-refined`
+- `labour-from`: `jobs-bias-work`
+- `culture`: `people-act-on-what-they-know`
+
 ## 2026-10-25 — M16: deudas confirmadas por la auditoría de GitHub
 
 Índice y orden de ejecución:
