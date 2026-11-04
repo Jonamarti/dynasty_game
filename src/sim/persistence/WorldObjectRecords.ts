@@ -3,7 +3,7 @@ import type { Simulation } from '../core/Simulation.ts';
 import { ResourceNode } from '../entities/ResourceNode.ts';
 import { Building, BUILDINGS, isEarthwork, isField, isTrap, isHerd, isHeap } from '../entities/Building.ts';
 import { Crop } from '../entities/Field.ts';
-import { Tree } from '../entities/Tree.ts';
+import { Tree, TREES } from '../entities/Tree.ts';
 import { ItemPile } from '../entities/ItemPile.ts';
 import { Corpse } from '../entities/Corpse.ts';
 import { Animal } from '../entities/Animal.ts';
@@ -141,6 +141,20 @@ export function fromWorldObjectRecord(input: unknown, peopleById?: ReadonlyMap<n
   if (!object(state) || Object.keys(state).length !== expectedKeys.length || expectedKeys.some(key => !Object.hasOwn(state, key))) invalid('unknown or missing world object arrays/maps');
   if (!object(state) || !Array.isArray(state.nodes) || !Array.isArray(state.buildings) || !Array.isArray(state.trees) ||
       !Array.isArray(state.piles) || !Array.isArray(state.corpses) || !Array.isArray(state.animals) || !Array.isArray(state.inscriptions)) invalid('missing entity arrays');
+  // A freshly planted tree uses TREES[species]. Decoding a saved tree produces
+  // a detached copy of that same definition. A later seedling then gets a
+  // different object identity, changing graph cardinality across save/load.
+  // Rebind only when the snapshot definition matches the current canonical
+  // one; reject unexpected mutations rather than hiding them.
+  for (const tree of state.trees) {
+    const canonical = TREES[tree.def?.species];
+    if (!canonical || JSON.stringify(tree.def) !== JSON.stringify(canonical)) {
+      invalid(`tree ${tree.id} has an incompatible species definition`);
+    }
+    Object.defineProperty(tree, 'def', {
+      value: canonical, enumerable: true, writable: false, configurable: true,
+    });
+  }
   for (const animal of state.animals) {
     const animalState = animal as unknown as Record<string, unknown>;
     if (!Object.hasOwn(animalState, 'sleeping')) animal.sleeping = false;
