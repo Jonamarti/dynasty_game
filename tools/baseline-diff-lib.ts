@@ -128,3 +128,31 @@ export function validateMatrixCoverage(
   }
   return problems;
 }
+
+/**
+ * Assemble the pinned matrix from the matrix-shard.json of EVERY CI shard.
+ *
+ * The 26-oct re-pin (00d6d395) was transcribed by hand and carried 132 of the
+ * run's 167 transitions: 35 checks kept a state no build ever produced, and
+ * every later run reported them as regressions. So completeness is proved here,
+ * not trusted: `catalog` is the scenario list tools/scenarios.ts selects with
+ * --slow, and shards rebuild it through the same round-robin partition, which
+ * also guarantees the file keeps the order validateMatrixCoverage expects.
+ */
+export function assembleMatrixBaseline(
+  shards: readonly (readonly ScenarioMatrixRecord[])[],
+  catalog: readonly string[],
+): ScenarioMatrixRecord[] {
+  const total = shards.length;
+  if (total === 0) throw new Error('No shard results given');
+  const assembled = catalog.map((name, index) => {
+    const part = index % total;
+    const row = shards[part]![Math.floor(index / total)];
+    if (!row) throw new Error(`Shard ${part + 1}/${total} is missing scenario ${name}`);
+    if (row.name !== name) throw new Error(`Shard ${part + 1}/${total} has ${row.name} where the catalog expects ${name}`);
+    return row;
+  });
+  const rows = shards.reduce((count, shard) => count + shard.length, 0);
+  if (rows !== catalog.length) throw new Error(`Shards hold ${rows} scenarios; the catalog has ${catalog.length}`);
+  return assembled;
+}
