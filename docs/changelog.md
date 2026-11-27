@@ -1,3 +1,10 @@
+## 2026-11-27 — M16 0.16.31-alpha — validar también el refugio del hogar compacto (#58)
+
+- **Causa estática:** el fallback del hogar de `CompactBody` aceptaba una construcción completa con abrigo, incluso derruida o sin plazas de sueño.
+- **Cambio propuesto:** usar `isUsableRoof`, el mismo predicado que el sueño detallado. No añadir una probabilidad de concepción, no otorgar plazas gratis, ni cambiar la lógica del calendario.
+- **Verificación pendiente:** prueba de refugio compacto inválido (ruina, obra sin terminar, estructura sin plazas) y controles positivos existentes.
+- **Límite:** el modelo compacto por persona conserva su aproximación de hogar; la comarca fuera de pantalla entrega un mapa vacío a `advanceCompactBandLife`. La admisión conjunta de familias y su calibración siguen abiertas; véase `docs/bugs.md`.
+
 ## 2026-11-27 — M16 0.16.30-alpha — descanso privado bajo un techo amueblado (#58)
 
 - **Causa estática:** `shareTheHearth` consultaba `buildingAt`, que devuelve primero el mueble situado dentro de la vivienda. El mueble no tiene plazas de refugio; el descanso privado quedaba descartado aunque la persona estuviera dentro de una casa terminada.
