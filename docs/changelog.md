@@ -1,3 +1,9 @@
+## 2026-11-27 — M16 0.16.28-alpha — cola de construcción actualizada al abandonar una obra (#58)
+
+- **Causa estática:** `Simulation.removeBuilding` reemplaza el array de edificios, pero el contexto de la pasada diaria de `BandSystem` conservaba el array anterior. Tras `dropStaleSites` podía contar una obra que ya no existía y ordenar trabajos en ella hasta la siguiente revisión.
+- **Cambio propuesto:** leer la lista vigente mediante un getter del contexto diario. No se toca la política de abandono, el límite de obras, las devoluciones de materiales, ni la generación inicial.
+- **Verificación pendiente:** nueva prueba focal `m16-shelter-planning.test.ts`; falta ejecución local y comparación de cohortes. Baseline intacta.
+
 ## 2026-11-27 — M16 0.16.27-alpha — selección coherente con la interrupción del descanso (#58)
 
 - **Causa estática:** `Brain` ofrecía `sleep` y `rest` aun cuando hambre >50 o sed >45 obligaban a `ActionSystem.wakeReason` a cancelar de inmediato; el compromiso podía seleccionar repetidamente la misma acción inviable.

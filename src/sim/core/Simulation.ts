@@ -6315,6 +6315,7 @@ export class Simulation {
         this.treeHash.rebuild(this.trees);
       }
 
+      const simulation = this;
       this.bandSystem.daily(this.bands, this.people, {
         relationships: this.relationships,
         authority: (leader, listener, action) => this.standing(leader, listener, action).chance,
@@ -6322,7 +6323,9 @@ export class Simulation {
         day: this.time.day,
         tick: this.time.tick,
         motivation: this.config.motivation,
-        buildings: this.buildings,
+        // abandonSite replaces the array; later planning and work orders in
+        // this same daily pass must see the current list, not the retired sites.
+        get buildings() { return simulation.buildings; },
         world: this.world,
         buildingHash: this.buildingHash,
         freshShoreHash: this.freshShoreHash,
