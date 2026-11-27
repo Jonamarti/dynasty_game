@@ -1,3 +1,9 @@
+## 2026-11-27 — M16 0.16.30-alpha — descanso privado bajo un techo amueblado (#58)
+
+- **Causa estática:** `shareTheHearth` consultaba `buildingAt`, que devuelve primero el mueble situado dentro de la vivienda. El mueble no tiene plazas de refugio; el descanso privado quedaba descartado aunque la persona estuviera dentro de una casa terminada.
+- **Cambio propuesto:** consultar el techo real mediante el índice espacial y la misma geometría de cubierta que usa el sueño, con desempate determinista por abrigo e ID. Compartir la validez física del refugio y ampliar la búsqueda de ocupantes a la cobertura completa. La selección de muebles, la privacidad, la admisión por capacidad y la tirada de concepción permanecen intactas.
+- **Verificación pendiente:** prueba focal de una pareja descansando sobre mobiliario, intruso despierto, borde de habitación y ruina. Sin re-fijar baseline.
+
 ## 2026-11-27 — M16 0.16.29-alpha — capacidad de refugio real frente a proyectada (#58)
 
 - **Causa estática:** la decisión entre refugio rápido y vivienda más costosa consideraba las plazas de obras sin terminar como si ya protegieran del frío; el patrocinio del lean-to tampoco utilizaba las necesidades de refugio.

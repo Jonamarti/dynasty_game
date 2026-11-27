@@ -97,7 +97,7 @@ import {
 import { WildlifeSystem, DOG_HEARING, DOG_SIGHT } from '../systems/WildlifeSystem.ts';
 import { ForestSystem, seedInitialForest } from '../systems/ForestSystem.ts';
 import {
-  LifeSystem, findHeir, roofOverSleeper, roofOverPrivateRest, isUnderRoof, settleEstate,
+  LifeSystem, findHeir, roofOverSleeper, roofOverPrivateRest, roofAtPoint, isUnderRoof, settleEstate,
 } from '../systems/LifeSystem.ts';
 import { wearWornGarments } from '../systems/GarmentSystem.ts';
 import { linkFamily } from '../social/SocialSystem.ts';
@@ -4197,9 +4197,9 @@ export class Simulation {
     for (const person of this.people) {
       if (!person.alive || person.action !== 'rest' || this.roofTonight.has(person.id)) continue;
       const roof = roofOverPrivateRest(person, this.buildingsById,
-        (x, y) => this.buildingAt(x, y),
+        (x, y) => roofAtPoint(x, y, this.buildingHash),
         building => this.peopleHash.queryRadius(building.centerX, building.centerY,
-          Math.max(building.def.width, building.def.height))
+          Math.hypot(building.def.width / 2 + 1, building.def.height / 2 + 1))
           .filter(other => isUnderRoof(building, other.x, other.y)));
       if (roof && hasRoomFor(roof, person, this.peopleHash)) this.roofTonight.set(person.id, roof.id);
       else if (roof) telemetry.count('roof_full');
