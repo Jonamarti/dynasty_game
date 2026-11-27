@@ -444,7 +444,7 @@ export class MovementSystem {
    * place that already knows the difference between an action somebody
    * ordered and a wander nobody did.
    */
-  advance(person: Person, tick: number): Arrival {
+  advance(person: Person, tick: number, arrivalRadius = ARRIVAL_RADIUS): Arrival {
     if (this.infantsStill && this.stillBaby(person)) return Arrival.Arrived;
     if (person.targetX === null || person.targetY === null) return Arrival.Arrived;
 
@@ -460,7 +460,7 @@ export class MovementSystem {
       mode === 'logboat' ? this.world.isLogboatTile(person.targetX, person.targetY) : this.world.isSwimTile(person.targetX, person.targetY);
     const mustEnterWater = mode !== 'walk' && targetsSwim && !startsInSwim;
     const mustReachLand = mode !== 'walk' && startsInSwim && !targetsSwim;
-    if (dist < ARRIVAL_RADIUS && !mustEnterWater && !mustReachLand) {
+    if (dist < arrivalRadius && !mustEnterWater && !mustReachLand) {
       person.stuckSteps = 0;
       telemetry.count('walk_arrived');
       // Separate from `walk_arrived`, which counts every arrival: this one

@@ -1,3 +1,9 @@
+## 2026-11-27 — M16 0.16.26-alpha — llegada real a la superficie de descanso (#58)
+
+- **Causa estática:** dormir exigía distancia ≤0,3 al centro del mueble, pero el movimiento dejaba de avanzar por debajo de 0,6. Además, el centro nominal de un mueble 1×1 está en la frontera de su casilla, mientras la calidad de sueño usa la casilla física.
+- **Cambio propuesto:** dirigir el último tramo al centro de la casilla asignada con radio local de 0,3 y recuperar fatiga solo al entrar en la casilla; no cambiar el radio general ni teletransportar al personaje.
+- **Verificación pendiente:** prueba focal desde una casilla contigua en el intervalo problemático; comprobar sueño, movimiento y continuación determinista en local antes de integrar. Baseline intacta.
+
 ## 2026-11-27 — M16 0.16.25-alpha — escala de la prioridad de dormir (#58)
 
 - **Causa estática:** `Brain.score` ya usa `drive.rest` y `drive.comfort` normalizados a 0–1; multiplicar solo comodidad por 100 descompensa la elección frente a otras necesidades.

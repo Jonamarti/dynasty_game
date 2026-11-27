@@ -760,6 +760,34 @@ describe('bedding and beds', () => {
     telemetry.disable();
   });
 
+  it('reaches the assigned bed tile from inside the normal movement arrival radius and actually recovers fatigue', () => {
+    const { sim, person, house } = fixture({ sleepQualityEffectsEnabled: true });
+    // The mud hut has two interior tiles along x. Start on the left one,
+    // 0.45 tiles from the bed's old target on the right tile boundary.
+    const bed = new Building(BUILDINGS.bed!, house.x + 2, house.y + 1, person.bandId, sim.ids);
+    bed.hostId = house.id;
+    bed.complete = true;
+    sim.buildings.push(bed);
+    sim.buildingsById.set(bed.id, bed);
+    sim.buildingHash.insert(bed);
+    sim.peopleHash.remove(person);
+    person.x = bed.x - 0.45;
+    person.y = bed.y + 0.05;
+    person.targetX = person.x;
+    person.targetY = person.y;
+    sim.peopleHash.insert(person);
+    person.needs.fatigue = 80;
+    person.needs.hunger = person.needs.thirst = person.needs.cold = 0;
+    expect(Math.hypot(person.x - bed.centerX, person.y - bed.centerY)).toBeLessThan(0.6);
+    expect(sleepQualityAt(house, person.x, person.y, [bed])).toBe(0.9);
+    expect(sim.order(person, 'sleep', { buildingId: house.id })).toBe(true);
+    for (let tick = 0; tick < 30 && person.needs.fatigue >= 80; tick++) sim.step();
+    expect(Math.floor(person.x)).toBe(bed.x);
+    expect(Math.floor(person.y)).toBe(bed.y);
+    expect(sleepQualityAt(house, person.x, person.y, [bed])).toBe(1.1);
+    expect(person.needs.fatigue).toBeLessThan(80);
+  });
+
   it('can neutralize sleep-surface effects while preserving the furniture and sleep action', () => {
     const recovery = (enabled: boolean) => {
       const { sim, person, house } = fixture({ sleepQualityEffectsEnabled: enabled });
