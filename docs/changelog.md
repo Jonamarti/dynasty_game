@@ -1,3 +1,9 @@
+## 2026-11-27 — M16 0.16.27-alpha — selección coherente con la interrupción del descanso (#58)
+
+- **Causa estática:** `Brain` ofrecía `sleep` y `rest` aun cuando hambre >50 o sed >45 obligaban a `ActionSystem.wakeReason` a cancelar de inmediato; el compromiso podía seleccionar repetidamente la misma acción inviable.
+- **Cambio propuesto:** predicado puro compartido para los dos límites, preservando valores, precedencia, sueño circadiano, órdenes e interrupciones por peligro/cuidado. El refugio por frío (`shelter`) queda separado: llegar a un techo puede aliviar exposición y requiere evaluación propia.
+- **Verificación pendiente:** pruebas focalizadas en `furniture-sleep.test.ts` y `circadian-sleep.test.ts` (límites exactos, hambre/sed, frío, reanudación, interrupción comprometida). Comparar en local las mismas semillas antes del merge; sin re-fijar baseline ni declarar resuelta #58.
+
 ## 2026-11-27 — M16 0.16.26-alpha — llegada real a la superficie de descanso (#58)
 
 - **Causa estática:** dormir exigía distancia ≤0,3 al centro del mueble, pero el movimiento dejaba de avanzar por debajo de 0,6. Además, el centro nominal de un mueble 1×1 está en la frontera de su casilla, mientras la calidad de sueño usa la casilla física.

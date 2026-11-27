@@ -17,7 +17,7 @@ de una cohorte.**
 
 Prioridades actuales y dependencias:
 
-- **#58 (27-11-2026):** correcciones propuestas por inspección estática de descanso: normalizar la presión de comodidad frente a fatiga y corregir el último tramo hacia la cama; verificar primero el test focal y luego las mismas semillas de `herders` y `orchard`. No dar por resuelto el problema demográfico ni cambiar la baseline sin evidencia.
+- **#58 (27-11-2026):** correcciones propuestas por inspección estática de descanso: normalizar la presión de comodidad frente a fatiga, corregir el último tramo hacia la cama y compartir con la IA los límites de hambre y sed que interrumpen dormir/descansar; verificar primero el test focal y luego las mismas semillas de `herders` y `orchard`. No dar por resuelto el problema demográfico ni cambiar la baseline sin evidencia.
 
 - **CI:** [#8](https://github.com/Jonamarti/dynasty_game/issues/8) mantiene
   regresiones heredadas en las matrices; la pila #34 → #37 → #38

@@ -96,6 +96,7 @@ import {
   ownPeopleLicence, tailLicence, conscienceBrake, strangerBrake, mischiefChild, CORRECT,
 } from '../social/Restraint.ts';
 import { drivePressures, urgencyCurve, type DrivePressures } from './Drives.ts';
+import { restNeedInterruption } from '../core/Circadian.ts';
 import { actionsForDrive, carriesEdibleFood, chooseCommitmentDrive, commitmentGoal, COMMITMENT_DRIVES, type CommitmentDrive } from './Commitment.ts';
 import { purposeAppetite, sensitivity } from './Temperament.ts';
 import { appealOf, bestFoodFor, cravings, hydrationOf, VARIETY_WEIGHT } from '../core/Macros.ts';
@@ -3682,7 +3683,10 @@ export class Brain {
     const calm = ctx.time.tick - person.lastHarmedTick < 300 || nursingChild || person.starvingSeen ? 0 :
       1 - Math.max(drive.hunger, drive.thirst, drive.warmth, drive.safety);
     const dark = 1 + ctx.motivation.nightExposure * nightNow * calm;
-    if (fatigue > 0) {
+    // Do not offer a sleep/rest action already over its execution wake line.
+    // Keep cold shelter separate: reaching warmth can itself answer exposure.
+    const restAllowed = restNeedInterruption(person.needs) === null;
+    if (fatigue > 0 && restAllowed) {
       const homeId = person.householdId === null ? null :
         ctx.householdsById.get(person.householdId)?.homeBuildingId ?? null;
       const home = homeId === null ? null : ctx.buildingsById.get(homeId) ?? null;
@@ -4289,7 +4293,7 @@ export class Brain {
     // them. Sleeping is strictly better and scores higher when it is available.
     // With a roof to lie under, lying in the open at night is the worse
     // choice by the same factor that makes the roof better.
-    add('rest', fatigue * 2.4 * (restFurniture ? 1.2 : 1) / (restShelter ? dark : 1));
+    if (restAllowed) add('rest', fatigue * 2.4 * (restFurniture ? 1.2 : 1) / (restShelter ? dark : 1));
 
     // --- Wander ------------------------------------------------------------
     // A small floor so a person with nothing pressing still looks alive, and so

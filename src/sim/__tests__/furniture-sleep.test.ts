@@ -93,6 +93,46 @@ describe('bedding and beds', () => {
     expect(sleepScore(-100)).toBeCloseTo(fatigueOnly * 4);
   });
 
+  it('does not score sleep or rest that hunger or thirst will immediately interrupt', () => {
+    const { sim, person, house } = fixture({ comfortDriveEnabled: true });
+    person.forgetPlans();
+    person.action = 'idle';
+    person.actionTimer = 0;
+    person.needs.fatigue = 90;
+    const { context } = scoreOneBrainTick(sim, person);
+    const brain = (sim as unknown as { brain: Brain }).brain;
+    const ctx: BrainContext = { ...context, motivation: {
+      ...context.motivation, nightSleep: false, nightExposure: 0,
+    } };
+    person.forgetPlans();
+    person.action = 'idle';
+    person.needs.fatigue = 90;
+    person.needs.cold = 0;
+    person.mood.comfort = -80;
+    person.inventory.add('berries', 3);
+    const score = (hunger: number, thirst: number) => {
+      person.needs.hunger = hunger;
+      person.needs.thirst = thirst;
+      return brain.score(person, ctx);
+    };
+    const options = (hunger: number, thirst: number) =>
+      score(hunger, thirst).scores.map(row => row.id);
+    // Exact wake thresholds still allow rest; above either, neither is valid.
+    const calm = score(50, 45);
+    expect(calm.found.restShelter).toBe(house);
+    expect(calm.scores.map(row => row.id)).toEqual(expect.arrayContaining(['sleep', 'rest']));
+    for (const [hunger, thirst] of [[51, 0], [0, 46], [51, 46]] as const) {
+      const rows = options(hunger, thirst);
+      expect(rows).not.toContain('sleep');
+      expect(rows).not.toContain('rest');
+    }
+    expect(options(51, 0)).toContain('eat');
+    expect(options(0, 0)).toEqual(expect.arrayContaining(['sleep', 'rest']));
+    // Cold alone is not a reason to forbid warming under a roof.
+    person.needs.cold = 80;
+    expect(options(0, 0)).toEqual(expect.arrayContaining(['sleep', 'rest', 'shelter']));
+  });
+
   it('samples a sleeping household member once for comfort and security, not an awake one', () => {
     const { sim, person, house } = fixture();
     person.action = 'sleep';

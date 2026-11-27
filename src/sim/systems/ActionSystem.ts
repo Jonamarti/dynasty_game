@@ -27,7 +27,7 @@ import {
 import type { Household } from '../entities/Household.ts';
 import type { ResourceNode } from '../entities/ResourceNode.ts';
 import type { World } from '../core/World.ts';
-import { perceivedFatigue } from '../core/Circadian.ts';
+import { perceivedFatigue, restNeedInterruption } from '../core/Circadian.ts';
 import { Arrival, ARRIVAL_RADIUS, type MovementSystem } from './MovementSystem.ts';
 import { hasRoomFor } from '../ai/Occupancy.ts';
 import { isUnderRoof } from './LifeSystem.ts';
@@ -4727,8 +4727,8 @@ export class ActionSystem {
   private wakeReason(person: Person, ctx: ActionContext): string | null {
     const interrupted = this.interruption(person, ctx, { ignoreLaden: true, ignoreNeeds: true });
     if (interrupted) return interrupted;
-    if (person.needs.thirst > 45) return 'thirsty';
-    if (person.needs.hunger > 50) return 'hungry';
+    const need = restNeedInterruption(person.needs);
+    if (need) return need;
     // Cold is deliberately absent. The roof overhead is the thing that fixes
     // cold, and throwing somebody out of the hut for being cold in it is a
     // circle. `NeedsSystem.shelterAt` warms them where they lie.
