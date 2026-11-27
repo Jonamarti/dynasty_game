@@ -1,3 +1,10 @@
+## 2026-11-27 — M16 0.16.29-alpha — capacidad de refugio real frente a proyectada (#58)
+
+- **Causa estática:** la decisión entre refugio rápido y vivienda más costosa consideraba las plazas de obras sin terminar como si ya protegieran del frío; el patrocinio del lean-to tampoco utilizaba las necesidades de refugio.
+- **Cambio propuesto:** usar las plazas terminadas para la urgencia y la suma de terminadas y pendientes para limitar nuevas obras; elegir promotor por capacidad de refugio, no por una lista incompleta de IDs. Excluir ruinas de la experiencia previa de construcción.
+- **Diagnóstico:** `shelter_completed_places_short` y `shelter_short_sites_full` muestran déficit nominal y bloqueo por obras incluso cuando hay capacidad proyectada suficiente. Conservamos las obras iniciales, el límite de dos, los costes y la política de abandono; no repetir la variante #56 sin validar el hambre.
+- **Verificación pendiente:** pruebas focalizadas y cohortes emparejadas, especialmente `herders`, `orchard` y `generations`. Sin cambio de semillas ni baseline; el problema de obras que reciben materiales lentamente sigue abierto.
+
 ## 2026-11-27 — M16 0.16.28-alpha — cola de construcción actualizada al abandonar una obra (#58)
 
 - **Causa estática:** `Simulation.removeBuilding` reemplaza el array de edificios, pero el contexto de la pasada diaria de `BandSystem` conservaba el array anterior. Tras `dropStaleSites` podía contar una obra que ya no existía y ordenar trabajos en ella hasta la siguiente revisión.
