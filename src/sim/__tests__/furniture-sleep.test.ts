@@ -63,6 +63,36 @@ function scoreOneBrainTick(sim: Simulation, person: ReturnType<typeof fixture>['
 }
 
 describe('bedding and beds', () => {
+  it('keeps fatigue and comfort on the same normalized sleep priority scale', () => {
+    const { sim, person, house } = fixture({ comfortDriveEnabled: true });
+    person.forgetPlans();
+    person.action = 'idle';
+    person.actionTimer = 0;
+    person.needs.fatigue = 50;
+    const { context } = scoreOneBrainTick(sim, person);
+    const brain = (sim as unknown as { brain: Brain }).brain;
+    const ctx: BrainContext = { ...context, motivation: {
+      ...context.motivation, nightSleep: false, nightExposure: 0, comfortDriveEnabled: true,
+    } };
+    person.forgetPlans();
+    person.action = 'idle';
+    person.needs.fatigue = 50;
+    person.needs.hunger = person.needs.thirst = person.needs.cold = 0;
+    const sleepScore = (comfort: number) => {
+      person.mood.comfort = comfort;
+      const scored = brain.score(person, ctx);
+      expect(scored.found.restShelter).toBe(house);
+      const sleep = scored.scores.find(row => row.id === 'sleep')?.score ?? 0;
+      expect(sleep).toBeGreaterThan(0);
+      return sleep;
+    };
+    const fatigueOnly = sleepScore(0);
+    // Both deficits of 50 give urgencyCurve(50) = 0.25.
+    expect(sleepScore(-50)).toBeCloseTo(fatigueOnly);
+    // A maximum comfort deficit gives pressure 1, not 100.
+    expect(sleepScore(-100)).toBeCloseTo(fatigueOnly * 4);
+  });
+
   it('samples a sleeping household member once for comfort and security, not an awake one', () => {
     const { sim, person, house } = fixture();
     person.action = 'sleep';

@@ -3725,11 +3725,10 @@ export class Brain {
       if (restShelter && !(urgentFoodSearch && curiosityExplorePoint)) {
         const nearness = this.proximityBonus(person,
           { x: restShelter.centerX, y: restShelter.centerY }, ctx.sightRadius);
-        // A comfort deficit can justify using a real shelter even before
-        // fatigue is high. Both values are on the same 0–100 pressure scale;
-        // the existing sleep weight and destination quality still decide how
-        // strongly and where the person sleeps.
-        add('sleep', Math.max(fatigue, drive.comfort * 100) * 3.2 * nearness * dark);
+        // Both fatigue (drive.rest) and drive.comfort are normalized 0–1
+        // pressures. Keep their common scale so discomfort can favour shelter
+        // without overwhelming all the other needs by two orders of magnitude.
+        add('sleep', Math.max(fatigue, drive.comfort) * 3.2 * nearness * dark);
       } else if (!restShelter && !(urgentFoodSearch && curiosityExplorePoint) && anchor &&
           Math.hypot(person.x - anchor.x, person.y - anchor.y) <= ctx.motivation.nightRadius) {
         add('sleep', fatigue * 3.2 * 0.8 * dark);

@@ -1,3 +1,9 @@
+## 2026-11-27 — M16 0.16.25-alpha — escala de la prioridad de dormir (#58)
+
+- **Causa estática:** `Brain.score` ya usa `drive.rest` y `drive.comfort` normalizados a 0–1; multiplicar solo comodidad por 100 descompensa la elección frente a otras necesidades.
+- **Cambio propuesto:** comparar ambas presiones directamente; conservar coeficientes, filtros, semillas y RNG.
+- **Verificación pendiente:** prueba focal en `furniture-sleep.test.ts`; falta ejecución local y comparación de escenarios. No se altera ni se re-fija la baseline.
+
 ## 2026-11-04 — M16: diagnóstico de nacimientos y refugio nocturno, sin arreglo
 
 - **Problema:** en varios mundos no nace casi nadie y casi nadie duerme bajo techo.
