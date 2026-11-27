@@ -43,7 +43,8 @@ import { curiosityNeed } from './Temperament.ts';
 import { possessionPressure } from './Possession.ts';
 import type { BandRelations } from '../social/BandRelations.ts';
 import type { Tree } from '../entities/Tree.ts';
-import type { Animal } from '../entities/Animal.ts';
+import { SPECIES_DEFS, type Animal } from '../entities/Animal.ts';
+import { findHuntLead, type RememberedHuntLead } from './HuntLead.ts';
 import { chooseCravingFood } from './FoodChoice.ts';
 import { ITEMS } from '../entities/Item.ts';
 import { GARMENT_SLOTS } from '../entities/Equipment.ts';
@@ -274,6 +275,7 @@ interface FoundTargets {
   pickupPile: ItemPile | null;
   pickupItem: string | null;
   quarry: Animal | null;
+  rememberedHerd: RememberedHuntLead | null;
   matNode: ResourceNode | null;
   /** Tall grass to cut for a site that wants thatch, M15 phase 23b. */
   grassSpot: { x: number; y: number } | null;
@@ -422,7 +424,7 @@ function actionAnswersDrive(drive: CommitmentDrive, action: string, found: Found
       if (action === 'eat') return found.foodToEat !== null && (ITEMS[found.foodToEat]?.nutrition ?? 0) > 0;
       if (action === 'forage') return found.foodNode !== null;
       if (action === 'pick') return found.fruitTree !== null;
-      if (action === 'hunt') return found.quarry !== null;
+      if (action === 'hunt') return found.quarry !== null || found.rememberedHerd !== null;
       if (action === 'reap') return found.fieldTarget !== null;
       if (action === 'take') return found.larderTarget !== null;
       if (action === 'pickup') return found.pickupPile !== null && found.pickupItem !== null &&
@@ -3562,25 +3564,17 @@ export class Brain {
     // fail, so this is scored on expected return rather than on hunger alone:
     // a poor hunter should keep picking berries and a good one should go out.
     let quarry: Animal | null = null;
+    let rememberedHerd: RememberedHuntLead | null = null;
     if (!person.isChild && !person.isLaden) {
-      // Tracking is what turns hunting from a thing you stumble into to a
-      // thing you go out and do: it widens the search before proximity gets to
-      // settle the comparison, which it otherwise always does.
-      const visibleQuarry = ctx.animalHash.findNearest(
-        person.x, person.y, ctx.sightRadius,
-        a => a.alive && !a.def.predator && (desperateForFood || withinReach(anchor, reach, a.x, a.y))
-      );
-      const herdMemory = person.placeMemory.nearestAny(person.x, person.y,
-        ctx.sightRadius * 3, place => place.kind.startsWith('herd:') &&
-          ctx.world.sameRegion(person.x, person.y, place.x, place.y) &&
-          (desperateForFood || withinReach(anchor, reach, place.x, place.y)));
-      const rememberedQuarry = herdMemory
-        ? ctx.animalHash.findNearest(herdMemory.x, herdMemory.y, 2,
-          animal => animal.alive && !animal.def.predator && Math.hypot(animal.x - herdMemory.x, animal.y - herdMemory.y) <= 1 &&
-            ctx.world.sameRegion(person.x, person.y, animal.x, animal.y) &&
-            (desperateForFood || withinReach(anchor, reach, animal.x, animal.y)))
-        : null;
-      quarry = visibleQuarry ?? rememberedQuarry;
+      const inReach = (x: number, y: number) => desperateForFood || withinReach(anchor, reach, x, y);
+      const lead = findHuntLead(person, ctx.sightRadius, ctx.animalHash, person.placeMemory,
+        inReach,
+        (x, y) => inReach(x, y) && ctx.world.sameRegion(person.x, person.y, x, y),
+        !person.isPlayer && person.order === null);
+      if (lead?.kind === 'visible') quarry = lead.animal;
+      else if (lead?.kind === 'remembered') rememberedHerd = lead.place;
+      const huntPoint = quarry ?? rememberedHerd;
+      const huntDef = quarry?.def ?? (rememberedHerd ? SPECIES_DEFS[rememberedHerd.species] : null);
       // Do not *begin* a chase already over the line, the same rule crafting
       // learned. A hunt checks its interruption during the work rather than
       // between pulls, so a thirsty hunter arms a chase, is stopped on the next
@@ -3592,9 +3586,9 @@ export class Brain {
       //
       // `'hunger'` because hunting is *for* food: being hungry is the reason to
       // go, not a reason to stay. Thirst and cold still hold somebody back.
-      if (quarry && !pressedByNeed(person, ctx.needs.workLimits, 'hunger')) {
+      if (huntPoint && huntDef && !pressedByNeed(person, ctx.needs.workLimits, 'hunger')) {
         const odds = Math.max(0.05, Math.min(0.9,
-          person.skillFactor('hunt') * (1 - quarry.def.evasion) + 0.15
+          person.skillFactor('hunt') * (1 - huntDef.evasion) + 0.15
         ));
         // Expected return, not appetite. A kill is worth several bushes and a
         // hunt can fail, so the two terms have to be multiplied out or the
@@ -3603,7 +3597,7 @@ export class Brain {
         // hunted at all.
         const craving = cravings(person, ctx.motivation.cravings);
         const meatMacros = ITEMS.meat!.macros!;
-        const payoff = quarry.def.meat / 20 * (1 + VARIETY_WEIGHT *
+        const payoff = huntDef.meat / 20 * (1 + VARIETY_WEIGHT *
           (craving.protein * meatMacros.protein + craving.fat * meatMacros.fat));
         // A household's empty, NPC-owned lamp is a small additional reason to
         // hunt when the usual food need is calm. The hunt still has to find
@@ -3613,7 +3607,7 @@ export class Brain {
           ? 0.9 : 0;
         add('hunt', (hunger * HUNT_APPETITE + lampFatNeed) * odds * payoff
           * (ctx.motivation.beliefChoice ? expectationRatio(person, 'yield:hunt') : 1)
-          * this.proximityBonus(person, quarry, ctx.sightRadius));
+          * this.proximityBonus(person, huntPoint, ctx.sightRadius));
       }
     }
 
@@ -4411,7 +4405,7 @@ export class Brain {
       found: {
         water, foodToEat, garmentItem, garmentMendingItem, garmentMendingUnitId, garmentMendingMethod, hideDressingItem, hideDressingUnitId, torchItem, furnitureItem, furnitureHome, waterQuestionPeer, explorePoint, waterExplorePoint, bringFoodPoint, foodNode, pickupPile, pickupItem, matNode, grassSpot, plantSpot, companion, suitor, sparPartner, student, childPupil, mentor, colleague,
         victim, foe, attackRoute, intruder, restrainee, kinDefence, correctee, amendsTo, complainTo, parleyWith, peaceWith, helpCallerTarget, bindTarget, patrolPoint, investigatePoint, concealCorpse, giftee, giftItem, feastStore, feastHost, beneficiary, nursingChild, playmate, tradePartner, fleeFrom, fleePoint,
-        quarry,
+        quarry, rememberedHerd,
         site, shelter, restShelter, restFurniture, storeTarget, storeItemId, storeItemCount, larderTarget,
         lampFatStore, takeItemId, takeItemCount, lampToRefuel, fireplaceGatherHome,
         fireplaceGatherItem, fireplaceGatherCount, furnitureRecipe, sabotageTarget, fruitTree, fellTree,
@@ -5099,6 +5093,13 @@ export class Brain {
           person.targetAnimalId = animal.id;
           person.targetX = animal.x;
           person.targetY = animal.y;
+        } else if (found.rememberedHerd) {
+          // A lead is only a place to investigate. The next ordinary
+          // observation/think may select a genuinely visible animal.
+          person.action = 'explore';
+          person.targetX = found.rememberedHerd.x;
+          person.targetY = found.rememberedHerd.y;
+          telemetry.count('hunt_explore_remembered_herd');
         }
         break;
       }

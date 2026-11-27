@@ -1,3 +1,9 @@
+## 2026-11-28 — M16 0.16.25-alpha — experimento aislado: cazar desde recuerdos sin consultar presas ocultas (#18)
+
+- **Causa estática:** `Brain` buscaba animales vivos alrededor de una posición recordada fuera de la vista, incluidos animales de otra especie. #45 y #60 filtraron por especie; #52 convirtió la acción final en exploración, pero conservó la consulta oculta en el scorer. #60 superó Unit + build y los cuatro E2E, pero sus cuatro comparaciones de matrices quedaron rojas (run 41725421312, baseline anterior a #62); no se ha aislado cuánto correspondía a cambios de juego frente a esa referencia.
+- **Experimento:** consultar animales exclusivamente en el radio de visión; fuera de él, puntuar la oportunidad de investigar según especie y posición del recuerdo, sin comprobar si sigue viva ni leer coordenadas actuales. Si gana, reutilizar `explore` hacia el punto recordado, sin `targetAnimalId`. La observación ordinaria olvida un marcador vacío cuando entra en visión; una presa visible vuelve al camino de caza normal. No se toca la persecución ya iniciada ni las órdenes del jugador.
+- **Riesgo explícito:** las visitas a manadas desplazadas pueden costar tiempo y comida; no se presume mejora demográfica. Medir búsquedas, capturas, hambre y mortalidad frente a master y a #60/#52, con las mismas semillas. Cuatro pruebas focales en `check:fast`, aún no ejecutadas. Sin cambios de baseline, RNG nuevo ni formato de guardado; no mezclar con #63 hasta validar.
+
 ## 2026-11-04 — M16: diagnóstico de nacimientos y refugio nocturno, sin arreglo
 
 - **Problema:** en varios mundos no nace casi nadie y casi nadie duerme bajo techo.
