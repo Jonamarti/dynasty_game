@@ -17,6 +17,8 @@ de una cohorte.**
 
 Prioridades actuales y dependencias:
 
+- **#18 (28-11-2026):** experimento separado: la memoria de una manada aporta un destino de búsqueda y una especie, nunca la presencia o posición en vivo de una presa fuera de visión. Comparar por separado con #45/#52/#60 y master, sin re-pinear ni integrar con las correcciones de sueño de #63 hasta validar.
+
 - **CI:** [#8](https://github.com/Jonamarti/dynasty_game/issues/8) mantiene
   regresiones heredadas en las matrices; la pila #34 → #37 → #38
   (inventario estricto, veredicto global y Pages seguro) sigue sin integrarse.
