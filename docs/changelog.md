@@ -1,3 +1,9 @@
+## 2026-11-28 — M16 0.16.32-alpha — restaurar alias compartidos de hechos en crónicas (#17)
+
+- `RosterRecords` decodificaba cada persona de forma independiente, separando el mismo objeto `deed` de las crónicas del actor y la víctima. Se reconstruyen las parejas `did`/`suffered` coincidentes por participantes, tipo, texto y tick, preservando el orden de sucesos duplicados.
+- PR #51: su cabeza anterior superó Unit + build y los cuatro E2E; las 16 transiciones PASS→FAIL/NA listadas en los dos shards rojos ya están aceptadas como estados conocidos en la referencia corregida por #62. Eso no es una medición de esta nueva cabeza.
+- Actualización sobre master `62d58e20`: se mantienen #62 y #63, se registra el test focal en fast gate y se activa el test completo de identidad a 20 días. Sin cambiar baseline, RNG ni formato de guardado. Pendiente comprobar la nueva cabeza con Node fijado; no fusionar sin validar el contrato de identidad y la matriz.
+
 ## 2026-11-27 — M16 0.16.31-alpha — validar también el refugio del hogar compacto (#58)
 
 - **Causa estática:** el fallback del hogar de `CompactBody` aceptaba una construcción completa con abrigo, incluso derruida o sin plazas de sueño.
