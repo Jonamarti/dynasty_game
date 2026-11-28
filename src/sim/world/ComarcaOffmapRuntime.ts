@@ -134,6 +134,8 @@ import { IntakeModel } from '../compact/CompactIntake.ts';
 import { MEASURED_RATES } from '../compact/MeasuredRates.ts';
 import { fromCompactRecord, toCompactRecord, deriveCompactStream, goalOf, type CompactPersonRecord } from '../compact/CompactPerson.ts';
 import { advanceCompactBandLife, type CompactBandLifeLedger } from '../compact/CompactBandLife.ts';
+import { compactNightShelter } from '../compact/CompactNightShelter.ts';
+import { telemetry } from '../core/Telemetry.ts';
 import { advanceCompactBandKnowledge, createCompactBandKnowledgeState, fromCompactBandKnowledgeRecord, toCompactBandKnowledgeRecord, type CompactBandKnowledgeState } from '../compact/CompactBandKnowledge.ts';
 import { regionMaterials, LEARN_MU_START, PARTIAL_START } from './PeopleKnowledge.ts';
 import { IdSpace } from '../core/IdSpace.ts';
@@ -270,12 +272,19 @@ export class ComarcaOffmapRuntime {
         });
         for (const member of compact) { body.advance(member,tick); member.lastAdvancedTick = tick; }
         if (tick % config.time.ticksPerDay === 0) {
+          // Snapshot admission once, after all bodies reached midnight and
+          // before any birth. Share physical capacity across all households.
+          const residents = compact.map(member => member.person).filter(person => person.alive);
+          const roofTonight = compactNightShelter(residents, state.roster.householdsById,
+            objects.buildings, config.childhood);
+          telemetry.count('compact_night_admitted', roofTonight.size);
+          telemetry.count('compact_night_unassigned', residents.length - roofTonight.size);
           for (const band of state.roster.bands) {
             const members = compact.filter(c=>c.person.bandId===band.id);
             const advanced = advanceCompactBandLife(members, { ledger: life.get(band.id) ?? { version: 1, lastAdvancedDay: null }, tick, day: clock.day,
               time: config.time, population: config.population, childhood: config.childhood, learning: config.learning, worldSeed: config.seed,
               ids, peopleById: state.roster.peopleById, parentArchive, householdsById: state.roster.householdsById, relationships: state.roster.relationships,
-              roofTonight: new Map() });
+              roofTonight });
             life.set(band.id,advanced.ledger); compact.push(...advanced.newborns);
             const season = Math.floor(clock.day/config.time.daysPerSeason);
             const old = knowledge.get(band.id) ?? createCompactBandKnowledgeState(config.seed,band.id,season-1);

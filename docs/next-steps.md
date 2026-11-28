@@ -17,6 +17,8 @@ de una cohorte.**
 
 Prioridades actuales y dependencias:
 
+- **#58 (28-11-2026):** propuesta aislada de admisión nocturna compacta en comarcas aparcadas según hogar local y plazas físicas; validar residencia, nacimientos y continuidad de guardados antes de integrar; no re-fijar baseline.
+
 - **CI:** [#8](https://github.com/Jonamarti/dynasty_game/issues/8) mantiene
   regresiones heredadas en las matrices; la pila #34 → #37 → #38
   (inventario estricto, veredicto global y Pages seguro) sigue sin integrarse.

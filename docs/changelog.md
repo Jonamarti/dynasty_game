@@ -1,3 +1,10 @@
+## 2026-11-28 — M16 0.16.25-alpha — alojamiento nocturno en comarcas aparcadas (#58)
+
+- **Causa estática:** `ComarcaOffmapRuntime` llamaba a `advanceCompactBandLife` con un mapa vacío todos los días. La regla compartida de concepción descartaba cualquier intento pese a tener una vivienda.
+- **Propuesta aislada:** al llegar a medianoche, después de avanzar todos los cuerpos, asignar una vez las plazas de hogares locales conocidos. Solo estructuras acabadas, no derruidas, con abrigo, plazas positivas y propiedad de la banda; solo miembros recíprocos presentes y no cautivos. No inventar techo al viajero sin hogar local. Prioridad estable por ID; bebés que todavía no andan comparten únicamente la plaza de un portador adulto admitido en el mismo techo. La admisión no modifica coordenadas, órdenes, propiedad, RNG ni probabilidades de concepción.
+- **Límite:** es una aproximación compacta explícita, no una prueba de sueño real ni una política completa de vivienda para personas sin hogar; no sustituye el modelo físico. El camino `CompactBody` por persona sigue separado (#63). No se cambia la baseline.
+- **Verificación pendiente:** cinco tests focales de admisión y uno de la autoridad real, incluida reanudación JSON y control sin techo; comparar demografía detallada/compacta con las mismas semillas antes de integrar.
+
 ## 2026-11-04 — M16: diagnóstico de nacimientos y refugio nocturno, sin arreglo
 
 - **Problema:** en varios mundos no nace casi nadie y casi nadie duerme bajo techo.
