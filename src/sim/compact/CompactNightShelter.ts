@@ -3,6 +3,7 @@ import type { Building } from '../entities/Building.ts';
 import type { Household } from '../entities/Household.ts';
 import { canWalk } from '../entities/LifeStage.ts';
 import type { Person } from '../entities/Person.ts';
+import { isUsableRoof } from '../systems/LifeSystem.ts';
 
 /**
  * The off-map body does not walk and its detailed action stays frozen. The
@@ -24,8 +25,7 @@ export function compactNightShelter(
   buildings: readonly Building[],
   childhood: ChildhoodConfig,
 ): Map<number, number> {
-  const localHomes = new Map(buildings.filter(b => b.complete && !b.ruined &&
-    b.def.shelter > 0 && (b.def.places ?? 0) > 0).map(b => [b.id, b]));
+  const localHomes = new Map(buildings.filter(isUsableRoof).map(b => [b.id, b]));
   const living = roster.filter(p => p.alive && p.captiveOf === null)
     .sort((a, b) => a.id - b.id);
   const claims = new Map<number, { person: Person; roof: Building }>();

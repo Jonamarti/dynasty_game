@@ -74,6 +74,29 @@ describe('compact nightly shelter', () => {
     expect(f.admit()).toEqual(expected);
   });
 
+  it('does not give a couple a shared roof when an earlier resident consumes the last spare place', () => {
+    const f = fixture();
+    const guest = f.makePerson('earlier resident');
+    const mother = f.makePerson('mother'), father = f.makePerson('father');
+    mother.sex = 'female'; father.sex = 'male';
+    mother.spouseId = father.id; father.spouseId = mother.id;
+    const roof = f.makeRoof();
+    f.house([guest], roof); f.house([mother, father], roof);
+    const night = f.admit();
+    expect(night.get(mother.id)).toBe(roof.id);
+    expect(night.has(father.id)).toBe(false);
+    const roster = f.people.map(person => ({ person, lastAdvancedTick: 1, epoch: 0,
+      rng: deriveCompactStream('compact-roof-full', person.id), goal: goalOf(person, 1), intake: null }));
+    advanceCompactBandLife(roster, {
+      ledger: { version: 1, lastAdvancedDay: 0 }, tick: 1, day: 1,
+      time: f.config.time, population: f.config.population, childhood: f.config.childhood,
+      learning: f.config.learning, worldSeed: 'compact-roof-full', ids: f.ids,
+      peopleById: new Map(f.people.map(p => [p.id, p])), householdsById: f.homes,
+      relationships: new RelationshipGraph(), roofTonight: night,
+    });
+    expect(mother.pregnant).toBe(false);
+  });
+
   it('refuses unfinished, ruined, nonresidential, foreign and missing homes, and newcomers without one', () => {
     const f = fixture();
     const a = f.makePerson('unfinished'), b = f.makePerson('ruined'), c = f.makePerson('store');

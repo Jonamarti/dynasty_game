@@ -1,3 +1,12 @@
+## 2026-11-27 — M16: techo nocturno y hogar en la simulación compacta (#58)
+
+Inspección estática, sin ejecución de cohortes. La PR #63 propone corregir el descanso privado sobre muebles y la validación del hogar en `CompactBody`. Quedan por medir o resolver por separado:
+
+- `world/ComarcaOffmapRuntime.ts` pasa `roofTonight: new Map()` a `advanceCompactBandLife` en cada medianoche. En ese camino ninguna concepción puede superar la puerta de techo aunque existan viviendas. Hace falta definir/medir una asignación compacta de plazas reales por familia, sin conceder más plazas de las disponibles ni confundir viajeros sin refugio con residentes.
+- El fallback por hogar de `CompactAdvance` valida la estructura pero no coordina plazas entre hogares distintos; no equivale a admisión detallada (relacionado con #13).
+- `Simulation.shareTheHearth` cambia `household.homeBuildingId` por cada miembro dormido; si una familia se reparte, el último en el recorrido decide el hogar, incluidas sus pertenencias. La política histórica está documentada en `Household`; no se cambia a mayoría u otro criterio sin definir el contrato de propiedad y medir sus consecuencias.
+- El muestreo sigue siendo a medianoche. No se altera la regla de compartir refugio ni se atribuye todavía la caída histórica de natalidad a un solo defecto.
+
 ## 2026-11-04 — M16: casi nadie concibe porque casi nadie duerme bajo techo
 
 Abierto en [#58](https://github.com/Jonamarti/dynasty_game/issues/58) y relacionado con #55 y #28. **Sin arreglo todavía:** las variantes medidas se descartaron.

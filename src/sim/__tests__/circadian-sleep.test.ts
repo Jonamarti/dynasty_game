@@ -3,6 +3,7 @@ import { Simulation } from '../core/Simulation.ts';
 import type { Person } from '../entities/Person.ts';
 import { telemetry } from '../core/Telemetry.ts';
 import type { Brain } from '../ai/Brain.ts';
+import { restNeedInterruption } from '../core/Circadian.ts';
 
 function fixture(phase: number) {
   telemetry.enable();
@@ -31,6 +32,27 @@ function sleepWithoutOrder(person: Person, roofId: number) {
 }
 
 describe('circadian sleep and nearby shelter', () => {
+  it('preserves the shared wake thresholds and thirst-first precedence', () => {
+    expect(restNeedInterruption({ hunger: 50, thirst: 45 })).toBeNull();
+    expect(restNeedInterruption({ hunger: 50.01, thirst: 45 })).toBe('hungry');
+    expect(restNeedInterruption({ hunger: 50, thirst: 45.01 })).toBe('thirsty');
+    expect(restNeedInterruption({ hunger: 80, thirst: 80 })).toBe('thirsty');
+  });
+
+  it('still interrupts committed sleep and rest for thirst', () => {
+    for (const action of ['sleep', 'rest'] as const) {
+      const { sim, person, roof } = fixture(0);
+      sleepWithoutOrder(person, roof.id);
+      person.action = action;
+      person.needs.thirst = 46;
+      person.needs.fatigue = 80;
+      telemetry.reset();
+      sim.step();
+      expect(person.action).not.toBe(action);
+      expect(telemetry.get(action === 'sleep' ? 'woke_thirsty' : 'rest_ended_thirsty')).toBe(1);
+    }
+  });
+
   it('does not repeatedly wake a comfortable midnight sleeper as soon as debt reaches zero', () => {
     const { sim, person, roof } = fixture(0);
     sleepWithoutOrder(person, roof.id);

@@ -97,7 +97,7 @@ import {
 import { WildlifeSystem, DOG_HEARING, DOG_SIGHT } from '../systems/WildlifeSystem.ts';
 import { ForestSystem, seedInitialForest } from '../systems/ForestSystem.ts';
 import {
-  LifeSystem, findHeir, roofOverSleeper, roofOverPrivateRest, isUnderRoof, settleEstate,
+  LifeSystem, findHeir, roofOverSleeper, roofOverPrivateRest, roofAtPoint, isUnderRoof, settleEstate,
 } from '../systems/LifeSystem.ts';
 import { wearWornGarments } from '../systems/GarmentSystem.ts';
 import { linkFamily } from '../social/SocialSystem.ts';
@@ -4197,9 +4197,9 @@ export class Simulation {
     for (const person of this.people) {
       if (!person.alive || person.action !== 'rest' || this.roofTonight.has(person.id)) continue;
       const roof = roofOverPrivateRest(person, this.buildingsById,
-        (x, y) => this.buildingAt(x, y),
+        (x, y) => roofAtPoint(x, y, this.buildingHash),
         building => this.peopleHash.queryRadius(building.centerX, building.centerY,
-          Math.max(building.def.width, building.def.height))
+          Math.hypot(building.def.width / 2 + 1, building.def.height / 2 + 1))
           .filter(other => isUnderRoof(building, other.x, other.y)));
       if (roof && hasRoomFor(roof, person, this.peopleHash)) this.roofTonight.set(person.id, roof.id);
       else if (roof) telemetry.count('roof_full');
@@ -6315,6 +6315,7 @@ export class Simulation {
         this.treeHash.rebuild(this.trees);
       }
 
+      const simulation = this;
       this.bandSystem.daily(this.bands, this.people, {
         relationships: this.relationships,
         authority: (leader, listener, action) => this.standing(leader, listener, action).chance,
@@ -6322,7 +6323,9 @@ export class Simulation {
         day: this.time.day,
         tick: this.time.tick,
         motivation: this.config.motivation,
-        buildings: this.buildings,
+        // abandonSite replaces the array; later planning and work orders in
+        // this same daily pass must see the current list, not the retired sites.
+        get buildings() { return simulation.buildings; },
         world: this.world,
         buildingHash: this.buildingHash,
         freshShoreHash: this.freshShoreHash,

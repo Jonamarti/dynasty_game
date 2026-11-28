@@ -66,6 +66,7 @@ describe('a real parked comarca authority', () => {
       for (const p of sim.people) {
         p.age = 25 * p.daysPerYear; p.lifespanDays = 65 * p.daysPerYear; p.sex = 'male';
         p.spouseId = null; p.pregnant = false; p.pregnantBy = null; p.gestationLeft = 0;
+        p.carriedBy = null; p.captiveOf = null;
         p.needs.hunger = p.needs.thirst = p.needs.cold = p.needs.fatigue = 0; p.health = 100;
       }
       mother.sex = 'female'; mother.lastBirthDay = -9999;
@@ -78,7 +79,8 @@ describe('a real parked comarca authority', () => {
       sim.households.push(family); sim.householdsById.set(family.id, family);
       const roof = sim.buildings.find(b => b.def.id === 'mud_hut' && b.ownerBandId === mother.bandId);
       if (!roof) throw new Error('fixture needs a local hut');
-      roof.complete = withRoof; roof.durability = withRoof ? roof.def.workTicks : null;
+      roof.complete = withRoof; roof.progress = withRoof ? roof.def.workTicks : 0;
+      roof.durability = withRoof ? roof.def.workTicks : null;
       family.homeBuildingId = roof.id;
       const entry = root.tileLedger.capture(root);
       return { root, motherId: mother.id,

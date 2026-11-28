@@ -1,9 +1,62 @@
-## 2026-11-28 — M16 0.16.25-alpha — alojamiento nocturno en comarcas aparcadas (#58)
+## 2026-11-28 — M16 0.16.34-alpha — alojamiento nocturno en comarcas aparcadas (#58)
 
-- **Causa estática:** `ComarcaOffmapRuntime` llamaba a `advanceCompactBandLife` con un mapa vacío todos los días. La regla compartida de concepción descartaba cualquier intento pese a tener una vivienda.
-- **Propuesta aislada:** al llegar a medianoche, después de avanzar todos los cuerpos, asignar una vez las plazas de hogares locales conocidos. Solo estructuras acabadas, no derruidas, con abrigo, plazas positivas y propiedad de la banda; solo miembros recíprocos presentes y no cautivos. No inventar techo al viajero sin hogar local. Prioridad estable por ID; bebés que todavía no andan comparten únicamente la plaza de un portador adulto admitido en el mismo techo. La admisión no modifica coordenadas, órdenes, propiedad, RNG ni probabilidades de concepción.
-- **Límite:** es una aproximación compacta explícita, no una prueba de sueño real ni una política completa de vivienda para personas sin hogar; no sustituye el modelo físico. El camino `CompactBody` por persona sigue separado (#63). No se cambia la baseline.
-- **Verificación pendiente:** cinco tests focales de admisión y uno de la autoridad real, incluida reanudación JSON y control sin techo; comparar demografía detallada/compacta con las mismas semillas antes de integrar.
+- `ComarcaOffmapRuntime` entregaba siempre un mapa de techos vacío a la vida diaria compacta. Se concede una asignación nocturna aproximada y finita para hogares locales, con capacidad compartida en toda la comarca, usando el predicado `isUsableRoof` introducido por #63. Solo residentes vivos, no cautivos, con hogar recíproco y refugio de su banda; bebés en brazos comparten plaza con su portador admitido. Sin movimientos, propiedad, esquema de guardado ni tasas nuevos.
+- Reconciliada #65 sobre master `4ee0b3e1` (#51, #42, #63 y #62). Siete tests de regresión propuestos (incluido el caso de pareja separada por falta de capacidad y reanudación JSON). No ejecutados en el repositorio. La asignación por ID puede sesgar la natalidad; no equivale a sueño real y la comparación de cohortes queda pendiente. No re-pin ni cierre de #58/#13.
+
+## 2026-11-28 — M16 0.16.33-alpha — definiciones canónicas de árboles al cargar (#17)
+
+- PR #42: tras decodificar el grafo, se reestablece la referencia compartida a `TREES[species]` para las definiciones que coinciden con la definición actual. Una definición incompatible se rechaza; no se modifican tasas, semillas ni esquema de guardado.
+- Reconciliación sobre #51: se conserva su restauración de crónicas y su prueba normal de igualdad del grafo a 20 días; se añade la prueba original de identidad de árboles. Unit + build y los cuatro E2E pasaron en la cabeza histórica de #42; sus 16 transiciones negativas de matriz observadas ya constan en la baseline de #62. La nueva combinación no se ha ejecutado. No se modifica la baseline ni se cierra #17.
+
+## 2026-11-28 — M16 0.16.32-alpha — restaurar alias compartidos de hechos en crónicas (#17)
+
+- `RosterRecords` decodificaba cada persona de forma independiente, separando el mismo objeto `deed` de las crónicas del actor y la víctima. Se reconstruyen las parejas `did`/`suffered` coincidentes por participantes, tipo, texto y tick, preservando el orden de sucesos duplicados.
+- PR #51: su cabeza anterior superó Unit + build y los cuatro E2E; las 16 transiciones PASS→FAIL/NA listadas en los dos shards rojos ya están aceptadas como estados conocidos en la referencia corregida por #62. Eso no es una medición de esta nueva cabeza.
+- Actualización sobre master `62d58e20`: se mantienen #62 y #63, se registra el test focal en fast gate y se activa el test completo de identidad a 20 días. Sin cambiar baseline, RNG ni formato de guardado. Pendiente comprobar la nueva cabeza con Node fijado; no fusionar sin validar el contrato de identidad y la matriz.
+
+## 2026-11-27 — M16 0.16.31-alpha — validar también el refugio del hogar compacto (#58)
+
+- **Causa estática:** el fallback del hogar de `CompactBody` aceptaba una construcción completa con abrigo, incluso derruida o sin plazas de sueño.
+- **Cambio propuesto:** usar `isUsableRoof`, el mismo predicado que el sueño detallado. No añadir una probabilidad de concepción, no otorgar plazas gratis, ni cambiar la lógica del calendario.
+- **Verificación pendiente:** prueba de refugio compacto inválido (ruina, obra sin terminar, estructura sin plazas) y controles positivos existentes.
+- **Límite:** el modelo compacto por persona conserva su aproximación de hogar; la comarca fuera de pantalla entrega un mapa vacío a `advanceCompactBandLife`. La admisión conjunta de familias y su calibración siguen abiertas; véase `docs/bugs.md`.
+
+## 2026-11-27 — M16 0.16.30-alpha — descanso privado bajo un techo amueblado (#58)
+
+- **Causa estática:** `shareTheHearth` consultaba `buildingAt`, que devuelve primero el mueble situado dentro de la vivienda. El mueble no tiene plazas de refugio; el descanso privado quedaba descartado aunque la persona estuviera dentro de una casa terminada.
+- **Cambio propuesto:** consultar el techo real mediante el índice espacial y la misma geometría de cubierta que usa el sueño, con desempate determinista por abrigo e ID. Compartir la validez física del refugio y ampliar la búsqueda de ocupantes a la cobertura completa. La selección de muebles, la privacidad, la admisión por capacidad y la tirada de concepción permanecen intactas.
+- **Verificación pendiente:** prueba focal de una pareja descansando sobre mobiliario, intruso despierto, borde de habitación y ruina. Sin re-fijar baseline.
+
+## 2026-11-27 — M16 0.16.29-alpha — capacidad de refugio real frente a proyectada (#58)
+
+- **Causa estática:** la decisión entre refugio rápido y vivienda más costosa consideraba las plazas de obras sin terminar como si ya protegieran del frío; el patrocinio del lean-to tampoco utilizaba las necesidades de refugio.
+- **Cambio propuesto:** usar las plazas terminadas para la urgencia y la suma de terminadas y pendientes para limitar nuevas obras; elegir promotor por capacidad de refugio, no por una lista incompleta de IDs. Excluir ruinas de la experiencia previa de construcción.
+- **Diagnóstico:** `shelter_completed_places_short` y `shelter_short_sites_full` muestran déficit nominal y bloqueo por obras incluso cuando hay capacidad proyectada suficiente. Conservamos las obras iniciales, el límite de dos, los costes y la política de abandono; no repetir la variante #56 sin validar el hambre.
+- **Verificación pendiente:** pruebas focalizadas y cohortes emparejadas, especialmente `herders`, `orchard` y `generations`. Sin cambio de semillas ni baseline; el problema de obras que reciben materiales lentamente sigue abierto.
+
+## 2026-11-27 — M16 0.16.28-alpha — cola de construcción actualizada al abandonar una obra (#58)
+
+- **Causa estática:** `Simulation.removeBuilding` reemplaza el array de edificios, pero el contexto de la pasada diaria de `BandSystem` conservaba el array anterior. Tras `dropStaleSites` podía contar una obra que ya no existía y ordenar trabajos en ella hasta la siguiente revisión.
+- **Cambio propuesto:** leer la lista vigente mediante un getter del contexto diario. No se toca la política de abandono, el límite de obras, las devoluciones de materiales, ni la generación inicial.
+- **Verificación pendiente:** nueva prueba focal `m16-shelter-planning.test.ts`; falta ejecución local y comparación de cohortes. Baseline intacta.
+
+## 2026-11-27 — M16 0.16.27-alpha — selección coherente con la interrupción del descanso (#58)
+
+- **Causa estática:** `Brain` ofrecía `sleep` y `rest` aun cuando hambre >50 o sed >45 obligaban a `ActionSystem.wakeReason` a cancelar de inmediato; el compromiso podía seleccionar repetidamente la misma acción inviable.
+- **Cambio propuesto:** predicado puro compartido para los dos límites, preservando valores, precedencia, sueño circadiano, órdenes e interrupciones por peligro/cuidado. El refugio por frío (`shelter`) queda separado: llegar a un techo puede aliviar exposición y requiere evaluación propia.
+- **Verificación pendiente:** pruebas focalizadas en `furniture-sleep.test.ts` y `circadian-sleep.test.ts` (límites exactos, hambre/sed, frío, reanudación, interrupción comprometida). Comparar en local las mismas semillas antes del merge; sin re-fijar baseline ni declarar resuelta #58.
+
+## 2026-11-27 — M16 0.16.26-alpha — llegada real a la superficie de descanso (#58)
+
+- **Causa estática:** dormir exigía distancia ≤0,3 al centro del mueble, pero el movimiento dejaba de avanzar por debajo de 0,6. Además, el centro nominal de un mueble 1×1 está en la frontera de su casilla, mientras la calidad de sueño usa la casilla física.
+- **Cambio propuesto:** dirigir el último tramo al centro de la casilla asignada con radio local de 0,3 y recuperar fatiga solo al entrar en la casilla; no cambiar el radio general ni teletransportar al personaje.
+- **Verificación pendiente:** prueba focal desde una casilla contigua en el intervalo problemático; comprobar sueño, movimiento y continuación determinista en local antes de integrar. Baseline intacta.
+
+## 2026-11-27 — M16 0.16.25-alpha — escala de la prioridad de dormir (#58)
+
+- **Causa estática:** `Brain.score` ya usa `drive.rest` y `drive.comfort` normalizados a 0–1; multiplicar solo comodidad por 100 descompensa la elección frente a otras necesidades.
+- **Cambio propuesto:** comparar ambas presiones directamente; conservar coeficientes, filtros, semillas y RNG.
+- **Verificación pendiente:** prueba focal en `furniture-sleep.test.ts`; falta ejecución local y comparación de escenarios. No se altera ni se re-fija la baseline.
 
 ## 2026-11-04 — M16: diagnóstico de nacimientos y refugio nocturno, sin arreglo
 

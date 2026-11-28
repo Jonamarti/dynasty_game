@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createHash } from 'node:crypto';
+import { TREES } from '../entities/Tree.ts';
 import { randomWorldGeography } from '../world/WorldGeography.ts';
 import { findGlobeStart } from '../world/WorldTerrain.ts';
 import { WorldState } from '../world/WorldState.ts';
@@ -168,7 +169,30 @@ describe('saving the whole game (phase 33c)', () => {
     return JSON.stringify(world);
   };
 
-  it.fails('m16-load-keeps-sharing: save, load, and advance preserves the exact object graph', () => {
+  it('m16-load-rebinds-tree-species: a loaded tree and a new seedling share the same definition', () => {
+    const world = globe('wsp-1');
+    const loaded = deserializeSave(serializeSave(world, 1));
+    for (const tree of loaded.current.trees) {
+      expect(tree.def).toBe(TREES[tree.def.species]);
+    }
+  });
+
+  it('m16-load-shares-chronicle-deed: actor and victim retain the same deed after saving', () => {
+    const state = new WorldState({ seed: 'm16-shared-deed', population: { bands: 1, peoplePerBand: 4 } });
+    const [actor, victim] = state.current.people;
+    expect(actor).toBeDefined();
+    expect(victim).toBeDefined();
+    const deed = { type: 'assault' as const, actorId: actor!.id, targetId: victim!.id };
+    actor!.chronicle.push({ tick: 0, ageDays: actor!.age, text: 'A struck B', kind: 'did', deed });
+    victim!.chronicle.push({ tick: 0, ageDays: victim!.age, text: 'A struck B', kind: 'suffered', deed });
+    const loaded = deserializeSave(serializeSave(state, 0));
+    const loadedActor = loaded.current.peopleById.get(actor!.id)!;
+    const loadedVictim = loaded.current.peopleById.get(victim!.id)!;
+    expect(loadedActor.chronicle.at(-1)!.deed).toBe(loadedVictim.chronicle.at(-1)!.deed);
+    expect(loadedActor.chronicle.at(-1)!.deed).toEqual(deed);
+  });
+
+  it('m16-load-keeps-sharing: save, load, and advance preserves the exact object graph', () => {
     const live = globe('wsp-1');
     live.current.possessFirst();
     days(live, 4);
@@ -189,6 +213,7 @@ describe('saving the whole game (phase 33c)', () => {
       }
     }
     if (!first) console.info('[M16 E5] no alias/content differences at sampled checkpoints; checking raw graph');
+    expect(first).toBeNull();
     const liveGraph = graph(live);
     const loadedGraph = JSON.parse(serializeSave(loaded, 0)).world.simulation.objects.graph;
     expect(loadedGraph.nodes.length).toBe(liveGraph.nodes.length);

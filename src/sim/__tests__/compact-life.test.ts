@@ -174,6 +174,27 @@ describe('compact conception and birth', () => {
     expect(run((_m, _f, h) => { h.homeBuildingId = null; })).toBe(0); // phase 18: no roof, no child
   });
 
+  it('does not use a ruined, unfinished or nonresidential home as the compact shared roof', () => {
+    for (const kind of ['ruined', 'unfinished', 'no places'] as const) {
+      const { mother, people, roofed, household } = couple(20);
+      let hut = roofed.buildings[0]!;
+      if (kind === 'ruined') hut.durability = 0;
+      else if (kind === 'unfinished') hut.complete = false;
+      else {
+        const noPlaces = { ...BUILDINGS.mud_hut! };
+        delete noPlaces.places;
+        hut = new Building(noPlaces, hut.x, hut.y, hut.ownerBandId);
+        hut.complete = true;
+        household.homeBuildingId = hut.id;
+      }
+      const born: Person[] = [];
+      body({ people, population: { conceptionChance: 1 }, born,
+        households: roofed.households, buildings: [hut] }).advance(compactOf(mother, 'invalid-roof'), 20 * tpd);
+      expect(mother.pregnant, kind).toBe(false);
+      expect(born, kind).toHaveLength(0);
+    }
+  });
+
   it('draws from the person\'s own stream only: a second woman with the same stream seed bears on the same day', () => {
     const a = couple(30), b = couple(40);
     const sa = deriveCompactStream('same', 7), sb = deriveCompactStream('same', 7);
