@@ -96,6 +96,7 @@ import {
   ownPeopleLicence, tailLicence, conscienceBrake, strangerBrake, mischiefChild, CORRECT,
 } from '../social/Restraint.ts';
 import { drivePressures, urgencyCurve, type DrivePressures } from './Drives.ts';
+import { restNeedInterruption } from '../core/Circadian.ts';
 import { actionsForDrive, carriesEdibleFood, chooseCommitmentDrive, commitmentGoal, COMMITMENT_DRIVES, type CommitmentDrive } from './Commitment.ts';
 import { purposeAppetite, sensitivity } from './Temperament.ts';
 import { appealOf, bestFoodFor, cravings, hydrationOf, VARIETY_WEIGHT } from '../core/Macros.ts';
@@ -3682,7 +3683,10 @@ export class Brain {
     const calm = ctx.time.tick - person.lastHarmedTick < 300 || nursingChild || person.starvingSeen ? 0 :
       1 - Math.max(drive.hunger, drive.thirst, drive.warmth, drive.safety);
     const dark = 1 + ctx.motivation.nightExposure * nightNow * calm;
-    if (fatigue > 0) {
+    // Do not offer a sleep/rest action already over its execution wake line.
+    // Keep cold shelter separate: reaching warmth can itself answer exposure.
+    const restAllowed = restNeedInterruption(person.needs) === null;
+    if (fatigue > 0 && restAllowed) {
       const homeId = person.householdId === null ? null :
         ctx.householdsById.get(person.householdId)?.homeBuildingId ?? null;
       const home = homeId === null ? null : ctx.buildingsById.get(homeId) ?? null;
@@ -3725,11 +3729,10 @@ export class Brain {
       if (restShelter && !(urgentFoodSearch && curiosityExplorePoint)) {
         const nearness = this.proximityBonus(person,
           { x: restShelter.centerX, y: restShelter.centerY }, ctx.sightRadius);
-        // A comfort deficit can justify using a real shelter even before
-        // fatigue is high. Both values are on the same 0–100 pressure scale;
-        // the existing sleep weight and destination quality still decide how
-        // strongly and where the person sleeps.
-        add('sleep', Math.max(fatigue, drive.comfort * 100) * 3.2 * nearness * dark);
+        // Both fatigue (drive.rest) and drive.comfort are normalized 0–1
+        // pressures. Keep their common scale so discomfort can favour shelter
+        // without overwhelming all the other needs by two orders of magnitude.
+        add('sleep', Math.max(fatigue, drive.comfort) * 3.2 * nearness * dark);
       } else if (!restShelter && !(urgentFoodSearch && curiosityExplorePoint) && anchor &&
           Math.hypot(person.x - anchor.x, person.y - anchor.y) <= ctx.motivation.nightRadius) {
         add('sleep', fatigue * 3.2 * 0.8 * dark);
@@ -4290,7 +4293,7 @@ export class Brain {
     // them. Sleeping is strictly better and scores higher when it is available.
     // With a roof to lie under, lying in the open at night is the worse
     // choice by the same factor that makes the roof better.
-    add('rest', fatigue * 2.4 * (restFurniture ? 1.2 : 1) / (restShelter ? dark : 1));
+    if (restAllowed) add('rest', fatigue * 2.4 * (restFurniture ? 1.2 : 1) / (restShelter ? dark : 1));
 
     // --- Wander ------------------------------------------------------------
     // A small floor so a person with nothing pressing still looks alive, and so
