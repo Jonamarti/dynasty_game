@@ -96,6 +96,7 @@ import {
   ownPeopleLicence, tailLicence, conscienceBrake, strangerBrake, mischiefChild, CORRECT,
 } from '../social/Restraint.ts';
 import { drivePressures, urgencyCurve, type DrivePressures } from './Drives.ts';
+import { restNeedInterruption } from '../core/Circadian.ts';
 import { actionsForDrive, carriesEdibleFood, chooseCommitmentDrive, commitmentGoal, COMMITMENT_DRIVES, type CommitmentDrive } from './Commitment.ts';
 import { purposeAppetite, sensitivity } from './Temperament.ts';
 import { appealOf, bestFoodFor, cravings, hydrationOf, VARIETY_WEIGHT } from '../core/Macros.ts';
@@ -3682,7 +3683,10 @@ export class Brain {
     const calm = ctx.time.tick - person.lastHarmedTick < 300 || nursingChild || person.starvingSeen ? 0 :
       1 - Math.max(drive.hunger, drive.thirst, drive.warmth, drive.safety);
     const dark = 1 + ctx.motivation.nightExposure * nightNow * calm;
-    if (fatigue > 0) {
+    // Do not offer a sleep/rest action already over its execution wake line.
+    // Keep cold shelter separate: reaching warmth can itself answer exposure.
+    const restAllowed = restNeedInterruption(person.needs) === null;
+    if (fatigue > 0 && restAllowed) {
       const homeId = person.householdId === null ? null :
         ctx.householdsById.get(person.householdId)?.homeBuildingId ?? null;
       const home = homeId === null ? null : ctx.buildingsById.get(homeId) ?? null;
@@ -3725,11 +3729,10 @@ export class Brain {
       if (restShelter && !(urgentFoodSearch && curiosityExplorePoint)) {
         const nearness = this.proximityBonus(person,
           { x: restShelter.centerX, y: restShelter.centerY }, ctx.sightRadius);
-        // A comfort deficit can justify using a real shelter even before
-        // fatigue is high. Both values are on the same 0–100 pressure scale;
-        // the existing sleep weight and destination quality still decide how
-        // strongly and where the person sleeps.
-        add('sleep', Math.max(fatigue, drive.comfort * 100) * 3.2 * nearness * dark);
+        // Both fatigue (drive.rest) and drive.comfort are normalized 0–1
+        // pressures. Keep their common scale so discomfort can favour shelter
+        // without overwhelming all the other needs by two orders of magnitude.
+        add('sleep', Math.max(fatigue, drive.comfort) * 3.2 * nearness * dark);
       } else if (!restShelter && !(urgentFoodSearch && curiosityExplorePoint) && anchor &&
           Math.hypot(person.x - anchor.x, person.y - anchor.y) <= ctx.motivation.nightRadius) {
         add('sleep', fatigue * 3.2 * 0.8 * dark);
@@ -4290,7 +4293,7 @@ export class Brain {
     // them. Sleeping is strictly better and scores higher when it is available.
     // With a roof to lie under, lying in the open at night is the worse
     // choice by the same factor that makes the roof better.
-    add('rest', fatigue * 2.4 * (restFurniture ? 1.2 : 1) / (restShelter ? dark : 1));
+    if (restAllowed) add('rest', fatigue * 2.4 * (restFurniture ? 1.2 : 1) / (restShelter ? dark : 1));
 
     // --- Wander ------------------------------------------------------------
     // A small floor so a person with nothing pressing still looks alive, and so
@@ -4588,9 +4591,20 @@ export class Brain {
 
   private noteKnownTarget(
     person: Person, action: string, x: number, y: number, kinds: readonly string[], sightRadius: number,
+    tick: number,
   ): void {
-    const visible = person.distanceTo({ x, y }) <= sightRadius;
+    const distance = person.distanceTo({ x, y });
+    const visible = distance <= sightRadius;
     const remembered = kinds.some(kind => person.placeMemory.hasNear(kind, x, y));
+    const unknownCounter = `action_target_knowledge_unknown_${action}`;
+    // Evidence, never a rule change: emit ONE example of an unknown target per
+    // action/scenario while headless telemetry is enabled, before incrementing
+    // the counter. Neither selection nor seeded RNG is touched.
+    if (telemetry.isEnabled() && !visible && !remembered && telemetry.get(unknownCounter) === 0) {
+      console.warn(`[knowledge:first-unknown] tick=${tick} person=${person.id} action=${action}` +
+        ` target=(${x},${y}) distance=${distance.toFixed(2)} sight=${sightRadius}` +
+        ` expected-memory=${kinds.join('|')}`);
+    }
     telemetry.count('action_target_knowledge_checked');
     telemetry.count(visible || remembered ? 'action_target_knowledge_known' : 'action_target_knowledge_unknown');
     telemetry.count(`action_target_knowledge_${visible ? 'visible' : remembered ? 'remembered' : 'unknown'}_${action}`);
@@ -4625,7 +4639,13 @@ export class Brain {
       // confused — the exact impossible-walk failure `canUse`'s own header
       // warns about, one mechanism further on.
       if (!building.complete || building.ruined || !isWell(building.def)) continue;
-      const d = person.distanceTo({ x: building.centerX, y: building.centerY });
+      // A distant well is usable only if this person actually knows it.
+      // Building sightings are recorded under building:well, not water.
+      const x = building.centerX, y = building.centerY;
+      if (!this.canTravelTo(person, x, y, ctx)) continue;
+      if (person.distanceTo({ x, y }) > ctx.sightRadius &&
+          !person.placeMemory.hasNear(`building:${building.def.id}`, x, y)) continue;
+      const d = person.distanceTo({ x, y });
       if (d < wellDist) {
         wellDist = d;
         well = { x: building.centerX, y: building.centerY };
@@ -5070,7 +5090,7 @@ export class Brain {
         break;
       case 'drink':
         if (found.water) {
-          this.noteKnownTarget(person, 'drink', found.water.x, found.water.y, ['water'], ctx.sightRadius);
+          this.noteKnownTarget(person, 'drink', found.water.x, found.water.y, ['water', 'building:well'], ctx.sightRadius, ctx.time.tick);
           person.targetX = found.water.x;
           person.targetY = found.water.y;
         }
@@ -5078,7 +5098,7 @@ export class Brain {
       case 'hunt': {
         const animal = found.quarry;
         if (animal) {
-          this.noteKnownTarget(person, 'hunt', animal.x, animal.y, [`herd:${animal.species}`], ctx.sightRadius);
+          this.noteKnownTarget(person, 'hunt', animal.x, animal.y, [`herd:${animal.species}`], ctx.sightRadius, ctx.time.tick);
           person.targetAnimalId = animal.id;
           person.targetX = animal.x;
           person.targetY = animal.y;
@@ -5098,7 +5118,7 @@ export class Brain {
         const tree = action === 'pick' ? found.fruitTree : found.fellTree;
         if (tree) {
           const kind = action === 'pick' && tree.def.fruitItem ? `fruit:${tree.def.fruitItem}` : 'tree';
-          this.noteKnownTarget(person, action, tree.x, tree.y, [kind], ctx.sightRadius);
+          this.noteKnownTarget(person, action, tree.x, tree.y, [kind], ctx.sightRadius, ctx.time.tick);
           person.targetTreeId = tree.id;
           person.targetX = tree.x;
           person.targetY = tree.y;
@@ -5174,7 +5194,7 @@ export class Brain {
         const node = action === 'forage' ? found.foodNode : found.matNode;
         if (node) {
           if (action === 'forage') this.noteKnownTarget(person, action, node.x, node.y,
-            [`resource:${node.kind}`], ctx.sightRadius);
+            [`resource:${node.kind}`], ctx.sightRadius, ctx.time.tick);
           if (this.rememberedNodeTargets.has(node.id)) {
             telemetry.count('action_target_from_memory_' + action);
             if (action === 'forage' && this.toldNodeTargets.has(node.id)) telemetry.count('food_place_target_from_told');

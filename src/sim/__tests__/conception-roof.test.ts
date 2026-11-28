@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Simulation } from '../core/Simulation.ts';
 import { LifeSystem, type LifeContext } from '../systems/LifeSystem.ts';
+import { Building, BUILDINGS } from '../entities/Building.ts';
 import { RNG } from '../core/RNG.ts';
 import type { Person } from '../entities/Person.ts';
 import { telemetry } from '../core/Telemetry.ts';
@@ -65,6 +66,55 @@ describe('conception needs a shared roof', () => {
     expect(open.counts.conception).toBeUndefined();
     expect(attempt(new Map([[mother.id, 7]])).conceived).toBe(false);
     expect(attempt(new Map([[mother.id, 7], [father.id, 8]])).conceived).toBe(false);
+  });
+
+  it('counts private rest under a furnished roof without changing furniture selection or privacy', () => {
+    const { sim, mother, father } = couple();
+    const hut = sim.buildings.find(b => b.def.id === 'mud_hut' && b.ownerBandId === mother.bandId)!;
+    expect(hut).toBeDefined();
+    hut.complete = true;
+    hut.durability = hut.def.workTicks;
+    const bench = new Building(BUILDINGS.bench!, hut.x + 1, hut.y + 1, mother.bandId, sim.ids);
+    bench.hostId = hut.id;
+    bench.complete = true;
+    sim.buildings.push(bench);
+    sim.buildingsById.set(bench.id, bench);
+    sim.buildingHash.rebuild(sim.buildings);
+    for (const p of sim.people) {
+      p.action = 'idle';
+      p.x = hut.x - 6;
+      p.y = hut.y - 6;
+    }
+    mother.action = 'rest'; father.action = 'rest';
+    mother.targetBuildingId = bench.id; father.targetBuildingId = hut.id;
+    mother.x = bench.x + 0.1; mother.y = bench.y + 0.1;
+    father.x = hut.x + 2.25; father.y = hut.y + 1.25;
+    sim.peopleHash.rebuild(sim.people);
+    expect(sim.buildingAt(mother.x, mother.y)).toBe(bench);
+    const midnight = sim as unknown as {
+      shareTheHearth(): void;
+      roofTonight: Map<number, number>;
+    };
+    midnight.shareTheHearth();
+    expect(midnight.roofTonight.get(mother.id)).toBe(hut.id);
+    expect(midnight.roofTonight.get(father.id)).toBe(hut.id);
+
+    // A third awake occupant still prevents private rest from qualifying.
+    const intruder = sim.people.find(p => p !== mother && p !== father && p.alive)!;
+    intruder.x = hut.x + 1.25; intruder.y = hut.y + 2.25;
+    sim.peopleHash.rebuild(sim.people);
+    midnight.shareTheHearth();
+    expect(midnight.roofTonight.has(mother.id)).toBe(false);
+    expect(midnight.roofTonight.has(father.id)).toBe(false);
+    intruder.x = hut.x - 6; intruder.y = hut.y - 6;
+    // Being in the wall/door ring is not being inside a room.
+    father.x = hut.x; father.y = hut.y + 1.25;
+    sim.peopleHash.rebuild(sim.people);
+    midnight.shareTheHearth();
+    expect(midnight.roofTonight.has(father.id)).toBe(false);
+    hut.durability = 0;
+    midnight.shareTheHearth();
+    expect(midnight.roofTonight.has(mother.id)).toBe(false);
   });
 
   it('measures pre-draw barriers without rolling the conception stream', () => {

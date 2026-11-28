@@ -17,7 +17,8 @@
 import type { Person } from '../entities/Person.ts';
 import { ELDER_YEARS, SKILLS, TRAITS, TRAIT_SPREAD } from '../entities/Person.ts';
 import type { Household } from '../entities/Household.ts';
-import type { Building } from '../entities/Building.ts';
+import { BUILDINGS, type Building } from '../entities/Building.ts';
+import type { SpatialHash } from '../core/SpatialHash.ts';
 import { ITEMS, type GarmentUnit } from '../entities/Item.ts';
 import { houseInteriorContains } from '../world/HouseInterior.ts';
 import type { RNG } from '../core/RNG.ts';
@@ -37,10 +38,15 @@ import {
  * forbids. Open shelters use the building margin; walled houses require the
  * sleeper to have reached the room, not merely the footprint or doorway.
  */
+/** A finished, sound refuge with at least one actual sleeping place. */
+export function isUsableRoof(roof: Building | null | undefined): roof is Building {
+  return !!roof && roof.complete && !roof.ruined && (roof.def.places ?? 0) > 0 && roof.def.shelter > 0;
+}
+
 export function roofOverSleeper(person: Person, buildingsById: ReadonlyMap<number, Building>): Building | null {
   if (!person.alive || person.action !== 'sleep' || person.targetBuildingId === null) return null;
   const roof = buildingsById.get(person.targetBuildingId);
-  return roof && roof.complete && !roof.ruined && roof.def.places !== undefined && roof.def.shelter > 0 && isUnderRoof(roof, person.x, person.y) ? roof : null;
+  return isUsableRoof(roof) && isUnderRoof(roof, person.x, person.y) ? roof : null;
 }
 
 /** Rooms and open roofed lean-tos use their true covered floor. Legacy windbreak
@@ -48,6 +54,21 @@ export function roofOverSleeper(person: Person, buildingsById: ReadonlyMap<numbe
 export function isUnderRoof(roof: Building, x: number, y: number): boolean {
   if (roof.def.interior) return houseInteriorContains(roof, x, y);
   return roof.contains(x, y, roof.def.roofed ? 0 : 1);
+}
+
+// The building hash indexes origins, not centres. Include the far corner and
+// the legacy open shelter margin, then require actual coverage.
+const ROOF_LOOKUP_RADIUS = Math.max(1, ...Object.values(BUILDINGS)
+  .filter(def => (def.places ?? 0) > 0 && def.shelter > 0)
+  .map(def => Math.hypot(def.width + 1, def.height + 1)));
+
+/** Find actual cover, independently of the furniture-prioritising UI hit test.
+ * Overlapping shelters choose the stronger shelter, then the stable ID.
+ */
+export function roofAtPoint(x: number, y: number, buildings: SpatialHash<Building>): Building | null {
+  return buildings.queryRadius(x, y, ROOF_LOOKUP_RADIUS)
+    .filter(roof => isUsableRoof(roof) && isUnderRoof(roof, x, y))
+    .sort((a, b) => b.def.shelter - a.def.shelter || a.id - b.id)[0] ?? null;
 }
 
 /**
@@ -64,13 +85,12 @@ export function isUnderRoof(roof: Building, x: number, y: number): boolean {
  */
 export function roofOverPrivateRest(
   person: Person, buildingsById: ReadonlyMap<number, Building>,
-  buildingAt: (x: number, y: number) => Building | null,
+  roofAt: (x: number, y: number) => Building | null,
   occupantsOf: (building: Building) => readonly Person[],
 ): Building | null {
   if (!person.alive || person.action !== 'rest') return null;
-  const roof = buildingAt(person.x, person.y);
-  if (!roof || !buildingsById.has(roof.id) || !roof.complete || roof.ruined ||
-      roof.def.shelter <= 0 || roof.def.places === undefined || !isUnderRoof(roof, person.x, person.y)) return null;
+  const roof = roofAt(person.x, person.y);
+  if (!isUsableRoof(roof) || !buildingsById.has(roof.id) || !isUnderRoof(roof, person.x, person.y)) return null;
   const intruder = occupantsOf(roof).some(other =>
     other.id !== person.id && other.id !== person.spouseId &&
     other.alive && other.action !== 'sleep');

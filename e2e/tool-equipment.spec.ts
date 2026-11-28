@@ -136,6 +136,10 @@ test('a real chop order renders the fitted axe and keeps the packed spear out of
     for (let tick = 0; tick < d.sim.config.carry.equipTicks; tick++) d.sim.step();
     d.renderer.render(null, 0);
   });
+  // Manual sim.step() bypasses the normal UI frame invalidating the Kit cache.
+  // Refresh as above for container slots before asserting the next command.
+  await page.locator('.hud-tab[data-tab="self"]').click();
+  await page.locator('.hud-tab[data-tab="kit"]').click();
   const takeOffArmour = page.locator('.hud-item-verbs [data-item="hide_armour"][data-verb="take_off_garment"]');
   await expect(takeOffArmour).toBeVisible();
   await takeOffArmour.click();

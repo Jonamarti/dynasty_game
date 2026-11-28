@@ -27,7 +27,7 @@ import {
 import type { Household } from '../entities/Household.ts';
 import type { ResourceNode } from '../entities/ResourceNode.ts';
 import type { World } from '../core/World.ts';
-import { perceivedFatigue } from '../core/Circadian.ts';
+import { perceivedFatigue, restNeedInterruption } from '../core/Circadian.ts';
 import { Arrival, ARRIVAL_RADIUS, type MovementSystem } from './MovementSystem.ts';
 import { hasRoomFor } from '../ai/Occupancy.ts';
 import { isUnderRoof } from './LifeSystem.ts';
@@ -1038,7 +1038,7 @@ export class ActionSystem {
    * nothing to abandon and no reason to report — see that case's own
    * handling of `Arrival.Blocked`.
    */
-  private travel(person: Person, ctx: ActionContext, answers?: LethalNeed): boolean {
+  private travel(person: Person, ctx: ActionContext, answers?: LethalNeed, arrivalRadius = ARRIVAL_RADIUS): boolean {
     const rafting = person.action === 'boat' || (canUseBoat(person) && person.targetX !== null && person.targetY !== null &&
       !ctx.world.sameRegion(person.x, person.y, person.targetX, person.targetY) &&
       sameBoatRouteFor(person, ctx.world, person.x, person.y, person.targetX, person.targetY));
@@ -1084,7 +1084,7 @@ export class ActionSystem {
         }
       }
     }
-    const arrival = ctx.movement.advance(person, ctx.tick);
+    const arrival = ctx.movement.advance(person, ctx.tick, arrivalRadius);
     if (arrival === Arrival.Blocked) {
       this.abandon(person, 'cannot_reach', ctx);
       if (!(person.action === 'swim' && person.order === null) && ctx.world.isSwimTile(person.x, person.y)) this.escapeToShore(person, ctx);
@@ -4584,10 +4584,13 @@ export class ActionSystem {
         .map(memberId => ctx.peopleById.get(memberId))
         .filter((member): member is Person => member !== undefined) ?? [];
       const surface = assignedSleepSurface(person, householdMembers, building, pieces) ?? pieces[0];
-      if (surface && Math.hypot(surface.centerX - person.x, surface.centerY - person.y) > 0.3) {
-        person.targetX = surface.centerX;
-        person.targetY = surface.centerY;
-        this.travel(person, ctx);
+      // Sleep quality is measured on the actual furniture tile, not a circle
+      // around Building.centerX/Y (which lie on the tile boundary for 1x1 furniture).
+      // The usual 0.6 arrival radius can stop a sleeper outside that tile forever.
+      if (surface && (Math.floor(person.x) !== surface.x || Math.floor(person.y) !== surface.y)) {
+        person.targetX = surface.x + 0.5;
+        person.targetY = surface.y + 0.5;
+        this.travel(person, ctx, undefined, 0.3);
         return;
       }
       const physicalQuality = sleepQualityAt(building, person.x, person.y, pieces);
@@ -4724,8 +4727,8 @@ export class ActionSystem {
   private wakeReason(person: Person, ctx: ActionContext): string | null {
     const interrupted = this.interruption(person, ctx, { ignoreLaden: true, ignoreNeeds: true });
     if (interrupted) return interrupted;
-    if (person.needs.thirst > 45) return 'thirsty';
-    if (person.needs.hunger > 50) return 'hungry';
+    const need = restNeedInterruption(person.needs);
+    if (need) return need;
     // Cold is deliberately absent. The roof overhead is the thing that fixes
     // cold, and throwing somebody out of the hut for being cold in it is a
     // circle. `NeedsSystem.shelterAt` warms them where they lie.

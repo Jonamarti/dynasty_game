@@ -63,6 +63,76 @@ function scoreOneBrainTick(sim: Simulation, person: ReturnType<typeof fixture>['
 }
 
 describe('bedding and beds', () => {
+  it('keeps fatigue and comfort on the same normalized sleep priority scale', () => {
+    const { sim, person, house } = fixture({ comfortDriveEnabled: true });
+    person.forgetPlans();
+    person.action = 'idle';
+    person.actionTimer = 0;
+    person.needs.fatigue = 50;
+    const { context } = scoreOneBrainTick(sim, person);
+    const brain = (sim as unknown as { brain: Brain }).brain;
+    const ctx: BrainContext = { ...context, motivation: {
+      ...context.motivation, nightSleep: false, nightExposure: 0, comfortDriveEnabled: true,
+    } };
+    person.forgetPlans();
+    person.action = 'idle';
+    person.needs.fatigue = 50;
+    person.needs.hunger = person.needs.thirst = person.needs.cold = 0;
+    const sleepScore = (comfort: number) => {
+      person.mood.comfort = comfort;
+      const scored = brain.score(person, ctx);
+      expect(scored.found.restShelter).toBe(house);
+      const sleep = scored.scores.find(row => row.id === 'sleep')?.score ?? 0;
+      expect(sleep).toBeGreaterThan(0);
+      return sleep;
+    };
+    const fatigueOnly = sleepScore(0);
+    // Both deficits of 50 give urgencyCurve(50) = 0.25.
+    expect(sleepScore(-50)).toBeCloseTo(fatigueOnly);
+    // A maximum comfort deficit gives pressure 1, not 100.
+    expect(sleepScore(-100)).toBeCloseTo(fatigueOnly * 4);
+  });
+
+  it('does not score sleep or rest that hunger or thirst will immediately interrupt', () => {
+    const { sim, person, house } = fixture({ comfortDriveEnabled: true });
+    person.forgetPlans();
+    person.action = 'idle';
+    person.actionTimer = 0;
+    person.needs.fatigue = 90;
+    const { context } = scoreOneBrainTick(sim, person);
+    const brain = (sim as unknown as { brain: Brain }).brain;
+    const ctx: BrainContext = { ...context, motivation: {
+      ...context.motivation, nightSleep: false, nightExposure: 0,
+    } };
+    person.forgetPlans();
+    person.action = 'idle';
+    person.needs.fatigue = 90;
+    person.needs.cold = 0;
+    person.mood.comfort = -80;
+    person.inventory.add('berries', 3);
+    const score = (hunger: number, thirst: number) => {
+      person.needs.hunger = hunger;
+      person.needs.thirst = thirst;
+      return brain.score(person, ctx);
+    };
+    const options = (hunger: number, thirst: number) =>
+      score(hunger, thirst).scores.map(row => row.id);
+    // Exact wake thresholds still allow rest; above either, neither is valid.
+    const calm = score(50, 45);
+    expect(calm.found.restShelter).toBe(house);
+    expect(calm.scores.map(row => row.id)).toEqual(expect.arrayContaining(['sleep', 'rest']));
+    for (const [hunger, thirst] of [[51, 0], [0, 46], [51, 46]] as const) {
+      const rows = options(hunger, thirst);
+      expect(rows).not.toContain('sleep');
+      expect(rows).not.toContain('rest');
+    }
+    expect(options(51, 0)).toContain('eat');
+    expect(options(0, 0)).toEqual(expect.arrayContaining(['sleep', 'rest']));
+    // Cold alone is not a reason to forbid warming under a roof.
+    person.needs.cold = 80;
+    expect(options(0, 0)).toEqual(expect.arrayContaining(['sleep', 'rest', 'shelter']));
+  });
+
   it('samples a sleeping household member once for comfort and security, not an awake one', () => {
     const { sim, person, house } = fixture();
     person.action = 'sleep';
@@ -728,6 +798,34 @@ describe('bedding and beds', () => {
     expect(loadedPerson.needs.fatigue).toBeLessThan(80);
     expect(telemetry.snapshot().sleeping_furniture).toBe(1);
     telemetry.disable();
+  });
+
+  it('reaches the assigned bed tile from inside the normal movement arrival radius and actually recovers fatigue', () => {
+    const { sim, person, house } = fixture({ sleepQualityEffectsEnabled: true });
+    // The mud hut has two interior tiles along x. Start on the left one,
+    // 0.45 tiles from the bed's old target on the right tile boundary.
+    const bed = new Building(BUILDINGS.bed!, house.x + 2, house.y + 1, person.bandId, sim.ids);
+    bed.hostId = house.id;
+    bed.complete = true;
+    sim.buildings.push(bed);
+    sim.buildingsById.set(bed.id, bed);
+    sim.buildingHash.insert(bed);
+    sim.peopleHash.remove(person);
+    person.x = bed.x - 0.45;
+    person.y = bed.y + 0.05;
+    person.targetX = person.x;
+    person.targetY = person.y;
+    sim.peopleHash.insert(person);
+    person.needs.fatigue = 80;
+    person.needs.hunger = person.needs.thirst = person.needs.cold = 0;
+    expect(Math.hypot(person.x - bed.centerX, person.y - bed.centerY)).toBeLessThan(0.6);
+    expect(sleepQualityAt(house, person.x, person.y, [bed])).toBe(0.9);
+    expect(sim.order(person, 'sleep', { buildingId: house.id })).toBe(true);
+    for (let tick = 0; tick < 30 && person.needs.fatigue >= 80; tick++) sim.step();
+    expect(Math.floor(person.x)).toBe(bed.x);
+    expect(Math.floor(person.y)).toBe(bed.y);
+    expect(sleepQualityAt(house, person.x, person.y, [bed])).toBe(1.1);
+    expect(person.needs.fatigue).toBeLessThan(80);
   });
 
   it('can neutralize sleep-surface effects while preserving the furniture and sleep action', () => {

@@ -26,7 +26,7 @@ import type { ChildhoodConfig, NeedsConfig, PopulationConfig, TimeConfig } from 
 import type { RNG } from '../core/RNG.ts';
 import type { Person } from '../entities/Person.ts';
 import type { Household } from '../entities/Household.ts';
-import { LifeSystem, roofOverSleeper } from '../systems/LifeSystem.ts';
+import { LifeSystem, roofOverSleeper, isUsableRoof } from '../systems/LifeSystem.ts';
 import { TimeManager } from '../core/TimeManager.ts';
 import { advanceTorchBurn } from '../core/Torch.ts';
 import { SpatialHash } from '../core/SpatialHash.ts';
@@ -174,7 +174,7 @@ export class CompactBody {
           if (!roof && sleeper.householdId !== null) {
             const homeId = life.householdsById.get(sleeper.householdId)?.homeBuildingId;
             const home = homeId === null || homeId === undefined ? undefined : buildingsById.get(homeId);
-            if (home && home.complete && home.def.shelter > 0) roof = home;
+            if (isUsableRoof(home)) roof = home;
           }
           if (roof) roofTonight.set(sleeper.id, roof.id);
         }

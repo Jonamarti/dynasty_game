@@ -54,7 +54,12 @@ test('save, load: the game comes back exactly where it was, paused, and says so'
   expect(saved.peoples).toBeGreaterThan(20);
   await page.screenshot({ path: `${SHOTS}/01-pause-menu-saved.png` });
 
-  await page.locator('[data-act="load"]').click();
+  // Loading intentionally reloads the entire page, not just the simulation.
+  // Wait for the new document before evaluating its state.
+  await Promise.all([
+    page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 30_000 }),
+    page.locator('[data-act="load"]').click(),
+  ]);
   await expect(page.locator('.hud-clock')).not.toBeEmpty({ timeout: 30_000 });
   await page.waitForFunction(() => (window as any).__dynasty?.sim?.time.tick >= 0, undefined, { timeout: 30_000 });
   const loaded = await state(page);
@@ -105,7 +110,13 @@ test('export a file and import it back; a bad file is refused with a reason and 
   expect((await state(page)).tick).toBe(before.tick);
 
   // The real one comes back, on a fresh page that never saw this world.
-  await page.locator('.pausemenu-file').setInputFiles(path);
+  // Import validates/stores the file asynchronously, then navigates to
+  // ?load=imported. A page.evaluate started during that navigation loses its
+  // execution context, so await the new document before reading __dynasty.
+  await Promise.all([
+    page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 30_000 }),
+    page.locator('.pausemenu-file').setInputFiles(path),
+  ]);
   await expect(page.locator('.hud-clock')).not.toBeEmpty({ timeout: 30_000 });
   await page.waitForFunction(() => (window as any).__dynasty?.sim?.time.tick >= 0, undefined, { timeout: 30_000 });
   const after = await state(page);

@@ -47,7 +47,7 @@ test('the game opens on the Earth; a place with a river begins there, with water
   // The open sea cannot be chosen, and the card says so.
   const sea = await regionPoint(page, 5, 24);
   await page.mouse.click(sea.x, sea.y);
-  await expect(picker.locator('.worldpicker-info')).toContainText('nobody can begin here');
+  await expect(picker.locator('.worldpicker-info')).toContainText('Open sea: no dry land is within reach of a start.');
   await expect(picker.locator('.worldpicker-begin')).toBeDisabled();
 
   // A region with a river marked (row 24, column 30 on the 12,000-years-ago map).
