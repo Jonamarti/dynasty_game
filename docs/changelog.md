@@ -1,3 +1,10 @@
+## 2026-11-28 — M16 0.16.25-alpha — despensas con comida realmente retirable (#58)
+
+- **Causa estática:** `Brain` elegía despensas y rondas con `Inventory.bestFood()` sin comprobar capacidad real, conocimiento de veneno, ruina ni cabezas de tiro reservadas. `doTake` podía rechazar al llegar o seleccionar otra mercancía si había desaparecido la comida. La hidratación y reservas personales contaban veneno conocido.
+- **Propuesta aislada:** filtrar por alimento que cabe, comestible según conocimiento propio y disponible, conservando el ranking de nutrición y proximidad, los pesos, permisos y ruta de retirada múltiple de corrales. Para una despensa ordinaria, fijar el alimento elegido; distinguir grasa para comer de grasa para lámpara. Mantener órdenes explícitas y revalidar veneno en retirada autónoma.
+- **Límite:** no permite comer directamente del almacén ni garantiza descarga con manos llenas cuando no hay recursos naturales. No cambia producción ni baseline.
+- **Verificación pendiente:** cinco pruebas focalizadas (incluido scorer/setup) y cohortes emparejadas. Sin Vitest/CI ejecutados.
+
 ## 2026-11-04 — M16: diagnóstico de nacimientos y refugio nocturno, sin arreglo
 
 - **Problema:** en varios mundos no nace casi nadie y casi nadie duerme bajo techo.

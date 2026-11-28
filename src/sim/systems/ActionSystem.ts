@@ -3208,6 +3208,14 @@ export class ActionSystem {
     const store = this.reachBuilding(person, ctx, undefined, 'theft');
     if (!store) return;
 
+    // A chosen food can become known as poisonous while walking. Explicit
+    // orders can still request it; autonomous food errands cannot.
+    if (person.order === null && person.targetItemId !== null &&
+        knowsPoisonous(person, person.targetItemId)) {
+      this.abandon(person, 'no_food', ctx);
+      return;
+    }
+
     // A player order that named a specific item takes precedence — M9 phase 2.
     // Everyone else, including every AI-planned trip to the larder, still falls
     // back to food first: taking from the store is nearly always about eating.
