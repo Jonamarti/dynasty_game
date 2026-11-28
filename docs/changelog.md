@@ -1,3 +1,8 @@
+## 2026-11-28 — M16 0.16.34-alpha — alojamiento nocturno en comarcas aparcadas (#58)
+
+- `ComarcaOffmapRuntime` entregaba siempre un mapa de techos vacío a la vida diaria compacta. Se concede una asignación nocturna aproximada y finita para hogares locales, con capacidad compartida en toda la comarca, usando el predicado `isUsableRoof` introducido por #63. Solo residentes vivos, no cautivos, con hogar recíproco y refugio de su banda; bebés en brazos comparten plaza con su portador admitido. Sin movimientos, propiedad, esquema de guardado ni tasas nuevos.
+- Reconciliada #65 sobre master `4ee0b3e1` (#51, #42, #63 y #62). Siete tests de regresión propuestos (incluido el caso de pareja separada por falta de capacidad y reanudación JSON). No ejecutados en el repositorio. La asignación por ID puede sesgar la natalidad; no equivale a sueño real y la comparación de cohortes queda pendiente. No re-pin ni cierre de #58/#13.
+
 ## 2026-11-28 — M16 0.16.33-alpha — definiciones canónicas de árboles al cargar (#17)
 
 - PR #42: tras decodificar el grafo, se reestablece la referencia compartida a `TREES[species]` para las definiciones que coinciden con la definición actual. Una definición incompatible se rechaza; no se modifican tasas, semillas ni esquema de guardado.

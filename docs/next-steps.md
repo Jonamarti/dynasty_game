@@ -17,6 +17,8 @@ de una cohorte.**
 
 Prioridades actuales y dependencias:
 
+- **#65 (28-11-2026):** rama reconciliada con `4ee0b3e1`, reutiliza `isUsableRoof` de #63 y añade un test negativo de concepción cuando falta una plaza. Pendientes typecheck, pruebas focales, viajes/guardados y cohortes emparejadas de demografía detallada/compacta. No re-fijar baseline ni cerrar #58/#13. La asignación nocturna por hogar es una aproximación, no una prueba de sueño real.
+
 - **#58 (27-11-2026):** correcciones propuestas por inspección estática de descanso: normalizar la presión de comodidad frente a fatiga, corregir el último tramo hacia la cama y compartir con la IA los límites de hambre y sed que interrumpen dormir/descansar y liberar de inmediato las plazas de construcción de obras abandonadas, y separar la capacidad real de refugio de la proyectada para elegir diseños y patrocinadores, reconocer la cubierta real al descansar sobre mobiliario y descartar hogares compactos inválidos; verificar primero el test focal y luego las mismas semillas de `herders` y `orchard`. No dar por resuelto el problema demográfico ni cambiar la baseline sin evidencia.
 
 - **CI:** [#8](https://github.com/Jonamarti/dynasty_game/issues/8) mantiene
@@ -26,8 +28,9 @@ Prioridades actuales y dependencias:
   funcionales diferidas pese al inventario de #36.
 - **Persistencia actual:** [#17](https://github.com/Jonamarti/dynasty_game/issues/17)
   tiene evidencia de pérdida de alias entre crónicas de actor y víctima tras
-  guardar/cargar; #40 es diagnóstico integrado, #51 es una corrección en
-  borrador. #42 (definiciones de árboles) también permanece en borrador.
+  guardar/cargar; #40 es diagnóstico integrado, #51 (crónicas) y #42
+  (definiciones de árboles) están integradas en `0.16.33-alpha`; validación
+  conjunta de la identidad a 20 días pendiente.
 - **Conocimiento de la IA:** [#18](https://github.com/Jonamarti/dynasty_game/issues/18)
   detecta caza de presas invisibles de otra especie junto a manadas recordadas.
   #45 provoca regresiones; #52 ensaya rastrear el lugar conocido en vez de

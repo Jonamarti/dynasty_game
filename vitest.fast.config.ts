@@ -16,6 +16,7 @@ export default defineConfig({
       'src/sim/__tests__/scenario-matrix.test.ts',
       'src/sim/__tests__/m16-unknown-target-witness.test.ts',
       'src/sim/__tests__/m16-chronicle-deed-alias.test.ts',
+      'src/sim/__tests__/compact-night-shelter.test.ts',
       'src/sim/__tests__/matrix-diagnostics.test.ts',
       'src/sim/__tests__/scenario-selection.test.ts',
       'src/render/__tests__/pixel-cache.test.ts',

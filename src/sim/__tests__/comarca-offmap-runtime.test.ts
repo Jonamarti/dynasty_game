@@ -1,6 +1,7 @@
 import { WorldState } from '../world/WorldState.ts';
 import { toCheckpointRecord } from '../persistence/CheckpointRecords.ts';
 import { toPersonRecord, fromPersonRecord } from '../persistence/EntityRecords.ts';
+import { Household } from '../entities/Household.ts';
 import { frontierGeography } from '../../../tools/frontierFixture.ts';
 import { ComarcaOffmapRuntime } from '../world/ComarcaOffmapRuntime.ts';
 import { describe, expect, it } from 'vitest';
@@ -52,6 +53,54 @@ describe('a real parked comarca authority', () => {
     const entry = root.tileLedger.capture(root);
     return {root,runtime:ComarcaOffmapRuntime.start(toCheckpointRecord(root.current),entry)};
   }
+  it('passes finite shared home admission to real parked demography and preserves save/resume', () => {
+    function parked(withRoof: boolean) {
+      const root = new WorldState({ seed: 'parked-conception', world: { width:32, height:32 },
+        population: { bands:1, peoplePerBand:4, conceptionChance:1 },
+        time: { ticksPerDay:40, daysPerSeason:20, startDay:0 },
+        needs: { hungerRate:0, thirstRate:0, fatigueRate:0, coldRate:0 } },
+        { geography: frontierGeography(), start: { x:40.5, y:20.5 }, peoples:false });
+      const sim = root.current;
+      const [mother, father] = sim.people;
+      if (!mother || !father) throw new Error('fixture needs two founders');
+      for (const p of sim.people) {
+        p.age = 25 * p.daysPerYear; p.lifespanDays = 65 * p.daysPerYear; p.sex = 'male';
+        p.spouseId = null; p.pregnant = false; p.pregnantBy = null; p.gestationLeft = 0;
+        p.carriedBy = null; p.captiveOf = null;
+        p.needs.hunger = p.needs.thirst = p.needs.cold = p.needs.fatigue = 0; p.health = 100;
+      }
+      mother.sex = 'female'; mother.lastBirthDay = -9999;
+      mother.spouseId = father.id; father.spouseId = mother.id;
+      const family = new Household('Parked family', mother.id, mother.bandId, 0, sim.ids);
+      for (const p of [mother, father]) {
+        if (p.householdId !== null) sim.householdsById.get(p.householdId)?.remove(p.id);
+        p.householdId = family.id; family.add(p.id);
+      }
+      sim.households.push(family); sim.householdsById.set(family.id, family);
+      const roof = sim.buildings.find(b => b.def.id === 'mud_hut' && b.ownerBandId === mother.bandId);
+      if (!roof) throw new Error('fixture needs a local hut');
+      roof.complete = withRoof; roof.progress = withRoof ? roof.def.workTicks : 0;
+      roof.durability = withRoof ? roof.def.workTicks : null;
+      family.homeBuildingId = roof.id;
+      const entry = root.tileLedger.capture(root);
+      return { root, motherId: mother.id,
+        runtime: ComarcaOffmapRuntime.start(toCheckpointRecord(sim), entry) };
+    }
+    const a = parked(true), b = parked(true), c = parked(false);
+    const whole = a.runtime.advanceTo(40, a.root.geography);
+    const partial = b.runtime.advanceTo(17, b.root.geography);
+    const resumed = ComarcaOffmapRuntime.fromRecord(JSON.parse(JSON.stringify(partial)))
+      .advanceTo(40, b.root.geography);
+    const noRoof = c.runtime.advanceTo(40, c.root.geography);
+    const pregnant = (record: typeof whole, id: number) =>
+      fromPersonRecord(record.compact.find(p => p.personId === id)!.person).pregnant;
+    expect(pregnant(whole, a.motherId)).toBe(true);
+    expect(pregnant(noRoof, c.motherId)).toBe(false);
+    expect(resumed.compact).toEqual(whole.compact);
+    expect(resumed.checkpoint.roster).toEqual(whole.checkpoint.roster);
+    expect(resumed.life).toEqual(whole.life);
+  });
+
   it('advances named bodies, physical work and clocks without Simulation.step', () => {
     const {root,runtime} = fixture();
     const before = root.current.people[0]!.needs.hunger;
