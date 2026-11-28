@@ -1,3 +1,8 @@
+## 2026-11-28 — M16 0.16.33-alpha — definiciones canónicas de árboles al cargar (#17)
+
+- PR #42: tras decodificar el grafo, se reestablece la referencia compartida a `TREES[species]` para las definiciones que coinciden con la definición actual. Una definición incompatible se rechaza; no se modifican tasas, semillas ni esquema de guardado.
+- Reconciliación sobre #51: se conserva su restauración de crónicas y su prueba normal de igualdad del grafo a 20 días; se añade la prueba original de identidad de árboles. Unit + build y los cuatro E2E pasaron en la cabeza histórica de #42; sus 16 transiciones negativas de matriz observadas ya constan en la baseline de #62. La nueva combinación no se ha ejecutado. No se modifica la baseline ni se cierra #17.
+
 ## 2026-11-28 — M16 0.16.32-alpha — restaurar alias compartidos de hechos en crónicas (#17)
 
 - `RosterRecords` decodificaba cada persona de forma independiente, separando el mismo objeto `deed` de las crónicas del actor y la víctima. Se reconstruyen las parejas `did`/`suffered` coincidentes por participantes, tipo, texto y tick, preservando el orden de sucesos duplicados.
