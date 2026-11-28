@@ -27,9 +27,12 @@ export class Household {
   bandId: number;
 
   /**
-   * The building where this family's goods live — wherever `shareTheHearth`
-   * last found a member of it asleep under a roof. Null until somebody in it
-   * has slept anywhere but the open ground.
+   * The building where this family's goods live. Inferred once per night
+   * from admitted sleepers (`householdHomeAfterNight`), not whichever
+   * member was processed last. A sound home with a sleeper stays the home;
+   * a move needs a strict local majority and no sleeper at the old home.
+   * Null until unambiguous initial assignment. An empty travelling fragment
+   * may retain its historical home for a return to the comarca.
    *
    * **M11 phase 6a** replaced a `store` of its own here: an `Inventory`
    * hanging off a `Household` has no position, so nobody could ever walk to

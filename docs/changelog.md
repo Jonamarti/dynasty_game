@@ -1,3 +1,10 @@
+## 2026-11-28 — M16 0.16.25-alpha — referencia estable del hogar familiar (#58)
+
+- **Causa estática:** `shareTheHearth` reescribía `homeBuildingId` para cada durmiente admitido. La familia, su referencia de almacén y hasta el muestreo de pertenencia dependían del orden del roster.
+- **Propuesta aislada:** decidir una vez por hogar a partir del sueño admitido, antes de añadir descanso privado para concepción. Conservar hogar válido si algún miembro sigue durmiendo allí; trasladarlo solo si una mayoría estricta de miembros locales vivos independientes no cautivos duerme bajo un mismo techo alternativo y nadie en el anterior. Sin hogar válido, exigir mayoría estricta de durmientes observados. Empate o ausencia de evidencia conservan la referencia histórica. No mover inventarios ni cambiar ocupación o probabilidades.
+- **Límite:** política conservadora de inferencia del hogar, no orden de mudanza ni sistema nuevo de propiedad. Puede requerir mudanza explícita futura para familias grandes; conserva referencias históricas incluso si el edificio se destruyó, pero eso no le concede plazas válidas.
+- **Verificación pendiente:** seis pruebas focalizadas (incluida integración del muestreo real e inversión del roster), sin ejecutar Vitest/CI ni alterar baseline.
+
 ## 2026-11-04 — M16: diagnóstico de nacimientos y refugio nocturno, sin arreglo
 
 - **Problema:** en varios mundos no nace casi nadie y casi nadie duerme bajo techo.

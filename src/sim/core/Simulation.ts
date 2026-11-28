@@ -84,6 +84,7 @@ import { assailantOf, isHeld, UNDER_ATTACK_TICKS } from '../social/Defence.ts';
 import { wouldInvestigate, noticeBloodied, INVESTIGATION_DAYS } from '../social/Investigation.ts';
 import { knowledgeOfPerson, corpseIdentity } from '../social/Knowledge.ts';
 import { averageRenownByBand, Household } from '../entities/Household.ts';
+import { householdHomeAfterNight } from '../world/HouseholdHome.ts';
 import { Tree, type TreeSpecies } from '../entities/Tree.ts';
 import { plantable, plantingRefusal, plantRefusalText } from '../entities/Orchard.ts';
 import { findDraftPen, hasBusyDraftPen, claimDraftTeam, availableDraftHeads, reservedDraftHeads, hasSeedContainer } from '../systems/Draft.ts';
@@ -4180,13 +4181,16 @@ export class Simulation {
       if (under) under.push(person);
       else byRoof.set(roof.id, [person]);
 
-      // M11 phase 6a: the same midnight sample that pairs people for a
-      // hearth conversation is the cheapest honest reading of where a
-      // household actually lives, so it doubles as that.
-      if (person.householdId !== null) {
-        const household = this.householdsById.get(person.householdId);
-        if (household) household.homeBuildingId = roof.id;
-      }
+    }
+    // Every sleeper's belonging sample used the same pre-night home. Decide
+    // the property reference once per household from admitted sleepers,
+    // before private rest is added for conception only. Do not change any
+    // person's actual roof or hearth group.
+    for (const household of this.households) {
+      const previous = household.homeBuildingId;
+      household.homeBuildingId = householdHomeAfterNight(household,
+        this.peopleById, this.roofTonight, this.buildingsById);
+      if (household.homeBuildingId !== previous) telemetry.count('household_home_changed');
     }
     // M15 close: privacy for conception. Someone resting awake in a finished
     // house with nobody but their spouse awake there has the roof conception
