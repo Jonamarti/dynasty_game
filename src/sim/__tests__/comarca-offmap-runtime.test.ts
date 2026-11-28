@@ -10,7 +10,8 @@ import { RNG } from '../core/RNG.ts';
 import { Person } from '../entities/Person.ts';
 import { ResourceNode } from '../entities/ResourceNode.ts';
 import { deriveCompactStream, goalOf } from '../compact/CompactPerson.ts';
-import { advanceComarcaOffmapHarvest, allocateComarcaOffmapNutrition } from '../world/ComarcaOffmapRuntime.ts';
+import { advanceComarcaOffmapHarvest, allocateComarcaOffmapNutrition, createComarcaOffmapFoodBudget } from '../world/ComarcaOffmapRuntime.ts';
+import { Inventory, ITEMS } from '../entities/Item.ts';
 
 function member(id: number, bandId: number, ids: IdSpace) {
   const person = new Person(`P${id}`, 0, 0, bandId, new RNG(`offmap-${id}`), 80, ids);
@@ -42,6 +43,53 @@ describe('deterministic off-map physical food policy', () => {
       { personId: a.person.id, foodQuota: 0.75, waterQuota: 0.25 },
       { personId: b.person.id, foodQuota: 0.75, waterQuota: 0.25 },
     ]);
+  });
+});
+
+describe('shared physical food across parked bands', () => {
+  it('counts shared ground stock once by population, preserves private stock, and debits finite quotas', () => {
+    const ids = new IdSpace();
+    const a = member(1, 7, ids), b = member(2, 7, ids), c = member(3, 8, ids);
+    const shared = new Inventory();
+    const own = a.person.inventory;
+    const unit = ITEMS['berries']?.nutrition ?? 0;
+    expect(unit).toBeGreaterThan(0);
+    own.add('berries', 2);
+    shared.add('berries', 6);
+    const stocks = new Map([[7, [own, b.person.inventory]], [8, [c.person.inventory]]]);
+    const food = createComarcaOffmapFoodBudget([c, b, a], stocks, [shared]);
+    expect(food.availablePerPerson(7)).toBeCloseTo(3 * unit);
+    expect(food.availablePerPerson(8)).toBeCloseTo(2 * unit);
+    expect(food.availablePerPerson(9)).toBe(0);
+    // Harvest adds to the live private pool before ration quotas are frozen.
+    own.add('berries', 2);
+    expect(food.availablePerPerson(7)).toBeCloseTo(4 * unit);
+    const take = food.snapshotRations();
+    expect(take(a.person.id, unit)).toBeCloseTo(unit);
+    expect(shared.count('berries')).toBe(6);
+    expect(take(c.person.id, 100 * unit)).toBeCloseTo(2 * unit);
+    expect(take(c.person.id, 100 * unit)).toBeCloseTo(0);
+    expect(own.count('berries')).toBeCloseTo(3);
+    expect(take(a.person.id, 100 * unit)).toBeCloseTo(3 * unit);
+    expect(take(b.person.id, 100 * unit)).toBeCloseTo(4 * unit);
+    expect(own.count('berries')).toBeCloseTo(0);
+    expect(shared.count('berries')).toBeCloseTo(0);
+  });
+
+  it('leaves unclaimed shares on the ground until a new tick, not in another band quota', () => {
+    const ids = new IdSpace();
+    const a = member(1, 7, ids), b = member(2, 8, ids);
+    const shared = new Inventory();
+    const unit = ITEMS['berries']?.nutrition ?? 0;
+    shared.add('berries', 2);
+    const food = createComarcaOffmapFoodBudget([a, b], new Map(), [shared]);
+    const take = food.snapshotRations();
+    expect(take(a.person.id, 10 * unit)).toBeCloseTo(unit);
+    expect(take(a.person.id, 10 * unit)).toBeCloseTo(0);
+    expect(shared.count('berries')).toBeCloseTo(1);
+    const next = createComarcaOffmapFoodBudget([b], new Map(), [shared]).snapshotRations();
+    expect(next(b.person.id, 10 * unit)).toBeCloseTo(unit);
+    expect(shared.count('berries')).toBeCloseTo(0);
   });
 });
 

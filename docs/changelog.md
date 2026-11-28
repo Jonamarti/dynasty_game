@@ -1,3 +1,9 @@
+## 2026-11-28 — M16 0.16.26-alpha — reservas compartidas finitas fuera del mapa
+
+- Diagnóstico estático: cada banda de `ComarcaOffmapRuntime` contaba todas las pilas de suelo como propias, tanto para decidir si recolectar como para calcular cuotas. El débito físico impedía crear comida, pero la primera banda podía consumir una cuota basada en toda la reserva y las demás dejar de recolectar prematuramente.
+- Propuesta: separar inventarios personales y almacenes terminados de cada banda del fondo común de pilas. Dividir el fondo común una sola vez por población viva, recalcular reservas privadas después de recolectar y limitar las retiradas a cuotas individuales separadas; consumir primero las privadas. Lo no consumido queda en el suelo para el siguiente tick. No cambia propiedad, acceso geográfico, RNG ni persistencia.
+- Verificación pendiente: dos pruebas focales de cuotas y débito, más las existentes de continuidad y autoridad aparcada; comparar cohortes de varias bandas. No se ha ejecutado CI ni se ha cambiado la baseline. Es una rama dependiente de #65.
+
 ## 2026-11-28 — M16 0.16.25-alpha — alojamiento nocturno en comarcas aparcadas (#58)
 
 - **Causa estática:** `ComarcaOffmapRuntime` llamaba a `advanceCompactBandLife` con un mapa vacío todos los días. La regla compartida de concepción descartaba cualquier intento pese a tener una vivienda.

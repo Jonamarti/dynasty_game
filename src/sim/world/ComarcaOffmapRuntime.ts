@@ -121,6 +121,54 @@ export function consumeComarcaOffmapNutrition(inventories: readonly Inventory[],
   return consumed;
 }
 
+/** Physical nutrition only; private band stocks and the shared ground pool are disjoint. */
+function nutritionOf(stocks: readonly Inventory[]): number {
+  return stocks.reduce((total, inventory) => total + inventory.entries()
+    .reduce((n, [id, count]) => n + (ITEMS[id]?.nutrition ?? 0) * count, 0), 0);
+}
+
+/**
+ * One tick's food access policy. All residents share the ground pool by head,
+ * while personal packs and completed band-owned stores remain band-local.
+ * Recompute private stock after harvest, then freeze finite per-person quotas.
+ * Unused shares remain physical stock and can be reassigned next tick.
+ */
+export function createComarcaOffmapFoodBudget(
+  roster: readonly CompactPerson[],
+  bandStocks: ReadonlyMap<number, readonly Inventory[]>,
+  sharedStocks: readonly Inventory[],
+) {
+  const living = roster.filter(member => member.person.alive);
+  const sizes = new Map<number, number>();
+  for (const { person } of living) sizes.set(person.bandId, (sizes.get(person.bandId) ?? 0) + 1);
+  const sharedShare = living.length ? nutritionOf(sharedStocks) / living.length : 0;
+  const privateShare = (bandId: number) => {
+    const size = sizes.get(bandId) ?? 0;
+    return size ? nutritionOf(bandStocks.get(bandId) ?? []) / size : 0;
+  };
+  return {
+    availablePerPerson(bandId: number): number {
+      return sizes.has(bandId) ? privateShare(bandId) + sharedShare : 0;
+    },
+    snapshotRations() {
+      const byBand = new Map([...sizes.keys()].map(id => [id, privateShare(id)]));
+      const quotas = new Map(living.map(({ person }) => [person.id, {
+        bandId: person.bandId, own: byBand.get(person.bandId) ?? 0, shared: sharedShare,
+      }]));
+      return (personId: number, requested: number): number => {
+        if (!Number.isFinite(requested) || requested < 0) throw new RangeError('requested nutrition must be finite and non-negative');
+        const quota = quotas.get(personId);
+        if (!quota) return 0;
+        const own = consumeComarcaOffmapNutrition(bandStocks.get(quota.bandId) ?? [], Math.min(requested, quota.own));
+        quota.own = Math.max(0, quota.own - own);
+        const shared = consumeComarcaOffmapNutrition(sharedStocks, Math.min(requested - own, quota.shared));
+        quota.shared = Math.max(0, quota.shared - shared);
+        return Math.min(requested, own + shared);
+      };
+    },
+  };
+}
+
 import { ComarcaEcology, type ComarcaEcologyRecord } from './ComarcaEcology.ts';
 import type { TileLedgerEntry } from '../persistence/TileLedger.ts';
 import type { WorldGeography } from './WorldGeography.ts';
@@ -230,17 +278,23 @@ export class ComarcaOffmapRuntime {
       onTick: (tick, clock, world, objects) => {
         inhabitedBands.clear(); for (const c of compact) if (c.person.alive) inhabitedBands.add(c.person.bandId);
         const living = compact.filter(c => c.person.alive).sort((a,b) => a.person.id-b.person.id);
-        const inventories = (bandId: number): Inventory[] => [
-          ...living.filter(c => c.person.bandId === bandId).map(c => c.person.inventory),
-          ...objects.buildings.filter(b => b.ownerBandId === bandId && b.complete && !b.ruined).sort((a,b)=>a.id-b.id).map(b=>b.store),
-          ...objects.piles.sort((a,b)=>a.id-b.id).map(p=>p.contents),
-        ];
-        const nutritionOf = (stocks: Inventory[]) => stocks.reduce((total, inventory) => total + inventory.entries().reduce((n,[id,count]) => n + (ITEMS[id]?.nutrition ?? 0)*count,0),0);
+        const bandStocks = new Map<number, Inventory[]>();
+        for (const { person } of living) {
+          const stocks = bandStocks.get(person.bandId) ?? [];
+          stocks.push(person.inventory);
+          bandStocks.set(person.bandId, stocks);
+        }
+        for (const building of [...objects.buildings].sort((a,b) => a.id-b.id)) {
+          if (!building.complete || building.ruined || building.ownerBandId === null) continue;
+          bandStocks.get(building.ownerBandId)?.push(building.store);
+        }
+        const sharedStocks = [...objects.piles].sort((a,b) => a.id-b.id).map(p => p.contents);
+        const food = createComarcaOffmapFoodBudget(living, bandStocks, sharedStocks);
         for (const member of living) {
           const person = member.person;
           if (person.isChild || person.needs.cold > config.needs.workLimits.cold || person.needs.fatigue > 80) continue;
           // Two days of food is an explicit buffer, never a second potential harvest.
-          if (nutritionOf(inventories(person.bandId)) >= living.filter(c=>c.person.bandId===person.bandId).length * RATION_NUTRITION * 2) continue;
+          if (food.availablePerPerson(person.bandId) >= RATION_NUTRITION * 2) continue;
           // Banking is bounded: a sheltered year cannot purchase an instant year of harvest.
           work.set(person.id, Math.min(140, (work.get(person.id) ?? 0) + COMARCA_OFFMAP_HARVEST_WORK_FRACTION));
           for (const node of objects.nodes) {
@@ -254,19 +308,13 @@ export class ComarcaOffmapRuntime {
             break;
           }
         }
-        const foodQuota = new Map<number,number>();
-        for (const band of state.roster.bands) {
-          const members = living.filter(c=>c.person.bandId===band.id);
-          const share = members.length ? nutritionOf(inventories(band.id))/members.length : 0;
-          for (const c of members) foodQuota.set(c.person.id,share);
-        }
+        const rationFor = food.snapshotRations();
         const body = new CompactBody({ needs: config.needs, time: config.time, world, buildings: objects.buildings,
           hooks: compactBandNeedsHooks(state.roster.peopleById, config.childhood, config.time, config.needs),
           intake: { model: new IntakeModel(MEASURED_RATES), capacity: () => undefined, childhood: config.childhood },
           nextEventId: () => ids.allocate('socialEvent'),
           ration: (member,_at,hunger,thirst) => {
-            const requested = Math.min(hunger, foodQuota.get(member.person.id) ?? 0);
-            const consumed = consumeComarcaOffmapNutrition(inventories(member.person.bandId), requested);
+            const consumed = rationFor(member.person.id, hunger);
             return { hunger: consumed, thirst: world.freshShore.length || objects.buildings.some(b=>b.complete&&!b.ruined&&isWell(b.def)) ? thirst : 0 };
           },
         });

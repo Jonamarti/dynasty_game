@@ -17,6 +17,8 @@ de una cohorte.**
 
 Prioridades actuales y dependencias:
 
+- **Alimentación compacta (28-11-2026):** eliminar doble cómputo de pilas de suelo en las cuotas y el buffer de recolección por banda. Validar reparto entre bandas, continuidad JSON y cohortes antes de integrar. Mantener acceso compartido existente; accesibilidad física y capacidad de carga siguen pendientes.
+
 - **#58 (28-11-2026):** propuesta aislada de admisión nocturna compacta en comarcas aparcadas según hogar local y plazas físicas; validar residencia, nacimientos y continuidad de guardados antes de integrar; no re-fijar baseline.
 
 - **CI:** [#8](https://github.com/Jonamarti/dynasty_game/issues/8) mantiene
