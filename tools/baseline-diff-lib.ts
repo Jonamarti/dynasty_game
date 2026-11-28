@@ -32,6 +32,7 @@ export function parseScenarioMatrix(input: unknown): ScenarioMatrixRecord[] {
     const failed = record.failed as string[];
     const na = record.na as string[];
     const memberships = [...passed, ...failed, ...na];
+    if (memberships.length === 0) throw new TypeError(`scenario ${record.name} has no checks`);
     if (new Set(memberships).size !== memberships.length) throw new TypeError(`scenario ${record.name} lists a check more than once`);
     return {
       name: record.name,
@@ -81,5 +82,77 @@ export function compareScenarioMatrices(before: readonly ScenarioMatrixRecord[],
 }
 
 export function isBaselineRegression(transitions: readonly MatrixTransition[]): boolean {
-  return transitions.some(({ from, to }) => from === 'passed' && (to === 'failed' || to === 'na'));
+  return transitions.some(({ from, to }) => (to === 'failed' && from !== 'failed') || (from === 'passed' && to === 'na'));
+}
+
+
+/**
+ * A green diff is meaningless if the run silently skipped scenarios or checks.
+ * The pinned baseline supplies the expected inventory; never infer it from the
+ * result being validated. Each CI shard uses the same round-robin partition as
+ * tools/scenarios.ts (--shard part/total, applied after --slow selection).
+ *
+ * Updating the inventory is a deliberate baseline review, not an automatic
+ * side effect of adding a check or a scenario.
+ */
+export function validateMatrixCoverage(
+  baseline: readonly ScenarioMatrixRecord[],
+  actual: readonly ScenarioMatrixRecord[],
+  shard?: { part: number; total: number },
+): string[] {
+  const problems: string[] = [];
+  if (baseline.length === 0) return ['Pinned baseline is empty'];
+  const expected = shard
+    ? baseline.filter((_, index) => index % shard.total === shard.part - 1)
+    : baseline;
+  if (expected.length === 0) return ['Requested shard has no expected scenarios'];
+  const expectedByName = new Map(expected.map(row => [row.name, row]));
+  const actualByName = new Map(actual.map(row => [row.name, row]));
+  for (const row of expected) {
+    const found = actualByName.get(row.name);
+    if (!found) {
+      problems.push(`Missing scenario: ${row.name}`);
+      continue;
+    }
+    const expectedChecks = checkStates(row);
+    const actualChecks = checkStates(found);
+    for (const id of expectedChecks.keys()) {
+      if (!actualChecks.has(id)) problems.push(`Missing check: ${row.name}/${id}`);
+    }
+    for (const id of actualChecks.keys()) {
+      if (!expectedChecks.has(id)) problems.push(`Unexpected check (requires baseline review): ${row.name}/${id}`);
+    }
+  }
+  for (const row of actual) {
+    if (!expectedByName.has(row.name)) problems.push(`Unexpected scenario (requires baseline review): ${row.name}`);
+  }
+  return problems;
+}
+
+/**
+ * Assemble the pinned matrix from the matrix-shard.json of EVERY CI shard.
+ *
+ * The 26-oct re-pin (00d6d395) was transcribed by hand and carried 132 of the
+ * run's 167 transitions: 35 checks kept a state no build ever produced, and
+ * every later run reported them as regressions. So completeness is proved here,
+ * not trusted: `catalog` is the scenario list tools/scenarios.ts selects with
+ * --slow, and shards rebuild it through the same round-robin partition, which
+ * also guarantees the file keeps the order validateMatrixCoverage expects.
+ */
+export function assembleMatrixBaseline(
+  shards: readonly (readonly ScenarioMatrixRecord[])[],
+  catalog: readonly string[],
+): ScenarioMatrixRecord[] {
+  const total = shards.length;
+  if (total === 0) throw new Error('No shard results given');
+  const assembled = catalog.map((name, index) => {
+    const part = index % total;
+    const row = shards[part]![Math.floor(index / total)];
+    if (!row) throw new Error(`Shard ${part + 1}/${total} is missing scenario ${name}`);
+    if (row.name !== name) throw new Error(`Shard ${part + 1}/${total} has ${row.name} where the catalog expects ${name}`);
+    return row;
+  });
+  const rows = shards.reduce((count, shard) => count + shard.length, 0);
+  if (rows !== catalog.length) throw new Error(`Shards hold ${rows} scenarios; the catalog has ${catalog.length}`);
+  return assembled;
 }

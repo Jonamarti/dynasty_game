@@ -1451,12 +1451,25 @@ export class BandSystem {
     // Ground being moved is not a hut going up: it neither fills the band's
     // two site slots nor counts as a roof (M15 phase 26c).
     const underway = live.filter(b => !b.complete && !isEarthwork(b.def)).length;
-    if (underway >= MAX_SITES) return;
 
-    // Small shelters need several copies; upkeep in 14.8 is the natural limit.
+    // Count physical and projected capacity separately. Planned places prevent
+    // overbuilding, but they cannot keep anybody warm until the site is finished.
     const shelterDemand = members.filter(p => p.alive && p.carriedBy === null).length;
-    const roofPlaces = live.filter(b => b.def.places !== undefined && !b.ruined)
-      .reduce((sum, b) => sum + (b.def.places ?? 0), 0);
+    let finishedRoofPlaces = 0;
+    let pendingRoofPlaces = 0;
+    for (const b of live) {
+      if (b.def.places === undefined || b.ruined) continue;
+      if (b.complete) finishedRoofPlaces += b.def.places;
+      else pendingRoofPlaces += b.def.places;
+    }
+    const roofPlaces = finishedRoofPlaces + pendingRoofPlaces;
+    if (finishedRoofPlaces < shelterDemand) {
+      telemetry.count('shelter_completed_places_short', shelterDemand - finishedRoofPlaces);
+      if (underway >= MAX_SITES) telemetry.count('shelter_short_sites_full');
+    }
+    // Preserve the work cap: do not open additional sites or cancel a project
+    // just because its capacity is not usable yet.
+    if (underway >= MAX_SITES) return;
 
     const stores = live.filter(b => b.complete && b.def.storage >= 100);
     const plannedStores = live.filter(b => !b.complete && b.def.storage >= 100).length;
@@ -1492,7 +1505,7 @@ export class BandSystem {
       // and thatch only, and the difference between a hard winter and twenty
       // funerals.
       const shelters = buildable.filter(def => def.shelter > 0.3 && def.places !== undefined);
-      if (roofPlaces * 2 < shelterDemand) {
+      if (finishedRoofPlaces * 2 < shelterDemand) {
         // Generic early-roof contract: the 140-tick open windbreak is
         // cheaper than a lean-to, but is not the first *covered* shelter.
         // Prefer any real roof by capability, not by a hardcoded design id.
@@ -1503,7 +1516,7 @@ export class BandSystem {
         // hut until they have finished one, because a band whose first ever
         // structure is an eighteen-hundred-tick longhouse spends its first
         // winter under an unfinished frame.
-        const proven = live.some(b => b.complete && b.def.shelter > 0.3);
+        const proven = live.some(b => b.complete && !b.ruined && b.def.shelter > 0.3);
         const affordable = shelters.filter(def =>
           proven || def.workTicks <= BUILDINGS.mud_hut!.workTicks);
         wanted = this.bestBy(affordable, def => def.shelter)?.id ?? null;
@@ -1921,7 +1934,7 @@ export class BandSystem {
         ? person.needs.cold * person.beliefs.expect('warm:hearth').value
         : defId === 'storage_pit' || defId === 'granary' || defId === 'drying_rack'
           ? Math.max(0, 1 - person.inventory.total / 20) * 100
-          : defId === 'mud_hut' || defId === 'windbreak' || defId === 'longhouse'
+          : BUILDINGS[defId]?.places !== undefined && BUILDINGS[defId]!.shelter > 0
             ? person.needs.cold + Math.max(0, -person.mood.security)
             : person.needs.hunger + person.needs.cold;
       if (score > bestScore || (score === bestScore && person.id < (best?.id ?? Infinity))) {

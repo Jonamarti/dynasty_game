@@ -17,6 +17,10 @@ concurrency:
 
 jobs:
   build:
+    # Temporary safety interlock for issue #11: legacy Pages must not deploy
+    # while master has no same-SHA full-CI authorization. PR #38 replaces
+    # this workflow with a verified workflow_run gate; keep it disabled until then.
+    if: ${{ false }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
