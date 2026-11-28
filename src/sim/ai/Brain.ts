@@ -98,7 +98,8 @@ import {
 import { drivePressures, urgencyCurve, type DrivePressures } from './Drives.ts';
 import { actionsForDrive, carriesEdibleFood, chooseCommitmentDrive, commitmentGoal, COMMITMENT_DRIVES, type CommitmentDrive } from './Commitment.ts';
 import { purposeAppetite, sensitivity } from './Temperament.ts';
-import { appealOf, bestFoodFor, cravings, hydrationOf, VARIETY_WEIGHT } from '../core/Macros.ts';
+import { appealOf, bestFoodFor, cravings, hydrationOf, knowsPoisonous, VARIETY_WEIGHT } from '../core/Macros.ts';
+import { withdrawableLarderFood } from './LarderFood.ts';
 import type { ChildhoodConfig, MotivationConfig } from '../core/Config.ts';
 import { anchorOf, childRadius, reachOf, withinReach, type Anchor } from './Anchor.ts';
 import { cryOf, infantNeedingNursing } from './Nursing.ts';
@@ -1139,7 +1140,8 @@ export class Brain {
     let hydratingFood: string | null = null;
     let hydration = 0;
     for (const [itemId, count] of person.inventory.entries()) {
-      const candidate = count > 0 ? hydrationOf(itemId, ctx.world.waterKind !== undefined) : 0;
+      const candidate = count > 0 && !knowsPoisonous(person, itemId)
+        ? hydrationOf(itemId, ctx.world.waterKind !== undefined) : 0;
       if (candidate > hydration) {
         hydration = candidate;
         hydratingFood = itemId;
@@ -3448,12 +3450,21 @@ export class Brain {
         this.proximityBonus(person, { x: b.centerX, y: b.centerY }, ctx.sightRadius);
       let bestTake = 0;
       let takeTarget: Building | null = null;
-      const wantTake = (b: Building | null, score: number, itemId: string | null = null, itemCount: number | null = null): void => {
+      let takeForLamp = false;
+      const foodChoices = new Map<number, string | null>();
+      const foodAt = (b: Building): string | null => {
+        if (!foodChoices.has(b.id)) foodChoices.set(b.id,
+          withdrawableLarderFood(person, b, ctx.carry, ctx.peopleById, ctx.buildingsById));
+        return foodChoices.get(b.id) ?? null;
+      };
+      const wantTake = (b: Building | null, score: number, itemId: string | null = null,
+        itemCount: number | null = null, forLamp = false): void => {
         if (b && score > bestTake) {
           bestTake = score;
           takeTarget = b;
           takeItemId = itemId;
           takeItemCount = itemCount;
+          takeForLamp = forLamp;
         }
       };
 
@@ -3465,7 +3476,7 @@ export class Brain {
           canTake(person, ctx.carry, 'fat', FAT_LAMP_REFILL_FAT)) {
         const fatStore = householdHomePieces.find(piece => piece.def.storage > 0 &&
           piece.store.count('fat') >= FAT_LAMP_REFILL_FAT && this.canUse(person, piece, ctx)) ?? null;
-        if (fatStore) wantTake(fatStore, 0.8 * nearness(fatStore), 'fat', FAT_LAMP_REFILL_FAT);
+        if (fatStore) wantTake(fatStore, 0.8 * nearness(fatStore), 'fat', FAT_LAMP_REFILL_FAT, true);
       }
 
       // 1. Hunger. What you are carrying, measured against what you need — not
@@ -3496,7 +3507,7 @@ export class Brain {
         // M15 phase 38b: a soldier eats from the temple that keeps them.
         const ration = person.job === 'soldier' ? ctx.templeByBand?.get(person.bandId) : undefined;
         const larder = this.pickBest(
-          stores.filter(b => this.canUse(person, b, ctx) && b.store.bestFood() !== null),
+          stores.filter(b => this.canUse(person, b, ctx) && foodAt(b) !== null),
           b => -person.distanceTo({ x: b.centerX, y: b.centerY }) + (elite ? 12 : 0) +
             (b.id === ration ? SOLDIER_RATION_PULL : 0)
         );
@@ -3505,7 +3516,8 @@ export class Brain {
         // full pit is a certainty; a bush in February is a walk and a gamble.
         if (larder) {
           wantTake(larder,
-            hunger * TAKE_APPETITE * (0.4 + 0.6 * this.stocked(larder)) * nearness(larder));
+            hunger * TAKE_APPETITE * (0.4 + 0.6 * this.stocked(larder)) * nearness(larder),
+             isHerd(larder.def) ? null : foodAt(larder));
           if (elite) telemetry.count('elite_larder_preferred');
         }
       }
@@ -3535,16 +3547,17 @@ export class Brain {
       if (comfortNow > 0.4) {
         const round = this.pickBest(
           stores.filter(b => (isTrap(b.def) || isHerd(b.def)) && this.canUse(person, b, ctx) &&
-            b.store.bestFood() !== null && this.stocked(b) >= TRAP_WORTH_A_ROUND),
+            foodAt(b) !== null && this.stocked(b) >= TRAP_WORTH_A_ROUND),
           b => this.stocked(b) * nearness(b)
         );
-        if (round) wantTake(round, TRAP_ROUND * this.stocked(round) * nearness(round));
+        if (round) wantTake(round, TRAP_ROUND * this.stocked(round) * nearness(round),
+          isHerd(round.def) ? null : foodAt(round));
       }
 
       if (takeTarget) {
         add('take', bestTake);
         storeTarget = storeTarget ?? takeTarget;
-        if (takeItemId === 'fat') lampFatStore = takeTarget;
+        if (takeForLamp) lampFatStore = takeTarget;
         else larderTarget = takeTarget;
       }
     }
@@ -4526,7 +4539,8 @@ export class Brain {
 
   private carriedNutrition(person: Person): number {
     return person.inventory.entries()
-      .reduce((sum, [id, count]) => sum + (ITEMS[id]?.nutrition ?? 0) * count, 0);
+      .reduce((sum, [id, count]) => sum +
+        (knowsPoisonous(person, id) ? 0 : (ITEMS[id]?.nutrition ?? 0) * count), 0);
   }
 
   /**
@@ -5152,7 +5166,7 @@ export class Brain {
             person.targetItemId = found.storeItemId;
             person.targetItemCount = found.storeItemCount;
           }
-          if (action === 'take' && found.lampFatStore === building) {
+          if (action === 'take') {
             person.targetItemId = found.takeItemId;
             person.targetItemCount = found.takeItemCount;
           }

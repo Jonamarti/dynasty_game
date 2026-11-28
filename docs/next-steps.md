@@ -17,6 +17,8 @@ de una cohorte.**
 
 Prioridades actuales y dependencias:
 
+- **#58 (28-11-2026):** propuesta aislada de acceso viable a despensa (capacidad, alimento conocido, reservas de tiro y objetivo de retirada); comprobar hambre y economía con las mismas semillas, sin modificar baseline.
+
 - **CI:** [#8](https://github.com/Jonamarti/dynasty_game/issues/8) mantiene
   regresiones heredadas en las matrices; la pila #34 → #37 → #38
   (inventario estricto, veredicto global y Pages seguro) sigue sin integrarse.

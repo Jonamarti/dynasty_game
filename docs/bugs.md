@@ -1,3 +1,11 @@
+## 2026-11-28 — M16: economía de subsistencia, hallazgos estáticos pendientes (#58)
+
+- `Brain` podía ofrecer retirar comida aunque no cupiera en manos, fuera veneno conocido o el ganado estuviera reservado para tiro. Propuesta focal en rama `fix/m16-withdrawable-larder-food`. No se ha medido su contribución a mortalidad.
+- **Conservación de fracciones:** `Carry.stow` incrementa `accepted` consultando `canTake(...,1)` sin actualizar inventario hasta el final. Puede superar la capacidad al recibir un lote y redondear una fracción hacia arriba. `Macros.eatFoodUnit` elimina hasta una unidad pero da nutrición e hidratación de una unidad completa aun cuando solo retiró una fracción. El runtime aparcado sí consume cantidades fraccionarias. Auditar transferencias, devolución de sobrantes, consumo, dosis y telemetría antes de cambiar el contrato global.
+- **Reservas fuera de pantalla:** `ComarcaOffmapRuntime.inventories` agrega todas las pilas de la comarca al inventario de cada banda, con independencia del dueño. Los presupuestos de varias bandas pueden contabilizar la misma pila antes de que se debite (el débito físico impide duplicar alimento, pero el presupuesto y acceso son incorrectos). También usa stocks de corrales como nutrición sin aplicar las reservas de tiro. Resolver con política explícita y tests de dos bandas.
+- **Manos llenas y despensa:** la descarga material autónoma existente solo se activa por un recurso natural seleccionado a hambre baja. Con solo despensa y manos llenas hace falta definir la descarga o comida directa respetando propiedad, capacidad y riesgo; no se introduce esa mecánica en esta PR.
+- Se conserva el historial medido de exploración y supervivencia: no incrementar pesos ni reducir necesidades globales sin evidencia.
+
 ## 2026-11-04 — M16: casi nadie concibe porque casi nadie duerme bajo techo
 
 Abierto en [#58](https://github.com/Jonamarti/dynasty_game/issues/58) y relacionado con #55 y #28. **Sin arreglo todavía:** las variantes medidas se descartaron.
