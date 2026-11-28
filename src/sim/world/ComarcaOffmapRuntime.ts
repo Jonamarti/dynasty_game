@@ -137,6 +137,8 @@ import { advanceCompactBandLife, type CompactBandLifeLedger } from '../compact/C
 import { advanceCompactBandKnowledge, createCompactBandKnowledgeState, fromCompactBandKnowledgeRecord, toCompactBandKnowledgeRecord, type CompactBandKnowledgeState } from '../compact/CompactBandKnowledge.ts';
 import { regionMaterials, LEARN_MU_START, PARTIAL_START } from './PeopleKnowledge.ts';
 import { IdSpace } from '../core/IdSpace.ts';
+import { SpatialHash } from '../core/SpatialHash.ts';
+import type { Person } from '../entities/Person.ts';
 import { Inventory } from '../entities/Item.ts';
 import { isWell } from '../entities/Building.ts';
 
@@ -223,11 +225,14 @@ export class ComarcaOffmapRuntime {
     const config = state.config;
     const ecology = ComarcaEcology.fromRecord(base.ecology);
     const inhabitedBands = new Set(compact.filter(c => c.person.alive).map(c => c.person.bandId));
+    // One physical authority for the parked comarca, not one index per band or body.
+    const peopleHash = new SpatialHash<Person>(8);
     const result = ecology.advanceTo(targetTick, geography, { ids, peopleById: state.roster.peopleById,
       inhabitedBands,
       onTick: (tick, clock, world, objects) => {
         inhabitedBands.clear(); for (const c of compact) if (c.person.alive) inhabitedBands.add(c.person.bandId);
         const living = compact.filter(c => c.person.alive).sort((a,b) => a.person.id-b.person.id);
+        peopleHash.rebuild(living.map(c => c.person));
         const inventories = (bandId: number): Inventory[] => [
           ...living.filter(c => c.person.bandId === bandId).map(c => c.person.inventory),
           ...objects.buildings.filter(b => b.ownerBandId === bandId && b.complete && !b.ruined).sort((a,b)=>a.id-b.id).map(b=>b.store),
@@ -259,7 +264,7 @@ export class ComarcaOffmapRuntime {
           for (const c of members) foodQuota.set(c.person.id,share);
         }
         const body = new CompactBody({ needs: config.needs, time: config.time, world, buildings: objects.buildings,
-          hooks: compactBandNeedsHooks(state.roster.peopleById, config.childhood, config.time, config.needs),
+          hooks: { ...compactBandNeedsHooks(state.roster.peopleById, config.childhood, config.time, config.needs), peopleHash },
           intake: { model: new IntakeModel(MEASURED_RATES), capacity: () => undefined, childhood: config.childhood },
           nextEventId: () => ids.allocate('socialEvent'),
           ration: (member,_at,hunger,thirst) => {

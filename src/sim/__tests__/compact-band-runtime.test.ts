@@ -5,6 +5,7 @@ import { IdSpace } from '../core/IdSpace.ts';
 import { RNG } from '../core/RNG.ts';
 import { TimeManager } from '../core/TimeManager.ts';
 import { Person } from '../entities/Person.ts';
+import { Building, BUILDINGS } from '../entities/Building.ts';
 import { RelationshipGraph } from '../social/Relationships.ts';
 import { randomWorldGeography } from '../world/WorldGeography.ts';
 import { comarcaResourceProfile } from '../world/ResourceProfile.ts';
@@ -69,6 +70,29 @@ function fixture(seed: string, initialStock = 0, quotaShare = 1, initialTick = 0
 }
 
 describe('detached compact band runtime', () => {
+  it('does not warm a fourth occupant in a three-place refuge', () => {
+    const base = fixture('runtime-crowded');
+    const roof = new Building(BUILDINGS.windbreak!, 2, 3, 7, base.life.ids);
+    roof.complete = true;
+    const people = [base.roster[0]!.person, ...[1, 2, 3].map(i =>
+      new Person('Guest' + i, roof.centerX, roof.centerY, 7, new RNG('crowded-' + i),
+        base.services.time.daysPerSeason * 4, base.life.ids))];
+    const roster = people.map(person => {
+      person.x = roof.centerX; person.y = roof.centerY; person.age = 20 * person.daysPerYear;
+      person.lifespanDays = 80 * person.daysPerYear; person.health = 1;
+      person.needs.cold = 50; person.equipment = {}; person.wet = 0;
+      person.shelterArrivalBuildingId = roof.id; person.shelterArrivalTick = 0;
+      return { person, lastAdvancedTick: 0, epoch: 0, rng: deriveCompactStream('runtime-crowded', person.id),
+        goal: goalOf(person, 0), intake: null };
+    });
+    const runtime = new CompactBandRuntime({ ...base.services, roster, calendar: base.calendar,
+      knowledge: base.knowledgeState, needs: { ...base.services.needs, coldRate: 1 }, buildings: [roof],
+      life: { ...base.life, peopleById: new Map(people.map(person => [person.id, person])) } });
+    runtime.advanceTo(1);
+    expect(people[3]!.needs.cold).toBeGreaterThan(people[0]!.needs.cold);
+    expect(people[1]!.needs.cold).toBeCloseTo(people[0]!.needs.cold);
+    expect(people[2]!.needs.cold).toBeCloseTo(people[0]!.needs.cold);
+  });
   it('attaches mid-day, limits supply to the real interval, and restores continuation exactly', () => {
     const whole = fixture('runtime-partial-attach', 0, 1, 1, 4, true);
     const cut = fixture('runtime-partial-attach', 0, 1, 1, 4, true);

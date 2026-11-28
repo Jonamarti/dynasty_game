@@ -1,3 +1,7 @@
+## 2026-11-28 — propuesta independiente de ocupación compacta (#13)
+
+La corrección en borrador conecta el índice de residentes físicos a `NeedsSystem` en `ComarcaOffmapRuntime` y `CompactBandRuntime`. Pendiente de typecheck, pruebas focales, `check:fast` y medición comparativa. Mantener separada de #63 y #64. No se cierra #13: quedan admisión familiar de medianoche, concepción fuera de pantalla (`roofTonight` vacío), llegadas/transferencias entre comarcas, métricas y rendimiento. El runtime de banda aislado solo conoce sus miembros; un coordinador de varias bandas debe compartir el índice de comarca.
+
 ## Estado vigente — 2026-11-02 (M16, todavía alfa)
 
 **M16 es el plan de desarrollo activo**, en `0.16.x-alpha`; la versión alfa no

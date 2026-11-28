@@ -7,6 +7,7 @@
 import { compactBandNeedsHooks } from './CompactBandNeeds.ts';
 import { RATION_NUTRITION } from '../world/ResourceProfile.ts';
 import { TimeManager } from '../core/TimeManager.ts';
+import { SpatialHash } from '../core/SpatialHash.ts';
 import type { NeedsConfig, PopulationConfig, ChildhoodConfig, LearningConfig, TimeConfig } from '../core/Config.ts';
 import type { World } from '../core/World.ts';
 import type { Building } from '../entities/Building.ts';
@@ -172,6 +173,7 @@ export class CompactBandRuntime {
   private knowledge: CompactBandKnowledgeState;
   private pendingDay: PendingDay | null = null;
   private readonly bodies = new Map<number, CompactBody>();
+  private readonly peopleHash = new SpatialHash<Person>(8);
   private advancing = false;
 
   constructor(options: CompactBandRuntimeOptions, restoring = false) {
@@ -239,6 +241,11 @@ export class CompactBandRuntime {
       for (let tick = this.calendar.tick + 1; tick <= toTick; tick++) {
         const elapsedDay = Math.floor((tick - 1) / tpd);
         if (this.intake.report.day !== elapsedDay) this.prepareDay(tick, elapsedDay);
+        // The fallback index contains this runtime's actual roster, not the kin archive.
+        // A caller coordinating multiple bands in one comarca can supply its shared index.
+        if (this.services.buildings?.length && !this.services.bodyHooks?.peopleHash) {
+          this.peopleHash.rebuild(this.roster.filter(c => c.person.alive).map(c => c.person));
+        }
         for (const compact of [...this.roster].sort((a,b) => a.person.id - b.person.id)) {
           if (!compact.person.alive) { compact.lastAdvancedTick = tick; continue; }
           if (compact.lastAdvancedTick >= tick) continue;
@@ -246,7 +253,9 @@ export class CompactBandRuntime {
           let body = this.bodies.get(compact.person.id);
           if (!body) {
             body = new CompactBody({ needs: this.services.needs, time: this.services.time,
-              world: this.services.world, buildings: this.services.buildings, hooks: this.services.bodyHooks ?? compactBandNeedsHooks(this.life.peopleById, this.life.childhood, this.services.time, this.services.needs),
+              world: this.services.world, buildings: this.services.buildings,
+              hooks: { ...(this.services.bodyHooks ?? compactBandNeedsHooks(this.life.peopleById, this.life.childhood, this.services.time, this.services.needs)),
+                peopleHash: this.services.bodyHooks?.peopleHash ?? this.peopleHash },
               intake: this.services.bodyIntake, ration: (who, at, hunger, thirst) => this.intake.ration(who, at, hunger, thirst),
               nextEventId: () => this.life.ids.allocate('socialEvent') });
             this.bodies.set(compact.person.id, body);

@@ -8,6 +8,7 @@ import { IdSpace } from '../core/IdSpace.ts';
 import { RNG } from '../core/RNG.ts';
 import { Person } from '../entities/Person.ts';
 import { ResourceNode } from '../entities/ResourceNode.ts';
+import { Building, BUILDINGS } from '../entities/Building.ts';
 import { deriveCompactStream, goalOf } from '../compact/CompactPerson.ts';
 import { advanceComarcaOffmapHarvest, allocateComarcaOffmapNutrition } from '../world/ComarcaOffmapRuntime.ts';
 
@@ -45,13 +46,50 @@ describe('deterministic off-map physical food policy', () => {
 });
 
 describe('a real parked comarca authority', () => {
-  function fixture() {
+  function fixture(coldRate = 0, crowded = false) {
     const root = new WorldState({ seed: 'parked-world', world: { width: 32,height:32 }, population: { bands: 1,peoplePerBand:4,conceptionChance:0 },
-      time: { ticksPerDay:40,daysPerSeason:20,startDay:0 }, needs: { coldRate:0 } },
+      time: { ticksPerDay:40,daysPerSeason:20,startDay:0 }, needs: { coldRate } },
       { geography: frontierGeography(), start: { x:40.5,y:20.5 }, peoples:false });
+    if (crowded) {
+      const sim = root.current;
+      const people = [...sim.people].filter(p => p.alive).sort((a,b) => a.id-b.id);
+      expect(people).toHaveLength(4);
+      // Keep other shelters and fires out of this controlled physical sample.
+      let tile: { x: number; y: number } | undefined;
+      for (let y = 2; y < sim.world.height - 2 && !tile; y++) {
+        for (let x = 2; x < sim.world.width - 2; x++) {
+          if (sim.world.isWalkable(x, y) && !sim.world.isWater(x, y) &&
+              !sim.buildings.some(b => b.complete && b.contains(x, y, 5))) { tile = { x, y }; break; }
+        }
+      }
+      if (!tile) throw new Error('crowded shelter fixture needs isolated ground');
+      const roof = new Building(BUILDINGS.windbreak!, tile.x, tile.y, people[0]!.bandId, sim.ids);
+      roof.complete = true; roof.progress = roof.def.workTicks; roof.durability = roof.def.workTicks;
+      sim.buildings.push(roof); sim.buildingsById.set(roof.id, roof);
+      for (const person of people) {
+        person.x = roof.centerX; person.y = roof.centerY;
+        person.needs.cold = 50; person.wet = 0; person.equipment = {};
+        person.carriedBy = null;
+        person.shelterArrivalBuildingId = roof.id; person.shelterArrivalTick = 0;
+      }
+    }
     const entry = root.tileLedger.capture(root);
     return {root,runtime:ComarcaOffmapRuntime.start(toCheckpointRecord(root.current),entry)};
   }
+  it('limits warmth to three physically admitted windbreak occupants after parking and resuming', () => {
+    const {root,runtime} = fixture(1, true);
+    const first = runtime.advanceTo(1, root.geography);
+    const people = first.compact.map(c => fromPersonRecord(c.person)).sort((a,b) => a.id-b.id);
+    expect(people).toHaveLength(4);
+    expect(people[3]!.needs.cold).toBeGreaterThan(people[0]!.needs.cold);
+    expect(people[1]!.needs.cold).toBeCloseTo(people[0]!.needs.cold);
+    expect(people[2]!.needs.cold).toBeCloseTo(people[0]!.needs.cold);
+    const restored = ComarcaOffmapRuntime.fromRecord(JSON.parse(JSON.stringify(first)));
+    const resumed = restored.advanceTo(2, root.geography);
+    const uninterrupted = runtime.advanceTo(2, root.geography);
+    expect(resumed.compact).toEqual(uninterrupted.compact);
+    expect(resumed.checkpoint.roster).toEqual(uninterrupted.checkpoint.roster);
+  });
   it('advances named bodies, physical work and clocks without Simulation.step', () => {
     const {root,runtime} = fixture();
     const before = root.current.people[0]!.needs.hunger;

@@ -1,3 +1,9 @@
+## 2026-11-28 — M16 0.16.25-alpha — capacidad física de refugios en los coordinadores compactos (#13)
+
+- Antes, `NeedsSystem.shelterAt` no comprobaba capacidad cuando faltaba `NeedsHooks.peopleHash`. Los coordinadores de comarcas aparcadas y bandas compactas omitían ese índice: un cuarto ocupante podía recibir el abrigo de un paravientos de tres plazas.
+- Se conecta un índice de residentes físicos por comarca aparcada, y un índice de la banda para el runtime aislado (o el índice compartido que proporcione explícitamente el coordinador). Se reutiliza `hasRoomFor`, con llegadas e ID estables y bebés transportados, sin alterar RNG ni guardar nuevos campos.
+- Dos pruebas focales de capacidad, incluida continuación JSON en comarca aparcada; todavía no ejecutadas. No se cambia `roofTonight`, la asignación del hogar, la vida compacta individual ni la baseline. Medir coste y exposición al frío con semillas emparejadas antes de integrar.
+
 ## 2026-11-04 — M16: diagnóstico de nacimientos y refugio nocturno, sin arreglo
 
 - **Problema:** en varios mundos no nace casi nadie y casi nadie duerme bajo techo.
